@@ -11,14 +11,12 @@ No API key is needed. Everything runs on your own Claude Code login and uses you
 
 ## Setup
 
-1. **Engine (WSL Ubuntu-24.04).** The Python engine only runs on Linux. Follow the main [README](../README.md) for `uv sync`, `uv run lunarnav kernels` (SPICE), and the terrain data:
+1. **Engine (WSL Ubuntu-24.04).** The Python engine only runs on Linux. Follow the main [README](../README.md) for `uv sync`. Then pull the SPICE kernels and the built terrain stores from the team's public bucket. You need the [gcloud CLI](https://cloud.google.com/sdk/docs/install) installed in WSL, but no login. From the repo root:
    ```bash
-   uv run python -m lunarnav.terrain.ingest fetch --all
-   uv run python -m lunarnav.terrain.ingest build --all
-   uv run python -m lunarnav.terrain.ingest build-err --all
-   uv run python -m lunarnav.terrain.ingest manifest
+   scripts/data.sh pull --all   # everything, ~52 GB: needed for the backtest
+   scripts/data.sh pull         # kernels + starter set, ~3.5 GB: enough for a live demo at non-polar sites
    ```
-   This is several GB and takes hours. Without it, only the coarse global terrain (about 470 m/px) is available.
+   The backtest's headline ("fine") cases need the south-polar stores at 20 m/px or better, such as `lola_80s_20m` and the `pgda78_*_5m` sites. The starter set doesn't include them. Pull them by name (`scripts/data.sh pull lola_80s_20m pgda78_site01_5m …`; `scripts/data.sh list` shows every id), or use `--all`. With only the starter set, south-polar slope and hazard come out `unresolved`. Data goes to `data/`, or to `$LUNARNAV_DATA` if that is set. Pulls are incremental. If you can't use the bucket, `scripts/data.sh build --all` rebuilds everything from NASA, which takes hours at home.
 2. **Fast start from `/mnt/e` (optional).** Python over a Windows drive is slow. Save this as `~/wslfast.sh` in WSL, with the paths changed to your clone. It runs a command from a Linux-side copy of the code, while the data stays on the Windows drive:
    ```bash
    #!/usr/bin/env bash
@@ -73,7 +71,7 @@ Add `--no-tools` for the baseline (model knowledge only).
 ### Before the first run
 
 1. **Label review.** Answer the three open questions in [`docs/superpowers/specs/2026-11-14-history-labels-review.md`](../docs/superpowers/specs/2026-11-14-history-labels-review.md) and fix `src/lunarnav/catalog/missions.yaml` if needed. Results do not count until this is done.
-2. **Past-site features and cases.** Run these after the terrain build and after any label change:
+2. **Past-site features and cases.** Run these after pulling the terrain stores and after any label change:
    ```bash
    bash ~/wslfast.sh 'uv run lunarnav history-features'
    bash ~/wslfast.sh 'uv run python -m lunarnav.history export-cases' > evaluator/backtest/cases.json
