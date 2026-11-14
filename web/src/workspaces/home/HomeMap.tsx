@@ -29,9 +29,11 @@ interface HomeMapProps {
   pinned: AltMark[];
   onPickSite(id: string): void;
   onSetPoint(lat: number, lon: number): void;
+  /** Go down to the ground at the site: the "Stand here" button, or zooming in past the closest zoom. */
+  onStand(): void;
 }
 
-export function HomeMap({ site, focus, sites, pinned, onPickSite, onSetPoint }: HomeMapProps) {
+export function HomeMap({ site, focus, sites, pinned, onPickSite, onSetPoint, onStand }: HomeMapProps) {
   const tilesets = useLoad(loadTilesets);
   const stores = useLoad(loadStores);
   const [engine, setEngine] = useState<MapEngine | null>(null);
@@ -81,13 +83,15 @@ export function HomeMap({ site, focus, sites, pinned, onPickSite, onSetPoint }: 
         onMeasure={noop}
         onView={noop}
         onTileProblem={noop}
+        onZoomPastLimit={onStand}
       />
       <div className="home-map-tools toolstrip">
         <IconButton icon="plus" size="sm" label="Zoom in" onClick={() => engine?.zoomBy(1)} />
         <IconButton icon="minus" size="sm" label="Zoom out" onClick={() => engine?.zoomBy(-1)} />
         <IconButton icon="target" size="sm" label="Centre on the site" onClick={() => engine?.fitAround(site.lat_deg, site.lon_deg, FOCUS_RADIUS_M)} />
+        <IconButton icon="terrain" size="sm" label="Stand here: the view from the ground at the site" onClick={onStand} />
       </div>
-      <p className="home-map-hint">Click anywhere to move the landing site</p>
+      <p className="home-map-hint">Click to move the site · zoom in fully to stand there</p>
     </div>
   );
 }

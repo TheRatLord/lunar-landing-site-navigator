@@ -6,7 +6,7 @@ import { formatNum, formatSigned } from "../../lib/format";
 import { kindMarginName } from "../../lib/marginKind";
 import { slipMargins } from "../calendar/format";
 import { delayHours, delayLabel } from "./delays";
-import { limitingShort } from "./grid";
+import { limitingShort } from "./gridModel";
 import { CellVerdict } from "./Shortlist";
 
 function hasDetail(r: SlipRow): boolean {

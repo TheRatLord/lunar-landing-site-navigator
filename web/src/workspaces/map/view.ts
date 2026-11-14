@@ -39,12 +39,17 @@ export function viewBounds(f: Frame): [number, number, number, number] {
   return [f.x0, f.y0 - f.vh * f.upp, f.x0 + f.vw * f.upp, f.y0];
 }
 
+/** The closest zoom the map allows: three levels past the finest tiles. */
+export function maxZoomOf(g: TileGridDef): number {
+  return g.maxZ + 3;
+}
+
 function clampZoom(g: TileGridDef, vp: Viewport, zoom: number): number {
   const [w0, h0] = tileSpan(g, 0);
   const extW = (g.extent[2] - g.extent[0]) / (w0 / g.tileSize);
   const extH = (g.extent[3] - g.extent[1]) / (h0 / g.tileSize);
   const fit = Math.log2(Math.max(1, Math.min(vp.w / extW, vp.h / extH)));
-  return clamp(zoom, fit - 0.35, g.maxZ + 3);
+  return clamp(zoom, fit - 0.35, maxZoomOf(g));
 }
 
 export function clampView(g: TileGridDef, vp: Viewport, v: MapView): MapView {

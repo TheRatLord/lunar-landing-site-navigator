@@ -62,7 +62,7 @@
 
 .home-map { position: absolute; inset: 0; }
 .home-map-tools { position: absolute; z-index: 2; top: var(--sp-2); left: var(--sp-2); flex-direction: column; padding: var(--sp-0); background: var(--panel); border: var(--hairline) solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-popover); }
-.home-map-hint { position: absolute; z-index: 2; left: 50%; top: var(--sp-2); transform: translateX(-50%); margin: 0; padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); white-space: nowrap; color: var(--text); background: var(--panel); border: var(--hairline) solid var(--border-strong); border-radius: var(--r-pill); box-shadow: var(--shadow-popover); pointer-events: none; }
+.home-map-hint { position: absolute; z-index: 2; left: calc(50% + 20px); max-width: calc(100% - 64px); overflow: hidden; text-overflow: ellipsis; top: var(--sp-2); transform: translateX(-50%); margin: 0; padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); white-space: nowrap; color: var(--text); background: var(--panel); border: var(--hairline) solid var(--border-strong); border-radius: var(--r-pill); box-shadow: var(--shadow-popover); pointer-events: none; }
 
 .ws-strip { --ws-gutter: 190px; position: relative; flex: none; padding: var(--sp-2) var(--sp-3) var(--sp-3) 0; background: var(--panel); border: var(--hairline) solid var(--border); border-radius: var(--r-lg); user-select: none; }
 .ws-row { display: grid; grid-template-columns: var(--ws-gutter) minmax(0, 1fr); align-items: stretch; }
@@ -117,4 +117,29 @@
   .home-headline { grid-column: 1 / -1; }
   .home-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: 260px 320px; flex-basis: auto; }
   .ws-strip { --ws-gutter: 112px; }
+}
+
+/* Ground view: standing at the site. The picture is always the black lunar sky, in both themes, so
+   the text over it uses fixed light colors on dark glass rather than the theme's tokens. */
+.home-stage-ground { display: block; position: relative; min-height: 360px; border-radius: var(--r-lg); overflow: hidden; background: #000; }
+.home-stage-ground[data-stale="true"] .ground-label { opacity: 0.5; }
+.ground { position: absolute; inset: 0; color: #ededef; }
+.ground-canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; outline: none; }
+.ground-canvas:active { cursor: grabbing; }
+.ground-canvas:focus-visible { box-shadow: inset 0 0 0 2px #7a84e6; }
+.ground-top { position: absolute; top: var(--sp-2); left: var(--sp-2); right: var(--sp-2); display: flex; gap: var(--sp-2); align-items: flex-start; justify-content: space-between; flex-wrap: wrap; pointer-events: none; }
+.ground-title, .ground-notes, .ground-status, .ground-label { background: rgba(10, 11, 14, 0.66); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(6px); }
+.ground-title { display: flex; flex-direction: column; gap: 2px; padding: var(--sp-1) var(--sp-3); border-radius: var(--r-md); font-size: var(--fs-sm); }
+.ground-title span { color: #b4b6bd; }
+.ground-actions { pointer-events: auto; gap: var(--sp-1); }
+.ground-status { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; display: flex; gap: var(--sp-2); align-items: center; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); }
+.ground-notes { position: absolute; left: var(--sp-2); bottom: var(--sp-2); max-width: min(560px, calc(100% - 2 * var(--sp-2))); padding: var(--sp-1) var(--sp-3); border-radius: var(--r-md); font-size: var(--fs-xs, 11px); color: #b4b6bd; pointer-events: none; }
+.ground-notes p { margin: 2px 0; }
+.ground-hint { color: #8b8e97; }
+.ground-label { position: absolute; transform: translate(-50%, calc(-100% - 18px)); display: flex; gap: 4px; align-items: center; padding: 1px 6px; border-radius: var(--r-pill); font-size: var(--fs-sm); white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
+.ground-label[data-body="sun"] { color: #ffb627; }
+.ground-label[data-body="earth"] { color: #4fa3ff; }
+@media (max-width: 1000px) {
+  .home-stage-ground { min-height: 420px; }
+  .ground-notes { font-size: 10px; }
 }

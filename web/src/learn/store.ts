@@ -27,6 +27,8 @@ export interface LearnState {
   termHome: Partial<Record<TermId, ChapterSlug>>;
   note: "never" | "showing" | "done";
   glFailed: boolean;
+  /** Bumped whenever a site's real terrain finishes loading (see terrain.ts). */
+  terrainRev: number;
   enterChapter(slug: ChapterKey, reducedMotion: boolean): void;
   setT(t: number): void;
   nudge(dt: number): void;
@@ -63,6 +65,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
   termHome: {},
   note: "never",
   glFailed: false,
+  terrainRev: 0,
 
   enterChapter: (slug, reducedMotion) => {
     const c = chapterOf(slug);

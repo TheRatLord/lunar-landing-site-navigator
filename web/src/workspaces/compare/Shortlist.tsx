@@ -3,7 +3,7 @@ import { IconButton } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { VerdictChip } from "../../components/ui/VerdictChip";
 import { columnScale, constraintColumns, marginCell, sortByMargin, type SortDir } from "./bars";
-import { CELL_MARK, shortName } from "./grid";
+import { CELL_MARK, shortName } from "./gridModel";
 import { nominalOf, type ShortRow } from "./items";
 import { MarginBar } from "./MarginBar";
 import { BASELINE_SITE, MAX_DETAIL, type Pin } from "./options";

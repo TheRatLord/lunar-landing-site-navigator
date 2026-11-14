@@ -32,6 +32,17 @@ link to the validation that measured it.
 - **Validation** (`docs/validation`): how each part was checked against JPL Horizons, published
   illumination studies, LRO NAC imagery and real missions, with the measured errors.
 
+## Where the numbers come from
+
+Every number on screen is computed by this repository's engine from public NASA data: NAIF SPICE kernels for
+where the Sun, Earth and the ground stations are, and LOLA and PGDA terrain models for the horizon at each
+site. The results are checked against JPL Horizons, NASA's published illumination and Earth-visibility maps,
+LRO NAC images and real missions. How far to trust them, including the checks that miss their targets:
+[`docs/validation/`](docs/validation). Every dataset, kernel, library and image, with its source and terms:
+[`REFERENCES.md`](REFERENCES.md).
+
+AI tools used to build this are listed task by task: [`AI_USAGE.md`](AI_USAGE.md).
+
 ## Setup
 
 Linux, Python 3.12+, [uv](https://docs.astral.sh/uv/) and [bun](https://bun.sh/).
@@ -113,6 +124,13 @@ uv run lunarnav openapi web/src/api/openapi.json && (cd web && bun run gen:api)
 - Globe textures in the learn mode: NASA imagery (public domain).
 
 Catalogue entries (`src/lunarnav/catalog/*.yaml`) cite their own sources.
+
+## Working on it
+
+Start with [`docs/SETUP.md`](docs/SETUP.md). The rules for working on this repo, for people and for coding
+agents, are in [`CLAUDE.md`](CLAUDE.md); what is done and what is next is in
+[`docs/PROGRESS.md`](docs/PROGRESS.md); anything unverified is in
+[`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md); decisions are in [`docs/decisions/`](docs/decisions).
 
 ## License
 
