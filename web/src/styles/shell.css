@@ -29,8 +29,10 @@
   top: 6px;
 }
 
-.topbar {
+.shell > .topbar {
   grid-area: top;
+}
+.topbar {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -42,8 +44,19 @@
 .brand {
   display: flex;
   align-items: center;
+  gap: var(--sp-2);
   flex: none;
+  margin-right: var(--sp-2);
   color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.brand:focus-visible {
+  outline: var(--focus-w) solid var(--focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-sm);
 }
 .tb-nav {
   display: flex;

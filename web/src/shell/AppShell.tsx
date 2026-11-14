@@ -13,12 +13,14 @@ import { TimeScrubber } from "./TimeScrubber";
 import { ScenarioDialogs } from "../scenario/editor/ScenarioDialogs";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { ContextBar } from "./ContextBar";
-import { TopBar } from "./TopBar";
+import { PlannerNav, PlannerTools, TopBar } from "./TopBar";
+import { useScenarioUrl } from "../scenario/scenarioUrl";
 import { useCommands } from "./useCommands";
 
 const AskDock = lazy(() => import("../ask/AskDock").then((m) => ({ default: m.AskDock })));
 
 export function AppShell() {
+  useScenarioUrl();
   const paletteOpen = useApp((s) => s.paletteOpen);
   const setPaletteOpen = useApp((s) => s.setPaletteOpen);
   const missionRequest = useEditorUi((s) => s.missionRequest);
@@ -71,7 +73,7 @@ export function AppShell() {
       <a className="skip-link" href={ask === "full" ? "#ask-dock" : "#main"}>
         Skip to page
       </a>
-      <TopBar />
+      <TopBar nav={<PlannerNav />} tools={<PlannerTools />} />
       {!home && <ContextBar />}
       <main id="main" className="main" tabIndex={-1} inert={ask === "full"}>
         <DraftNotice />

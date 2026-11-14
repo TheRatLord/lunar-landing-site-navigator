@@ -204,17 +204,6 @@ export function CrosshairIcon({ size, ...p }: P) {
   );
 }
 
-export function MoonMark({ size = 26, ...p }: P) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden focusable={false} {...p}>
-      <circle cx="16" cy="16" r="13" fill="var(--text-3)" opacity="0.35" />
-      <path d="M16 3a13 13 0 0 1 0 26z" fill="var(--text)" />
-      <circle cx="21" cy="11" r="2.2" fill="var(--text-3)" opacity="0.6" />
-      <circle cx="19.5" cy="20" r="3" fill="var(--text-3)" opacity="0.5" />
-    </svg>
-  );
-}
-
 export function CloseIcon({ size, ...p }: P) {
   return (
     <svg {...base(size)} {...p}>

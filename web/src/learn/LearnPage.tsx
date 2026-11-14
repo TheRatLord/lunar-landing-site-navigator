@@ -4,13 +4,14 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "re
 import { CHAPTERS, chapterBySlug, learnPath } from "./chapters";
 import { Announcer } from "./components/Announcer";
 import { ExploreCard } from "./components/Explore";
-import { LearnHeader } from "./components/LearnHeader";
+import { LessonNav } from "./components/LessonNav";
 import { Readouts } from "./components/Readouts";
 import { Stage } from "./components/Stage";
 import { StoryCard } from "./components/StoryCard";
 import { TimeBar } from "./components/TimeBar";
 import { useLearn, type ChapterKey } from "./store";
 import { prefersReducedMotion } from "../lib/media";
+import { TopBar } from "../shell/TopBar";
 
 const EXPLORE = chapterBySlug("explore")!;
 
@@ -104,7 +105,7 @@ export default function LearnPage() {
       <a className="l-skip" href="#l-main">
         Skip to the controls
       </a>
-      <LearnHeader current={current} />
+      <TopBar nav={<LessonNav current={current} />} />
       <main className="l-main" id="l-main">
         <Routes>
           <Route index element={<ExploreRoute />} />

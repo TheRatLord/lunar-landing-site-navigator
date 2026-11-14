@@ -11,14 +11,13 @@
   --l-safe: 508px;
   --l-day: color-mix(in srgb, var(--c-sun) 82%, #000);
   --l-night: #23262f;
-  --l-header: 56px;
   --l-dock: 820px;
   --l-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-rows: var(--l-header) minmax(0, 1fr);
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr);
   background: var(--bg);
   color: var(--text);
   font-size: var(--l-fs-body);
@@ -67,46 +66,17 @@
   top: 8px;
 }
 
-.l-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 16px;
-  padding: 0 var(--l-gutter);
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  position: relative;
-  z-index: 5;
-}
-
-.l-wordmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  justify-self: start;
-  color: var(--text);
-  text-decoration: none;
-  font-size: 17px;
-  font-weight: 650;
-  letter-spacing: -0.015em;
-  border-radius: var(--r-lg);
-}
-.l-wordmark-sub {
-  color: var(--text-2);
-  font-weight: 500;
-}
-
 .l-dots {
   display: flex;
   align-items: center;
   gap: 2px;
+  margin-left: var(--sp-3);
 }
 .l-dot {
   display: grid;
   place-items: center;
   width: 34px;
-  height: 44px;
+  height: var(--topbar-h);
   border-radius: var(--r-lg);
   color: var(--on-accent);
 }
@@ -143,19 +113,6 @@
 }
 .l-dot.is-here.is-done .l-dot-mark {
   height: 18px;
-}
-
-.l-header-end {
-  justify-self: end;
-}
-.l-header .mode-switch {
-  padding: 3px;
-}
-.l-header .mode-switch-opt {
-  min-height: 36px;
-  padding: 0 16px;
-  font-size: var(--l-fs-sm);
-  font-weight: 600;
 }
 
 .l-main {
@@ -1436,32 +1393,24 @@
 
 @media (max-width: 759px) {
   .learn {
-    --l-header: 52px;
     --l-safe: 0px;
     --l-gutter: 16px;
   }
-  .l-header {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 0 12px;
+  .learn .topbar {
+    gap: 4px;
+    padding: 0 8px;
+  }
+  .learn .brand-text {
+    display: none;
   }
   .l-dots {
-    justify-content: center;
+    margin-left: 0;
   }
-  .l-wordmark-text,
   .l-hint {
     display: none;
   }
   .l-dot {
     width: 24px;
-  }
-  .l-header .mode-switch {
-    padding: 2px;
-  }
-  .l-header .mode-switch-opt {
-    min-height: 32px;
-    padding: 0 10px;
-    font-size: 13px;
   }
   .l-dot.is-here .l-dot-mark {
     width: 20px;
