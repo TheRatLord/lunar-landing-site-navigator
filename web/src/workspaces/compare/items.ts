@@ -3,7 +3,7 @@ import { compareBody } from "../../api/planning";
 import type { Candidate } from "../../scenario/alternatives";
 import type { Scenario, ScenarioSummary } from "../../scenario/types";
 import { delayLabel } from "./delays";
-import { findCell, limitingLabel } from "./grid";
+import { findCell, limitingLabel } from "./gridModel";
 import { BASELINE_SITE, MAX_DETAIL, pinKey, type Pin } from "./options";
 import { uniqueNames } from "./sources";
 

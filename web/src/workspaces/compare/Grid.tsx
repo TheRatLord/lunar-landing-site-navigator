@@ -10,7 +10,7 @@ import { formatNum } from "../../lib/format";
 import { clamp } from "../../lib/scale";
 import { slipMargins } from "../calendar/format";
 import { delayHours, delayLabel } from "./delays";
-import { CELL_MARK, cellFigure, cellName, limitingLabel, limitingShort, worksParts } from "./grid";
+import { CELL_MARK, cellFigure, cellName, limitingLabel, limitingShort, worksParts } from "./gridModel";
 import { pinKey, type Pin } from "./options";
 
 export interface GridSite {

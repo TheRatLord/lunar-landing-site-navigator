@@ -33,7 +33,7 @@ import { LimitsChip } from "../site/LimitsChip";
 import { TerrainStackTag } from "../search/TerrainStackTag";
 import { delayLabels, parseSearchDays } from "./delays";
 import { Grid, type GridSite } from "./Grid";
-import { gridRows, requestedSites, type SiteRef } from "./grid";
+import { gridRows, requestedSites, type SiteRef } from "./gridModel";
 import { InputStrip } from "./InputStrip";
 import { canTick, compareEntries, compareRequest, pinName, selectScenarios, shortlistRows, tickedPins, type ShortlistContext } from "./items";
 import { Matrix } from "./Matrix";

@@ -3,7 +3,7 @@ import type { ServiceConstraintVerdict } from "../../api/planning";
 import { clamp } from "../../lib/scale";
 import { CONSTRAINT_KEYS } from "../../scenario/types";
 import { constraintLine } from "../calendar/format";
-import { CELL_MARK } from "./grid";
+import { CELL_MARK } from "./gridModel";
 
 export type MarginCell =
   | { kind: "unset" }
