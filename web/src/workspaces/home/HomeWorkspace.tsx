@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { SITE_ENDPOINTS, type EvaluateResult } from "../../api/site";
@@ -44,6 +44,9 @@ import {
 } from "./survey";
 import { PinnedRow, WindowStrip } from "./WindowStrip";
 import "../../styles/home.css";
+
+// Three.js is large: the ground view loads only when someone goes down to the ground.
+const GroundView = lazy(() => import("./ground/GroundView").then((m) => ({ default: m.GroundView })));
 
 const loadSites = (signal: AbortSignal) => catalogApi.sites({ limit: 1000 }, { signal });
 const PLAY_MS_PER_S = 2 * MS_DAY;
@@ -162,6 +165,7 @@ export function HomeWorkspace() {
   const [live, setLive] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [focus, setFocus] = useState<MapFocus>(() => ({ lat_deg: lat, lon_deg: lon, nonce: 0 }));
+  const [ground, setGround] = useState(false);
 
   const { run, survey } = useSurvey(doc, site, anchor);
   const start = survey?.start_ms ?? anchor;
@@ -340,33 +344,58 @@ export function HomeWorkspace() {
         </section>
       )}
 
-      <div className="home-stage">
-        <div className="home-pane home-pane-map">
-          <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} />
-        </div>
-        <div className="home-pane home-pane-sky" data-stale={!fresh}>
-          {survey?.horizon ? (
-            <HorizonPanorama
-              horizon={survey.horizon}
-              sun={sunWindow}
-              earth={earthWindow}
+      {ground ? (
+        <div className="home-stage home-stage-ground" data-stale={!fresh}>
+          <Suspense
+            fallback={
+              <p className="home-sky-wait" role="status">
+                <Spinner size={14} />
+              </p>
+            }
+          >
+            <GroundView
+              key={`${lat},${lon}`}
+              siteName={name}
+              lat={lat}
+              lon={lon}
+              eyeM={doc.profile.array_height_m}
+              horizon={survey?.horizon ?? null}
+              sunTrack={survey?.sunTrack ?? null}
+              earthTrack={survey?.earthTrack ?? null}
               timeMs={timeMs}
-              elevationFit={survey.fit ?? undefined}
-              discInset={false}
-              title="Sun and Earth against the horizon, seen from the site"
+              onExit={() => setGround(false)}
             />
-          ) : (
-            <div className="home-sky-wait" role="status">
-              {run.phase !== "error" && <Spinner size={14} />}
-            </div>
-          )}
-          {survey?.smooth && (
-            <p className="home-sky-note">
-              <Icon name="warn" size={12} /> No terrain data here: the horizon is a smooth sphere.
-            </p>
-          )}
+          </Suspense>
         </div>
-      </div>
+      ) : (
+        <div className="home-stage">
+          <div className="home-pane home-pane-map">
+            <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} onStand={() => setGround(true)} />
+          </div>
+          <div className="home-pane home-pane-sky" data-stale={!fresh}>
+            {survey?.horizon ? (
+              <HorizonPanorama
+                horizon={survey.horizon}
+                sun={sunWindow}
+                earth={earthWindow}
+                timeMs={timeMs}
+                elevationFit={survey.fit ?? undefined}
+                discInset={false}
+                title="Sun and Earth against the horizon, seen from the site"
+              />
+            ) : (
+              <div className="home-sky-wait" role="status">
+                {run.phase !== "error" && <Spinner size={14} />}
+              </div>
+            )}
+            {survey?.smooth && (
+              <p className="home-sky-note">
+                <Icon name="warn" size={12} /> No terrain data here: the horizon is a smooth sphere.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <WindowStrip start_ms={start} end_ms={end} timeMs={timeMs} survey={survey} busy={!fresh} onScrub={setLive} onCommit={commit}>
         {pins.map((p) => (

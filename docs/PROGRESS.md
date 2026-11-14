@@ -49,4 +49,18 @@ for this list unless it says so.
 ## Rover simulation (design, started 2026-11-14)
 
 - [x] Round 1 choices recorded: [decision 0005](decisions/0005-rover-simulation.md)
-- [ ] Settle the rest of the design (decision 0005, "Still open"), then plan the build
+- [ ] Settle the rest of the design (decision 0005, "Still open") as the increments need it
+
+### Increment 1: ground view on the overview (branch `feat/ground-view`, 2026-11-14)
+
+- [x] Zoom the overview map in past its closest zoom (or press "Stand here") to fly down from 30 km and
+      stand at the plan site at the solar array's height (`web/src/workspaces/home/ground/`)
+- [x] Terrain from `/terrain/patch`: 4 km at 5 m, 24 km at 40 m, 100 km at 200 m, exact on the sphere;
+      beyond 50 km a ring whose top edge is the engine's horizon profile
+- [x] Lit only by the engine's Sun direction, cascaded shadow maps; Sun and Earth at their true angular
+      sizes from the engine's tracks; follows the overview's time (date buttons, play, timeline drag)
+- [x] Checked in headless Chromium (SwiftShader) at De Rosa CR1: fly-down, Sun at 0.8° on the skyline as
+      on the card, Face Earth, date change moves the Sun; no console errors. `typecheck`, `eslint` on the
+      touched folders and `vite build` pass
+- [ ] Not done: touch pinch past the limit (only wheel, keyboard and the button); far-terrain shadows
+      beyond 50 km; a vitest for `groundMesh.ts` once vitest is set up
