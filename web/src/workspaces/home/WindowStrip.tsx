@@ -24,6 +24,7 @@ interface WindowStripProps {
   survey: Survey | null;
   busy: boolean;
   children?: ReactNode;
+  tools?: ReactNode;
   onScrub(ms: number): void;
   onCommit(ms: number): void;
 }
@@ -70,7 +71,7 @@ export function PinnedRow({ label, sub, survey, failed, start_ms, end_ms, onSele
   );
 }
 
-export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, children, onScrub, onCommit }: WindowStripProps) {
+export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, children, tools, onScrub, onCommit }: WindowStripProps) {
   const dragging = useRef(false);
   const [hover, setHover] = useState<number | null>(null);
   const span = end_ms - start_ms;
@@ -108,7 +109,7 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, children, 
   return (
     <div className="ws-strip" data-busy={busy}>
       <div className="ws-row ws-axis-row">
-        <div className="ws-gutter ws-gutter-hint">Drag to change the date</div>
+        <div className="ws-gutter ws-gutter-tools">{tools}</div>
         <div className="ws-axis" aria-hidden="true">
           {ticks.map((t) => (
             <span key={t.ms} style={{ left: `${((t.ms - start_ms) / span) * 100}%` }}>
@@ -143,6 +144,7 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, children, 
         role="slider"
         tabIndex={0}
         aria-label="Landing date"
+        title="Drag to change the landing date"
         aria-valuemin={start_ms}
         aria-valuemax={end_ms}
         aria-valuenow={timeMs}

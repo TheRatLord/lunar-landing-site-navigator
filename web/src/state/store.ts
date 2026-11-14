@@ -22,6 +22,7 @@ interface AppState {
   metEpochMs: number;
   theme: Theme;
   paletteOpen: boolean;
+  planCollapsed: boolean;
 
   setTime(ms: number): void;
   stepTime(unit: StepUnit, direction: 1 | -1): void;
@@ -33,6 +34,7 @@ interface AppState {
   setMetEpoch(ms: number): void;
   setTheme(theme: Theme): void;
   setPaletteOpen(open: boolean): void;
+  setPlanCollapsed(collapsed: boolean): void;
 }
 
 const startOfHour = (ms: number) => Math.floor(ms / 3_600_000) * 3_600_000;
@@ -52,6 +54,18 @@ function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
 }
 
+const PLAN_COLLAPSED_KEY = "lunarnav.plan.collapsed";
+const PLAN_AUTO_COLLAPSE_PX = 1200;
+
+function initialPlanCollapsed(): boolean {
+  try {
+    const stored = localStorage.getItem(PLAN_COLLAPSED_KEY);
+    if (stored === "1" || stored === "0") return stored === "1";
+  } catch {
+  }
+  return window.innerWidth < PLAN_AUTO_COLLAPSE_PX;
+}
+
 const startTheme = initialTheme();
 applyTheme(startTheme);
 
@@ -65,6 +79,7 @@ export const useApp = create<AppState>((set, get) => ({
   metEpochMs: now,
   theme: startTheme,
   paletteOpen: false,
+  planCollapsed: initialPlanCollapsed(),
 
   setTime: (ms) => set({ timeMs: clamp(ms, get().bounds.start_ms, get().bounds.end_ms) }),
   stepTime: (unit, direction) => get().setTime(get().timeMs + direction * STEP_MS[unit]),
@@ -83,4 +98,11 @@ export const useApp = create<AppState>((set, get) => ({
     set({ theme });
   },
   setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
+  setPlanCollapsed: (planCollapsed) => {
+    try {
+      localStorage.setItem(PLAN_COLLAPSED_KEY, planCollapsed ? "1" : "0");
+    } catch {
+    }
+    set({ planCollapsed });
+  },
 }));

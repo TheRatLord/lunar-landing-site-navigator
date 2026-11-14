@@ -3,11 +3,11 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Spinner } from "./components/ui/Progress";
 import { LearnRoute } from "./learn/LearnRoute";
 import { AppShell } from "./shell/AppShell";
-import { WORKSPACES } from "./workspaces/registry";
+import { HOME as HOME_WORKSPACE, WORKSPACES } from "./workspaces/registry";
 
 const Gallery = import.meta.env.DEV ? lazy(() => import("./dev/Gallery")) : null;
 
-const HOME = WORKSPACES[0]!.path;
+const HOME = HOME_WORKSPACE.path;
 
 export function App() {
   return (

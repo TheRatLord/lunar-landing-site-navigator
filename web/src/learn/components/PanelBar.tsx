@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useLearn } from "../store";
 import { PanelIcon } from "./icons";
 
-export function PanelBar({ children }: { children: ReactNode }) {
+export function PanelBar({ children }: { children?: ReactNode }) {
   return (
     <div className="l-panelbar">
       <div className="l-panelbar-start">{children}</div>

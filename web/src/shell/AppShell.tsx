@@ -7,12 +7,12 @@ import { CommandPalette } from "../components/ui/CommandPalette";
 import { Spinner } from "../components/ui/Progress";
 import { ToastViewport } from "../components/ui/Toasts";
 import { useApp } from "../state/store";
-import { isHome, usesTime } from "../workspaces/registry";
+import { usesTime } from "../workspaces/registry";
 import { DraftNotice } from "./DraftNotice";
 import { TimeScrubber } from "./TimeScrubber";
 import { ScenarioDialogs } from "../scenario/editor/ScenarioDialogs";
 import { useEditorUi } from "../scenario/editor/editorUi";
-import { ContextBar } from "./ContextBar";
+import { PlanPanel } from "./PlanPanel";
 import { PlannerNav, PlannerTools, TopBar } from "./TopBar";
 import { useScenarioUrl } from "../scenario/scenarioUrl";
 import { useCommands } from "./useCommands";
@@ -23,7 +23,7 @@ export function AppShell() {
   useScenarioUrl();
   const paletteOpen = useApp((s) => s.paletteOpen);
   const setPaletteOpen = useApp((s) => s.setPaletteOpen);
-  const missionRequest = useEditorUi((s) => s.missionRequest);
+  const route = useEditorUi((s) => s.route);
   const navigate = useNavigate();
   const askEnabled = useAsk((s) => s.enabled);
   const askOpen = useAsk((s) => s.open);
@@ -31,8 +31,8 @@ export function AppShell() {
   const ask = askEnabled && askOpen ? askMode : "closed";
   const { pathname } = useLocation();
   const timeRoute = usesTime(pathname);
-  const home = isHome(pathname);
   const playing = useApp((s) => s.playing);
+  const planCollapsed = useApp((s) => s.planCollapsed);
   useEffect(() => {
     void loadAskAvailability();
   }, []);
@@ -40,8 +40,8 @@ export function AppShell() {
     if (!timeRoute && playing) useApp.getState().setPlaying(false);
   }, [timeRoute, playing]);
   useEffect(() => {
-    if (missionRequest > 0 && !window.location.pathname.startsWith("/mission")) navigate("/mission");
-  }, [missionRequest, navigate]);
+    if (route && !window.location.pathname.startsWith(route.path)) navigate(route.path);
+  }, [route, navigate]);
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
@@ -69,12 +69,12 @@ export function AppShell() {
   const retryStart = useScenario((s) => s.retryStart);
 
   return (
-    <div className="shell" data-ask={ask} data-time={timeRoute ? "on" : "off"} data-home={home ? "on" : "off"}>
+    <div className="shell" data-ask={ask} data-time={timeRoute ? "on" : "off"} data-plan={planCollapsed ? "rail" : "open"}>
       <a className="skip-link" href={ask === "full" ? "#ask-dock" : "#main"}>
         Skip to page
       </a>
       <TopBar nav={<PlannerNav />} tools={<PlannerTools />} />
-      {!home && <ContextBar />}
+      <PlanPanel />
       <main id="main" className="main" tabIndex={-1} inert={ask === "full"}>
         <DraftNotice />
         {planReady ? (

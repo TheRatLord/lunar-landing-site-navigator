@@ -6,7 +6,7 @@ import { useAnalysis } from "../../api/useAnalysis";
 import { useLoad } from "../../api/useLoad";
 import { usePublishScreenContext } from "../../ask/screenContext";
 import { ServiceNotice } from "../../components/ServiceNotice";
-import { Button, IconButton } from "../../components/ui/Button";
+import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Progress";
 import { HorizonPanorama } from "../../components/viz/HorizonPanorama";
@@ -14,14 +14,13 @@ import { formatLat, formatLon } from "../../lib/coords";
 import { formatNum } from "../../lib/format";
 import { clamp } from "../../lib/scale";
 import { interpTrack } from "../../lib/track";
-import { MS_DAY, MS_LUNATION, formatUtc, parseUtc, toIsoUtc } from "../../lib/time";
+import { MS_DAY, parseUtc, toIsoUtc } from "../../lib/time";
 import { catalogApi } from "../../scenario/api";
 import { useAlternatives, type Candidate } from "../../scenario/alternatives";
-import { useScenario, writePlanSite } from "../../scenario/store";
+import { movePlanSite, useScenario } from "../../scenario/store";
 import type { Scenario } from "../../scenario/types";
 import { evaluatedScenario } from "../site/adapt";
 import { HomeMap, type MapFocus } from "./HomeMap";
-import { SitePicker } from "./SitePicker";
 import {
   SPAN_MS,
   adaptSurvey,
@@ -116,36 +115,8 @@ function BodyCard({ body, state, timeMs, elevation }: { body: "sun" | "earth"; s
   );
 }
 
-function DateField({ timeMs, onCommit }: { timeMs: number; onCommit(ms: number): void }) {
-  const shown = formatUtc(timeMs, { seconds: false }).replace("Z", "");
-  const [text, setText] = useState<string | null>(null);
-  const bad = text !== null && parseUtc(text) === null;
-  const apply = () => {
-    const ms = text === null ? null : parseUtc(text);
-    if (ms !== null) onCommit(ms);
-    setText(null);
-  };
-  return (
-    <input
-      className="home-date-input num"
-      aria-label="Landing date and time, UTC"
-      aria-invalid={bad || undefined}
-      spellCheck={false}
-      autoComplete="off"
-      value={text ?? shown}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={apply}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-        else if (e.key === "Escape") setText(null);
-      }}
-    />
-  );
-}
-
 export function HomeWorkspace() {
   const doc = useScenario((s) => s.doc)!;
-  const saved = useScenario((s) => s.saved);
   const edit = useScenario((s) => s.edit);
   const pins = useAlternatives((s) => s.items);
   const addPin = useAlternatives((s) => s.add);
@@ -165,6 +136,13 @@ export function HomeWorkspace() {
   const [live, setLive] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [focus, setFocus] = useState<MapFocus>(() => ({ lat_deg: lat, lon_deg: lon, nonce: 0 }));
+  const place = `${lat},${lon}`;
+  const [shownPlace, setShownPlace] = useState(place);
+  const [mapPlace, setMapPlace] = useState<string | null>(null);
+  if (shownPlace !== place) {
+    setShownPlace(place);
+    if (mapPlace !== place) setFocus((f) => ({ lat_deg: lat, lon_deg: lon, nonce: f.nonce + 1 }));
+  }
   const [ground, setGround] = useState(false);
 
   const { run, survey } = useSurvey(doc, site, anchor);
@@ -206,22 +184,18 @@ export function HomeWorkspace() {
     };
   }, [playing, end, commit]);
 
-  const moveSite = useCallback(
-    (next: SurveySite, recentre: boolean) => {
-      writePlanSite(next.lat_deg, next.lon_deg, next.name, next.catalog_id);
-      if (!saved) edit(["name"], next.name);
-      if (recentre) setFocus((f) => ({ lat_deg: next.lat_deg, lon_deg: next.lon_deg, nonce: f.nonce + 1 }));
-    },
-    [saved, edit],
-  );
+  const moveOnMap = useCallback((next: SurveySite) => {
+    setMapPlace(`${next.lat_deg},${next.lon_deg}`);
+    movePlanSite({ lat_deg: next.lat_deg, lon_deg: next.lon_deg, name: next.name, catalog_id: next.catalog_id ?? null });
+  }, []);
   const pickCatalogSite = useCallback(
     (id: string) => {
       const s = sites.find((x) => x.id === id);
-      if (s) moveSite({ lat_deg: s.lat_deg, lon_deg: s.lon_deg, name: s.name, catalog_id: s.id }, false);
+      if (s) moveOnMap({ lat_deg: s.lat_deg, lon_deg: s.lon_deg, name: s.name, catalog_id: s.id });
     },
-    [sites, moveSite],
+    [sites, moveOnMap],
   );
-  const setPoint = useCallback((la: number, lo: number) => moveSite({ lat_deg: round5(la), lon_deg: round5(lo), name: "Map point", catalog_id: null }, false), [moveSite]);
+  const setPoint = useCallback((la: number, lo: number) => moveOnMap({ lat_deg: round5(la), lon_deg: round5(lo), name: "Map point", catalog_id: null }), [moveOnMap]);
 
   const pinned = pins.some((p) => p.id === pinId(site));
   const pinMarks = useMemo(() => pins.filter((p) => p.id !== pinId(site)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, site]);
@@ -261,38 +235,6 @@ export function HomeWorkspace() {
   return (
     <div className="home" aria-label="Overview page">
       <h1 className="sr-only">Overview: {name}</h1>
-      <header className="home-head">
-        <div className="home-field">
-          <span className="home-field-label">Where</span>
-          <SitePicker site={site} sites={sites} onPick={(s) => moveSite(s, true)} />
-        </div>
-        <div className="home-field">
-          <span className="home-field-label">When (UTC)</span>
-          <div className="home-date toolstrip">
-            <IconButton icon="stepBack" size="sm" label="One lunar day earlier" onClick={() => commit(timeMs - MS_LUNATION)} />
-            <IconButton icon="chevronLeft" size="sm" label="One day earlier" onClick={() => commit(timeMs - MS_DAY)} />
-            <DateField timeMs={timeMs} onCommit={commit} />
-            <IconButton icon="chevronRight" size="sm" label="One day later" onClick={() => commit(timeMs + MS_DAY)} />
-            <IconButton icon="stepFwd" size="sm" label="One lunar day later" onClick={() => commit(timeMs + MS_LUNATION)} />
-            <span className="toolstrip-sep" aria-hidden="true" />
-            <IconButton icon={playing ? "pause" : "play"} size="sm" label={playing ? "Pause" : "Play the year forward"} pressed={playing} onClick={() => setPlaying(!playing)} />
-          </div>
-        </div>
-        <span className="grow" />
-        <Button
-          icon={pinned ? "check" : "pin"}
-          disabled={pinned || pins.length >= MAX_PINS}
-          title={pinned ? "This site is pinned below" : pins.length >= MAX_PINS ? `Unpin a site first (${MAX_PINS} at most)` : "Keep this site's row on the timeline, then try another site"}
-          onClick={() => addPin({ id: pinId(site), name: name || "Unnamed site", lat_deg: lat, lon_deg: lon, catalog_id: catalogId })}
-        >
-          {pinned ? "Pinned" : "Pin to compare"}
-        </Button>
-        <Link className="btn btn-ghost btn-md" to="/site" title="Requirements, uncertainty, battery, ground stations and exports for this site and date">
-          Full analysis
-          <Icon name="chevronRight" size={12} />
-        </Link>
-      </header>
-
       {run.error && run.phase === "error" ? (
         <div className="home-pad">
           <ServiceNotice
@@ -303,10 +245,13 @@ export function HomeWorkspace() {
         </div>
       ) : (
         <section className="home-verdict" data-stale={!fresh} aria-live="polite">
-          <div className="home-headline" data-tone={headline?.tone ?? "none"}>
+          <div className="home-headline">
             {headline ? (
               <>
-                <p className="home-headline-text">{headline.text}</p>
+                <p className="home-headline-text">
+                  <span className="home-tone" data-tone={headline.tone} aria-hidden="true" />
+                  {headline.text}
+                </p>
                 <p className="home-headline-sub">
                   {usable ? (
                     <>
@@ -332,6 +277,10 @@ export function HomeWorkspace() {
                     </>
                   )}
                 </p>
+                <Link className="home-more" to="/site" title="Requirements, uncertainty, battery, ground stations and exports for this site and date">
+                  Check every requirement
+                  <Icon name="chevronRight" size={12} />
+                </Link>
               </>
             ) : (
               <p className="home-headline-wait" role="status">
@@ -397,7 +346,32 @@ export function HomeWorkspace() {
         </div>
       )}
 
-      <WindowStrip start_ms={start} end_ms={end} timeMs={timeMs} survey={survey} busy={!fresh} onScrub={setLive} onCommit={commit}>
+      <WindowStrip
+        start_ms={start}
+        end_ms={end}
+        timeMs={timeMs}
+        survey={survey}
+        busy={!fresh}
+        onScrub={setLive}
+        onCommit={commit}
+        tools={
+          <>
+            <Button size="sm" variant="ghost" icon={playing ? "pause" : "play"} aria-pressed={playing} title="Run the date forward through the year" onClick={() => setPlaying(!playing)}>
+              {playing ? "Pause" : "Play year"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={pinned ? "check" : "pin"}
+              disabled={pinned || pins.length >= MAX_PINS}
+              title={pinned ? "This site is pinned below" : pins.length >= MAX_PINS ? `Unpin a site first (${MAX_PINS} at most)` : "Keep this site's row on the timeline, then try another site"}
+              onClick={() => addPin({ id: pinId(site), name: name || "Unnamed site", lat_deg: lat, lon_deg: lon, catalog_id: catalogId })}
+            >
+              {pinned ? "Pinned" : "Pin site"}
+            </Button>
+          </>
+        }
+      >
         {pins.map((p) => (
           <PinnedSite
             key={p.id}
@@ -406,14 +380,14 @@ export function HomeWorkspace() {
             anchor={anchor}
             start={start}
             end={end}
-            onSelect={() => moveSite({ lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id }, true)}
+            onSelect={() => movePlanSite({ lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id })}
             onRemove={() => removePin(p.id)}
           />
         ))}
       </WindowStrip>
       <p className="home-foot">
-        Nominal terrain horizon for a {doc.profile.array_height_m} m solar array and a {doc.profile.antenna_height_m} m antenna. Uncertainty ranges, battery, ground stations and slope are in{" "}
-        <Link to="/site">Full analysis</Link>.
+        Nominal terrain horizon for a {doc.profile.array_height_m} m solar array and a {doc.profile.antenna_height_m} m antenna. Uncertainty ranges, battery, ground stations and slope are on the{" "}
+        <Link to="/site">Site</Link> page.
       </p>
     </div>
   );

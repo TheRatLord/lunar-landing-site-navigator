@@ -47,7 +47,8 @@
   --icon-sm: 14px;
   --icon-md: 16px;
   --topbar-h: 44px;
-  --ctxbar-h: 40px;
+  --plan-w: 268px;
+  --plan-rail-w: 52px;
   --scrubber-h: 48px;
 
   --dur-fast: 90ms;
@@ -77,13 +78,13 @@
   --text-3: #8a8d94;
   --text-inverse: #08090a;
 
-  --accent: #7a84e6;
-  --accent-strong: #5e6ad2;
-  --accent-bg: rgba(122, 132, 230, 0.16);
-  --accent-text: #a3abf5;
-  --on-accent: #ffffff;
-  --focus: #8a93ec;
-  --focus-ring: rgba(122, 132, 230, 0.35);
+  --accent: #ffffff;
+  --accent-strong: #ededef;
+  --accent-bg: rgba(237, 237, 239, 0.1);
+  --accent-text: #ededef;
+  --on-accent: #08090a;
+  --focus: #ededef;
+  --focus-ring: rgba(237, 237, 239, 0.3);
 
   --c-pass: #4cc38a;
   --c-marginal: #e5c24a;
@@ -136,13 +137,13 @@
   --text-3: #63666e;
   --text-inverse: #ffffff;
 
-  --accent: #5e6ad2;
-  --accent-strong: #5260c8;
-  --accent-bg: rgba(94, 106, 210, 0.1);
-  --accent-text: #4450b8;
+  --accent: #3a3c42;
+  --accent-strong: #1a1b1e;
+  --accent-bg: rgba(26, 27, 30, 0.07);
+  --accent-text: #1a1b1e;
   --on-accent: #ffffff;
-  --focus: #5e6ad2;
-  --focus-ring: rgba(94, 106, 210, 0.25);
+  --focus: #1a1b1e;
+  --focus-ring: rgba(26, 27, 30, 0.2);
 
   --c-pass: #0b7a52;
   --c-marginal: #7a5c00;

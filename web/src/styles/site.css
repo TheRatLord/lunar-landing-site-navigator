@@ -4,9 +4,6 @@
 .site-shell-panel { min-width: 0; }
 .site { display: flex; flex-direction: column; min-width: 0; }
 .site .page-header { position: sticky; top: 0; z-index: 3; }
-.site .page-header { flex-wrap: wrap; height: auto; min-height: var(--header-h); column-gap: var(--sp-4); row-gap: 0; white-space: nowrap; }
-.site .page-header-tabs { height: var(--header-h); }
-.site .page-header-mid, .site .page-header-actions { flex: none; min-height: var(--header-h); }
 .site-body { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4) var(--sp-5); transition: opacity var(--dur) var(--ease); }
 .site .is-stale { opacity: 0.55; }
 .site-pad { padding: var(--sp-3); }

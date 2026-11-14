@@ -74,7 +74,7 @@
 .map-hatch { display: inline-block; width: 10px; height: 10px; border: var(--hairline) solid var(--border-strong); background: repeating-linear-gradient(135deg, var(--text) 0 1px, transparent 1px 4px); }
 .map-hatch-grey { background: repeating-linear-gradient(135deg, var(--text-3) 0 1px, transparent 1px 4px); }
 .map-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1-5); font-size: var(--fs-xs); line-height: var(--lh-body); color: var(--text-2); overflow-wrap: anywhere; }
-.map-notes a { color: var(--accent-text); }
+.map-notes a { color: var(--text); text-decoration: underline; text-decoration-thickness: var(--hairline); text-underline-offset: var(--underline-offset); }
 .map-kv { display: flex; flex-direction: column; margin: 0; font-size: var(--fs-sm); }
 .map-kv > div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: var(--sp-2); min-height: 22px; align-items: baseline; }
 .map-kv dt { color: var(--text-3); }
@@ -132,3 +132,7 @@
 .map-keys-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: var(--row-h); border-bottom: var(--hairline) solid var(--border); }
 .map-keys-row dt { color: var(--text-2); }
 .map-keys-row dd { margin: 0; display: inline-flex; gap: var(--sp-1); }
+
+.home-map { position: absolute; inset: 0; }
+.home-map-tools { position: absolute; z-index: 2; top: var(--sp-2); left: var(--sp-2); flex-direction: column; padding: var(--sp-0); background: var(--panel); border: var(--hairline) solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-popover); }
+.home-map-hint { position: absolute; z-index: 2; left: calc(50% + 20px); max-width: calc(100% - 64px); overflow: hidden; text-overflow: ellipsis; top: var(--sp-2); transform: translateX(-50%); margin: 0; padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); white-space: nowrap; color: var(--text); background: var(--panel); border: var(--hairline) solid var(--border-strong); border-radius: var(--r-pill); box-shadow: var(--shadow-popover); pointer-events: none; }

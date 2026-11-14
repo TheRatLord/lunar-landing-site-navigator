@@ -34,9 +34,11 @@ export function useCommands(): Command[] {
       list.push({ id: "ask-toggle", title: "Open or close Ask", group: "Ask", icon: "analyst", shortcut: "Alt+A", keywords: "ask assistant conversation question dock", run: () => useAsk.getState().toggle() });
     }
     list.push(
-      { id: "sc-site", title: "Change site", group: "Plan", icon: "pin", keywords: "site location coordinates catalogue", run: () => ui().show("site") },
-      { id: "sc-time", title: "Change landing time", group: "Plan", icon: "clock", keywords: "epoch landing time duration", run: () => ui().show("time") },
-      { id: "sc-edit", title: "Open mission", group: "Plan", icon: "battery", shortcut: "Alt+E", keywords: "lander requirements constraints network transfer accuracy model", run: () => ui().show() },
+      { id: "sc-site", title: "Change site", group: "Plan", icon: "pin", keywords: "site location coordinates catalogue map where", run: () => ui().show("site") },
+      { id: "sc-time", title: "Change landing time", group: "Plan", icon: "clock", keywords: "epoch landing time date duration stay transfer launch when", run: () => ui().show("time") },
+      { id: "sc-lander", title: "Change lander", group: "Plan", icon: "lander", keywords: "lander vehicle preset profile", run: () => ui().openField("lander") },
+      { id: "sc-req", title: "Change requirements", group: "Plan", icon: "checklist", keywords: "requirements constraints limits thresholds pass fail", run: () => ui().openField("constraints") },
+      { id: "sc-edit", title: "Open mission setup", group: "Plan", icon: "settings", shortcut: "Alt+E", keywords: "lander requirements constraints network ground stations model settings", run: () => ui().show() },
       { id: "sc-new", title: "New plan…", group: "Plan", icon: "plus", run: () => ui().setDialog("new") },
       { id: "sc-open", title: "Open plan…", group: "Plan", icon: "file", run: () => ui().setDialog("open") },
       { id: "sc-save", title: "Save plan", group: "Plan", icon: "check", shortcut: "Ctrl S", run: () => void sc().save() },

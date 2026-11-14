@@ -7,9 +7,8 @@ import { Spinner } from "../../components/ui/Progress";
 import { ConstraintsSection } from "../../scenario/editor/ConstraintsSection";
 import { MISSION_SECTIONS, useEditorUi, type EditorTarget, type MissionSection } from "../../scenario/editor/editorUi";
 import { LanderSection } from "../../scenario/editor/LanderSection";
-import { EllipseSection, ModelSection } from "../../scenario/editor/ModelSection";
+import { ModelSection } from "../../scenario/editor/ModelSection";
 import { NetworkSection } from "../../scenario/editor/NetworkSection";
-import { TransferSection } from "../../scenario/editor/TransferSection";
 import { useLiveValidation } from "../../scenario/editor/useLiveValidation";
 import { useScenario, type ValidationIssue } from "../../scenario/store";
 import { usePublishScreenContext } from "../../ask/screenContext";
@@ -19,8 +18,6 @@ const BODIES: Record<MissionSection, () => ReactNode> = {
   lander: () => <LanderSection />,
   constraints: () => <ConstraintsSection />,
   network: () => <NetworkSection />,
-  transfer: () => <TransferSection />,
-  ellipse: () => <EllipseSection />,
   model: () => <ModelSection />,
 };
 
@@ -96,16 +93,16 @@ function CheckState() {
 
 export function MissionWorkspace() {
   const section = useEditorUi((s) => s.section);
-  const request = useEditorUi((s) => s.missionRequest);
+  const request = useEditorUi((s) => s.route?.n ?? 0);
   const show = useEditorUi((s) => s.show);
   const issues = useScenario((s) => s.issues);
   const profileName = useScenario((s) => s.doc?.profile.name ?? "");
-  usePublishScreenContext({ where: "Mission", summary: profileName, lines: [] });
+  usePublishScreenContext({ where: "Mission setup", summary: profileName, lines: [] });
   const bodyRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState<MissionSection>(section);
 
   const counts = useMemo(() => {
-    const c: Partial<Record<EditorTarget, number>> = {};
+    const c: Partial<Record<string, number>> = {};
     for (const i of issues) {
       const t = targetOf(i.loc);
       if (t) c[t] = (c[t] ?? 0) + 1;
@@ -135,10 +132,10 @@ export function MissionWorkspace() {
   }, []);
 
   return (
-    <div className="mission" aria-label="Mission page">
+    <div className="mission" aria-label="Mission setup page">
       <PageHeader actions={<CheckState />}>
-        <h1 className="mission-title">Mission</h1>
-        <span className="mission-sub">Lander, requirements, ground stations and model settings. Applies to every site and landing you try.</span>
+        <h1 className="mission-title">Mission setup</h1>
+        <span className="mission-sub">What stays the same while you try sites and dates. The site and the landing time are set in the plan panel on the left.</span>
       </PageHeader>
       <div className="mission-grid">
         <nav className="mission-index" aria-label="Mission sections">
@@ -160,8 +157,10 @@ export function MissionWorkspace() {
           {MISSION_SECTIONS.map((s) => (
             <section key={s.id} id={`mission-${s.id}`} className="mission-sec" aria-labelledby={`mission-h-${s.id}`}>
               <h2 id={`mission-h-${s.id}`} className="mission-sec-title">
+                <Icon name={s.icon} size={16} />
                 {s.label}
               </h2>
+              <p className="mission-sec-about">{s.about}</p>
               {BODIES[s.id]()}
             </section>
           ))}

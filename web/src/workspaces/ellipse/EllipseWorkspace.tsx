@@ -1,4 +1,3 @@
-import { wrap360 } from "../../lib/scale";
 import { useMemo, useState, type ReactNode } from "react";
 import { usePublishScreenContext } from "../../ask/screenContext";
 import { ELLIPSE_ENDPOINT, ELLIPSE_LIMITS, DEFAULT_PARAMS, ellipseBody, validateParams, type EllipseBody, type EllipseParams, type EllipseResult } from "../../api/ellipse";
@@ -15,10 +14,8 @@ import { PageHeader } from "../../components/ui/PageHeader";
 import { Segmented } from "../../components/ui/Segmented";
 import { Spinner } from "../../components/ui/Progress";
 import { downloadText, slug } from "../../lib/download";
-import { withUnit } from "../../lib/format";
-import { OriginBadge } from "../../scenario/editor/controls";
-import { useEditorUi } from "../../scenario/editor/editorUi";
-import { useScenario } from "../../scenario/store";
+import { EllipseEditor } from "../../scenario/editor/EllipseEditor";
+import { addPlanEllipse, useScenario } from "../../scenario/store";
 import type { Ellipse, Scenario } from "../../scenario/types";
 import { useApp } from "../../state/store";
 import "../../styles/ellipse.css";
@@ -72,7 +69,6 @@ const VALIDATION_PREVIEW = "Pass share is a sample fraction with its sampling er
 
 export function EllipseWorkspace() {
   const doc = useScenario((s) => s.doc)!;
-  const show = useEditorUi((s) => s.show);
   const [draft, setDraft] = useState<Draft>(INITIAL);
   const [terrain, setTerrain] = useState<TerrainMode>("auto");
   const [submitted, setSubmitted] = useState<EllipseBody | null>(null);
@@ -144,7 +140,7 @@ export function EllipseWorkspace() {
             run();
           }}
         >
-          <EllipseSummary ellipse={ell} onEdit={() => show("ellipse")} />
+          <EllipseEditor />
           <div className="el-params">
             <Field label="Points" htmlFor="el-n" error={err.n}>
               <input id="el-n" className="input" type="number" inputMode="numeric" min={ELLIPSE_LIMITS.nSamples.min} max={ELLIPSE_LIMITS.nSamples.max} step={1} aria-invalid={err.n !== null} value={draft.n} onChange={(e) => set("n", e.target.value)} />
@@ -196,52 +192,13 @@ export function EllipseWorkspace() {
             </Disclosure>
           </div>
         </form>
-        <ResultArea doc={doc} result={result} stale={stale} onEdit={() => show("ellipse")} />
+        <ResultArea doc={doc} result={result} stale={stale} />
       </div>
     </div>
   );
 }
 
-function EllipseSummary({ ellipse, onEdit }: { ellipse: Ellipse | null | undefined; onEdit: () => void }) {
-  return (
-    <section className="el-ellipse" aria-label="Landing ellipse">
-      <div className="el-ellipse-head">
-        <h2 className="el-title">Ellipse</h2>
-        {ellipse && <OriginBadge origin={ellipse.origin} />}
-        <span className="grow" />
-        <IconButton icon="sliders" label="Edit ellipse" size="sm" onClick={onEdit} />
-      </div>
-      {ellipse && (
-        <dl className="el-dl">
-          <div className="el-dl-row">
-            <dt>Semi-major</dt>
-            <dd className="num">{withUnit(String(ellipse.semi_major_m), "m")}</dd>
-          </div>
-          <div className="el-dl-row">
-            <dt>Semi-minor</dt>
-            <dd className="num">{withUnit(String(ellipse.semi_minor_m), "m")}</dd>
-          </div>
-          <div className="el-dl-row">
-            <dt>Azimuth</dt>
-            <dd className="num">{String(Math.round(wrap360(ellipse.azimuth_deg))).padStart(3, "0")}°</dd>
-          </div>
-          <div className="el-dl-row">
-            <dt>Dispersion</dt>
-            <dd>{ellipse.dispersion === "gaussian" ? "Gaussian" : "Uniform"}</dd>
-          </div>
-          {ellipse.dispersion === "gaussian" && (
-            <div className="el-dl-row">
-              <dt>Axes at</dt>
-              <dd className="num">{ellipse.sigma_level}σ</dd>
-            </div>
-          )}
-        </dl>
-      )}
-    </section>
-  );
-}
-
-function ResultArea({ doc, result, stale, onEdit }: { doc: Scenario; result: EllipseResult | null; stale: boolean; onEdit: () => void }) {
+function ResultArea({ doc, result, stale }: { doc: Scenario; result: EllipseResult | null; stale: boolean }) {
   const [layers, setLayers] = useState({ terrain: true, map: true, samples: true });
   const [selected, setSelected] = useState<Marker | null>(null);
   const dark = useApp((s) => s.theme) === "dark";
@@ -259,7 +216,7 @@ function ResultArea({ doc, result, stale, onEdit }: { doc: Scenario; result: Ell
           icon="ellipse"
           title="No landing ellipse in this plan"
           action={
-            <Button onClick={onEdit} icon="sliders">
+            <Button onClick={addPlanEllipse} icon="plus">
               Add ellipse
             </Button>
           }

@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { ASK_BUTTON_ID, useAsk } from "../ask/askStore";
 import { Icon } from "../components/ui/Icon";
 import { IconButton } from "../components/ui/Button";
-import { Menu } from "../components/ui/Menu";
 import { Spinner } from "../components/ui/Progress";
 import { useApp } from "../state/store";
-import { DETAIL_WORKSPACES, HOME } from "../workspaces/registry";
+import { EVIDENCE_WORKSPACE, HOME, VIEW_WORKSPACES } from "../workspaces/registry";
 import { ModeSwitch } from "./ModeSwitch";
 
 function AskButton() {
@@ -44,28 +43,14 @@ function AskButton() {
 }
 
 export function PlannerNav() {
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const detail = DETAIL_WORKSPACES.find((w) => pathname === w.path || pathname.startsWith(`${w.path}/`));
   return (
     <nav className="tb-nav" aria-label="Pages">
-      <NavLink to={HOME.path} className={({ isActive }) => `tb-tab${isActive ? " active" : ""}`} aria-keyshortcuts={`Alt+${HOME.hotkey}`}>
-        {HOME.label}
-      </NavLink>
-      <span className={`tb-more${detail ? " active" : ""}`}>
-        <Menu
-          label="Detailed analysis pages"
-          text={detail ? detail.label : "Detailed analysis"}
-          width={220}
-          items={DETAIL_WORKSPACES.map((w) => ({
-            id: w.id,
-            label: w.label,
-            icon: w.icon,
-            hint: w.hotkey ? `Alt+${w.hotkey}` : undefined,
-            onSelect: () => navigate(w.path),
-          }))}
-        />
-      </span>
+      {VIEW_WORKSPACES.map((w) => (
+        <NavLink key={w.id} to={w.path} title={w.hotkey ? `${w.about} (Alt+${w.hotkey})` : w.about} className={({ isActive }) => `tb-tab${isActive ? " active" : ""}`} aria-keyshortcuts={w.hotkey ? `Alt+${w.hotkey}` : undefined}>
+          <Icon name={w.icon} size={14} />
+          {w.label}
+        </NavLink>
+      ))}
     </nav>
   );
 }
@@ -105,6 +90,10 @@ export function PlannerTools() {
   const askEnabled = useAsk((s) => s.enabled);
   return (
     <>
+      <NavLink to={EVIDENCE_WORKSPACE.path} title={EVIDENCE_WORKSPACE.about} className={({ isActive }) => `btn btn-sm btn-ghost tb-link${isActive ? " active" : ""}`}>
+        <Icon name={EVIDENCE_WORKSPACE.icon} size={14} />
+        {EVIDENCE_WORKSPACE.label}
+      </NavLink>
       {askEnabled && <AskButton />}
       <IconButton icon="command" label="Command palette" shortcut="Ctrl K" onClick={() => setPaletteOpen(true)} />
     </>

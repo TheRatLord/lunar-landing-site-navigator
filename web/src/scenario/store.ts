@@ -1,15 +1,15 @@
 import { create } from "zustand";
 import { ApiError, reportError } from "../api/client";
 import { clamp } from "../lib/scale";
-import { MS_DAY, MS_HOUR, parseUtc } from "../lib/time";
+import { MS_DAY, MS_HOUR, parseUtc, MS_MIN, toIsoUtc } from "../lib/time";
 import { toast } from "../state/toasts";
 import { useApp } from "../state/store";
 import { scenarioApi } from "./api";
 import { starterScenario } from "./starter";
 import { readDraftText, type Draft, type DraftProblem, type DraftRead, type SavedRef } from "./draft";
-import { formatProblems, normalizeScenario } from "./normalize";
+import { formatProblems, normalizeScenario, schemaDefaults } from "./normalize";
 import { pathKey, setIn, type Path } from "./path";
-import type { Scenario, ScenarioRecord } from "./types";
+import type { Ellipse, Scenario, ScenarioRecord } from "./types";
 
 export interface ValidationIssue {
   loc: string[];
@@ -316,6 +316,27 @@ export function writePlanSite(lat_deg: number, lon_deg: number, name: string, ca
     [["site", "name"], name],
     [["site", "catalog_id"], catalog_id ?? undefined],
   ]);
+}
+
+export function movePlanSite(site: { lat_deg: number; lon_deg: number; name: string; catalog_id: string | null }): void {
+  writePlanSite(site.lat_deg, site.lon_deg, site.name, site.catalog_id);
+  const s = useScenario.getState();
+  if (!s.saved) s.edit(["name"], site.name);
+}
+
+export function shiftPlanLanding(deltaMs: number): void {
+  const { doc, edit } = useScenario.getState();
+  const landing = doc ? parseUtc(doc.landing_utc) : null;
+  if (landing !== null) edit(["landing_utc"], toIsoUtc(Math.round((landing + deltaMs) / MS_MIN) * MS_MIN));
+}
+
+export function addPlanEllipse(): void {
+  useScenario.getState().edit(["ellipse"], {
+    ...schemaDefaults("Ellipse"),
+    semi_major_m: 100,
+    semi_minor_m: 100,
+    origin: { ...schemaDefaults("Origin"), basis: "user", label: "Placeholder starting values; replace with your navigation solution" },
+  } as Ellipse);
 }
 
 export function selectDirty(s: ScenarioStore): boolean {

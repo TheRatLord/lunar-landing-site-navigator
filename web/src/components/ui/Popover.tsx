@@ -8,12 +8,24 @@ const GAP = 6;
 const MARGIN = 8;
 
 type Align = "start" | "end";
+type Side = "below" | "right";
 
-/** Positions `panel` against `anchor`: below if it fits (or below has more room), else above; clamped to the viewport. */
-function place(anchor: HTMLElement, panel: HTMLElement, align: Align) {
+/** Positions `panel` against `anchor`: below if it fits (or below has more room), else above; clamped to the viewport. With `side` "right" it sits beside the anchor instead, top-aligned. */
+function place(anchor: HTMLElement, panel: HTMLElement, align: Align, side: Side) {
   const r = anchor.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  if (side === "right") {
+    const left = r.right + GAP;
+    panel.style.maxWidth = `${Math.max(0, vw - left - MARGIN)}px`;
+    const h = Math.min(panel.scrollHeight, vh - 2 * MARGIN);
+    const top = clamp(r.top, MARGIN, Math.max(MARGIN, vh - MARGIN - h));
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+    panel.style.maxHeight = `${vh - top - MARGIN}px`;
+    panel.style.visibility = "visible";
+    return;
+  }
   const w = panel.offsetWidth;
   const natural = panel.scrollHeight;
   const below = vh - r.bottom - GAP - MARGIN;
@@ -34,6 +46,7 @@ export interface PopoverPanelProps {
   onClose: () => void;
   label: string;
   align?: Align;
+  side?: Side;
   width?: number;
   role?: "dialog" | "none";
   id?: string;
@@ -42,12 +55,12 @@ export interface PopoverPanelProps {
 }
 
 /** Controlled, portal-rendered panel anchored to `anchor`. Esc closes and refocuses the anchor; a press outside panel and anchor closes. */
-export function PopoverPanel({ open, anchor, onClose, label, align = "start", width, role = "dialog", id, className, children }: PopoverPanelProps) {
+export function PopoverPanel({ open, anchor, onClose, label, align = "start", side = "below", width, role = "dialog", id, className, children }: PopoverPanelProps) {
   const panel = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    if (open && anchor.current && panel.current) place(anchor.current, panel.current, align);
-  }, [open, anchor, align, width, children]);
+    if (open && anchor.current && panel.current) place(anchor.current, panel.current, align, side);
+  }, [open, anchor, align, side, width, children]);
 
   useEffect(() => {
     const p = panel.current;
@@ -68,7 +81,7 @@ export function PopoverPanel({ open, anchor, onClose, label, align = "start", wi
       anchor.current?.focus();
     };
     const onMove = () => {
-      if (anchor.current && panel.current) place(anchor.current, panel.current, align);
+      if (anchor.current && panel.current) place(anchor.current, panel.current, align, side);
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey, true);
@@ -80,7 +93,7 @@ export function PopoverPanel({ open, anchor, onClose, label, align = "start", wi
       window.removeEventListener("resize", onMove);
       window.removeEventListener("scroll", onMove, true);
     };
-  }, [open, onClose, anchor, align]);
+  }, [open, onClose, anchor, align, side]);
 
   if (!open) return null;
   return createPortal(

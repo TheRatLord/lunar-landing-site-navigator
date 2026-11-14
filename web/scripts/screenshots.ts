@@ -42,6 +42,7 @@ interface PageShot {
   name: string;
   path: string;
   keys?: string;
+  click?: string;
   wait?: number;
 }
 const PAGE_SHOTS: PageShot[] = [
@@ -55,7 +56,11 @@ const PAGE_SHOTS: PageShot[] = [
   { name: "compare", path: "/compare", wait: 4000 },
   { name: "evidence", path: "/evidence", wait: 3000 },
   { name: "palette", path: "/explore", keys: "Control+k", wait: 1500 },
-  { name: "scenario-drawer", path: "/site", keys: "Alt+e", wait: 5000 },
+  { name: "mission", path: "/mission", wait: 3000 },
+  { name: "plan-site", path: "/overview", click: "#plan-site", wait: 4000 },
+  { name: "plan-landing", path: "/overview", click: "#plan-time", wait: 4000 },
+  { name: "plan-lander", path: "/overview", click: "#plan-lander", wait: 4000 },
+  { name: "plan-requirements", path: "/overview", click: "#plan-constraints", wait: 4000 },
   { name: "ask", path: "/site", keys: "Alt+a", wait: 5000 },
 ];
 
@@ -138,6 +143,10 @@ async function pages(browser: Browser): Promise<void> {
         if (shot.keys) {
           await page.keyboard.press(shot.keys);
           await page.waitForTimeout(1200);
+        }
+        if (shot.click) {
+          await page.click(shot.click);
+          await page.waitForTimeout(2500);
         }
         await page.screenshot({ path: `${CURATED}${shot.name}-${theme}.png` });
         await page.close();

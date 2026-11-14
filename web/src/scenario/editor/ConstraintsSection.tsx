@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { IconButton } from "../../components/ui/Button";
+import { ServiceNotice } from "../../components/ServiceNotice";
+import { Button, IconButton } from "../../components/ui/Button";
 import { Popover } from "../../components/ui/Popover";
 import { Toggle } from "../../components/ui/Fields";
 import { Toolstrip } from "../../components/ui/Toolstrip";
@@ -8,35 +9,33 @@ import type { Limit } from "../types";
 import { GroupHead, NumberField, OriginMark } from "./controls";
 import { USER_ORIGIN, editedOrigin } from "./fieldState";
 import { CONSTRAINT_META, PARAMETER_META, type ConstraintMeta } from "./fieldSpecs";
-import { PresetBar } from "./PresetBar";
+import { usePresets } from "./usePresets";
 
 function PresetPicker() {
   const edit = useScenario((s) => s.edit);
+  const presets = usePresets();
+  if (presets.status === "loading") return null;
+  if (presets.status === "error") return <ServiceNotice error={presets.error} what="Requirement sets" />;
   return (
     <div className="sc-group">
-      <PresetBar
-        label="Requirement set"
-        what="Requirement sets"
-        options={(data) =>
-          data.constraints.map((p) => (
-            <option key={p.name} value={p.name}>
-              {p.name}
-            </option>
-          ))
-        }
-        onApply={(choice, data) => {
-          const p = data.constraints.find((x) => x.name === choice);
-          if (p) edit(["constraints"], p.constraints);
-        }}
-        extra={(choice, data) => (
-          <Popover label="Source" icon="info" align="end" width={320}>
-            <div className="origin-tip">
-              <span>Past missions’ values or a mission’s published plan, each with its source. None is a requirement of your mission.</span>
-              {choice && <span className="dim">{data.constraints.find((p) => p.name === choice)?.description}</span>}
-            </div>
-          </Popover>
-        )}
-      />
+      <GroupHead title="Start from a published set">
+        <Popover label="About these" icon="info" align="end" width={320}>
+          <div className="origin-tip">
+            <span>Past missions’ values or a mission’s published plan, each with its source. None is a requirement of your mission.</span>
+          </div>
+        </Popover>
+      </GroupHead>
+      <ul className="sc-presets">
+        {presets.data.constraints.map((p) => (
+          <li key={p.name} className="sc-preset">
+            <span className="sc-preset-name num">{p.name}</span>
+            <span className="sc-preset-what">{p.description}</span>
+            <Button size="sm" title={`Replace every requirement with ${p.name}`} onClick={() => edit(["constraints"], p.constraints)}>
+              Use
+            </Button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -93,7 +92,7 @@ export function ConstraintsSection() {
     <div className="sc-section">
       <PresetPicker />
       <div className="sc-group">
-        <GroupHead title="Requirements">
+        <GroupHead title="Your requirements">
           <span className="dim num">
             {active}/{CONSTRAINT_META.length}
           </span>

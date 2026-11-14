@@ -86,6 +86,7 @@ export const PANEL_FIELDS: NumSpec[] = [
 export interface ConstraintMeta {
   key: ConstraintKey;
   title: string;
+  short: string;
   unit: string;
   side: "min" | "max";
   decimals: number;
@@ -94,16 +95,16 @@ export interface ConstraintMeta {
 }
 
 export const CONSTRAINT_META: ConstraintMeta[] = [
-  { key: "landing_sun_elevation_deg", title: "Sun elevation at landing", unit: "°", side: "min", decimals: 1, what: "Apparent Sun-centre elevation above the local horizontal at landing." },
-  { key: "landing_hours_after_sunrise", title: "Time after local sunrise at landing", unit: "h", side: "min", decimals: 1, what: "Hours since the array last rose above the sunlit flux fraction." },
-  { key: "dte_at_landing_deg", title: "Earth elevation at landing", unit: "°", side: "min", decimals: 1, what: "Direct-to-Earth clearance at landing above the antenna horizon plus the antenna terrain margin (best station, or Earth centre without ground stations)." },
-  { key: "min_sunlit_hours_after_landing", title: "Continuous sunlight after landing", unit: "h", side: "min", decimals: 1, what: "Continuous sunlit hours from landing." },
-  { key: "max_dark_span_h", title: "Longest dark span", unit: "h", side: "max", decimals: 1, what: "Longest dark span of the array during the surface mission." },
-  { key: "min_state_of_charge", title: "Minimum battery state of charge", unit: "", side: "min", decimals: 2, what: "Minimum battery state of charge (fraction) during the mission." },
-  { key: "min_contact_fraction", title: "Contact fraction", unit: "", side: "min", decimals: 2, what: "Fraction of the mission with a ground station in contact." },
-  { key: "max_contact_gap_h", title: "Longest contact gap", unit: "h", side: "max", decimals: 1, what: "Longest span with no ground station in contact." },
-  { key: "min_link_margin_db", title: "Link margin", unit: "dB", side: "min", decimals: 1, what: "Lowest downlink margin while in contact." },
-  { key: "max_slope_deg", title: "Local slope", unit: "°", side: "max", decimals: 1, what: "Terrain slope over the slope baseline; needs terrain data.", needsTerrain: true },
+  { key: "landing_sun_elevation_deg", title: "Sun elevation at landing", short: "Sun elevation", unit: "°", side: "min", decimals: 1, what: "Apparent Sun-centre elevation above the local horizontal at landing." },
+  { key: "landing_hours_after_sunrise", title: "Time after local sunrise at landing", short: "After sunrise", unit: "h", side: "min", decimals: 1, what: "Hours since the array last rose above the sunlit flux fraction." },
+  { key: "dte_at_landing_deg", title: "Earth elevation at landing", short: "Earth elevation", unit: "°", side: "min", decimals: 1, what: "Direct-to-Earth clearance at landing above the antenna horizon plus the antenna terrain margin (best station, or Earth centre without ground stations)." },
+  { key: "min_sunlit_hours_after_landing", title: "Continuous sunlight after landing", short: "Sunlight after landing", unit: "h", side: "min", decimals: 1, what: "Continuous sunlit hours from landing." },
+  { key: "max_dark_span_h", title: "Longest dark span", short: "Dark span", unit: "h", side: "max", decimals: 1, what: "Longest dark span of the array during the surface mission." },
+  { key: "min_state_of_charge", title: "Minimum battery state of charge", short: "Battery", unit: "", side: "min", decimals: 2, what: "Minimum battery state of charge (fraction) during the mission." },
+  { key: "min_contact_fraction", title: "Contact fraction", short: "Contact", unit: "", side: "min", decimals: 2, what: "Fraction of the mission with a ground station in contact." },
+  { key: "max_contact_gap_h", title: "Longest contact gap", short: "Contact gap", unit: "h", side: "max", decimals: 1, what: "Longest span with no ground station in contact." },
+  { key: "min_link_margin_db", title: "Link margin", short: "Link margin", unit: "dB", side: "min", decimals: 1, what: "Lowest downlink margin while in contact." },
+  { key: "max_slope_deg", title: "Local slope", short: "Slope", unit: "°", side: "max", decimals: 1, what: "Terrain slope over the slope baseline; needs terrain data.", needsTerrain: true },
 ];
 
 export const PARAMETER_META: Array<{ key: ParameterKey; title: string; unit: string; min?: number; max?: number; step: number}> = [

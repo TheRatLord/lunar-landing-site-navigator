@@ -101,7 +101,7 @@ export function StoryCard({ c }: { c: Chapter }) {
         <Link className="l-back" to={learnPath("explore")}>
           <ArrowLeftIcon size={16} /> Explore
         </Link>
-        <span className="l-eyebrow">
+        <span className="l-step">
           Lesson {c.n} of {STORY.length}
         </span>
       </PanelBar>
@@ -113,7 +113,6 @@ export function StoryCard({ c }: { c: Chapter }) {
           <RichText text={c.copy} slug={c.slug} />
         </p>
         <div className="l-try">
-          <span className="l-try-label">Try it</span>
           <p className="l-try-text">
             <RichText text={c.prompt} slug={c.slug} />
           </p>
@@ -121,8 +120,9 @@ export function StoryCard({ c }: { c: Chapter }) {
         </div>
         <BigNumber c={c} />
         <div className={`l-take ${showTake ? "is-on" : ""}`} aria-hidden={!showTake}>
-          <span className="l-eyebrow">Remember</span>
-          <p>{c.takeaway}</p>
+          <p>
+            <strong>Remember:</strong> {c.takeaway}
+          </p>
         </div>
         {c.check && <Check slug={c.slug} check={c.check} />}
       </div>

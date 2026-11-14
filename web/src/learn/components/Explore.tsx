@@ -69,9 +69,7 @@ export function ExploreCard() {
   ];
   return (
     <article className="l-story" aria-labelledby="l-title">
-      <PanelBar>
-        <span className="l-eyebrow">Explore</span>
-      </PanelBar>
+      <PanelBar />
       <div className="l-story-scroll">
         <h1 id="l-title" className="l-title">
           {EXPLORE.title}

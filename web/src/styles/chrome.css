@@ -36,7 +36,7 @@
 .vn { display: inline-flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; }
 .vn-pop { display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); }
 .vn-sources { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); font-size: var(--fs-xs); overflow-wrap: anywhere; }
-.vn-sources a { color: var(--accent-text); }
+.vn-sources a { color: var(--text); text-decoration: underline; text-decoration-thickness: var(--hairline); text-underline-offset: var(--underline-offset); }
 .vn-conf { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-0); font-size: var(--fs-xs); overflow-wrap: anywhere; }
 .vn-scroll { overflow: auto; max-height: 50vh; }
 .vn-table { width: 100%; border-collapse: collapse; font-size: var(--fs-xs); }

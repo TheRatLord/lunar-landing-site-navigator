@@ -11,7 +11,6 @@ export function Check({ slug, check }: { slug: ChapterSlug; check: QuizCheck }) 
   return (
     <section className="l-check" aria-labelledby={`q-${slug}`}>
       <h3 id={`q-${slug}`} className="l-check-q">
-        <span className="l-eyebrow">Quick check</span>
         {check.question}
       </h3>
       <div className="l-check-opts">

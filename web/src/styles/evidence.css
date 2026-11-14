@@ -68,7 +68,7 @@
 .meta-text { overflow-wrap: break-word; }
 .meta-error { color: var(--c-fail); overflow-wrap: anywhere; }
 .meta-unit { margin-left: var(--sp-1); color: var(--text-3); font-size: var(--fs-sm); }
-.meta-url { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent-text); text-decoration: none; }
+.meta-url { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); text-decoration: underline; text-decoration-thickness: var(--hairline); text-underline-offset: var(--underline-offset); }
 .meta-url:hover { text-decoration: underline; text-underline-offset: var(--underline-offset); }
 .meta-url:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: var(--focus-offset); border-radius: var(--r-xs); }
 .meta-hash { display: inline-flex; align-items: center; gap: var(--sp-1); }

@@ -73,13 +73,13 @@
 }
 
 .btn-default {
-  color: var(--accent-text);
-  padding: 0 var(--sp-1);
+  color: var(--text);
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 var(--hairline) var(--border-strong);
 }
 .btn-default:hover:not(:disabled) {
-  text-decoration: underline;
-  text-decoration-thickness: var(--hairline);
-  text-underline-offset: var(--underline-offset);
+  background: var(--panel-hover);
+  box-shadow: inset 0 0 0 var(--hairline) var(--text-3);
 }
 
 .btn-ghost {
@@ -92,6 +92,8 @@
 
 .btn-icon,
 .btn-icon.btn-default {
+  box-shadow: none;
+  background: transparent;
   width: var(--control-h);
   padding: 0;
   border-radius: var(--r-sm);
@@ -155,30 +157,37 @@
 .page-header {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
   flex: none;
-  height: var(--header-h);
+  flex-wrap: wrap;
+  column-gap: var(--sp-4);
+  row-gap: 0;
+  min-height: var(--header-h);
   min-width: 0;
   padding: 0 var(--sp-4);
   border-bottom: var(--hairline) solid var(--border);
   background: var(--bg);
+  white-space: nowrap;
 }
 .page-header-tabs {
-  align-self: stretch;
   display: flex;
   align-items: stretch;
+  height: var(--header-h);
   min-width: 0;
 }
 .page-header-mid {
   display: flex;
   align-items: center;
+  flex: none;
   gap: var(--sp-2);
   min-width: 0;
+  min-height: var(--header-h);
 }
 .page-header-actions {
   display: flex;
   align-items: center;
+  flex: none;
   gap: var(--sp-3);
+  min-height: var(--header-h);
   margin-left: auto;
 }
 
