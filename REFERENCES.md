@@ -51,6 +51,11 @@ public). Pinned by size and SHA-256 in `src/lunarnav/ephem/kernels.py`.
 Sites, lander profiles and ground stations (`src/lunarnav/catalog/*.yaml`) cite their own sources per entry:
 URL, title and locator (page, table or row), with a confidence. Don't add an entry without them.
 
+Mission history (`missions.yaml`, 14 landing attempts) and launch-vehicle records (`launch_vehicles.yaml`, 12 vehicles)
+cite the English Wikipedia article for each mission or vehicle (CC BY-SA 4.0), read 2026-11-14, confidence medium.
+Causes and lessons are paraphrased facts, not copied text; the labels await team review
+(`docs/superpowers/specs/2026-11-14-history-labels-review.md`).
+
 ## Images
 
 | Name | Source | License / terms | Used for |
@@ -97,3 +102,9 @@ installed packages.
 | eslint, typescript-eslint and plugins | ^10.14, ^8.72 | MIT |
 | openapi-typescript | ^7.13 | MIT |
 | playwright | ^1.65 | Apache-2.0 |
+| mcp (Python, MCP server) | 2.3.0 | MIT |
+| @ai-sdk/mcp (evaluator) | 2.0.99 | Apache-2.0 |
+| @modelcontextprotocol/sdk (evaluator) | 1.32.2 | MIT |
+| zod (evaluator) | 4.6.7 | MIT |
+| promptfoo (evaluator, dev) | 0.125.1 | MIT |
+| Claude Code CLI (evaluator runs `claude -p`; not bundled) | 2.1.x | Anthropic commercial terms |
