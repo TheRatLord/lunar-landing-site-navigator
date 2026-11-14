@@ -1,26 +1,252 @@
 # Launch vehicle flight records. counted_through is the date the counts were read.
 entries:
   - id: falcon-9
-    name: SpaceX Falcon 9
-    confidence: unverified
+    name: "SpaceX Falcon 9"
+    confidence: medium
     sources:
       - url: https://en.wikipedia.org/wiki/Falcon_9
-        title: "Wikipedia: Falcon 9"
-        locator: launch history table
-    operator: SpaceX
-    attempts: 1
+        title: "Wikipedia: SpaceX Falcon 9"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Counts from the infobox as of 12 Nov 2026. Next-launch dates after failures were not read, so stand-down days are empty. Failure summaries are short paraphrases for the label review; stand-down days are the gap to the vehicle's next launch as listed on the page."
+    operator: "SpaceX"
+    attempts: 702
+    failures: 2
+    partial: 1
+    counted_through: "2026-11-12"
+    failures_detail:
+      - date: "2012-10-08"
+        summary: "CRS-1: an engine shutdown left the secondary payload in a low orbit."
+        partial: true
+        source: 0
+      - date: "2015-06-28"
+        summary: "CRS-7: the second stage broke up in flight."
+        partial: false
+        source: 0
+      - date: "2024-07-12"
+        summary: "Starlink Group 9-3: an upper-stage problem left the payloads in a too-low orbit."
+        partial: false
+        source: 0
+    lunar_missions: [im-1-odysseus, im-2-athena, hakuto-r-m1, hakuto-r-m2, beresheet, blue-ghost-m1]
+  - id: falcon-heavy
+    name: "SpaceX Falcon Heavy"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Falcon_Heavy
+        title: "Wikipedia: SpaceX Falcon Heavy"
+        locator: infobox launch counts; launch history and failure sections
+    operator: "SpaceX"
+    attempts: 14
     failures: 0
+    partial: 0
     counted_through: "2026-11-14"
-    lunar_missions: [im-2-athena]
+    lunar_missions: []
+  - id: firefly-alpha
+    name: "Firefly Alpha"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Firefly_Alpha
+        title: "Wikipedia: Firefly Alpha"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Failure summaries are short paraphrases for the label review; stand-down days are the gap to the vehicle's next launch as listed on the page."
+    operator: "Firefly Aerospace"
+    attempts: 7
+    failures: 2
+    partial: 2
+    counted_through: "2026-11-14"
+    failures_detail:
+      - date: "2021-09-03"
+        summary: "Flight 1: a first-stage Reaver engine shut down early and the vehicle was lost."
+        partial: false
+        stand_down_days: 393
+        source: 0
+      - date: "2022-10-01"
+        summary: "Flight 2: payloads reached a lower orbit than planned."
+        partial: true
+        stand_down_days: 349
+        source: 0
+      - date: "2023-12-22"
+        summary: "Flight 4: an upper-stage problem left the payload in the wrong orbit."
+        partial: true
+        stand_down_days: 195
+        source: 0
+      - date: "2025-04-29"
+        summary: "Flight 6: failed during ascent."
+        partial: false
+        stand_down_days: 317
+        source: 0
+    lunar_missions: []
   - id: vulcan-centaur
-    name: ULA Vulcan Centaur
-    confidence: unverified
+    name: "ULA Vulcan Centaur"
+    confidence: medium
     sources:
       - url: https://en.wikipedia.org/wiki/Vulcan_Centaur
-        title: "Wikipedia: Vulcan Centaur"
-        locator: launch history
-    operator: United Launch Alliance
-    attempts: 1
+        title: "Wikipedia: ULA Vulcan Centaur"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Two solid-booster anomalies (Oct 2024, Feb 2026) are not counted as failures by the page."
+    operator: "United Launch Alliance"
+    attempts: 4
     failures: 0
+    partial: 0
     counted_through: "2026-11-14"
     lunar_missions: [peregrine-m1]
+  - id: h-iia
+    name: "H-IIA"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/H-IIA
+        title: "Wikipedia: H-IIA"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Failure summaries are short paraphrases for the label review; stand-down days are the gap to the vehicle's next launch as listed on the page."
+    operator: "Mitsubishi Heavy Industries"
+    attempts: 50
+    failures: 1
+    partial: 0
+    counted_through: "2026-11-14"
+    failures_detail:
+      - date: "2003-11-29"
+        summary: "Flight 6: a solid booster hot-gas leak prevented separation and the vehicle was destroyed."
+        partial: false
+        stand_down_days: 455
+        source: 0
+    lunar_missions: [slim]
+  - id: pslv
+    name: "ISRO PSLV"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/PSLV
+        title: "Wikipedia: ISRO PSLV"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Infobox counts; the statistics section gives 63 launches, a conflict on the page. Failure dates were not read verbatim."
+    operator: "ISRO"
+    attempts: 64
+    failures: 4
+    partial: 1
+    counted_through: "2026-11-14"
+    lunar_missions: []
+  - id: gslv
+    name: "ISRO GSLV"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/GSLV
+        title: "Wikipedia: ISRO GSLV"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Counts as of November 2026 per the page's table."
+    operator: "ISRO"
+    attempts: 20
+    failures: 4
+    partial: 2
+    counted_through: "2026-11-14"
+    lunar_missions: []
+  - id: lvm3
+    name: "ISRO LVM3"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/LVM3
+        title: "Wikipedia: ISRO LVM3"
+        locator: infobox launch counts; launch history and failure sections
+    operator: "ISRO"
+    attempts: 9
+    failures: 0
+    partial: 0
+    counted_through: "2026-11-14"
+    lunar_missions: [chandrayaan-2-vikram, chandrayaan-3-vikram]
+  - id: long-march-3b
+    name: "Long March 3B"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Long_March_3B
+        title: "Wikipedia: Long March 3B"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Failure summaries are short paraphrases for the label review; stand-down days are the gap to the vehicle's next launch as listed on the page."
+    operator: "CASC"
+    attempts: 117
+    failures: 3
+    partial: 2
+    counted_through: "2026-11-14"
+    failures_detail:
+      - date: "1996-02-14"
+        summary: "Intelsat 708: veered off course after liftoff."
+        partial: false
+        stand_down_days: 552
+        source: 0
+      - date: "2009-08-31"
+        summary: "Palapa-D: third-stage underperformance left the payload in a low orbit."
+        partial: true
+        stand_down_days: 369
+        source: 0
+      - date: "2017-06-19"
+        summary: "ChinaSat-9A: a third-stage problem left the payload in a low orbit."
+        partial: true
+        stand_down_days: 139
+        source: 0
+      - date: "2020-04-09"
+        summary: "Palapa-N1: third-stage failure."
+        partial: false
+        stand_down_days: 75
+        source: 0
+      - date: "2026-01-16"
+        summary: "Shijian-32: launch failure."
+        partial: false
+        stand_down_days: 151
+        source: 0
+    lunar_missions: [change-4]
+  - id: long-march-5
+    name: "Long March 5"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Long_March_5
+        title: "Wikipedia: Long March 5"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Failure summaries are short paraphrases for the label review; stand-down days are the gap to the vehicle's next launch as listed on the page."
+    operator: "CASC"
+    attempts: 18
+    failures: 1
+    partial: 0
+    counted_through: "2026-11-14"
+    failures_detail:
+      - date: "2017-07-02"
+        summary: "Y2: a first-stage engine problem; the vehicle did not reach orbit."
+        partial: false
+        stand_down_days: 908
+        source: 0
+    lunar_missions: [change-5, change-6]
+  - id: soyuz-2
+    name: "Soyuz-2"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Soyuz-2
+        title: "Wikipedia: Soyuz-2"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "Failure summaries are short paraphrases for the label review; stand-down days are the gap to the vehicle's next launch as listed on the page."
+    operator: "Roscosmos"
+    attempts: 172
+    failures: 4
+    partial: 1
+    counted_through: "2026-11-14"
+    failures_detail:
+      - date: "2009-05-21"
+        summary: "Failure listed on the page; other failures were only in an unread part of the page."
+        partial: false
+        stand_down_days: 119
+        source: 0
+    lunar_missions: [luna-25]
+  - id: electron
+    name: "Rocket Lab Electron"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Electron_(rocket)
+        title: "Wikipedia: Rocket Lab Electron"
+        locator: infobox launch counts; launch history and failure sections
+    notes: "100 includes 9 HASTE suborbital flights. Failure summaries are short paraphrases for the label review; stand-down days are the gap to the vehicle's next launch as listed on the page."
+    operator: "Rocket Lab"
+    attempts: 100
+    failures: 4
+    partial: 0
+    counted_through: "2026-11-14"
+    failures_detail:
+      - date: "2017-05-25"
+        summary: "First flight: telemetry loss led range safety to end the flight."
+        partial: false
+        stand_down_days: 241
+        source: 0
+    lunar_missions: []
