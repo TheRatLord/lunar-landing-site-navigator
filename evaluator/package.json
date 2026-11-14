@@ -1,0 +1,21 @@
+{
+  "name": "lunarnav-evaluator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "review": "bun src/cli.ts",
+    "backtest": "promptfoo eval -c backtest/promptfooconfig.yaml -o backtest/out.json && bun backtest/summary.ts backtest/out.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.105",
+    "@ai-sdk/mcp": "^2.0.99",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "ai": "^7.0.173",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
+  }
+}
