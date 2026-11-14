@@ -1,0 +1,12 @@
+data
+.venv
+.git
+.claude
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/node_modules
+web/dist
+deploy
+benchmarks
+validation

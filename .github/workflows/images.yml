@@ -1,0 +1,48 @@
+name: images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: images
+  cancel-in-progress: false
+
+env:
+  IMAGE: us-central1-docker.pkg.dev/lunarnav-1114-19887/lunarnav/lunarnav
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute the release tag
+        id: release
+        run: echo "tag=main-${GITHUB_SHA::7}-$(git log -1 --format=%ct)" >> "$GITHUB_OUTPUT"
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/180938390875/locations/global/workloadIdentityPools/github/providers/github
+          service_account: lunarnav-ci@lunarnav-1114-19887.iam.gserviceaccount.com
+          token_format: access_token
+      - uses: docker/login-action@v3
+        with:
+          registry: us-central1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.release.outputs.tag }}

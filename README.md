@@ -51,15 +51,36 @@ uv run lunarnav kernels                  # download and verify the pinned SPICE 
 
 Data lives in `data/` (or `$LUNARNAV_DATA`) and is not part of the repository.
 
-### Terrain
+### Data
 
-Terrain products are downloaded and converted separately:
+Built terrain stores, kernels and caches are shared in the team bucket `gs://lunarnav-1114-19887-data`. Its
+layout matches `data/`, and the deployed site reads from it. With `gcloud` installed and your Google account
+given access (ask the project owner), pull what you need:
 
 ```bash
-uv run python -m lunarnav.terrain.ingest fetch lola_80s_20m
-uv run python -m lunarnav.terrain.ingest build lola_80s_20m
-uv run python -m lunarnav.terrain.ingest build --all     # every registered LOLA and PGDA product
+scripts/data.sh pull              # kernels and a starter set of stores (~3.5 GB): global, 60N/60S and the regional windows
+scripts/data.sh pull lola_80s_20m # kernels and specific stores
+scripts/data.sh pull --all        # everything (~52 GB)
+scripts/data.sh list              # what the bucket holds
 ```
+
+Pulls are incremental, so run them again to pick up changes. Stores are memory-mapped, so the API reads them from
+local disk; it can't read them from the bucket directly.
+
+Without the bucket, build any store from NASA's servers:
+
+```bash
+scripts/data.sh build lola_80s_20m   # fetch one source product and build its store
+scripts/data.sh build --all          # everything the bucket holds: about 20 minutes on a cloud VM, longer at home
+uv run python -m lunarnav.terrain.regional --lat 18.5623 --lon 61.8103 --product sldem2015_512   # one regional window
+```
+
+A regional window's id rounds its centre to 3 decimals, but the window is cut from the exact centre you pass. Use the
+catalogue coordinates (`src/lunarnav/catalog/sites.yaml`), as `build --all` does, to reproduce the shared stores
+exactly.
+
+To change the shared data, build locally, check the result, then `scripts/data.sh push <dem_id>` (needs write
+access). The deployed VM picks up bucket changes when its startup script runs again (`deploy/README.md`).
 
 Without terrain the engine falls back to a smooth sphere horizon.
 
