@@ -2,7 +2,7 @@ import { dayOfIso } from "./geometry";
 import type { SiteId } from "./sites";
 
 export type ChapterSlug = "day" | "earth" | "pole" | "crater" | "timing" | "explore";
-export type ViewKind = "space" | "ground" | "crater";
+export type ViewKind = "space" | "ground" | "crater" | "walk";
 export type ControlKind = "none" | "nearFar" | "latitude" | "rimFloor" | "landing" | "explore";
 export type Follow = "sun" | "earth" | "free";
 export type TickKind = "sunrise" | "sunset" | "eclipse";

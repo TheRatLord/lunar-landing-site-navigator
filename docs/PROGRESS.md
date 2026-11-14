@@ -70,7 +70,7 @@ for this list unless it says so.
 Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/superpowers/plans/2026-11-14-explorer-walk.md`.
 
 - [x] Rename Learn to Explorer (visible text only; routes and code stay `learn`)
-- [ ] Walk view: terrain, sky, sunlight and shadow
+- [x] Walk view: terrain, sky, sunlight and shadow
 - [ ] Astronaut, follow camera, keyboard
 - [ ] Solar panel and the Battery tile in Walk
 - [ ] Rover and switching

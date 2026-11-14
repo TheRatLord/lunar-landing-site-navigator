@@ -62,8 +62,9 @@ export function ExploreCard() {
   const { setSite, setView, setSpeed } = useLearn.getState();
   const polar = siteId === "rim" || siteId === "floor";
   const views = [
-    { value: "space", label: "In space" },
-    { value: "ground", label: "On the ground" },
+    { value: "space", label: "Space" },
+    { value: "ground", label: "Ground" },
+    { value: "walk", label: "Walk" },
     ...(polar ? [{ value: "crater", label: "Close-up" }] : []),
   ];
   return (

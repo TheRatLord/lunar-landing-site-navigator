@@ -13,7 +13,7 @@ function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: Crater
       "Things are squeezed together to fit on screen. The Moon is really about 30 Earths away, and it is drawn twice as big.",
       "The tilts are real: the Moon 1.5°, its path 5°, Earth 23°.",
     );
-  } else if (view === "ground") {
+  } else if (view === "ground" || view === "walk") {
     out.push(
       chapter === "earth"
         ? "Earth is drawn 3 times bigger so it is easy to spot. Where it sits in the sky is real."

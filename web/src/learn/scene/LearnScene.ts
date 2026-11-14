@@ -22,6 +22,7 @@ import earthMap from "./maps/earth.jpg";
 import moonMap from "./maps/moon.jpg";
 import { CameraTween } from "./tween";
 import { SPACE_BG, type SceneFrame, type Shared, type ViewKind } from "./types";
+import { WalkView } from "../walk/walkView";
 
 type Phase = "fly" | "out" | "in";
 
@@ -48,6 +49,7 @@ export class LearnScene {
   private space!: SpaceView;
   private ground!: GroundView;
   private crater: CraterView | null = null;
+  private walk: WalkView | null = null;
   private overlay!: Scene;
   private overlayCam!: OrthographicCamera;
   private insetRT!: WebGLRenderTarget;
@@ -119,6 +121,7 @@ export class LearnScene {
     this.space = new SpaceView(this.canvas, this.shared);
     this.ground = new GroundView(this.shared);
     this.crater = null;
+    this.walk = null;
     for (const c of [this.space.controls]) c.addEventListener("change", this.requestRender);
     this.space.controls.addEventListener("start", this.cancelFly);
     this.overlay = new Scene();
@@ -149,6 +152,14 @@ export class LearnScene {
     return this.crater;
   }
 
+  private ensureWalk(): WalkView {
+    if (!this.walk) {
+      this.walk = new WalkView(this.shared);
+      this.applyCamera(this.walk.camera);
+    }
+    return this.walk;
+  }
+
   private teardown() {
     window.clearTimeout(this.flyTimer);
     this.space.controls.removeEventListener("change", this.requestRender);
@@ -161,6 +172,10 @@ export class LearnScene {
     }
     const scenes: Object3D[] = [this.space.scene, this.ground.scene, this.overlay];
     if (this.crater) scenes.push(this.crater.scene);
+    if (this.walk) {
+      this.walk.dispose();
+      scenes.push(this.walk.scene);
+    }
     for (const s of scenes) disposeTree(s);
     this.insetTitle.dispose();
     this.insetLine.dispose();
@@ -236,6 +251,7 @@ export class LearnScene {
     this.applyCamera(this.space.camera);
     this.applyCamera(this.ground.camera);
     if (this.crater) this.applyCamera(this.crater.camera);
+    if (this.walk) this.applyCamera(this.walk.camera);
     this.space.fitLabels(this.h);
     if (this.crater) this.crater.fitLabels(this.h);
     this.overlayCam.left = 0;
@@ -307,6 +323,9 @@ export class LearnScene {
       c.controls.enabled = true;
       c.controls.enableDamping = !f.reducedMotion;
       c.controls.update();
+    } else if (this.view === "walk") {
+      this.canvas.style.cursor = "grab";
+      this.ensureWalk().update(f);
     } else {
       this.canvas.style.cursor = "grab";
       this.ground.camera.fov = this.groundFov();
@@ -366,6 +385,7 @@ export class LearnScene {
     const target = this.trans ? this.trans.to : this.view;
     if (frame.view !== target) this.startTransition(frame.view);
     if (frame.view === "crater" || this.view === "crater") this.ensureCrater().update(frame, performance.now());
+    if (frame.view === "walk" || this.view === "walk") this.ensureWalk().update(frame);
     if (frame.inset === "ground") {
       const site = frame.site.name;
       this.insetTitle.set(this.phone ? "Standing there" : `Standing at ${site}`);
@@ -435,6 +455,8 @@ export class LearnScene {
       this.crater.update(f, now);
     } else if (this.view === "ground") {
       if (this.ground.step(dt, f.reducedMotion)) more = true;
+    } else if (this.view === "walk" && this.walk) {
+      if (this.walk.step(dt, f.reducedMotion)) more = true;
     }
     if (f.inset === "ground" && this.view !== "ground") {
       if (this.ground.step(dt, f.reducedMotion)) more = true;
@@ -458,6 +480,8 @@ export class LearnScene {
       r.render(this.space.scene, this.space.camera);
     } else if (this.view === "crater" && this.crater) {
       r.render(this.crater.scene, this.crater.camera);
+    } else if (this.view === "walk" && this.walk) {
+      r.render(this.walk.scene, this.walk.camera);
     } else {
       this.ground.fitLabels(this.h, this.ground.camera);
       r.render(this.ground.scene, this.ground.camera);
@@ -502,7 +526,7 @@ export class LearnScene {
   }
 
   private readonly onDown = (e: PointerEvent) => {
-    if (this.view !== "ground" || e.button !== 0) return;
+    if ((this.view !== "ground" && this.view !== "walk") || e.button !== 0) return;
     this.dragging = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
     this.canvas.setPointerCapture?.(e.pointerId);
     this.canvas.style.cursor = "grabbing";
@@ -510,25 +534,30 @@ export class LearnScene {
 
   private readonly onMove = (e: PointerEvent) => {
     const d = this.dragging;
-    if (!d || d.id !== e.pointerId || this.view !== "ground") return;
+    if (!d || d.id !== e.pointerId || (this.view !== "ground" && this.view !== "walk")) return;
     const dx = e.clientX - d.x;
     const dy = e.clientY - d.y;
     if (!d.moved && Math.hypot(dx, dy) < 3) return;
     if (!d.moved) {
       d.moved = true;
-      this.onUserLook?.();
+      if (this.view === "ground") this.onUserLook?.();
     }
     d.x = e.clientX;
     d.y = e.clientY;
-    const k = this.ground.camera.fov / this.h;
-    this.ground.drag(dx * k, dy * k);
+    if (this.view === "walk" && this.walk) {
+      const kw = (this.walk.camera.fov * 2) / this.h;
+      this.walk.drag(dx * kw, dy * kw);
+    } else {
+      const k = this.ground.camera.fov / this.h;
+      this.ground.drag(dx * k, dy * k);
+    }
     this.requestRender();
   };
 
   private readonly onUp = (e: PointerEvent) => {
     if (!this.dragging || this.dragging.id !== e.pointerId) return;
     this.dragging = null;
-    if (this.view === "ground") this.canvas.style.cursor = "grab";
+    if (this.view === "ground" || this.view === "walk") this.canvas.style.cursor = "grab";
   };
 
   dispose() {
