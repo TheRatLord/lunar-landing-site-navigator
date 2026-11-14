@@ -1,0 +1,286 @@
+# Lunar landing attempts: outcome, causes and lessons.
+# Every cause carries site_related: only site-related causes may count against a landing site.
+# criterion_map: review criterion each cause category counts against (null: not a site matter).
+criterion_map:
+  slope_tipover: slope_tipover
+  illumination_power: illumination_power
+  terrain_navigation: terrain_navigation
+  thermal: thermal
+  comms: earth_link
+  launch_vehicle: launch_slip
+  propulsion: null
+  gnc_software: null
+  sensor: null
+  other: null
+entries:
+  - id: im-1-odysseus
+    name: "IM-1 Odysseus"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/IM-1
+        title: "Wikipedia: IM-1 Odysseus"
+        locator: infobox; lead; landing and failure sections
+    site_id: im-1-odysseus
+    lander_id: nova-c
+    launch_vehicle_id: falcon-9
+    launch_utc: "2024-02-15T06:05:37Z"
+    landing_utc: "2024-02-22T23:23:53Z"
+    outcome: partial
+    causes:
+      - category: sensor
+        summary: "The laser rangefinder safety switch was not enabled before launch, so the altitude lasers did not work in descent; the team switched to NASA's NDL lidar."
+        site_related: false
+      - category: slope_tipover
+        summary: "Without laser altimetry it landed faster than planned on a slope of about 12 degrees, beyond its design limit, broke a leg and tipped onto its side."
+        site_related: true
+    lessons:
+      - "A lander touching down fast on a 12 degree slope can tip; slopes near the design limit leave no margin for a navigation fault."
+      - "The tipped attitude cut data rates and power; the lander did not survive into the lunar night."
+    observed: {tipped: true, power_lost: true, impacted: false, landed_upright: false}
+  - id: im-2-athena
+    name: "IM-2 Athena"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/IM-2
+        title: "Wikipedia: IM-2 Athena"
+        locator: infobox; lead; landing and failure sections
+    notes: "Wikipedia gives 17:27 UTC in the landing section and 17:28:50 UTC in the infobox; the infobox time is used."
+    site_id: im-2-athena
+    lander_id: nova-c
+    launch_vehicle_id: falcon-9
+    launch_utc: "2025-02-27T00:16:30Z"
+    landing_utc: "2025-03-06T17:28:50Z"
+    outcome: failed_landing
+    causes:
+      - category: sensor
+        summary: "The altimeter failed during landing and a dust plume obscured the laser rangefinder, so the computer had no accurate altitude."
+        site_related: false
+      - category: slope_tipover
+        summary: "It struck a plateau, skidded, rolled and came to rest on its side inside a crater."
+        site_related: true
+      - category: illumination_power
+        summary: "Lying sideways in a crater near the south pole, power generation was low; operations ended under 13 hours after landing."
+        site_related: true
+    lessons:
+      - "Small craters and plateaus below the DEM resolution inside the ellipse can tip a tall lander."
+      - "A tipped lander in a shadowed polar crater cannot keep its batteries charged."
+    observed: {tipped: true, power_lost: true, impacted: false, landed_upright: false}
+  - id: hakuto-r-m1
+    name: "HAKUTO-R Mission 1"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Hakuto-R_Mission_1
+        title: "Wikipedia: HAKUTO-R Mission 1"
+        locator: infobox; lead; landing and failure sections
+    site_id: hakuto-r-m1
+    launch_vehicle_id: falcon-9
+    launch_utc: "2022-12-11T07:38Z"
+    landing_utc: "2023-04-25T16:40Z"
+    outcome: failed_landing
+    causes:
+      - category: gnc_software
+        summary: "The onboard computer judged the radar altimeter faulty and ignored it, hovered about 5 km up until propellant ran out, then fell."
+        site_related: false
+      - category: terrain_navigation
+        summary: "LABEL TO VERIFY: ispace attributed the altimeter rejection to the sudden altitude change when crossing the rim of Atlas crater; this is not on the Wikipedia page read."
+        site_related: true
+    lessons:
+      - "A steep crater rim on the approach path produces an altitude step that navigation software may reject as a sensor fault."
+    observed: {tipped: false, power_lost: false, impacted: true, landed_upright: false}
+  - id: hakuto-r-m2
+    name: "HAKUTO-R Mission 2 (Resilience)"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Hakuto-R_Mission_2
+        title: "Wikipedia: HAKUTO-R Mission 2 (Resilience)"
+        locator: infobox; lead; landing and failure sections
+    notes: "The impact time is not stated consistently on the page, so landing_utc is left empty; the impact date is 2025-06-05."
+    site_id: hakuto-r-m2
+    launch_vehicle_id: falcon-9
+    launch_utc: "2025-01-15T06:11:39Z"
+    outcome: failed_landing
+    causes:
+      - category: sensor
+        summary: "ispace's analysis identified a laser range finder anomaly as the cause of the hard landing; contact was lost about 90 s before the projected landing."
+        site_related: false
+    lessons:
+      - "Laser range finder performance on the final approach is a single point of failure for a soft landing."
+    observed: {tipped: false, power_lost: false, impacted: true, landed_upright: false}
+  - id: beresheet
+    name: "Beresheet"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Beresheet
+        title: "Wikipedia: Beresheet"
+        locator: infobox; lead; landing and failure sections
+    site_id: beresheet
+    launch_vehicle_id: falcon-9
+    launch_utc: "2019-02-22T01:45Z"
+    landing_utc: "2019-04-11T19:23Z"
+    outcome: failed_landing
+    causes:
+      - category: sensor
+        summary: "An IMU gyroscope failed during braking."
+        site_related: false
+      - category: gnc_software
+        summary: "Restarting the second IMU triggered a reboot that shut the main engine down; it struck the surface at about 140 m/s."
+        site_related: false
+    lessons:
+      - "Engine and avionics faults during braking end a landing regardless of the site."
+    observed: {tipped: false, power_lost: false, impacted: true, landed_upright: false}
+  - id: chandrayaan-2-vikram
+    name: "Chandrayaan-2 Vikram"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Chandrayaan-2
+        title: "Wikipedia: Chandrayaan-2 Vikram"
+        locator: infobox; lead; landing and failure sections
+    site_id: chandrayaan-2-vikram
+    lander_id: vikram
+    launch_vehicle_id: lvm3
+    launch_utc: "2019-07-22T09:13:12Z"
+    landing_utc: "2019-09-06T20:23Z"
+    outcome: failed_landing
+    causes:
+      - category: gnc_software
+        summary: "The failure analysis committee concluded a software glitch; the lander deviated from its trajectory below 2.1 km and crash-landed."
+        site_related: false
+    lessons:
+      - "Guidance limits (attitude-rate caps, high thrust) can make a small landing area unreachable late in descent."
+    observed: {tipped: false, power_lost: false, impacted: true, landed_upright: false}
+  - id: chandrayaan-3-vikram
+    name: "Chandrayaan-3 Vikram"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Chandrayaan-3
+        title: "Wikipedia: Chandrayaan-3 Vikram"
+        locator: infobox; lead; landing and failure sections
+    site_id: chandrayaan-3-vikram
+    lander_id: vikram
+    launch_vehicle_id: lvm3
+    launch_utc: "2023-07-14T09:05:17Z"
+    landing_utc: "2023-08-23T12:33Z"
+    outcome: success
+    causes: []
+    lessons: []
+    observed: {tipped: false, power_lost: false, impacted: false, landed_upright: true}
+  - id: slim
+    name: "SLIM"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Smart_Lander_for_Investigating_Moon
+        title: "Wikipedia: SLIM"
+        locator: infobox; lead; landing and failure sections
+    site_id: slim
+    lander_id: slim
+    launch_vehicle_id: h-iia
+    launch_utc: "2023-09-06T23:42:11Z"
+    landing_utc: "2024-01-19T15:20Z"
+    outcome: partial
+    causes:
+      - category: propulsion
+        summary: "An engine nozzle was lost during descent; the lander came down on its side or nose with its solar panels facing away from the Sun."
+        site_related: false
+    lessons:
+      - "Landing attitude decides which arrays see the Sun; a lander on its side may only get power when the Sun moves round."
+    observed: {tipped: true, power_lost: true, impacted: false, landed_upright: false}
+  - id: luna-25
+    name: "Luna 25"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Luna_25
+        title: "Wikipedia: Luna 25"
+        locator: infobox; lead; landing and failure sections
+    site_id: luna-25-impact
+    target_site_id: luna-25-target
+    launch_vehicle_id: soyuz-2
+    launch_utc: "2023-08-10T23:10Z"
+    landing_utc: "2023-08-19T11:57Z"
+    outcome: failed_before_landing
+    causes:
+      - category: propulsion
+        summary: "A maneuvering engine failed to shut down and burned 127 s instead of 84 s, putting the craft into the Moon before any landing attempt."
+        site_related: false
+    lessons:
+      - "Pre-landing orbit maneuvers are a failure point independent of the chosen site."
+    observed: {tipped: false, power_lost: false, impacted: true, landed_upright: false}
+  - id: peregrine-m1
+    name: "Peregrine Mission One"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Peregrine_Mission_One
+        title: "Wikipedia: Peregrine Mission One"
+        locator: infobox; lead; landing and failure sections
+    target_site_id: peregrine-m1-target
+    lander_id: peregrine
+    launch_vehicle_id: vulcan-centaur
+    launch_utc: "2024-01-08T07:18:38Z"
+    outcome: failed_before_landing
+    causes:
+      - category: propulsion
+        summary: "A propellant leak developed soon after separation from Vulcan; no landing was possible and the spacecraft burned up on reentry."
+        site_related: false
+    lessons:
+      - "Propulsion faults in cruise end a mission regardless of the site chosen."
+    observed: {tipped: false, power_lost: false, impacted: false, landed_upright: false}
+  - id: blue-ghost-m1
+    name: "Blue Ghost Mission 1"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Blue_Ghost_Mission_1
+        title: "Wikipedia: Blue Ghost Mission 1"
+        locator: infobox; lead; landing and failure sections
+    site_id: blue-ghost-m1
+    lander_id: blue-ghost
+    launch_vehicle_id: falcon-9
+    launch_utc: "2025-01-15T06:11:39Z"
+    landing_utc: "2025-03-02T08:34Z"
+    outcome: success
+    causes: []
+    lessons: []
+    observed: {tipped: false, power_lost: false, impacted: false, landed_upright: true}
+  - id: change-4
+    name: "Chang'e 4"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Chang%27e_4
+        title: "Wikipedia: Chang'e 4"
+        locator: infobox; lead; landing and failure sections
+    site_id: change-4
+    launch_vehicle_id: long-march-3b
+    launch_utc: "2018-12-07T18:23Z"
+    landing_utc: "2019-01-03T02:26Z"
+    outcome: success
+    causes: []
+    lessons: []
+    observed: {tipped: false, power_lost: false, impacted: false, landed_upright: true}
+  - id: change-5
+    name: "Chang'e 5"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Chang%27e_5
+        title: "Wikipedia: Chang'e 5"
+        locator: infobox; lead; landing and failure sections
+    site_id: change-5
+    launch_vehicle_id: long-march-5
+    launch_utc: "2020-11-23T20:30:12Z"
+    landing_utc: "2020-12-01T15:11Z"
+    outcome: success
+    causes: []
+    lessons: []
+    observed: {tipped: false, power_lost: false, impacted: false, landed_upright: true}
+  - id: change-6
+    name: "Chang'e 6"
+    confidence: medium
+    sources:
+      - url: https://en.wikipedia.org/wiki/Chang%27e_6
+        title: "Wikipedia: Chang'e 6"
+        locator: infobox; lead; landing and failure sections
+    site_id: change-6
+    launch_vehicle_id: long-march-5
+    launch_utc: "2024-05-03T09:27:29Z"
+    landing_utc: "2024-06-01T22:23:16Z"
+    outcome: success
+    causes: []
+    lessons: []
+    observed: {tipped: false, power_lost: false, impacted: false, landed_upright: true}

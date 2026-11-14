@@ -1,0 +1,15 @@
+description: Blinded backtest of the lunarnav site review board against historical landings, with and without tools
+prompts:
+  - "{{mission_id}}"
+providers:
+  - id: file://provider.ts
+    label: tools
+    config:
+      mode: tools
+  - id: file://provider.ts
+    label: baseline
+    config:
+      mode: baseline
+tests: file://tests.ts
+evaluateOptions:
+  maxConcurrency: 1

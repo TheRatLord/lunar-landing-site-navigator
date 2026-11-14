@@ -9,5 +9,6 @@ web/dist/
 .numba_cache/
 .env
 .env.*
+!.env.example
 .DS_Store
 .cloudflare/
