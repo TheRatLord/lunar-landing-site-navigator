@@ -51,7 +51,7 @@ const SCHEMA = z.toJSONSchema(ReviewSchema);
 
 export async function reviewSite(input: ReviewInput): Promise<ReviewResult> {
   const prompt = requestText({ ...input, missionHours: input.missionHours ?? 336 });
-  const common = { schema: SCHEMA, model: MODEL, maxTurns: MAX_STEPS, prompt };
+  const common = { schema: SCHEMA, model: MODEL, maxTurns: MAX_STEPS + 2, prompt };
   if (input.noTools) {
     const run = await runClaude({ ...common, system: loadPrompt("baseline") });
     return { review: parseReview(run.structured), ledgerIds: [], steps: 0 };

@@ -37,7 +37,8 @@ export default class LunarnavBacktestProvider {
       });
       return { output: JSON.stringify(review), metadata: { ledgerIds: ledgerIds.length, steps } };
     } catch (err) {
-      if (tools && !lunar) shared = null;
+      if (tools) shared = null;
+      if (tools && !lunar) return { error: `cannot reach the lunarnav MCP server at ${mcpUrl()}; start it with: bash ~/wslfast.sh 'uv run lunarnav mcp --http 8765' (${err})` };
       return { error: String(err) };
     } finally {
       if (lunar) await lunar.setBlind(null).catch(() => {});

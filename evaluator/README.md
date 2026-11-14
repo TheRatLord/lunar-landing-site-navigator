@@ -33,7 +33,7 @@ No API key is needed. Everything runs on your own Claude Code login and uses you
    cd "$DST" || exit 1
    eval "$1"
    ```
-3. **Claude Code** installed and logged in (`claude --version`).
+3. **Claude Code** installed and logged in (`claude --version`). On Windows use the native installer (`claude.exe`); an npm-installed `claude.cmd` launcher is rejected because it cannot pass the multi-line prompt safely. The runner strips `ANTHROPIC_API_KEY` from Claude's environment, so runs always use your login, never API billing.
 4. **Evaluator dependencies** (Windows or WSL, needs bun):
    ```bash
    cd evaluator && bun install && cp .env.example .env
@@ -86,7 +86,7 @@ With the server running:
 
 ```bash
 cd evaluator
-npx promptfoo eval -c backtest/promptfooconfig.yaml --filter-first-n 2 -o backtest/out.json && bun backtest/summary.ts backtest/out.json
+bunx promptfoo eval -c backtest/promptfooconfig.yaml --filter-first-n 2 -o backtest/out.json && bun backtest/summary.ts backtest/out.json
 ```
 
 Start with that two-case dry run. The full run is `bun run backtest`: 13 cases Ã— 2 modes, each tools-mode case up to 30 tool calls. That is a lot of usage, so run it in batches (`--filter-first-n`, or `--filter-pattern <mission id>`) or lower `LUNARNAV_EVAL_MAX_STEPS` if your plan is tight.
@@ -121,6 +121,7 @@ Start with that two-case dry run. The full run is `bun run backtest`: 13 cases Ã
 The Claude Code runner was checked without model calls:
 - typecheck;
 - a fake `claude` executable covering success, invented ledger ids, max turns and missing structured output;
+- a promptfoo run (pinned 0.125.1) with that fake executable, which loaded the provider and tests, passed the baseline case and reported the missing server with its URL;
 - the error messages for a missing server and a missing binary;
 - blind-mode control calls against the live server.
 

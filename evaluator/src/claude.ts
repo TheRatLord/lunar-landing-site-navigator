@@ -44,16 +44,37 @@ export function ledgerIdsIn(value: unknown): string[] {
   return [...new Set([...text.matchAll(/\\*"ledger_id\\*":\s*\\*"(L\d{4,})/g)].map((m) => m[1]))];
 }
 
+const KEEP_ENV = new Set(["CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_GIT_BASH_PATH", "CLAUDE_CONFIG_DIR"]);
+
+export function childEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  return Object.fromEntries(
+    Object.entries(env).filter(
+      ([k]) => KEEP_ENV.has(k) || !(k === "ANTHROPIC_API_KEY" || k === "CLAUDECODE" || k.startsWith("CLAUDE_CODE_") || k.startsWith("CLAUDE_AGENT_SDK_")),
+    ),
+  );
+}
+
 function exec(bin: string, args: string[], cwd: string, input: string): Promise<{ stdout: string; stderr: string; code: number | null }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, args, { cwd, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    if (process.platform === "win32" && /\.(cmd|bat)$/i.test(bin)) {
+      reject(new ClaudeError(`"${bin}" is a cmd launcher, which cannot pass the review arguments safely; set LUNARNAV_CLAUDE_BIN to the native claude.exe (install it with the official installer)`));
+      return;
+    }
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(bin, args, { cwd, env: childEnv(), stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    } catch (err) {
+      reject(new ClaudeError(`cannot start Claude Code ("${bin}"): ${err}`));
+      return;
+    }
+    if (!child.stdout || !child.stderr || !child.stdin) return reject(new ClaudeError("Claude Code started without pipes"));
     let stdout = "";
     let stderr = "";
     child.stdout.setEncoding("utf8").on("data", (d) => (stdout += d));
     child.stderr.setEncoding("utf8").on("data", (d) => (stderr += d));
     child.on("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "ENOENT") {
-        reject(new ClaudeError(`cannot start Claude Code ("${bin}"): install it and log in, or set LUNARNAV_CLAUDE_BIN to its path`));
+        reject(new ClaudeError(`cannot start Claude Code ("${bin}"): install it and log in, or set LUNARNAV_CLAUDE_BIN to the full path of claude.exe / claude`));
       } else reject(err);
     });
     child.on("close", (code) => resolve({ stdout, stderr, code }));

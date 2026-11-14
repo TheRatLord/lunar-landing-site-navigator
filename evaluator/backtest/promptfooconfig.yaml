@@ -2,14 +2,14 @@ description: Blinded backtest of the lunarnav site review board against historic
 prompts:
   - "{{mission_id}}"
 providers:
-  - id: file://backtest/provider.ts
+  - id: file://provider.ts
     label: tools
     config:
       mode: tools
-  - id: file://backtest/provider.ts
+  - id: file://provider.ts
     label: baseline
     config:
       mode: baseline
-tests: file://backtest/tests.ts
+tests: file://tests.ts
 evaluateOptions:
   maxConcurrency: 1
