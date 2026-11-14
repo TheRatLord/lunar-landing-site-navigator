@@ -47,6 +47,8 @@ export interface MapCanvasProps {
   onMeasure(p: LatLon): void;
   onView(v: MapView & { kind: ViewKind }): void;
   onTileProblem(p: TileProblem | null): void;
+  /** Called when the user keeps zooming in at the closest zoom. */
+  onZoomPastLimit?(): void;
 }
 
 export function MapCanvas(props: MapCanvasProps) {
@@ -77,6 +79,7 @@ export function MapCanvas(props: MapCanvasProps) {
         onMeasure: (p) => live.current.onMeasure(p),
         onCursor: (c) => live.current.bus.emit(c),
         onHover: setHover,
+        onZoomPastLimit: () => live.current.onZoomPastLimit?.(),
         onTileError: (e, url) => {
           const t = tileErrors.current;
           t.count++;

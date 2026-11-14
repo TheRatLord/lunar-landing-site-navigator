@@ -55,10 +55,13 @@ import {
   viewBounds,
   visibleTiles,
   zoomAbout,
+  maxZoomOf,
   type Frame,
   type MapView,
   type TileRef,
 } from "./view";
+
+const OVERZOOM_TRIGGER = 0.8;
 
 export type MapMode = "pan" | "set" | "measure" | "choose";
 
@@ -106,6 +109,8 @@ export interface EngineHooks {
   onCursor(c: CursorInfo | null): void;
   onHover(h: HoverTarget | null): void;
   onTileError(e: unknown, url: string): void;
+  /** The user keeps zooming in at the closest zoom the map allows (optional; the overview opens the ground view). */
+  onZoomPastLimit?(): void;
 }
 
 interface SiteMarker {
@@ -196,6 +201,8 @@ export class MapEngine {
   private pointers = new Map<number, { x: number; y: number }>();
   private drag: null | { kind: "pan" | "site" | "pinch"; startX: number; startY: number; lastX: number; lastY: number; moved: boolean; pinch?: number } = null;
   private anim: null | { from: MapView; to: MapView; t0: number; ms: number } = null;
+  /** Wheel zoom asked for past the closest zoom, in zoom levels; see `onWheel`. */
+  private overzoom = 0;
   private statusDirty = true;
   private lastStatusAt = 0;
 
@@ -519,6 +526,10 @@ export class MapEngine {
   }
 
   zoomBy(dz: number): void {
+    if (dz > 0 && this.atMaxZoom()) {
+      this.hooks.onZoomPastLimit?.();
+      return;
+    }
     const target = zoomAbout(this.basis.grid, { w: this.w, h: this.h }, this.view, this.w / 2, this.h / 2, this.view.zoom + dz);
     this.flyTo(target, 160);
   }
@@ -757,12 +768,26 @@ export class MapEngine {
     const p = this.local(e);
     const unit = e.deltaMode === 1 ? 0.06 : e.deltaMode === 2 ? 1 : 0.0022;
     const dz = clamp(-e.deltaY * unit, -1, 1);
+    // Zooming in on past the limit, by about one level's worth of wheel, asks to go down to the ground.
+    if (dz > 0 && this.atMaxZoom()) {
+      this.overzoom += dz;
+      if (this.overzoom >= OVERZOOM_TRIGGER) {
+        this.overzoom = 0;
+        this.hooks.onZoomPastLimit?.();
+      }
+      return;
+    }
+    this.overzoom = 0;
     this.anim = null;
     this.view = zoomAbout(this.basis.grid, { w: this.w, h: this.h }, this.view, p.x, p.y, this.view.zoom + dz);
     this.cursorPx = p;
     this.cursorDirty = true;
     this.invalidate();
   };
+
+  private atMaxZoom(): boolean {
+    return this.view.zoom >= maxZoomOf(this.basis.grid) - 0.01;
+  }
 
   private onDblClick = (e: MouseEvent): void => {
     if (this.mode !== "pan") return;
