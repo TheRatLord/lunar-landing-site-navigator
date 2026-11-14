@@ -64,3 +64,15 @@ for this list unless it says so.
       touched folders and `vite build` pass
 - [ ] Not done: touch pinch past the limit (only wheel, keyboard and the button); far-terrain shadows
       beyond 50 km; a vitest for `groundMesh.ts` once vitest is set up
+
+## Explorer walk (started 2026-11-14)
+
+Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/superpowers/plans/2026-11-14-explorer-walk.md`.
+
+- [x] Rename Learn to Explorer (visible text only; routes and code stay `learn`)
+- [ ] Walk view: terrain, sky, sunlight and shadow
+- [ ] Astronaut, follow camera, keyboard
+- [ ] Solar panel and the Battery tile in Walk
+- [ ] Rover and switching
+- [ ] Hardware at the historical sites and fact cards
+- [ ] Touch controls, lights, reduced motion, honesty notes

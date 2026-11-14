@@ -19,11 +19,11 @@ export function ModeSwitch() {
         to="/learn"
         className="mode-switch-opt"
         aria-current={learn ? "page" : undefined}
-        title="Learn: a simple, guided tour of the Moon"
+        title="Explorer: walk the Moon and see why landing is hard"
         onPointerEnter={prefetch}
         onFocus={prefetch}
       >
-        Learn
+        Explorer
       </Link>
     </nav>
   );

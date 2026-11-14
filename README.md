@@ -26,7 +26,7 @@ link to the validation that measured it.
 - **HTTP service** (`lunarnav serve`): FastAPI over the engine, with a job pool for long analyses, exports
   (CSV, JSON, CCSDS AEM) and HTML/PDF mission reports.
 - **Web app** (`web/`): React interface. The overview is the home page; map, site, calendar, compare, ellipse
-  and evidence pages sit under "Detailed analysis", next to an interactive "learn" mode.
+  and evidence pages sit under "Detailed analysis", next to Explorer, an interactive mode for students and the public.
 - **Analysis agent** (`lunarnav agent`): a Claude agent that answers planning questions through typed
   engine tools, with a ledger of every computation it cites, running in an OS sandbox.
 - **Validation** (`docs/validation`): how each part was checked against JPL Horizons, published
@@ -121,7 +121,7 @@ uv run lunarnav openapi web/src/api/openapi.json && (cd web && bun run gen:api)
 - SPICE kernels: NAIF (JPL).
 - Terrain: LOLA GDR products (PDS Geosciences Node) and PGDA high-resolution site DEMs (NASA GSFC).
 - Validation imagery: LRO NAC (LROC, Arizona State University / NASA).
-- Globe textures in the learn mode: NASA imagery (public domain).
+- Globe textures in Explorer: NASA imagery (public domain).
 
 Catalogue entries (`src/lunarnav/catalog/*.yaml`) cite their own sources.
 
