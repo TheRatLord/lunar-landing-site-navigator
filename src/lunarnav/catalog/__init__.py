@@ -38,7 +38,17 @@ __all__ = [
     "load_missions",
     "load_sites",
     "load_stations",
+    "set_hidden_sites",
 ]
+
+_HIDDEN_SITES: frozenset[str] = frozenset()
+
+
+def set_hidden_sites(site_ids: frozenset[str]) -> None:
+    """Hide these sites from `load_sites` (blind backtests); an empty set shows every site again."""
+    global _HIDDEN_SITES
+    _HIDDEN_SITES = frozenset(site_ids)
+    load_sites.cache_clear()
 
 
 def _doc(filename: str) -> dict:
@@ -57,7 +67,12 @@ def _load[T: CatalogEntry](filename: str, model: type[T]) -> tuple[T, ...]:
 
 @cache
 def load_sites() -> tuple[SiteEntry, ...]:
-    """All landing sites, regions and points of interest from ``sites.yaml``."""
+    """All landing sites, regions and points of interest from ``sites.yaml``, minus any hidden by `set_hidden_sites`."""
+    return tuple(s for s in _all_sites() if s.id not in _HIDDEN_SITES)
+
+
+@cache
+def _all_sites() -> tuple[SiteEntry, ...]:
     return _load("sites.yaml", SiteEntry)
 
 
@@ -83,7 +98,7 @@ def load_launch_vehicles() -> tuple[LaunchVehicleEntry, ...]:
 def load_missions() -> tuple[MissionEntry, ...]:
     """All landing attempts from ``missions.yaml``, checked against the site, lander and vehicle catalogues."""
     entries = _load("missions.yaml", MissionEntry)
-    sites = {s.id for s in load_sites()}
+    sites = {s.id for s in _all_sites()}
     landers = {e.id for e in load_landers()}
     vehicles = {v.id for v in load_launch_vehicles()}
     for m in entries:
