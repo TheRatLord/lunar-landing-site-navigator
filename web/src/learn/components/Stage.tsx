@@ -4,16 +4,15 @@ import { describe } from "../describe";
 import { frameFrom, timelineFor, useLive } from "../derive";
 import { LearnScene } from "../scene/LearnScene";
 import { chapterOf, useLearn } from "../store";
-import { craterTerrain, ensureCrater, ensureTerrain, siteById } from "../terrain";
+import { ensureTerrain, siteById } from "../terrain";
 import { sampleAt } from "../timeline";
 import { isPhoneLayout, prefersReducedMotion, useIsPhone } from "../../lib/media";
 import { Compass } from "./Compass";
+import { ShowPanel } from "./PanelBar";
 import { ArrowDownIcon, ArrowUpIcon, CrosshairIcon } from "./icons";
 import { SunPath } from "./SunPath";
 import { TruthNote } from "./TruthNote";
 import { WhereBadge } from "./WhereBadge";
-
-const SAFE_LEFT = 448;
 
 function sentence(): string {
   const s = useLearn.getState();
@@ -84,16 +83,20 @@ export function Stage() {
   const live = useRef<HTMLParagraphElement>(null);
   const sceneRef = useRef<LearnScene | null>(null);
   const [look, setLook] = useState<LookState>({ heading: 0, fov: 60, pitch: 0, vfov: 60 });
-  const { view, chapter, siteId, lat, glFailed } = useLearn(
-    useShallow((s) => ({ view: s.view, chapter: s.chapter, siteId: s.siteId, lat: s.lat, glFailed: s.glFailed })),
+  const { view, chapter, siteId, lat, glFailed, craterTerrain, panel } = useLearn(
+    useShallow((s) => ({
+      view: s.view,
+      chapter: s.chapter,
+      siteId: s.siteId,
+      lat: s.lat,
+      glFailed: s.glFailed,
+      craterTerrain: s.craterTerrain,
+      panel: s.panel,
+    })),
   );
   useLearn((s) => s.terrainRev);
   const terrain = siteById(siteId).terrain;
   useEffect(() => ensureTerrain(siteId), [siteId]);
-  useEffect(() => {
-    if (view === "crater") ensureCrater();
-  }, [view]);
-  const craterReal = craterTerrain() !== null;
   const phone = useIsPhone();
 
   useEffect(() => {
@@ -114,12 +117,14 @@ export function Stage() {
     }
     sceneRef.current = scene;
     scene.onLookChange = (heading, fov, pitch, vfov) => setLook({ heading, fov, pitch, vfov });
+    scene.onCraterTerrain = (craterTerrain) => useLearn.setState({ craterTerrain });
     scene.onUserLook = () => {
       if (useLearn.getState().follow !== "free") useLearn.getState().setFollow("free");
     };
     const layout = () => {
       const r = el.getBoundingClientRect();
-      scene.resize(r.width, r.height, isPhoneLayout() ? 0 : SAFE_LEFT);
+      const safe = parseFloat(getComputedStyle(el).getPropertyValue("--l-safe"));
+      scene.resize(r.width, r.height, isPhoneLayout() || !useLearn.getState().panel || !Number.isFinite(safe) ? 0 : safe);
     };
     const ro = new ResizeObserver(layout);
     ro.observe(el);
@@ -131,12 +136,14 @@ export function Stage() {
     };
     push();
     const unsub = useLearn.subscribe(push);
+    const unsubPanel = useLearn.subscribe((s, p) => {
+      if (s.panel !== p.panel) layout();
+    });
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     mq.addEventListener("change", push);
     let labelKey = "";
     const describeTick = () => {
       const s = useLearn.getState();
-      if (s.chapter === "intro") return;
       const text = sentence();
       if (live.current) live.current.textContent = text;
       const k = `${s.chapter}|${s.siteId}|${s.playing}`;
@@ -149,6 +156,7 @@ export function Stage() {
     return () => {
       window.clearInterval(iv);
       unsub();
+      unsubPanel();
       mq.removeEventListener("change", push);
       ro.disconnect();
       scene.dispose();
@@ -171,7 +179,7 @@ export function Stage() {
       const c = chapterOf(s.chapter);
       let t = s.t + s.speed * dt;
       if (t >= c.spanDays) {
-        if (s.chapter === "intro" || s.chapter === "explore") t %= c.spanDays;
+        if (s.chapter === "explore") t %= c.spanDays;
         else {
           useLearn.setState({ t: c.spanDays, playing: false });
           raf = 0;
@@ -197,9 +205,8 @@ export function Stage() {
   }, []);
 
   const onLook = (az: number, el: number) => sceneRef.current?.lookAt(az, el);
-  const intro = chapter === "intro";
   return (
-    <div className={`l-stage view-${view} ${intro ? "is-intro" : ""}`}>
+    <div className={`l-stage view-${view}`}>
       <div className="l-canvas-host" ref={host}>
         {glFailed && (
           <div className="l-fallback">
@@ -207,21 +214,20 @@ export function Stage() {
           </div>
         )}
       </div>
-      {!intro && (
-        <div className="l-stage-ui">
-          <div className="l-stage-top">
-            <TruthNote view={view} site={siteId} chapter={chapter} terrain={terrain} craterReal={craterReal} />
-            {chapter === "pole" && !phone && <WhereBadge lat={lat} />}
-            {chapter === "pole" && !phone && <PoleDiagram />}
-          </div>
-          {chapter === "pole" && phone && (
-            <div className="l-where-phone">
-              <PoleDiagram />
-            </div>
-          )}
-          {view === "ground" && <GroundUi look={look} onLook={onLook} />}
+      <div className="l-stage-ui">
+        <div className="l-stage-top">
+          {!panel && <ShowPanel />}
+          <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} terrain={terrain} />
+          {chapter === "pole" && !phone && <WhereBadge lat={lat} />}
+          {chapter === "pole" && !phone && <PoleDiagram />}
         </div>
-      )}
+        {chapter === "pole" && phone && (
+          <div className="l-where-phone">
+            <PoleDiagram />
+          </div>
+        )}
+        {view === "ground" && <GroundUi look={look} onLook={onLook} />}
+      </div>
       <p className="sr-only" ref={live} />
     </div>
   );

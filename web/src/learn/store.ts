@@ -1,11 +1,12 @@
 import { create } from "zustand";
 import { clamp } from "../lib/scale";
-import { CHAPTERS, INTRO, chapterBySlug, landingT, type Chapter, type ChapterSlug, type Follow, type ViewKind } from "./chapters";
+import { CHAPTERS, chapterBySlug, landingT, type Chapter, type ChapterSlug, type Follow, type ViewKind } from "./chapters";
+import type { CraterSource } from "./scene/craterView";
 import { termsIn, type TermId } from "./glossary";
 import { SITES, type SiteId } from "./sites";
 
 export type Landing = 0 | 7 | 14;
-export type ChapterKey = ChapterSlug | "intro";
+export type ChapterKey = ChapterSlug;
 
 interface Answer {
   picked: number;
@@ -29,6 +30,9 @@ export interface LearnState {
   glFailed: boolean;
   /** Bumped whenever a site's real terrain finishes loading (see terrain.ts). */
   terrainRev: number;
+  craterTerrain: CraterSource;
+  panel: boolean;
+  setPanel(open: boolean): void;
   enterChapter(slug: ChapterKey, reducedMotion: boolean): void;
   setT(t: number): void;
   nudge(dt: number): void;
@@ -43,7 +47,7 @@ export interface LearnState {
   answer(slug: ChapterSlug, i: number, correct: boolean): void;
 }
 
-export const chapterOf = (key: ChapterKey): Chapter => (key === "intro" ? INTRO : (chapterBySlug(key) ?? CHAPTERS[0]!));
+export const chapterOf = (key: ChapterKey): Chapter => chapterBySlug(key) ?? CHAPTERS[0]!;
 
 export const landingOf = (s: Pick<LearnState, "chapter" | "landingOffset">): number | null =>
   s.chapter === "timing" ? landingT(s.landingOffset) : null;
@@ -51,7 +55,7 @@ export const landingOf = (s: Pick<LearnState, "chapter" | "landingOffset">): num
 const LAST_KEY = "lunarnav.learn.last";
 
 export const useLearn = create<LearnState>()((set, get) => ({
-  chapter: "intro",
+  chapter: "explore",
   t: 0,
   playing: false,
   speed: 0.6,
@@ -66,11 +70,14 @@ export const useLearn = create<LearnState>()((set, get) => ({
   note: "never",
   glFailed: false,
   terrainRev: 0,
+  craterTerrain: "real",
+  panel: true,
+  setPanel: (panel) => set({ panel }),
 
   enterChapter: (slug, reducedMotion) => {
     const c = chapterOf(slug);
     const termHome = { ...get().termHome };
-    if (slug !== "intro") {
+    if (slug !== "explore") {
       for (const id of termsIn(`${c.copy} ${c.prompt}`)) termHome[id] ??= c.slug;
       try {
         localStorage.setItem(LAST_KEY, slug);
@@ -88,6 +95,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
       follow: c.follow,
       interacted: false,
       termHome,
+      ...(slug === "explore" ? {} : { panel: true }),
     });
   },
   setT: (t) => {

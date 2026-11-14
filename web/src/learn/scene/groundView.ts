@@ -34,7 +34,6 @@ const R_SKIRT = 450;
 const R_SUN = 490;
 const R_EARTH = 480;
 const R_DOME = 470;
-const AZ_N = 360;
 /**
  * Real-terrain ground mesh: log-spaced rings from 0.3 m to R_GROUND, so cells are about 2.5 % of their distance
  * (25 cm at 10 m, 7 m at 300 m) and the procedural craters near the observer are resolved.
@@ -47,11 +46,22 @@ const N_ROCKS = 150;
 const N_ROCK_SHAPES = 8;
 /** Albedo scale of the real ground so a sun-facing slope reads bright under the scene's light (Lambert divides by pi). */
 const REAL_ALBEDO = 1.6;
+const AZ_N = 720;
+const SEGS = 180;
 
 interface Rock {
   mesh: Mesh;
   shadow: Mesh;
   size: number;
+  x: number;
+  z: number;
+}
+
+interface Bump {
+  x: number;
+  z: number;
+  s: number;
+  h: number;
 }
 
 interface Look {
@@ -66,6 +76,9 @@ export class GroundView {
   private readonly light = new DirectionalLight(0xffffff, 3);
   private readonly ambient = new AmbientLight(0xffffff, 0.05);
   private readonly groundMat: MeshBasicMaterial;
+  private readonly groundGeo: BufferGeometry;
+  private readonly bumps: Bump[];
+  private readonly edgeDrop = new Float32Array(AZ_N);
   private readonly skirtGeo = new BufferGeometry();
   private readonly skirtMat = new MeshLambertMaterial({ color: 0x2a2b30, side: DoubleSide });
   private readonly lineGeo = new BufferGeometry();
@@ -112,9 +125,16 @@ export class GroundView {
     s.add(this.stars);
     s.add(this.light, this.light.target, this.ambient);
 
-    const ground = this.buildGround();
+    const br = rng(9);
+    this.bumps = Array.from({ length: 30 }, () => ({
+      x: (br() - 0.5) * 500,
+      z: (br() - 0.5) * 500,
+      s: 8 + br() * 40,
+      h: (br() - 0.5) * 0.8,
+    }));
+    this.groundGeo = this.buildGround();
     this.groundMat = new MeshBasicMaterial({ map: shared.regolith, color: 0x777777 });
-    this.simGround = new Mesh(ground, this.groundMat);
+    this.simGround = new Mesh(this.groundGeo, this.groundMat);
     s.add(this.simGround);
     // Real ground: UVs are metres, so the albedo tiles every 10 m and the bump texture every 3 m.
     const albedo = regolithAlbedo();
@@ -160,14 +180,12 @@ export class GroundView {
       const x = Math.sin(az * RAD) * dist;
       const z = -Math.cos(az * RAD) * dist;
       const sy = 0.5 + r() * 0.4;
-      mesh.position.set(x, size * 0.35, z);
       mesh.userData.base = size * sy * 0.22;
       mesh.scale.set(size * (0.8 + r() * 0.4), size * sy, size * (0.7 + r() * 0.5));
       mesh.rotation.set((r() - 0.5) * 0.5, r() * Math.PI * 2, (r() - 0.5) * 0.5);
       const shadow = new Mesh(shadowGeo, shadowMat);
-      shadow.position.set(x, 0.03, z);
       s.add(mesh, shadow);
-      this.rocks.push({ mesh, shadow, size });
+      this.rocks.push({ mesh, shadow, size, x, z });
     }
 
     this.sunDisc = new Sprite(new SpriteMaterial({ map: shared.disc, color: "#fff7e6", transparent: true }));
@@ -242,30 +260,38 @@ export class GroundView {
     return idx;
   }
 
+  private bumpAt(x: number, z: number): number {
+    const rad = Math.hypot(x, z);
+    if (rad >= R_GROUND - 1e-6) return 0;
+    let y = 0;
+    for (const b of this.bumps) y += b.h * Math.exp(-((x - b.x) ** 2 + (z - b.z) ** 2) / (b.s * b.s));
+    return y * Math.min(1, rad / 40);
+  }
+
+  private dropAt(x: number, z: number): number {
+    const f = (wrap360(Math.atan2(x, -z) / RAD) / 360) * AZ_N;
+    const i = Math.floor(f) % AZ_N;
+    const u = f - Math.floor(f);
+    const edge = this.edgeDrop[i]! * (1 - u) + this.edgeDrop[(i + 1) % AZ_N]! * u;
+    return ((x * x + z * z) / (R_GROUND * R_GROUND)) * edge;
+  }
+
+  private groundAt(x: number, z: number): number {
+    return this.patch ? this.groundY(x, z) : this.bumpAt(x, z) + this.dropAt(x, z);
+  }
+
   private buildGround(): BufferGeometry {
     const rings = 40;
-    const segs = 96;
+    const segs = SEGS;
     const pos: number[] = [0, 0, 0];
     const uv: number[] = [0.5, 0.5];
-    const r = rng(9);
-    const bumps = Array.from({ length: 30 }, () => ({
-      x: (r() - 0.5) * 500,
-      z: (r() - 0.5) * 500,
-      s: 8 + r() * 40,
-      h: (r() - 0.5) * 0.8,
-    }));
     for (let i = 1; i <= rings; i++) {
       const rad = R_GROUND * (i / rings) ** 1.7;
       for (let j = 0; j < segs; j++) {
         const a = (j / segs) * Math.PI * 2;
         const x = Math.cos(a) * rad;
         const z = Math.sin(a) * rad;
-        let y = 0;
-        if (i < rings) {
-          for (const b of bumps) y += b.h * Math.exp(-((x - b.x) ** 2 + (z - b.z) ** 2) / (b.s * b.s));
-          y *= Math.min(1, rad / 40);
-        }
-        pos.push(x, y, z);
+        pos.push(x, i < rings ? this.bumpAt(x, z) : 0, z);
         uv.push(0.5 + x / (2 * R_GROUND), 0.5 - z / (2 * R_GROUND));
       }
     }
@@ -352,12 +378,6 @@ export class GroundView {
       this.scene.add(this.realGround);
     }
     this.simGround.visible = !p;
-    for (const rk of this.rocks) {
-      const { x, z } = rk.mesh.position;
-      const y = this.groundY(x, z);
-      rk.mesh.position.y = y + (p ? (rk.mesh.userData.base as number) : rk.size * 0.3);
-      rk.shadow.position.y = y + 0.03;
-    }
   }
 
   /** Point the shadow camera along the Sun and fit its box to the ground disc (thin, because the Sun is low). */
@@ -383,6 +403,24 @@ export class GroundView {
   }
 
   private buildHorizon(site: Site) {
+    for (let i = 0; i < AZ_N; i++) {
+      let lo = Infinity;
+      for (let k = -8; k <= 8; k++) lo = Math.min(lo, site.horizon(((i + k) / AZ_N) * 360));
+      this.edgeDrop[i] = Math.min(0, EYE + R_GROUND * Math.tan(lo * RAD) - 0.3);
+    }
+    const gp = this.groundGeo.getAttribute("position") as BufferAttribute;
+    for (let v = 0; v < gp.count; v++) {
+      const x = gp.getX(v);
+      const z = gp.getZ(v);
+      gp.setY(v, this.bumpAt(x, z) + this.dropAt(x, z));
+    }
+    gp.needsUpdate = true;
+    this.groundGeo.computeBoundingSphere();
+    for (const rk of this.rocks) {
+      const y = this.groundAt(rk.x, rk.z);
+      rk.mesh.position.set(rk.x, y + (this.patch ? (rk.mesh.userData.base as number) : rk.size * 0.3), rk.z);
+      rk.shadow.position.set(rk.x, y + 0.03, rk.z);
+    }
     const sk = this.skirtGeo.getAttribute("position") as BufferAttribute;
     const ln = this.lineGeo.getAttribute("position") as BufferAttribute;
     for (let i = 0; i <= AZ_N; i++) {
@@ -390,8 +428,7 @@ export class GroundView {
       const sx = Math.sin(az * RAD);
       const sz = -Math.cos(az * RAD);
       const top = EYE + R_SKIRT * Math.tan(site.horizon(az) * RAD);
-      const base = this.groundY(sx * R_GROUND, sz * R_GROUND);
-      sk.setXYZ(i * 2, sx * R_GROUND, base, sz * R_GROUND);
+      sk.setXYZ(i * 2, sx * R_GROUND, this.patch ? this.groundY(sx * R_GROUND, sz * R_GROUND) : this.edgeDrop[i % AZ_N]!, sz * R_GROUND);
       sk.setXYZ(i * 2 + 1, sx * R_SKIRT, top, sz * R_SKIRT);
       const rr = R_SKIRT - 1;
       const th = 0.55;

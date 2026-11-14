@@ -28,7 +28,7 @@ import type { SceneFrame, Shared } from "./types";
 const ORBIT_SAMPLES = 119;
 const v3 = (a: V3) => new Vector3(a[0], a[1], a[2]);
 
-export type SpacePreset = "intro" | "day" | "explore" | "fly";
+export type SpacePreset = "day" | "explore" | "fly";
 
 export class SpaceView {
   readonly scene = new Scene();
@@ -162,7 +162,6 @@ export class SpaceView {
     this.moon.position.copy(this.moonPos);
     this.matrix.makeBasis(v3(sp.moonBasis[0]), v3(sp.moonBasis[1]), v3(sp.moonBasis[2]));
     this.moon.quaternion.setFromRotationMatrix(this.matrix);
-    this.rays.visible = f.chapter !== "intro";
     if (f.chapter === "day") {
       this.rays.scale.setScalar(0.2);
       this.rays.position.set(this.moonPos.x + 17 * 0.2 - 0.8, this.moonPos.y, this.moonPos.z);
@@ -171,15 +170,11 @@ export class SpaceView {
       this.rays.position.set(0, 0, 0);
     }
     const k = this.rays.scale.x;
-    this.sunLabel.sprite.visible = this.rays.visible;
     this.sunLabel.sprite.position.set(this.rays.position.x - 22 * k, this.rays.position.y + 0.6 * k, this.rays.position.z);
-    this.orbit.visible = f.chapter !== "intro";
     this.moonLabel.sprite.position.copy(this.moonPos).add(new Vector3(0, -MOON_DRAWN_RADIUS - 0.2, 0));
 
-    const showPin = f.chapter !== "intro";
-    this.pin.visible = showPin;
     const key = `${f.site.id}|${f.lat ?? ""}`;
-    if (showPin && key !== this.pinSiteKey) {
+    if (key !== this.pinSiteKey) {
       this.pinSiteKey = key;
       const lat = f.site.id === "custom" ? (f.lat ?? 0) : f.site.lat;
       const p = pinLocal(lat, f.site.lon, MOON_DRAWN_RADIUS);
@@ -209,10 +204,8 @@ export class SpaceView {
     const unit = (2 * Math.tan((this.camera.fov * Math.PI) / 360)) / h;
     this.pinHead.scale.setScalar(34 * unit * k);
     this.pinCore.scale.setScalar(9 * unit);
-    if (this.pin.visible) {
-      const x = this.pin.getWorldPosition(this.tmp).project(this.camera).x;
-      this.pinLabel.sprite.center.x = x > 0.3 ? 1.08 : -0.08;
-    }
+    const x = this.pin.getWorldPosition(this.tmp).project(this.camera).x;
+    this.pinLabel.sprite.center.x = x > 0.3 ? 1.08 : -0.08;
   }
 
   private readonly tmp = new Vector3();
@@ -232,18 +225,6 @@ export class SpaceView {
   pose(kind: SpacePreset, phone: boolean): Pose {
     const m = this.moonPos.clone();
     const fov = 40;
-    if (kind === "intro") {
-      const out = m.clone().normalize();
-      const sun = new Vector3(-1, 0, 0);
-      const side = sun.clone().addScaledVector(out, -sun.dot(out));
-      if (side.lengthSq() < 0.04) side.crossVectors(new Vector3(0, 1, 0), out);
-      side.normalize();
-      const mid = m.clone().multiplyScalar(0.5);
-      const target = m.clone().multiplyScalar(phone ? 0.5 : 0.42);
-      const pos = mid.clone().addScaledVector(side, phone ? 26 : 30).add(new Vector3(0, phone ? 8 : 9, 0));
-      pos.add(target).sub(mid);
-      return { pos, target, fov };
-    }
     if (kind === "day") {
       const pos = m.clone().add(phone ? new Vector3(0.4, 6.4, 2.8) : new Vector3(0.6, 5.4, 2.4));
       return { pos, target: m.clone(), fov };

@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CHAPTERS, STORY, type Chapter } from "../chapters";
+import { STORY, learnPath, type Chapter } from "../chapters";
 import { useTimeline } from "../derive";
 import { landingOf, useLearn } from "../store";
 import { nextEvent } from "../timeline";
-import { useIsPhone } from "../../lib/media";
 import { ChapterControl } from "./ChapterControl";
 import { Check } from "./Check";
 import { ArrowLeftIcon, ArrowRightIcon } from "./icons";
+import { PanelBar } from "./PanelBar";
 import { RichText } from "./RichText";
 
 function SunnyDays() {
@@ -72,23 +72,17 @@ function LeanPicture() {
 }
 
 function ChapterNav({ c }: { c: Chapter }) {
-  const i = CHAPTERS.findIndex((x) => x.slug === c.slug);
-  const prev = i > 0 ? `/learn/${CHAPTERS[i - 1]!.slug}` : "/learn";
-  const next = CHAPTERS[i + 1];
+  const i = STORY.findIndex((x) => x.slug === c.slug);
+  const prev = STORY[i - 1];
+  const next = STORY[i + 1];
   return (
-    <nav className="l-nav" aria-label="Chapter">
-      <Link className="l-btn l-btn-quiet" to={prev}>
-        <ArrowLeftIcon size={18} /> Back
+    <nav className="l-nav l-panel-foot" aria-label="Lesson">
+      <Link className="l-btn l-btn-quiet" to={learnPath(prev ? prev.slug : "explore")}>
+        <ArrowLeftIcon size={18} /> {prev ? "Back" : "Explore"}
       </Link>
-      {next ? (
-        <Link className="l-btn l-btn-primary" to={`/learn/${next.slug}`}>
-          {next.slug === "explore" ? "Free explore" : "Next"} <ArrowRightIcon size={18} />
-        </Link>
-      ) : (
-        <Link className="l-btn l-btn-primary" to="/">
-          Open the Planner <ArrowRightIcon size={18} />
-        </Link>
-      )}
+      <Link className="l-btn l-btn-primary" to={learnPath(next ? next.slug : "explore")}>
+        {next ? "Next lesson" : "Finish"} <ArrowRightIcon size={18} />
+      </Link>
     </nav>
   );
 }
@@ -101,35 +95,38 @@ export function StoryCard({ c }: { c: Chapter }) {
     return () => window.clearTimeout(id);
   }, []);
   const showTake = interacted || timed;
-  const phone = useIsPhone();
-  const copy = (
-    <p className="l-copy">
-      <RichText text={c.copy} slug={c.slug} />
-    </p>
-  );
   return (
     <article className="l-story" aria-labelledby="l-title">
+      <PanelBar>
+        <Link className="l-back" to={learnPath("explore")}>
+          <ArrowLeftIcon size={16} /> Explore
+        </Link>
+        <span className="l-eyebrow">
+          Lesson {c.n} of {STORY.length}
+        </span>
+      </PanelBar>
       <div className="l-story-scroll">
-        <p className="l-eyebrow">
-          Stop {c.n} of {STORY.length}
-        </p>
         <h1 id="l-title" className="l-title">
           {c.title}
         </h1>
-        {!phone && copy}
-        <p className="l-prompt">
-          <RichText text={c.prompt} slug={c.slug} />
+        <p className="l-copy">
+          <RichText text={c.copy} slug={c.slug} />
         </p>
-        <ChapterControl kind={c.control} />
+        <div className="l-try">
+          <span className="l-try-label">Try it</span>
+          <p className="l-try-text">
+            <RichText text={c.prompt} slug={c.slug} />
+          </p>
+          <ChapterControl kind={c.control} />
+        </div>
         <BigNumber c={c} />
-        {phone && copy}
         <div className={`l-take ${showTake ? "is-on" : ""}`} aria-hidden={!showTake}>
-          <span className="l-eyebrow">Takeaway</span>
+          <span className="l-eyebrow">Remember</span>
           <p>{c.takeaway}</p>
         </div>
         {c.check && <Check slug={c.slug} check={c.check} />}
-        <ChapterNav c={c} />
       </div>
+      <ChapterNav c={c} />
     </article>
   );
 }

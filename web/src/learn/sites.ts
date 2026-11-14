@@ -1,5 +1,5 @@
-import { wrap180 } from "../lib/scale";
 import type { Place } from "./geometry";
+import horizons from "./horizons.json";
 
 export type SiteId = "apollo11" | "blueghost" | "rim" | "floor" | "change4" | "custom";
 
@@ -12,7 +12,18 @@ export interface Site extends Place {
   blurb: string;
 }
 
-const g = (x: number, w: number): number => Math.exp(-0.5 * (wrap180(x) / w) ** 2);
+type RealId = Exclude<SiteId, "custom">;
+
+function realHorizon(id: RealId): (az: number) => number {
+  const elev = horizons.sites[id];
+  const n = horizons.n_az;
+  return (az) => {
+    const f = ((((az % 360) + 360) % 360) / 360) * n;
+    const i = Math.floor(f) % n;
+    const u = f - Math.floor(f);
+    return elev[i]! * (1 - u) + elev[(i + 1) % n]! * u;
+  };
+}
 
 export const SITES: Record<SiteId, Site> = {
   apollo11: {
@@ -24,7 +35,7 @@ export const SITES: Record<SiteId, Site> = {
     blurb: "Where people first walked on the Moon, in 1969.",
     lat: 0.67416,
     lon: 23.47314,
-    horizon: () => 0,
+    horizon: realHorizon("apollo11"),
   },
   blueghost: {
     id: "blueghost",
@@ -35,7 +46,7 @@ export const SITES: Record<SiteId, Site> = {
     blurb: "A robot lander that worked for two weeks in 2025.",
     lat: 18.562,
     lon: 61.81,
-    horizon: () => 0,
+    horizon: realHorizon("blueghost"),
   },
   rim: {
     id: "rim",
@@ -46,7 +57,7 @@ export const SITES: Record<SiteId, Site> = {
     blurb: "A high crater edge where the Sun almost never sets.",
     lat: -89.687,
     lon: -162.81,
-    horizon: (az) => -1.5 + 2.2 * g(az - 300, 12),
+    horizon: realHorizon("rim"),
   },
   floor: {
     id: "floor",
@@ -57,7 +68,7 @@ export const SITES: Record<SiteId, Site> = {
     blurb: "A deep crater floor that has been dark for billions of years.",
     lat: -89.67,
     lon: 129.78,
-    horizon: (az) => 20 + 2 * Math.sin((3 * az * Math.PI) / 180),
+    horizon: realHorizon("floor"),
   },
   change4: {
     id: "change4",
@@ -68,7 +79,7 @@ export const SITES: Record<SiteId, Site> = {
     blurb: "The first landing on the far side, in 2019.",
     lat: -45.456,
     lon: 177.589,
-    horizon: () => 0.3,
+    horizon: realHorizon("change4"),
   },
   custom: {
     id: "custom",

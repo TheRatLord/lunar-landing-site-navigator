@@ -14,7 +14,7 @@ import {
 import { clamp } from "../../lib/scale";
 import { disposeTree } from "../../lib/three";
 import { describeShort } from "../describe";
-import { CraterView } from "./craterView";
+import { CraterView, type CraterSource } from "./craterView";
 import { GroundView } from "./groundView";
 import { SpaceView, type SpacePreset } from "./spaceView";
 import { discTexture, earthTexture, glowTexture, Label, moonTexture, regolithTexture, ringTexture, withPhoto } from "./textures";
@@ -77,6 +77,7 @@ export class LearnScene {
 
   onLookChange: ((headingDeg: number, fovDeg: number, pitchDeg: number, vfovDeg: number) => void) | null = null;
   onUserLook: (() => void) | null = null;
+  onCraterTerrain: ((source: CraterSource) => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement, opts: { pixelRatioCap: number }) {
     this.canvas = canvas;
@@ -136,7 +137,10 @@ export class LearnScene {
 
   private ensureCrater(): CraterView {
     if (!this.crater) {
-      this.crater = new CraterView(this.canvas, this.shared);
+      this.crater = new CraterView(this.canvas, this.shared, (source) => {
+        this.onCraterTerrain?.(source);
+        this.requestRender();
+      });
       this.crater.controls.addEventListener("change", this.requestRender);
       this.crater.phone = this.phone;
       this.applyCamera(this.crater.camera);
@@ -203,7 +207,6 @@ export class LearnScene {
   };
 
   private spacePreset(f: SceneFrame): SpacePreset {
-    if (f.chapter === "intro") return "intro";
     if (f.chapter === "day") return "day";
     return "explore";
   }
@@ -248,7 +251,7 @@ export class LearnScene {
     this.insetDisc.position.set(r.x + r.size / 2, r.y + r.size / 2, 0);
     this.insetRing.position.copy(this.insetDisc.position);
     this.placeCaption();
-    if (this.frame && this.frame.view === "space" && this.frame.chapter !== "intro" && !this.tween.active) {
+    if (this.frame && this.frame.view === "space" && !this.tween.active) {
       this.poseSpace(this.frame, true);
     }
     this.requestRender();
@@ -276,7 +279,7 @@ export class LearnScene {
   private poseSpace(f: SceneFrame, snap: boolean) {
     const preset = this.spacePreset(f);
     const sv = this.space;
-    sv.controls.enabled = preset !== "intro";
+    sv.controls.enabled = true;
     sv.controls.enableDamping = !f.reducedMotion;
     if (snap || f.reducedMotion) {
       this.tween.cancel();
@@ -297,7 +300,7 @@ export class LearnScene {
     if (this.view === "space") this.poseSpace(f, snap);
     else if (this.view === "crater") {
       const c = this.ensureCrater();
-      const p = c.pose(this.phone, f.d);
+      const p = c.pose(this.phone);
       c.camera.position.copy(p.pos);
       c.controls.target.copy(p.target);
       c.camera.lookAt(p.target);
@@ -425,11 +428,6 @@ export class LearnScene {
       if (this.tween.active) {
         this.tween.step(sv.camera, sv.controls.target, now);
         more = true;
-      } else if (f.chapter === "intro") {
-        const p = sv.pose("intro", this.phone);
-        sv.camera.position.copy(p.pos);
-        sv.controls.target.copy(p.target);
-        sv.camera.lookAt(p.target);
       } else if (sv.controls.enabled && sv.controls.update()) more = true;
       sv.setPinPulse(now, f.reducedMotion);
     } else if (this.view === "crater" && this.crater) {

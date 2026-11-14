@@ -2,14 +2,14 @@ import type { ControlKind } from "../chapters";
 import { walkWords } from "../sites";
 import { useLearn, type Landing } from "../store";
 import { prefersReducedMotion } from "../../lib/media";
-import { LanderIcon } from "./icons";
+import { LanderIcon, PauseIcon, PlayIcon } from "./icons";
 import { Toggle } from "./Toggle";
 
 const STOPS = [
   { v: 0, label: "Equator" },
   { v: 45, label: "Halfway" },
-  { v: 72, label: "Near the pole" },
-  { v: 89.5, label: "South pole" },
+  { v: 72, label: "Near pole" },
+  { v: 89.5, label: "Pole" },
 ];
 
 function Latitude() {
@@ -19,7 +19,7 @@ function Latitude() {
   return (
     <div className="l-walk">
       <label htmlFor="l-walk" className="l-control-label">
-        Walk toward the south pole
+        How far south you are
       </label>
       <input
         id="l-walk"
@@ -33,13 +33,13 @@ function Latitude() {
         aria-valuetext={walkWords(lat)}
         onChange={(e) => setLat(-Number(e.target.value))}
       />
-      <div className="l-walk-stops">
+      <div className="l-toggle l-walk-stops" role="group" aria-label="Jump to a place">
         {STOPS.map((s) => (
           <button
             key={s.v}
             type="button"
-            className={`l-stop ${Math.abs(v - s.v) < 3 ? "is-on" : ""}`}
-            style={{ left: `${(s.v / 89.5) * 100}%` }}
+            className="l-toggle-btn"
+            aria-pressed={Math.abs(v - s.v) < 3}
             onClick={() => setLat(-s.v)}
           >
             {s.label}
@@ -82,6 +82,16 @@ function LandingChoice() {
   );
 }
 
+function PlayControl() {
+  const playing = useLearn((s) => s.playing);
+  const togglePlay = useLearn((s) => s.togglePlay);
+  return (
+    <button type="button" className="l-btn l-btn-primary l-try-play" onClick={togglePlay}>
+      {playing ? <PauseIcon size={18} /> : <PlayIcon size={18} />} {playing ? "Pause" : "Play"}
+    </button>
+  );
+}
+
 export function ChapterControl({ kind }: { kind: ControlKind }) {
   const siteId = useLearn((s) => s.siteId);
   const setSite = useLearn((s) => s.setSite);
@@ -110,6 +120,8 @@ export function ChapterControl({ kind }: { kind: ControlKind }) {
       <Latitude />
     ) : kind === "landing" ? (
       <LandingChoice />
+    ) : kind === "none" ? (
+      <PlayControl />
     ) : null;
   return body && <div className="l-control">{body}</div>;
 }

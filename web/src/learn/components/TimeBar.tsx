@@ -1,19 +1,30 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import { useMemo, type KeyboardEvent } from "react";
 import { useShallow } from "zustand/react/shallow";
-import type { Chapter, TickKind } from "../chapters";
+import type { Chapter } from "../chapters";
 import { useTimeline } from "../derive";
 import { dateOfDay } from "../geometry";
 import { landingOf, useLearn } from "../store";
-import { EclipseIcon, LanderIcon, PauseIcon, PlayIcon, SunriseIcon, SunsetIcon } from "./icons";
+import { EclipseIcon, LanderIcon, PauseIcon, PlayIcon } from "./icons";
 
 const fmt = (d: number, month: "short" | "long") =>
   dateOfDay(d).toLocaleDateString("en-GB", { day: "numeric", month, year: "numeric", timeZone: "UTC" });
 
-const TICK: Record<TickKind, { icon: ReactNode; word: string }> = {
-  sunrise: { icon: <SunriseIcon size={16} />, word: "Sunrise" },
-  sunset: { icon: <SunsetIcon size={16} />, word: "Sunset" },
-  eclipse: { icon: <EclipseIcon size={16} />, word: "Eclipse" },
-};
+function bands(arr: Float32Array, stepD: number, span: number, on: string, off: string): string {
+  const stops: string[] = [];
+  let start = 0;
+  let cur = (arr[0] ?? 0) >= 0.5;
+  const pct = (t: number) => `${((Math.min(t, span) / span) * 100).toFixed(3)}%`;
+  for (let i = 1; i < arr.length; i++) {
+    const v = arr[i]! >= 0.5;
+    if (v === cur) continue;
+    const t = i * stepD;
+    stops.push(`${cur ? on : off} ${pct(start)} ${pct(t)}`);
+    start = t;
+    cur = v;
+  }
+  stops.push(`${cur ? on : off} ${pct(start)} 100%`);
+  return `linear-gradient(to right, ${stops.join(", ")})`;
+}
 
 function dayText(t: number): { day: number; hours: number } {
   const day = Math.floor(t + 1e-6) + 1;
@@ -47,16 +58,10 @@ export function TimeBar({ c }: { c: Chapter }) {
   const d = c.epochD + t;
   const { day, hours } = dayText(t);
   const landing = landingOf({ chapter, landingOffset });
-  const dense = span > 60;
-  const rows: number[] = [];
-  const ticks = tl.events.filter((e) => (c.ticks as string[]).includes(e.kind) && e.t > 0.05 && e.t < span - 0.05);
-  let lastT = -Infinity;
-  for (const e of ticks) {
-    const row = !dense && e.t - lastT < span * 0.16 && rows[rows.length - 1] === 0 ? 1 : 0;
-    rows.push(row);
-    if (row === 0) lastT = e.t;
-  }
-  const twoRows = rows.includes(1);
+  const showEarth = c.chips.includes("earth");
+  const sunBands = useMemo(() => bands(tl.sun, tl.stepD, span, "var(--l-day)", "var(--l-night)"), [tl, span]);
+  const earthBands = useMemo(() => bands(tl.earth, tl.stepD, span, "var(--c-earth)", "transparent"), [tl, span]);
+  const eclipses = c.ticks.includes("eclipse") ? tl.events.filter((e) => e.kind === "eclipse" && e.t > 0.05 && e.t < span - 0.05) : [];
   const valueText = `Day ${day}${hours ? ` and ${hours} hour${hours === 1 ? "" : "s"}` : ""}, ${fmt(d, "long")} on Earth's calendar`;
   return (
     <div className="l-timebar" role="group" aria-label="Time">
@@ -69,34 +74,36 @@ export function TimeBar({ c }: { c: Chapter }) {
       >
         {playing ? <PauseIcon size={22} /> : <PlayIcon size={22} />}
       </button>
-      <div className={`l-track ${twoRows ? "two-rows" : ""}`}>
-        <div className={`l-ticks ${dense ? "is-dense" : ""}`}>
-          {ticks.map((e, i) => {
-            const k = e.kind as TickKind;
-            return (
-              <button
-                key={`${e.kind}-${i}`}
-                type="button"
-                className={`l-tick l-tick-${k} row-${rows[i] ?? 0} ${e.t / span < 0.08 ? "at-start" : e.t / span > 0.92 ? "at-end" : ""}`}
-                style={{ left: `${(e.t / span) * 100}%` }}
-                onClick={() => jump(e.t)}
-                aria-label={`Jump to ${TICK[k].word.toLowerCase()}, day ${dayText(e.t).day}`}
-                title={dense ? TICK[k].word : undefined}
-              >
-                {dense ? <span className="l-tick-bar" /> : TICK[k].icon}
-                {!dense && <span>{TICK[k].word}</span>}
-              </button>
-            );
-          })}
+      <div className="l-track">
+        <div className="l-marks">
+          {eclipses.map((e, i) => (
+            <button
+              key={`eclipse-${i}`}
+              type="button"
+              className="l-mark l-mark-eclipse"
+              style={{ left: `${(e.t / span) * 100}%` }}
+              onClick={() => jump(e.t)}
+              aria-label={`Jump to the eclipse, day ${dayText(e.t).day}`}
+              title="Eclipse"
+            >
+              <EclipseIcon size={16} />
+            </button>
+          ))}
           {landing !== null && (
-            <span className="l-tick l-tick-lander" style={{ left: `${(landing / span) * 100}%` }} aria-hidden>
-              <LanderIcon size={18} />
+            <span className="l-mark l-mark-lander" style={{ left: `${(landing / span) * 100}%` }} title="Landing" aria-hidden>
+              <LanderIcon size={16} />
             </span>
+          )}
+        </div>
+        <div className="l-strips" aria-hidden>
+          <span className="l-strip l-strip-sun" style={{ background: sunBands }} />
+          {showEarth && (
+            <span className="l-strip l-strip-earth" style={{ background: earthBands }} />
           )}
         </div>
         <input
           type="range"
-          className="l-range"
+          className="l-range l-range-over"
           min={0}
           max={span}
           step={1 / 24}
@@ -105,7 +112,6 @@ export function TimeBar({ c }: { c: Chapter }) {
           aria-keyshortcuts="Shift+ArrowRight Shift+ArrowLeft PageUp PageDown"
           onKeyDown={onRangeKey}
           aria-valuetext={valueText}
-          style={{ ["--pct" as string]: `${(t / span) * 100}%` }}
           onChange={(e) => setT(Number(e.target.value))}
         />
       </div>
@@ -113,16 +119,19 @@ export function TimeBar({ c }: { c: Chapter }) {
         <span className="l-day">Day {day}</span>
         <span className="l-date">{fmt(d, "short")}</span>
       </div>
-      {dense && (
-        <div className="l-legend" aria-hidden>
+      <div className="l-legend" aria-hidden>
+        <span className="l-legend-item">
+          <span className="l-swatch l-swatch-day" /> Sunlight
+        </span>
+        <span className="l-legend-item">
+          <span className="l-swatch l-swatch-night" /> Dark
+        </span>
+        {showEarth && (
           <span className="l-legend-item">
-            <span className="l-tick-bar" /> Sunrise
+            <span className="l-swatch l-swatch-earth" /> Earth in the sky
           </span>
-          <span className="l-legend-item l-tick-sunset">
-            <span className="l-tick-bar" /> Sunset
-          </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

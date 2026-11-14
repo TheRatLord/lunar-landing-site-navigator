@@ -23,7 +23,7 @@ export function frameFrom(s: LearnState, reducedMotion: boolean): SceneFrame {
     lat,
     sky: skyAt(site, d, lat),
     space: spaceAt(d),
-    inset: s.chapter === "intro" ? null : c.inset,
+    inset: c.inset,
     trail: c.trail,
     follow: s.follow,
     reducedMotion,

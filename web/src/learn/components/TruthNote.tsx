@@ -1,48 +1,46 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { ViewKind } from "../chapters";
+import type { CraterSource } from "../scene/craterView";
 import type { SiteId } from "../sites";
 import type { ChapterKey } from "../store";
 import type { SiteTerrain } from "../terrain";
 import { CloseIcon, InfoIcon } from "./icons";
 
-function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, terrain?: SiteTerrain, craterReal = false): string[] {
+function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: CraterSource, terrain?: SiteTerrain): string[] {
   const out: string[] = [];
   if (view === "space") {
     out.push(
-      "Sizes and distances are squashed to fit. Really, the Moon is 30 Earths away, and the Sun is 400 times farther still. The Moon is drawn twice as big.",
-      "The tilts are real: Moon 1.5°, its path 5°, Earth 23°.",
+      "Things are squeezed together to fit on screen. The Moon is really about 30 Earths away, and it is drawn twice as big.",
+      "The tilts are real: the Moon 1.5°, its path 5°, Earth 23°.",
     );
   } else if (view === "ground") {
-    if (chapter === "earth") {
-      out.push(
-        "Earth is drawn 3 times bigger than it really looks, so it is easy to spot. Its place in the sky is true.",
-        "The Sun is shown at its true size. The glow around it is just for show.",
-      );
-    } else {
-      out.push("The Sun and Earth are shown at their true size and position in the sky.", "The glow around the Sun is just for show.");
-    }
-    if (terrain)
-      out.push(
-        `The ground around you and the hills on the horizon are real, from NASA's LRO laser maps (${terrain.pixelM} m squares, ${terrain.patchStores.join(", ")}). Anything smaller than that, the small craters, bumps and rocks, is made up to look like real lunar ground.`,
-      );
-    else if (site === "rim" || site === "floor") out.push("The hill shapes are simplified look-alikes of the real ones.");
-    if (site === "custom") out.push("The ground here is made flat on purpose, so only the Moon's lean matters.");
-  } else {
     out.push(
-      craterReal
-        ? "The real shape of Shackleton crater, from NASA's LRO laser maps, smoothed to squares about 470 m wide."
-        : "Real size and depth, smoothed shape.",
+      chapter === "earth"
+        ? "Earth is drawn 3 times bigger so it is easy to spot. Where it sits in the sky is real."
+        : "The Sun and Earth are the right size and in the right place in the sky.",
+      "The glow around the Sun is just for looks.",
     );
+    if (site === "custom") out.push("The ground is flat on purpose, so only the Moon's tilt matters.");
+    else if (terrain)
+      out.push(
+        `The ground around you and the hills on the skyline are real, from NASA's laser maps of the Moon (${terrain.pixelM} m squares, ${terrain.patchStores.join(", ")}). Anything smaller, like the small craters, bumps and rocks, is made up.`,
+      );
+    else out.push("The hills on the skyline are real, from NASA's maps of the Moon. The ground near you and the rocks are made up.");
+  } else if (crater === "real") {
+    out.push(
+      "This is the real shape of Shackleton crater, measured from space by a laser on NASA's Lunar Reconnaissance Orbiter.",
+      "Heights are not stretched. The light and shadows come from the real hills.",
+    );
+  } else {
+    out.push("The real map could not load, so this is a look-alike with the right size and depth.");
   }
   if (site === "blueghost") {
     out.push(
-      "The pretend battery assumes a solar panel that always turns to face the Sun.",
-      "When Earth slides in front of the Sun, the view zooms in like binoculars so you can see it.",
+      "The battery is pretend. It imagines a solar panel that always turns to face the Sun.",
+      "During the eclipse, the view zooms in like binoculars so you can see it.",
     );
   }
-  out.push(
-    "Positions come from simple math. They are close, but can be off by about the width of the Sun in the sky. Real missions use exact data and real Moon maps. That is what the Planner does.",
-  );
+  out.push("The Sun and Earth positions use simple math, so they can be off by about the width of the Sun. The Planner uses exact positions.");
   return out;
 }
 
@@ -50,14 +48,14 @@ export function TruthNote({
   view,
   site,
   chapter,
+  crater,
   terrain,
-  craterReal,
 }: {
   view: ViewKind;
   site: SiteId;
   chapter: ChapterKey;
+  crater: CraterSource;
   terrain?: SiteTerrain;
-  craterReal?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -86,7 +84,7 @@ export function TruthNote({
             <CloseIcon size={18} />
           </button>
           <ul>
-            {lines(view, site, chapter, terrain, craterReal).map((l) => (
+            {lines(view, site, chapter, crater, terrain).map((l) => (
               <li key={l}>{l}</li>
             ))}
           </ul>

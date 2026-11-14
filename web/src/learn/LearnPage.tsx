@@ -1,10 +1,9 @@
 import "../styles/learn.css";
 import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
-import { CHAPTERS, chapterBySlug } from "./chapters";
+import { CHAPTERS, chapterBySlug, learnPath } from "./chapters";
 import { Announcer } from "./components/Announcer";
 import { ExploreCard } from "./components/Explore";
-import { Intro } from "./components/Intro";
 import { LearnHeader } from "./components/LearnHeader";
 import { Readouts } from "./components/Readouts";
 import { Stage } from "./components/Stage";
@@ -15,21 +14,15 @@ import { prefersReducedMotion } from "../lib/media";
 
 const EXPLORE = chapterBySlug("explore")!;
 
-function IntroRoute() {
-  useEffect(() => {
-    useLearn.getState().enterChapter("intro", prefersReducedMotion());
-  }, []);
-  return <Intro />;
-}
-
 function ExploreRoute() {
+  const panel = useLearn((s) => s.panel);
   useEffect(() => {
     useLearn.getState().enterChapter("explore", prefersReducedMotion());
   }, []);
   return (
     <>
       <Readouts />
-      <ExploreCard />
+      {panel && <ExploreCard />}
       <TimeBar c={EXPLORE} />
     </>
   );
@@ -38,6 +31,7 @@ function ExploreRoute() {
 function ChapterRoute() {
   const { slug } = useParams();
   const c = chapterBySlug(slug);
+  const panel = useLearn((s) => s.panel);
   useEffect(() => {
     if (c && c.slug !== "explore") useLearn.getState().enterChapter(c.slug, prefersReducedMotion());
   }, [c]);
@@ -45,7 +39,7 @@ function ChapterRoute() {
   return (
     <>
       <Readouts />
-      <StoryCard key={c.slug} c={c} />
+      {panel && <StoryCard key={c.slug} c={c} />}
       <TimeBar c={c} />
     </>
   );
@@ -53,7 +47,7 @@ function ChapterRoute() {
 
 function currentKey(pathname: string): ChapterKey | null {
   const seg = pathname.replace(/^\/learn\/?/, "").split("/")[0] ?? "";
-  if (!seg) return "intro";
+  if (!seg) return "explore";
   return chapterBySlug(seg)?.slug ?? null;
 }
 
@@ -71,11 +65,11 @@ function useKeyboard(current: ChapterKey | null) {
       const i = CHAPTERS.findIndex((c) => c.slug === currentKey(window.location.pathname));
       if (e.key === "[" || e.key === "]") {
         e.preventDefault();
-        if (e.key === "]") navigate(`/learn/${CHAPTERS[Math.min(CHAPTERS.length - 1, i + 1)]!.slug}`);
-        else navigate(i <= 0 ? "/learn" : `/learn/${CHAPTERS[i - 1]!.slug}`);
+        const j = Math.max(0, Math.min(CHAPTERS.length - 1, i + (e.key === "]" ? 1 : -1)));
+        navigate(learnPath(CHAPTERS[j]!.slug));
         return;
       }
-      if (current === "intro" || current === null) return;
+      if (current === null) return;
       if (e.key === "k" || e.key === "K" || (e.key === " " && !pressable)) {
         e.preventDefault();
         s.togglePlay();
@@ -104,16 +98,17 @@ export default function LearnPage() {
   const current = currentKey(pathname);
   useKeyboard(current);
   const view = useLearn((s) => s.view);
+  const panel = useLearn((s) => s.panel);
   return (
-    <div className={`learn v-${current === "intro" ? "space" : view} ${current === "intro" ? "is-intro" : ""}`}>
+    <div className={`learn v-${view} ${panel ? "" : "panel-hidden"}`}>
       <a className="l-skip" href="#l-main">
-        Skip to the lesson
+        Skip to the controls
       </a>
       <LearnHeader current={current} />
       <main className="l-main" id="l-main">
         <Routes>
-          <Route index element={<IntroRoute />} />
-          <Route path="explore" element={<ExploreRoute />} />
+          <Route index element={<ExploreRoute />} />
+          <Route path="explore" element={<Navigate to="/learn" replace />} />
           <Route path=":slug" element={<ChapterRoute />} />
           <Route path="*" element={<Navigate to="/learn" replace />} />
         </Routes>

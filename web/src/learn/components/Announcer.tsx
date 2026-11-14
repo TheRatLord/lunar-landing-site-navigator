@@ -39,10 +39,6 @@ export function Announcer() {
     };
     const check = () => {
       const s = useLearn.getState();
-      if (s.chapter === "intro") {
-        prev.current = null;
-        return;
-      }
       const c = chapterOf(s.chapter);
       const sky = skyAt(siteOf(s), c.epochD + s.t, latArg(s));
       const b = sampleAt(timelineFor(s), s.t).battery;
