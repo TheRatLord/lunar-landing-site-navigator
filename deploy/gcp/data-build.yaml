@@ -1,0 +1,47 @@
+steps:
+  - id: build
+    name: python:3.14-slim-trixie
+    entrypoint: bash
+    env:
+      - LUNARNAV_DATA=/workspace/data
+      - NUMBA_CACHE_DIR=/workspace/numba-cache
+      - UV_LINK_MODE=copy
+      - UV_NO_DEV=1
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        apt-get update -qq && apt-get install -y -qq --no-install-recommends libexpat1 >/dev/null
+        pip install -q --root-user-action=ignore uv==0.11.26
+        uv sync --frozen --no-dev --quiet
+        scripts/data.sh build ${_STORES}
+
+  - id: publish
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        for dir in /workspace/data/dem/store/*/; do
+          gcloud storage rsync -r --no-user-output-enabled "$$dir" "gs://${_BUCKET}/dem/store/$$(basename "$$dir")"
+          echo "published $$(basename "$$dir")"
+        done
+        if [[ -d /workspace/data/kernels ]]; then
+          gcloud storage rsync -r --no-user-output-enabled /workspace/data/kernels "gs://${_BUCKET}/kernels"
+        fi
+        printf '{"build": "%s", "commit": "%s", "stores": "%s", "finished_utc": "%s"}\n' \
+          "$BUILD_ID" "${_COMMIT}" "${_STORES}" "$$(date -u +%FT%TZ)" \
+          | gcloud storage cp - "gs://${_BUCKET}/manifest.json"
+
+substitutions:
+  _STORES: --all
+  _BUCKET: lunarnav-1114-19887-data
+  _COMMIT: manual
+
+options:
+  machineType: E2_HIGHCPU_8
+  diskSizeGb: 200
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 5400s

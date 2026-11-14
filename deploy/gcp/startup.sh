@@ -33,6 +33,7 @@ set -euo pipefail
 
 meta() { curl -fsS -H 'Metadata-Flavor: Google' "http://metadata.google.internal/computeMetadata/v1/$1"; }
 image="$(meta instance/attributes/lunarnav-image)"
+bucket="$(meta instance/attributes/lunarnav-bucket)"
 origin="$(meta instance/attributes/lunarnav-origin)"
 workers="$(meta instance/attributes/lunarnav-workers)"
 state=/var/lib/lunarnav
@@ -61,6 +62,21 @@ start() {
     -e LUNARNAV_API_JOB_WORKERS="$workers" \
     "$1" >/dev/null
 }
+
+generation="$(gcloud storage objects describe "gs://$bucket/manifest.json" --format='value(generation)' 2>/dev/null || true)"
+if [[ -n "$generation" && "$generation" != "$(cat "$state/data-generation" 2>/dev/null || true)" ]]; then
+  if [[ -f "$state/data-generation" ]]; then
+    log "syncing data for manifest generation $generation"
+    gcloud storage rsync -r --no-user-output-enabled "gs://$bucket/dem/store" /mnt/data/dem/store
+    gcloud storage rsync -r --no-user-output-enabled "gs://$bucket/kernels" /mnt/data/kernels
+    chown -R 1000:1000 /mnt/data/dem /mnt/data/kernels
+    if docker inspect lunarnav >/dev/null 2>&1; then
+      docker restart lunarnav >/dev/null
+      if healthy; then log "restarted on the new data"; else log "the API is not healthy after the data sync"; fi
+    fi
+  fi
+  echo "$generation" > "$state/data-generation"
+fi
 
 docker pull -q "$image" >/dev/null
 new="$(docker image inspect -f '{{.Id}}' "$image")"
@@ -114,8 +130,10 @@ systemctl daemon-reload
 systemctl start lunarnav-update.service || true
 systemctl enable --now lunarnav-update.timer
 
-token="$(gcloud secrets versions access latest --secret=tunnel-token --project "$project")"
-docker rm -f cloudflared >/dev/null 2>&1 || true
-docker run -d --name cloudflared --restart unless-stopped --network host \
-  -e TUNNEL_TOKEN="$token" \
-  cloudflare/cloudflared:2026.9.3 tunnel --no-autoupdate --protocol quic run
+if [[ "$(docker inspect -f '{{.State.Running}}' cloudflared 2>/dev/null || true)" != true ]]; then
+  token="$(gcloud secrets versions access latest --secret=tunnel-token --project "$project")"
+  docker rm -f cloudflared >/dev/null 2>&1 || true
+  docker run -d --name cloudflared --restart unless-stopped --network host \
+    -e TUNNEL_TOKEN="$token" \
+    cloudflare/cloudflared:2026.9.3 tunnel --no-autoupdate --protocol quic run
+fi

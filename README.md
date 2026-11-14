@@ -79,8 +79,9 @@ A regional window's id rounds its centre to 3 decimals, but the window is cut fr
 catalogue coordinates (`src/lunarnav/catalog/sites.yaml`), as `build --all` does, to reproduce the shared stores
 exactly.
 
-To change the shared data, build locally, check the result, then `scripts/data.sh push <dem_id>` (needs write
-access). The deployed VM picks up bucket changes when its startup script runs again (`deploy/README.md`).
+To change the shared data, merge the code change, then run the `data` workflow from the Actions tab (`all`, or
+the store ids). It rebuilds them in Cloud Build and publishes them to the bucket, and the deployed site picks them up
+within a few minutes.
 
 Without terrain the engine falls back to a smooth sphere horizon.
 

@@ -1,0 +1,69 @@
+name: data
+
+on:
+  workflow_dispatch:
+    inputs:
+      stores:
+        description: "all, or space-separated store ids to rebuild (scripts/data.sh list)"
+        required: true
+        default: all
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: data
+  cancel-in-progress: false
+
+env:
+  PROJECT: lunarnav-1114-19887
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the store ids
+        id: stores
+        env:
+          STORES: ${{ inputs.stores }}
+        run: |
+          if [[ "$STORES" == all ]]; then
+            echo "args=--all" >> "$GITHUB_OUTPUT"
+          elif [[ "$STORES" =~ ^[a-z0-9_.\ ]+$ ]]; then
+            echo "args=$STORES" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::store ids may only contain a-z, 0-9, '_', '.' and spaces"
+            exit 1
+          fi
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/180938390875/locations/global/workloadIdentityPools/github/providers/github
+          service_account: lunarnav-ci@lunarnav-1114-19887.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT }}
+      - name: Build in Cloud Build and publish to the bucket
+        env:
+          ARGS: ${{ steps.stores.outputs.args }}
+        run: |
+          id="$(gcloud builds submit --async --format='value(id)' \
+            --config deploy/gcp/data-build.yaml \
+            --service-account "projects/$PROJECT/serviceAccounts/lunarnav-data-build@$PROJECT.iam.gserviceaccount.com" \
+            --gcs-source-staging-dir "gs://$PROJECT-cloudbuild/source" \
+            --substitutions "_STORES=$ARGS,_COMMIT=$GITHUB_SHA" .)"
+          echo "Cloud Build log: https://console.cloud.google.com/cloud-build/builds/$id?project=$PROJECT"
+          while true; do
+            status="$(gcloud builds describe "$id" --format='value(status)')"
+            case "$status" in
+              SUCCESS) echo "Published. The VM picks up the new data within a few minutes."; exit 0 ;;
+              FAILURE|TIMEOUT|CANCELLED|INTERNAL_ERROR|EXPIRED)
+                gcloud logging read "resource.type=build AND resource.labels.build_id=$id" --order=asc --limit=200 --format='value(textPayload)' | tail -60
+                echo "::error::Cloud Build finished with $status"
+                exit 1 ;;
+            esac
+            sleep 30
+          done

@@ -25,7 +25,6 @@ usage: scripts/data.sh <command> [dem_id ...]
   pull <dem_id> ...    kernels plus the named stores
   build <dem_id> ...   download the source product from NASA and build the store locally
   build --all          rebuild every store from NASA: products, uncertainty layers, regional windows
-  push <dem_id> ...    upload locally built stores to the bucket (needs write access)
 USAGE
 }
 
@@ -80,14 +79,6 @@ case "$cmd" in
         uv run python -m lunarnav.terrain.ingest build "$id"
       done
     fi
-    ;;
-  push)
-    need_gcloud
-    (($#)) || { usage; exit 2; }
-    for id in "$@"; do
-      [[ -f "$data/dem/store/$id/meta.json" ]] || { echo "no built store at $data/dem/store/$id" >&2; exit 1; }
-      gcloud storage rsync -r "$data/dem/store/$id" "$bucket/dem/store/$id"
-    done
     ;;
   *)
     usage
