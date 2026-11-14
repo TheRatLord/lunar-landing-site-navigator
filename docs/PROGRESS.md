@@ -45,3 +45,8 @@ for this list unless it says so.
 - [ ] Decide whether to apply `ruff format` to the whole codebase in one commit (143 files would change)
       or leave it off (`docs/OPEN_QUESTIONS.md` #2)
 - [ ] Fill in `AI_USAGE.md` for the work before 2026-11-14, if AI tools were used (`docs/OPEN_QUESTIONS.md` #1)
+
+## Rover simulation (design, started 2026-11-14)
+
+- [x] Round 1 choices recorded: [decision 0005](decisions/0005-rover-simulation.md)
+- [ ] Settle the rest of the design (decision 0005, "Still open"), then plan the build

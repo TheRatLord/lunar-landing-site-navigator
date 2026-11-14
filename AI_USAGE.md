@@ -11,3 +11,4 @@ Work before 2026-11-14 (the first commit, `0cef76d`) is not recorded here yet (`
 | Date (UTC) | Tool | What it did |
 | --- | --- | --- |
 | 2026-11-14 | Claude Code | Wrote `CLAUDE.md` and the documentation set (`docs/PROGRESS.md`, `docs/OPEN_QUESTIONS.md`, `docs/SETUP.md`, `docs/decisions/`, `REFERENCES.md`, `FRICTION_LOG.md`, this file) from the code and the validation reports; replaced `AGENTS.md` with a pointer to `CLAUDE.md`; added two README sections. |
+| 2026-11-14 | Claude Code | Compared Sightline's Three.js terrain stage with the Navigator's 3D view and recorded the round 1 design choices for a rover simulation in `docs/decisions/0005-rover-simulation.md`. |
