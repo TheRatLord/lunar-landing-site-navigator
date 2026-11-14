@@ -1,0 +1,26 @@
+# Launch vehicle flight records. counted_through is the date the counts were read.
+entries:
+  - id: falcon-9
+    name: SpaceX Falcon 9
+    confidence: unverified
+    sources:
+      - url: https://en.wikipedia.org/wiki/Falcon_9
+        title: "Wikipedia: Falcon 9"
+        locator: launch history table
+    operator: SpaceX
+    attempts: 1
+    failures: 0
+    counted_through: "2026-11-14"
+    lunar_missions: [im-2-athena]
+  - id: vulcan-centaur
+    name: ULA Vulcan Centaur
+    confidence: unverified
+    sources:
+      - url: https://en.wikipedia.org/wiki/Vulcan_Centaur
+        title: "Wikipedia: Vulcan Centaur"
+        locator: launch history
+    operator: United Launch Alliance
+    attempts: 1
+    failures: 0
+    counted_through: "2026-11-14"
+    lunar_missions: [peregrine-m1]

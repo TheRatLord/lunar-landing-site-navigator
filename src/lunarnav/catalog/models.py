@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -281,3 +281,117 @@ LANDER_PARAM_KEYS: dict[str, str] = {
     "transfer_days": "Launch-to-landing duration.",
     "thermal_limits": "Operational thermal constraints.",
 }
+
+
+class CauseCategory(StrEnum):
+    """What a mission failure or anomaly came from."""
+
+    SLOPE_TIPOVER = "slope_tipover"
+    ILLUMINATION_POWER = "illumination_power"
+    TERRAIN_NAVIGATION = "terrain_navigation"
+    THERMAL = "thermal"
+    COMMS = "comms"
+    PROPULSION = "propulsion"
+    GNC_SOFTWARE = "gnc_software"
+    SENSOR = "sensor"
+    LAUNCH_VEHICLE = "launch_vehicle"
+    OTHER = "other"
+
+
+Criterion = Literal[
+    "slope_tipover", "illumination_power", "earth_link", "ellipse_hazards",
+    "terrain_navigation", "thermal", "launch_slip", "past_failures",
+]
+"""Review-board criteria a cause can count against."""
+
+MissionOutcome = Literal["success", "partial", "failed_landing", "failed_before_landing"]
+
+
+def _check_utc(v: str | None, field: str) -> str | None:
+    if v is not None and not _UTC_RE.match(v):
+        raise ValueError(f"{field} must be ISO-8601 UTC with Z suffix: {v!r}")
+    return v
+
+
+class Cause(_Frozen):
+    """One cause of a failure or anomaly; only ``site_related`` causes count against a landing site."""
+
+    category: CauseCategory
+    summary: str
+    site_related: bool
+
+
+class MissionEntry(CatalogEntry):
+    """A lunar landing attempt with its outcome, causes and lessons."""
+
+    site_id: str | None = None
+    """Recorded touchdown or impact point in ``sites.yaml``."""
+    target_site_id: str | None = None
+    """Published planned target in ``sites.yaml``, when one exists."""
+    lander_id: str | None = None
+    launch_vehicle_id: str | None = None
+    launch_utc: str | None = None
+    landing_utc: str | None = None
+    outcome: MissionOutcome
+    causes: tuple[Cause, ...] = ()
+    lessons: tuple[str, ...] = ()
+    observed: dict[str, Any] = Field(default_factory=dict)
+    """Facts the backtest scores against: ``tipped``, ``power_lost``, ``impacted``, ``landed_upright``."""
+
+    @field_validator("launch_utc")
+    @classmethod
+    def _launch(cls, v: str | None) -> str | None:
+        return _check_utc(v, "launch_utc")
+
+    @field_validator("landing_utc")
+    @classmethod
+    def _landing(cls, v: str | None) -> str | None:
+        return _check_utc(v, "landing_utc")
+
+    @property
+    def event_utc(self) -> str | None:
+        """Landing time, else launch time: the moment the mission's outcome became known."""
+        return self.landing_utc or self.launch_utc
+
+
+class LaunchFailure(_Frozen):
+    """One failed or partially failed launch of a vehicle."""
+
+    date_utc: str
+    summary: str
+    partial: bool = False
+    stand_down_days: int | None = Field(default=None, ge=0)
+    """Days from the failure to the vehicle's next launch."""
+    source: int | None = Field(default=None, ge=0)
+    """Index into the entry's ``sources``."""
+
+    @field_validator("date_utc")
+    @classmethod
+    def _date(cls, v: str) -> str:
+        return _check_utc(v, "date_utc") or v
+
+
+class LaunchVehicleEntry(CatalogEntry):
+    """A launch vehicle's flight record."""
+
+    operator: str
+    attempts: int = Field(ge=0)
+    failures: int = Field(ge=0)
+    partial: int = Field(default=0, ge=0)
+    counted_through: str
+    """Date (YYYY-MM-DD) the counts were read."""
+    failures_detail: tuple[LaunchFailure, ...] = ()
+    lunar_missions: tuple[str, ...] = ()
+
+    @field_validator("counted_through")
+    @classmethod
+    def _through(cls, v: str) -> str:
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", v):
+            raise ValueError(f"counted_through must be YYYY-MM-DD: {v!r}")
+        return v
+
+    @model_validator(mode="after")
+    def _counts(self) -> LaunchVehicleEntry:
+        if self.failures + self.partial > self.attempts:
+            raise ValueError(f"{self.id}: failures + partial exceed attempts")
+        return self

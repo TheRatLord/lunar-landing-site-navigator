@@ -1,0 +1,61 @@
+# Lunar landing attempts: outcome, causes and lessons.
+# Every cause carries site_related: only site-related causes may count against a landing site.
+# criterion_map: review criterion each cause category counts against (null: not a site matter).
+criterion_map:
+  slope_tipover: slope_tipover
+  illumination_power: illumination_power
+  terrain_navigation: terrain_navigation
+  thermal: thermal
+  comms: earth_link
+  launch_vehicle: launch_slip
+  propulsion: null
+  gnc_software: null
+  sensor: null
+  other: null
+entries:
+  - id: im-2-athena
+    name: IM-2 Athena
+    confidence: unverified
+    sources:
+      - url: https://en.wikipedia.org/wiki/IM-2
+        title: "Wikipedia: IM-2"
+        locator: launch, landing and outcome
+      - url: https://lroc.im-ldi.com/images/1408
+        title: "LROC: IM-2 Athena Seen Obliquely"
+        locator: lander lying in a 20 m crater
+    site_id: im-2-athena
+    lander_id: nova-c
+    launch_vehicle_id: falcon-9
+    launch_utc: 2025-02-27T00:16Z
+    landing_utc: 2025-03-06T17:30Z
+    outcome: failed_landing
+    causes:
+      - category: slope_tipover
+        summary: Came to rest on its side inside a small crater near Mons Mouton.
+        site_related: true
+      - category: illumination_power
+        summary: Lying on its side in a shadowed crater, the arrays could not keep the batteries charged.
+        site_related: true
+    lessons:
+      - Small craters below the DEM resolution inside the ellipse can tip a tall lander.
+      - Low sun at a south-polar site leaves crater floors in shadow; a tipped lander there loses power.
+    observed: {tipped: true, power_lost: true, impacted: false, landed_upright: false}
+  - id: peregrine-m1
+    name: Peregrine Mission One
+    confidence: unverified
+    sources:
+      - url: https://en.wikipedia.org/wiki/Peregrine_Mission_One
+        title: "Wikipedia: Peregrine Mission One"
+        locator: outcome (propellant leak, reentry)
+    target_site_id: peregrine-m1-target
+    lander_id: peregrine
+    launch_vehicle_id: vulcan-centaur
+    launch_utc: 2024-01-08T07:18Z
+    outcome: failed_before_landing
+    causes:
+      - category: propulsion
+        summary: A propellant leak after launch made a landing attempt impossible; the spacecraft reentered Earth's atmosphere.
+        site_related: false
+    lessons:
+      - Propulsion faults in cruise end a mission regardless of the site chosen.
+    observed: {tipped: false, power_lost: false, impacted: false, landed_upright: false}
