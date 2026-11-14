@@ -152,3 +152,49 @@ def redact(obj: Any) -> Any:
     if isinstance(obj, list):
         return [redact(v) for v in obj]
     return obj
+
+
+SITE_CRITERIA = ("slope_tipover", "illumination_power", "terrain_navigation", "ellipse_hazards")
+
+
+def backtest_cases() -> list[dict[str, Any]]:
+    """One blinded backtest case per mission with a landing point and time.
+
+    ``expected`` maps a review criterion to ``flag`` (a site-related cause of this mission counts against it) or
+    ``clear`` (the site criteria of a mission whose failure, if any, was not about the site).
+    """
+    from lunarnav.catalog import load_criterion_map
+    from lunarnav.history_features import load_features
+
+    cm = load_criterion_map()
+    feats = load_features()
+    sites = {s.id: s for s in all_sites()}
+    landers = load_landers()
+    alias = {e.id: f"lander-{string.ascii_lowercase[i]}" for i, e in enumerate(landers)}
+    cases = []
+    for m in load_missions():
+        site = sites.get(m.site_id or "") or sites.get(m.target_site_id or "")
+        when = m.landing_utc or (site.landing_utc if site else None)
+        if site is None or when is None:
+            continue
+        flagged = {cm[c.category] for c in m.causes if c.site_related and cm[c.category]}
+        expected = {c: "flag" for c in sorted(flagged)}
+        expected.update({c: "clear" for c in SITE_CRITERIA if c not in flagged})
+        res = (feats.get(m.id, {}).get("features") or {}).get("terrain_resolution_m")
+        cases.append({
+            "mission_id": m.id, "lat": site.lat_deg, "lon": site.lon_deg, "landing_utc": when,
+            "lander": alias[m.lander_id] if m.lander_id else "generic:top_deck",
+            "launch_vehicle_id": m.launch_vehicle_id or "", "outcome": m.outcome, "expected": expected,
+            "terrain_resolution_m": res, "group": "fine" if res is not None and res <= 20 else "coarse",
+        })
+    return cases
+
+
+if __name__ == "__main__":
+    import json
+    import sys
+
+    if sys.argv[1:] == ["export-cases"]:
+        print(json.dumps(backtest_cases(), indent=2))
+    else:
+        sys.exit("usage: python -m lunarnav.history export-cases")

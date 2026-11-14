@@ -109,6 +109,50 @@ def regional(ctx: typer.Context) -> None:
     raise typer.Exit(regional_main(list(ctx.args)))
 
 
+@app.command("mcp")
+def mcp(
+    http: Annotated[int | None, typer.Option("--http", help="Serve streamable HTTP on 127.0.0.1:PORT instead of stdio.")] = None,
+    blind_exclude: Annotated[str | None, typer.Option("--blind-exclude", help="Start a blind backtest of this mission id.")] = None,
+    no_tools: Annotated[bool, typer.Option("--no-tools", help="Expose only the client control tools (baseline runs).")] = False,
+) -> None:
+    """Serve the engine and history tools as an MCP server."""
+    from lunarnav.mcp_server import serve as serve_mcp
+
+    serve_mcp(http_port=http, blind_exclude=blind_exclude, no_tools=no_tools)
+
+
+@app.command("history-features")
+def history_features() -> None:
+    """Precompute terrain and Sun features of every past landing site for `similar_past_landings`."""
+    from lunarnav.agent.engine_tools.state import DEFAULT_N_AZ
+    from lunarnav.catalog import _all_sites, load_missions
+    from lunarnav.history_features import features_path, site_features
+    from lunarnav.scenario.horizons import TerrainProvider
+    from lunarnav.terrain import TerrainStack
+
+    provider = TerrainProvider(TerrainStack.open(), n_az=DEFAULT_N_AZ)
+    sites = {s.id: s for s in _all_sites()}
+    out: dict[str, dict] = {}
+    for m in load_missions():
+        site = sites.get(m.site_id or "") or sites.get(m.target_site_id or "")
+        if site is None:
+            typer.echo(f"{m.id}: no site, skipped")
+            continue
+        when = m.landing_utc or site.landing_utc
+        try:
+            feats = site_features(provider, site.lat_deg, site.lon_deg, when)
+        except Exception as exc:  # noqa: BLE001
+            typer.echo(f"{m.id}: failed ({type(exc).__name__}: {exc})")
+            continue
+        out[m.id] = {"site_id": site.id, "lat_deg": site.lat_deg, "lon_deg": site.lon_deg, "landing_utc": when,
+                     "features": feats}
+        typer.echo(f"{m.id}: " + ", ".join(f"{k}={v}" for k, v in feats.items()))
+    path = features_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(out, indent=2), encoding="utf-8")
+    typer.echo(f"wrote {path} ({len(out)} missions)")
+
+
 @app.command()
 def version() -> None:
     """Print package, API and Python versions."""
