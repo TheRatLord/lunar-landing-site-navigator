@@ -4,6 +4,7 @@ import { CHAPTERS, chapterBySlug, landingT, type Chapter, type ChapterSlug, type
 import type { CraterSource } from "./scene/craterView";
 import { termsIn, type TermId } from "./glossary";
 import { SITES, type SiteId } from "./sites";
+import type { WalkBody } from "./walk/walkView";
 
 export type Landing = 0 | 7 | 14;
 export type ChapterKey = ChapterSlug;
@@ -33,6 +34,10 @@ export interface LearnState {
   craterTerrain: CraterSource;
   panel: boolean;
   setPanel(open: boolean): void;
+  walkBody: WalkBody;
+  walkEdge: boolean;
+  walkHint: boolean;
+  setWalkBody(b: WalkBody): void;
   enterChapter(slug: ChapterKey, reducedMotion: boolean): void;
   setT(t: number): void;
   nudge(dt: number): void;
@@ -70,6 +75,10 @@ export const useLearn = create<LearnState>()((set, get) => ({
   note: "never",
   glFailed: false,
   terrainRev: 0,
+  walkBody: "astronaut",
+  walkEdge: false,
+  walkHint: true,
+  setWalkBody: (walkBody) => set({ walkBody, interacted: true }),
   craterTerrain: "real",
   panel: true,
   setPanel: (panel) => set({ panel }),
@@ -95,6 +104,8 @@ export const useLearn = create<LearnState>()((set, get) => ({
       follow: c.follow,
       interacted: false,
       termHome,
+      walkBody: "astronaut",
+      walkEdge: false,
       ...(slug === "explore" ? {} : { panel: true }),
     });
   },
@@ -116,7 +127,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
     let view = s.view;
     if (view === "crater" && id !== "rim" && id !== "floor") view = "ground";
     const follow: Follow = s.chapter === "earth" ? "earth" : s.follow === "free" ? chapterOf(s.chapter).follow : s.follow;
-    set({ siteId: SITES[id] ? id : "apollo11", view, follow, interacted: true });
+    set({ siteId: SITES[id] ? id : "apollo11", view, follow, interacted: true, walkBody: "astronaut", walkEdge: false });
   },
   setLat: (lat) => set({ lat, interacted: true }),
   setLanding: (o) => {

@@ -3,6 +3,7 @@ import { useShallow } from "zustand/react/shallow";
 import { describe } from "../describe";
 import { frameFrom, timelineFor, useLive } from "../derive";
 import { LearnScene } from "../scene/LearnScene";
+import { WalkHud } from "./walk/WalkHud";
 import { chapterOf, useLearn } from "../store";
 import { ensureTerrain, siteById } from "../terrain";
 import { sampleAt } from "../timeline";
@@ -118,6 +119,11 @@ export function Stage() {
     sceneRef.current = scene;
     scene.onLookChange = (heading, fov, pitch, vfov) => setLook({ heading, fov, pitch, vfov });
     scene.onCraterTerrain = (craterTerrain) => useLearn.setState({ craterTerrain });
+    scene.onWalkSwitch = () => {
+      const s = useLearn.getState();
+      s.setWalkBody(s.walkBody === "rover" ? "astronaut" : "rover");
+    };
+    scene.onWalkEdge = (walkEdge) => useLearn.setState({ walkEdge });
     scene.onUserLook = () => {
       if (useLearn.getState().follow !== "free") useLearn.getState().setFollow("free");
     };
@@ -132,6 +138,7 @@ export function Stage() {
     const push = () => {
       const s = useLearn.getState();
       scene.update(frameFrom(s, prefersReducedMotion()));
+      scene.setWalkBody(s.walkBody);
       canvas.style.touchAction = s.view === "ground" ? "pan-y" : "none";
     };
     push();
@@ -227,6 +234,7 @@ export function Stage() {
           </div>
         )}
         {view === "ground" && <GroundUi look={look} onLook={onLook} />}
+        {view === "walk" && <WalkHud />}
       </div>
       <p className="sr-only" ref={live} />
     </div>

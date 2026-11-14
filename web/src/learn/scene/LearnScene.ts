@@ -22,7 +22,7 @@ import earthMap from "./maps/earth.jpg";
 import moonMap from "./maps/moon.jpg";
 import { CameraTween } from "./tween";
 import { SPACE_BG, type SceneFrame, type Shared, type ViewKind } from "./types";
-import { WalkView } from "../walk/walkView";
+import { WalkView, type WalkBody } from "../walk/walkView";
 
 type Phase = "fly" | "out" | "in";
 
@@ -50,6 +50,7 @@ export class LearnScene {
   private ground!: GroundView;
   private crater: CraterView | null = null;
   private walk: WalkView | null = null;
+  private walkBody: WalkBody = "astronaut";
   private overlay!: Scene;
   private overlayCam!: OrthographicCamera;
   private insetRT!: WebGLRenderTarget;
@@ -80,6 +81,8 @@ export class LearnScene {
   onLookChange: ((headingDeg: number, fovDeg: number, pitchDeg: number, vfovDeg: number) => void) | null = null;
   onUserLook: (() => void) | null = null;
   onCraterTerrain: ((source: CraterSource) => void) | null = null;
+  onWalkSwitch: (() => void) | null = null;
+  onWalkEdge: ((atEdge: boolean) => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement, opts: { pixelRatioCap: number }) {
     this.canvas = canvas;
@@ -156,9 +159,19 @@ export class LearnScene {
     if (!this.walk) {
       this.walk = new WalkView(this.shared);
       this.walk.input.onActive = this.requestRender;
+      this.walk.input.onSwitch = () => this.onWalkSwitch?.();
+      this.walk.onEdge = (e) => this.onWalkEdge?.(e);
+      this.walk.setBody(this.walkBody);
       this.applyCamera(this.walk.camera);
     }
     return this.walk;
+  }
+
+  setWalkBody(b: WalkBody) {
+    if (b === this.walkBody) return;
+    this.walkBody = b;
+    this.walk?.setBody(b);
+    this.requestRender();
   }
 
   private teardown() {

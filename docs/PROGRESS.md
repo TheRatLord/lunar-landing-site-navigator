@@ -73,6 +73,6 @@ Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/sup
 - [x] Walk view: terrain, sky, sunlight and shadow
 - [x] Astronaut, follow camera, keyboard
 - [x] Solar panel and the Battery tile in Walk
-- [ ] Rover and switching
+- [x] Rover and switching
 - [ ] Hardware at the historical sites and fact cards
 - [ ] Touch controls, lights, reduced motion, honesty notes
