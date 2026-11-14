@@ -5,7 +5,6 @@ import {
   DirectionalLight,
   DoubleSide,
   Group,
-  IcosahedronGeometry,
   Line,
   LineDashedMaterial,
   Mesh,
@@ -24,6 +23,8 @@ import {
 import { clamp, wrap180, wrap360 } from "../../lib/scale";
 import { RAD, dirFromAzEl, skyAt } from "../geometry";
 import type { Site } from "../sites";
+import { heightAt, type GroundPatch, type RealSite } from "../terrain";
+import { detailHeight, lunarSoil, regolithAlbedo, regolithNormalMap, rockColorMap, rockGeometry, rockNormalMap } from "./surface";
 import { Label, glowSprite, rng, starField } from "./textures";
 import type { SceneFrame, Shared } from "./types";
 
@@ -34,6 +35,18 @@ const R_SUN = 490;
 const R_EARTH = 480;
 const R_DOME = 470;
 const AZ_N = 360;
+/**
+ * Real-terrain ground mesh: log-spaced rings from 0.3 m to R_GROUND, so cells are about 2.5 % of their distance
+ * (25 cm at 10 m, 7 m at 300 m) and the procedural craters near the observer are resolved.
+ */
+const REAL_R0 = 0.3;
+const REAL_SEGS = 256;
+const REAL_Q = 1 + (2 * Math.PI) / REAL_SEGS;
+const REAL_RINGS = Math.ceil(Math.log(R_GROUND / REAL_R0) / Math.log(REAL_Q));
+const N_ROCKS = 150;
+const N_ROCK_SHAPES = 8;
+/** Albedo scale of the real ground so a sun-facing slope reads bright under the scene's light (Lambert divides by pi). */
+const REAL_ALBEDO = 1.6;
 
 interface Rock {
   mesh: Mesh;
@@ -78,6 +91,12 @@ export class GroundView {
   private pathKey = "";
   private pathD = Number.NaN;
   private horizonKey = "";
+  private readonly simGround: Mesh;
+  private readonly realMat: MeshLambertMaterial;
+  private realGround: Mesh | null = null;
+  private patch: GroundPatch | null = null;
+  private detail0 = 0;
+  private relief: [number, number] = [0, 0];
 
   look: Look = { yaw: 90, pitch: 10 };
   inset: Look = { yaw: 90, pitch: 10 };
@@ -95,7 +114,21 @@ export class GroundView {
 
     const ground = this.buildGround();
     this.groundMat = new MeshBasicMaterial({ map: shared.regolith, color: 0x777777 });
-    s.add(new Mesh(ground, this.groundMat));
+    this.simGround = new Mesh(ground, this.groundMat);
+    s.add(this.simGround);
+    // Real ground: UVs are metres, so the albedo tiles every 10 m and the bump texture every 3 m.
+    const albedo = regolithAlbedo();
+    albedo.repeat.set(1 / 7, 1 / 7);
+    this.realMat = lunarSoil(new MeshLambertMaterial({ map: albedo, normalMap: regolithNormalMap(3) }));
+    this.realMat.normalScale.set(1.6, 1.6);
+    this.realMat.color.setScalar(REAL_ALBEDO);
+
+    // Cast shadows from the Sun on the real ground: a tight orthographic box around the 600 m disc, sized in
+    // update() from the Sun's elevation. normalBias of about one shadow texel stops acne at grazing light.
+    this.light.shadow.mapSize.set(4096, 2048);
+    this.light.shadow.bias = -0.0002;
+    this.light.shadow.radius = 2;
+    this.light.shadow.normalBias = 0.3;
 
     this.skirtGeo.setAttribute("position", new BufferAttribute(new Float32Array(AZ_N * 2 * 3 + 6), 3));
     this.skirtGeo.setIndex(this.stripIndex());
@@ -107,20 +140,30 @@ export class GroundView {
     s.add(line);
 
     const r = rng(21);
-    const rockGeo = new IcosahedronGeometry(1, 0);
+    const shapes = Array.from({ length: N_ROCK_SHAPES }, (_, i) => rockGeometry(31 + i));
     const shadowGeo = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0.5, 0, 0);
     const shadowMat = new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.72, depthWrite: false });
-    const rockMat = new MeshLambertMaterial({ color: 0x9a9a9d, flatShading: true });
-    for (let i = 0; i < 46; i++) {
-      const dist = 9 + r() ** 1.6 * 110;
+    const rockMap = rockColorMap();
+    const rockNormal = rockNormalMap();
+    for (let i = 0; i < N_ROCKS; i++) {
+      // Many small stones, few boulders; most of them close, where they can be seen.
+      const dist = 3 + r() ** 1.8 * 140;
       const az = r() * 360;
-      const size = 0.12 + r() ** 2 * 0.9;
-      const mesh = new Mesh(rockGeo, rockMat);
+      // Boulders stay a few metres off so none of them fills the view.
+      const size = Math.min(0.06 + r() ** 3.2 * 1.3, 0.12 + dist * 0.05);
+      const mat = lunarSoil(new MeshLambertMaterial({ map: rockMap, normalMap: rockNormal }));
+      mat.color.setScalar(1.1 + (r() - 0.5) * 0.5);
+      mat.normalScale.set(0.6, 0.6);
+      const mesh = new Mesh(shapes[i % N_ROCK_SHAPES]!, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       const x = Math.sin(az * RAD) * dist;
       const z = -Math.cos(az * RAD) * dist;
+      const sy = 0.5 + r() * 0.4;
       mesh.position.set(x, size * 0.35, z);
-      mesh.scale.set(size, size * (0.5 + r() * 0.4), size * (0.7 + r() * 0.5));
-      mesh.rotation.set(r() * 3, r() * 3, r() * 3);
+      mesh.userData.base = size * sy * 0.22;
+      mesh.scale.set(size * (0.8 + r() * 0.4), size * sy, size * (0.7 + r() * 0.5));
+      mesh.rotation.set((r() - 0.5) * 0.5, r() * Math.PI * 2, (r() - 0.5) * 0.5);
       const shadow = new Mesh(shadowGeo, shadowMat);
       shadow.position.set(x, 0.03, z);
       s.add(mesh, shadow);
@@ -243,6 +286,102 @@ export class GroundView {
     return g;
   }
 
+  /** Ground height (m, scene y) at scene (x, z): the real patch plus the procedural detail, zero under the observer. */
+  private groundY(x: number, z: number): number {
+    const p = this.patch;
+    if (!p) return 0;
+    return heightAt(p, x, -z) + detailHeight(x, -z) - this.detail0;
+  }
+
+  /** Ground mesh from the LOLA/PGDA patch plus sub-pixel detail, on log-spaced rings around the observer. */
+  private buildRealGround(): BufferGeometry {
+    const pos: number[] = [0, this.groundY(0, 0), 0];
+    const uv: number[] = [0, 0];
+    for (let i = 0; i < REAL_RINGS; i++) {
+      const rad = Math.min(R_GROUND, REAL_R0 * REAL_Q ** i);
+      const twist = (i % 2) * 0.5;
+      for (let j = 0; j < REAL_SEGS; j++) {
+        const a = ((j + twist) / REAL_SEGS) * Math.PI * 2;
+        const x = Math.cos(a) * rad;
+        const z = Math.sin(a) * rad;
+        pos.push(x, this.groundY(x, z), z);
+        uv.push(x, -z);
+      }
+    }
+    const idx: number[] = [];
+    for (let j = 0; j < REAL_SEGS; j++) idx.push(0, 1 + ((j + 1) % REAL_SEGS), 1 + j);
+    for (let i = 1; i < REAL_RINGS; i++) {
+      const a0 = 1 + (i - 1) * REAL_SEGS;
+      const b0 = 1 + i * REAL_SEGS;
+      for (let j = 0; j < REAL_SEGS; j++) {
+        const j1 = (j + 1) % REAL_SEGS;
+        idx.push(a0 + j, a0 + j1, b0 + j, a0 + j1, b0 + j1, b0 + j);
+      }
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new BufferAttribute(new Float32Array(pos), 3));
+    g.setAttribute("uv", new BufferAttribute(new Float32Array(uv), 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    g.computeBoundingSphere();
+    return g;
+  }
+
+  private setTerrain(site: RealSite) {
+    const p = site.terrain?.patch ?? null;
+    this.patch = p;
+    this.detail0 = p ? detailHeight(0, 0) : 0;
+    if (p) {
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (const v of p.heights) {
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+      this.relief = [lo, hi];
+    }
+    if (this.realGround) {
+      this.scene.remove(this.realGround);
+      this.realGround.geometry.dispose();
+      this.realGround = null;
+    }
+    if (p) {
+      this.realGround = new Mesh(this.buildRealGround(), this.realMat);
+      this.realGround.receiveShadow = true;
+      this.realGround.castShadow = true;
+      this.scene.add(this.realGround);
+    }
+    this.simGround.visible = !p;
+    for (const rk of this.rocks) {
+      const { x, z } = rk.mesh.position;
+      const y = this.groundY(x, z);
+      rk.mesh.position.y = y + (p ? (rk.mesh.userData.base as number) : rk.size * 0.3);
+      rk.shadow.position.y = y + 0.03;
+    }
+  }
+
+  /** Point the shadow camera along the Sun and fit its box to the ground disc (thin, because the Sun is low). */
+  private fitShadow(sunVec: Vector3, on: boolean) {
+    this.light.castShadow = on;
+    if (!on || !this.patch) return;
+    const D = 900;
+    this.light.position.copy(sunVec).multiplyScalar(D);
+    this.light.target.position.set(0, 0, 0);
+    this.light.target.updateMatrixWorld();
+    const [lo, hi] = this.relief;
+    const sinEl = Math.abs(sunVec.y);
+    const cosEl = Math.sqrt(Math.max(0, 1 - sinEl * sinEl));
+    const reach = R_GROUND * 1.05;
+    const cam = this.light.shadow.camera;
+    cam.left = -reach;
+    cam.right = reach;
+    cam.top = Math.min(reach, hi * cosEl + reach * sinEl + 4);
+    cam.bottom = Math.max(-reach, lo * cosEl - reach * sinEl - 4);
+    cam.near = D - reach - Math.max(Math.abs(lo), Math.abs(hi)) - 10;
+    cam.far = D + reach + Math.max(Math.abs(lo), Math.abs(hi)) + 10;
+    cam.updateProjectionMatrix();
+  }
+
   private buildHorizon(site: Site) {
     const sk = this.skirtGeo.getAttribute("position") as BufferAttribute;
     const ln = this.lineGeo.getAttribute("position") as BufferAttribute;
@@ -251,7 +390,8 @@ export class GroundView {
       const sx = Math.sin(az * RAD);
       const sz = -Math.cos(az * RAD);
       const top = EYE + R_SKIRT * Math.tan(site.horizon(az) * RAD);
-      sk.setXYZ(i * 2, sx * R_GROUND, 0, sz * R_GROUND);
+      const base = this.groundY(sx * R_GROUND, sz * R_GROUND);
+      sk.setXYZ(i * 2, sx * R_GROUND, base, sz * R_GROUND);
       sk.setXYZ(i * 2 + 1, sx * R_SKIRT, top, sz * R_SKIRT);
       const rr = R_SKIRT - 1;
       const th = 0.55;
@@ -351,10 +491,12 @@ export class GroundView {
   update(f: SceneFrame) {
     this.frame = f;
     const sky = f.sky;
-    const key = `${f.site.id}`;
+    const site = f.site as RealSite;
+    const key = `${site.id}|${site.terrain ? "dem" : "sim"}`;
     if (key !== this.horizonKey) {
       this.horizonKey = key;
-      this.buildHorizon(f.site);
+      this.setTerrain(site);
+      this.buildHorizon(site);
     }
     const sunV = dirFromAzEl(sky.sun.az, sky.sun.el);
     const sunVec = new Vector3(sunV[0], sunV[1], sunV[2]);
@@ -384,13 +526,20 @@ export class GroundView {
     this.earthLabel.sprite.visible = !this.eclipseZoom(f);
     this.earthLabel.set(close ? "Earth, with the Sun behind it" : "Earth");
 
-    this.light.position.copy(sunVec).multiplyScalar(100);
+    this.light.position.copy(sunVec).multiplyScalar(this.patch ? 900 : 100);
     this.light.intensity = 3.4 * sky.sunlight;
     const earthshine = (0.02 + 0.06 * sky.earth.litFraction) * sky.earth.frac;
     this.ambient.intensity = sky.sunlight > 0.05 ? 0.35 : 0.06 + earthshine * 3;
     const sinEl = Math.max(0, Math.sin(sky.sun.el * RAD));
     const g = sky.sunlight > 0 ? sky.sunlight * (0.28 + 0.9 * sinEl) + (1 - sky.sunlight) * earthshine : earthshine;
     this.groundMat.color.setScalar(clamp(g, 0.015, 1));
+    if (this.patch) {
+      // Lambert divides by pi and the real ground is scaled by REAL_ALBEDO: this keeps the night ground as dark as the
+      // stylized one (earthshine only) while a sunlit scene keeps some fill light from the surrounding bright slopes.
+      // Fill light in daytime stands for sunlight scattered off nearby slopes: low, so cast shadows read black.
+      this.ambient.intensity = sky.sunlight > 0.05 ? 0.07 : (Math.PI / REAL_ALBEDO) * Math.max(0.012, earthshine);
+      this.fitShadow(sunVec, sky.sunlight > 0.02);
+    } else this.light.castShadow = false;
     this.skirtMat.color.set(0x2a2b30);
     this.lineMat.opacity = 0.55 + 0.35 * clamp(g * 3, 0, 1);
 
@@ -399,7 +548,7 @@ export class GroundView {
     const showShadow = sky.sunlight > 0.05;
     const away = Math.atan2(-sunV[2], sunV[0]);
     for (const rk of this.rocks) {
-      rk.shadow.visible = showShadow;
+      rk.shadow.visible = showShadow && !this.patch;
       rk.shadow.rotation.y = away + Math.PI;
       rk.shadow.scale.set(rk.size * 0.7 * shadowLen, 1, rk.size * 1.2);
     }
@@ -512,6 +661,8 @@ export class GroundView {
 
   dispose() {
     for (const l of this.labels) l.dispose();
+    this.realGround?.geometry.dispose();
+    this.realMat.dispose();
   }
 }
 

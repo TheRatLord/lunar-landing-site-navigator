@@ -22,7 +22,7 @@ export interface Timeline {
 const cache = new Map<string, Timeline>();
 
 export function buildTimeline(site: Site, lat: number, d0: number, spanDays: number, landingT: number | null): Timeline {
-  const key = `${site.id}|${lat.toFixed(2)}|${d0}|${spanDays}|${landingT ?? "-"}`;
+  const key = `${site.id}|${"terrain" in site && site.terrain ? "dem" : "sim"}|${lat.toFixed(2)}|${d0}|${spanDays}|${landingT ?? "-"}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const stepD = spanDays <= 31 ? 1 / 48 : 1 / 24;

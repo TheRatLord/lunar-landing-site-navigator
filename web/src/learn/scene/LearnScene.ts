@@ -6,6 +6,7 @@ import {
   RingGeometry,
   Scene,
   WebGLRenderTarget,
+  PCFShadowMap,
   WebGLRenderer,
   type PerspectiveCamera,
   type Object3D,
@@ -104,6 +105,8 @@ export class LearnScene {
   private buildScenes() {
     this.renderer.setClearColor(SPACE_BG, 1);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.pixelRatioCap));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFShadowMap;
     this.shared = {
       glow: glowTexture(),
       disc: discTexture(),

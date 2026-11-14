@@ -17,7 +17,7 @@ import {
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { clamp } from "../../lib/scale";
 import { RAD, dirFromAzEl, skyAt } from "../geometry";
-import { SITES } from "../sites";
+import { craterTerrain, siteById, type CraterTerrain } from "../terrain";
 import { Label, arrow, glowSprite, rng, starField } from "./textures";
 import type { Pose } from "./tween";
 import type { SceneFrame, Shared } from "./types";
@@ -71,6 +71,9 @@ export class CraterView {
   readonly floorPos: Vector3;
   private lastSun = "";
   private viewportH = 800;
+  private readonly pos: Float32Array;
+  private readonly line: Line;
+  private real: CraterTerrain | null = null;
 
   constructor(canvas: HTMLCanvasElement, shared: Shared) {
     const r = rng(17);
@@ -81,6 +84,7 @@ export class CraterView {
       return s / 3;
     };
     const pos = new Float32Array(N * N * 3);
+    this.pos = pos;
     const cell = SIZE / (N - 1);
     for (let j = 0; j < N; j++) {
       for (let i = 0; i < N; i++) {
@@ -97,32 +101,7 @@ export class CraterView {
         this.base[k] = (0.78 + (r() - 0.5) * 0.08) * fade;
       }
     }
-    for (let j = 0; j < N; j++) {
-      for (let i = 0; i < N; i++) {
-        const k = j * N + i;
-        const hl = this.heights[j * N + Math.max(0, i - 1)]!;
-        const hr = this.heights[j * N + Math.min(N - 1, i + 1)]!;
-        const hd = this.heights[Math.max(0, j - 1) * N + i]!;
-        const hu = this.heights[Math.min(N - 1, j + 1) * N + i]!;
-        const nx = -(hr - hl) / (2 * cell);
-        const nz = -(hu - hd) / (2 * cell);
-        const l = Math.hypot(nx, 1, nz);
-        this.normals[k * 3] = nx / l;
-        this.normals[k * 3 + 1] = 1 / l;
-        this.normals[k * 3 + 2] = nz / l;
-      }
-    }
-    this.computeBins(cell);
-    const rx = Math.sin(PIN_AZ * RAD) * RIM_R;
-    const rz = -Math.cos(PIN_AZ * RAD) * RIM_R;
-    for (let k = 0; k < N * N; k++) {
-      const x = pos[k * 3]!;
-      const z = pos[k * 3 + 2]!;
-      this.rimWeight[k] = clamp(1.6 - Math.hypot(x - rx, z - rz), 0, 1);
-      let lowest = 90;
-      for (let b = 0; b < BINS; b++) lowest = Math.min(lowest, this.bins[k * BINS + b]!);
-      this.dark[k] = lowest > 2 ? 1 : 0;
-    }
+    this.derive(Math.sin(PIN_AZ * RAD) * RIM_R, -Math.cos(PIN_AZ * RAD) * RIM_R);
     const idx: number[] = [];
     for (let j = 0; j < N - 1; j++) {
       for (let i = 0; i < N - 1; i++) {
@@ -168,10 +147,10 @@ export class CraterView {
       this.rimPos.clone().add(new Vector3(0, 0.15, 0)),
       this.floorPos.clone().add(new Vector3(0, 0.15, 0)),
     ]);
-    const line = new Line(
+    const line = (this.line = new Line(
       lg,
       new LineDashedMaterial({ color: 0xe6e8ee, dashSize: 0.5, gapSize: 0.35, transparent: true, opacity: 0.9, depthTest: false }),
-    );
+    ));
     line.computeLineDistances();
     line.renderOrder = 7;
     this.distLabel.sprite.position.copy(this.rimPos).add(this.floorPos).multiplyScalar(0.5).add(new Vector3(0, 0.4, 0));
@@ -195,6 +174,64 @@ export class CraterView {
     this.controls.dampingFactor = 0.08;
     this.controls.rotateSpeed = 0.5;
     this.controls.enabled = false;
+  }
+
+  /** Normals, per-azimuth horizon bins, rim blending and never-lit cells, from the current heights. */
+  private derive(rx: number, rz: number) {
+    const cell = SIZE / (N - 1);
+    const pos = this.pos;
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const k = j * N + i;
+        const hl = this.heights[j * N + Math.max(0, i - 1)]!;
+        const hr = this.heights[j * N + Math.min(N - 1, i + 1)]!;
+        const hd = this.heights[Math.max(0, j - 1) * N + i]!;
+        const hu = this.heights[Math.min(N - 1, j + 1) * N + i]!;
+        const nx = -(hr - hl) / (2 * cell);
+        const nz = -(hu - hd) / (2 * cell);
+        const l = Math.hypot(nx, 1, nz);
+        this.normals[k * 3] = nx / l;
+        this.normals[k * 3 + 1] = 1 / l;
+        this.normals[k * 3 + 2] = nz / l;
+      }
+    }
+    this.computeBins(cell);
+    for (let k = 0; k < N * N; k++) {
+      const x = pos[k * 3]!;
+      const z = pos[k * 3 + 2]!;
+      this.rimWeight[k] = clamp(1.6 - Math.hypot(x - rx, z - rz), 0, 1);
+      let lowest = 90;
+      for (let b = 0; b < BINS; b++) lowest = Math.min(lowest, this.bins[k * BINS + b]!);
+      this.dark[k] = lowest > 2 ? 1 : 0;
+    }
+  }
+
+  /** Swap the synthetic bowl for the real Shackleton heights (LOLA/PGDA) and move the pins to the real sites. */
+  private applyReal(t: CraterTerrain) {
+    this.real = t;
+    for (let k = 0; k < N * N; k++) {
+      this.heights[k] = t.heightsKm[k]!;
+      this.pos[k * 3 + 1] = t.heightsKm[k]!;
+    }
+    const attr = this.geo.getAttribute("position") as BufferAttribute;
+    attr.needsUpdate = true;
+    this.geo.computeBoundingSphere();
+    this.derive(t.rim.x, t.rim.z);
+    this.rimPos.set(t.rim.x, this.sampleH(t.rim.x, t.rim.z) + 0.05, t.rim.z);
+    this.floorPos.set(t.floor.x, this.sampleH(t.floor.x, t.floor.z) + 0.05, t.floor.z);
+    this.rimPin.position.copy(this.rimPos);
+    this.floorPin.position.copy(this.floorPos);
+    this.rimLabel.sprite.position.copy(this.rimPos);
+    this.floorLabel.sprite.position.copy(this.floorPos);
+    this.line.geometry.dispose();
+    this.line.geometry = new BufferGeometry().setFromPoints([
+      this.rimPos.clone().add(new Vector3(0, 0.15, 0)),
+      this.floorPos.clone().add(new Vector3(0, 0.15, 0)),
+    ]);
+    this.line.computeLineDistances();
+    this.distLabel.set(`about ${Math.round(t.distKm)} km`);
+    this.distLabel.sprite.position.copy(this.rimPos).add(this.floorPos).multiplyScalar(0.5).add(new Vector3(0, 0.4, 0));
+    this.lastSun = "";
   }
 
   private sampleH(x: number, z: number): number {
@@ -254,7 +291,9 @@ export class CraterView {
   }
 
   update(f: SceneFrame, now: number) {
-    const rim = skyAt(SITES.rim, f.d);
+    const t = craterTerrain();
+    if (t && t !== this.real) this.applyReal(t);
+    const rim = skyAt(siteById("rim"), f.d);
     const az = rim.sun.az;
     const el = rim.sun.el;
     const sv = dirFromAzEl(az, el);
@@ -300,7 +339,7 @@ export class CraterView {
   }
 
   pose(phone: boolean, d: number): Pose {
-    const az = (skyAt(SITES.rim, d).sun.az - 60) * RAD;
+    const az = (skyAt(siteById("rim"), d).sun.az - 60) * RAD;
     const R = phone ? 33 : 26;
     return {
       pos: new Vector3(Math.sin(az) * R, phone ? 12 : 9.5, -Math.cos(az) * R),

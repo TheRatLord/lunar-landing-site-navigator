@@ -4,6 +4,7 @@ import { describe } from "../describe";
 import { frameFrom, timelineFor, useLive } from "../derive";
 import { LearnScene } from "../scene/LearnScene";
 import { chapterOf, useLearn } from "../store";
+import { craterTerrain, ensureCrater, ensureTerrain, siteById } from "../terrain";
 import { sampleAt } from "../timeline";
 import { isPhoneLayout, prefersReducedMotion, useIsPhone } from "../../lib/media";
 import { Compass } from "./Compass";
@@ -86,6 +87,13 @@ export function Stage() {
   const { view, chapter, siteId, lat, glFailed } = useLearn(
     useShallow((s) => ({ view: s.view, chapter: s.chapter, siteId: s.siteId, lat: s.lat, glFailed: s.glFailed })),
   );
+  useLearn((s) => s.terrainRev);
+  const terrain = siteById(siteId).terrain;
+  useEffect(() => ensureTerrain(siteId), [siteId]);
+  useEffect(() => {
+    if (view === "crater") ensureCrater();
+  }, [view]);
+  const craterReal = craterTerrain() !== null;
   const phone = useIsPhone();
 
   useEffect(() => {
@@ -202,7 +210,7 @@ export function Stage() {
       {!intro && (
         <div className="l-stage-ui">
           <div className="l-stage-top">
-            <TruthNote view={view} site={siteId} chapter={chapter} />
+            <TruthNote view={view} site={siteId} chapter={chapter} terrain={terrain} craterReal={craterReal} />
             {chapter === "pole" && !phone && <WhereBadge lat={lat} />}
             {chapter === "pole" && !phone && <PoleDiagram />}
           </div>
