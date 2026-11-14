@@ -128,7 +128,7 @@ Catalogue entries (`src/lunarnav/catalog/*.yaml`) cite their own sources.
 ## Working on it
 
 Start with [`docs/SETUP.md`](docs/SETUP.md). The rules for working on this repo, for people and for coding
-agents, are in [`CLAUDE.md`](CLAUDE.md); what is done and what is next is in
+agents, are in [`AGENTS.md`](AGENTS.md); what is done and what is next is in
 [`docs/PROGRESS.md`](docs/PROGRESS.md); anything unverified is in
 [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md); decisions are in [`docs/decisions/`](docs/decisions).
 

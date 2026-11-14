@@ -1,15 +1,15 @@
 # Developer setup
 
-How to get this repo running, from nothing to a pull request. Allow about 20 minutes for the service and the
+How to get this repo running, from nothing to a pushed change. Allow about 20 minutes for the service and the
 web app; terrain is a separate, larger download.
 
 ## 1. Accounts and access
 
 | What | Needed for | You do |
 | --- | --- | --- |
-| GitHub, write access to `TheRatLord/lunar-landing-site-navigator` | pull requests | `gh auth login` |
+| GitHub, write access to `TheRatLord/lunar-landing-site-navigator` | pushing to `main` | `gh auth login` |
 | Claude Code CLI, signed in | the analysis agent only (`lunarnav agent`, Ask in the web app) | Sign in with your own account. Agent runs are billed to it |
-| Claude Code for development | working on the repo | Start it in the repo root so it reads `CLAUDE.md` |
+| Claude Code for development | working on the repo | Start it in the repo root so it reads `AGENTS.md` |
 
 Never share passwords. There are no API keys in this project; everyone uses their own logins.
 
@@ -65,7 +65,7 @@ The service binds to loopback only. To try the agent, set `LUNARNAV_API_AGENT_EN
 
 ## 6. Checks
 
-Run these before every pull request (`CLAUDE.md` §12):
+Run these before every push (`AGENTS.md`):
 
 ```sh
 uv run ruff check .
@@ -79,9 +79,8 @@ up yet (`docs/PROGRESS.md`).
 ## 7. How we work
 
 1. Read `docs/PROGRESS.md` and pick the first unchecked item, or an issue.
-2. Branch: `git switch -c feat/<short-name>` (or `fix/`, `docs/`).
-3. Change, then run the checks for what you touched.
-4. Update `docs/PROGRESS.md`; add a line to `AI_USAGE.md` if an AI tool did the task; cite new data in
+2. Work on `main`. Change, then run the checks for what you touched.
+3. Update `docs/PROGRESS.md`; add a line to `AI_USAGE.md` if an AI tool did the task; cite new data in
    `REFERENCES.md`; log anything that slowed you in `FRICTION_LOG.md`.
-5. Commit with a conventional message (`feat(scenario): add launch slip to the ellipse view`) and open a PR.
-6. Merge with `gh pr merge --squash` once the checks are green.
+4. Commit with a conventional message (`feat(scenario): add launch slip to the ellipse view`).
+5. `git fetch`; if `origin/main` moved, rebase onto it and reconcile your change with what landed, rerun the checks, then `git push origin main`.
