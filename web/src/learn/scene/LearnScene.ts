@@ -155,6 +155,7 @@ export class LearnScene {
   private ensureWalk(): WalkView {
     if (!this.walk) {
       this.walk = new WalkView(this.shared);
+      this.walk.input.onActive = this.requestRender;
       this.applyCamera(this.walk.camera);
     }
     return this.walk;
@@ -313,6 +314,7 @@ export class LearnScene {
     this.space.controls.enabled = false;
     if (this.crater) this.crater.controls.enabled = false;
     this.canvas.style.cursor = "";
+    this.walk?.setActive(this.view === "walk");
     if (this.view === "space") this.poseSpace(f, snap);
     else if (this.view === "crater") {
       const c = this.ensureCrater();
@@ -325,7 +327,9 @@ export class LearnScene {
       c.controls.update();
     } else if (this.view === "walk") {
       this.canvas.style.cursor = "grab";
-      this.ensureWalk().update(f);
+      const w = this.ensureWalk();
+      w.setActive(true);
+      w.update(f);
     } else {
       this.canvas.style.cursor = "grab";
       this.ground.camera.fov = this.groundFov();

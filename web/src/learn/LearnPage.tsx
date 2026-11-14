@@ -71,6 +71,7 @@ function useKeyboard(current: ChapterKey | null) {
         return;
       }
       if (current === null) return;
+      if (s.view === "walk" && !range && (e.key === " " || e.key.startsWith("Arrow") || e.key === "Home" || e.key === "End")) return;
       if (e.key === "k" || e.key === "K" || (e.key === " " && !pressable)) {
         e.preventDefault();
         s.togglePlay();
