@@ -27,7 +27,7 @@ return { pass: misses.length === 0, score: misses.length === 0 ? 1 : 0, reason: 
 `;
 
 export default function tests() {
-  const cases: Case[] = JSON.parse(readFileSync(path.join(import.meta.dir, "cases.json"), "utf8"));
+  const cases: Case[] = JSON.parse(readFileSync(path.join(import.meta.dirname, "cases.json"), "utf8"));
   return cases.map((c) => ({
     description: `${c.mission_id} (${c.outcome}, ${c.group})`,
     vars: { ...c, expected: c.expected },

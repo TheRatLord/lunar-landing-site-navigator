@@ -1,12 +1,10 @@
 import { connectLunarnav, type Lunarnav } from "../src/mcp";
-import { reviewSite } from "../src/review";
+import { mcpUrl, reviewSite } from "../src/review";
 
 let shared: Promise<Lunarnav> | null = null;
 
 function connection(): Promise<Lunarnav> {
-  const url = process.env.LUNARNAV_MCP_URL;
-  if (!url) throw new Error("set LUNARNAV_MCP_URL to a running `lunarnav mcp --http PORT` (for example http://127.0.0.1:8765/mcp)");
-  shared ??= connectLunarnav({ url });
+  shared ??= connectLunarnav({ url: mcpUrl() });
   return shared;
 }
 
@@ -23,20 +21,26 @@ export default class LunarnavBacktestProvider {
 
   async callApi(_prompt: string, context: { vars: Record<string, any> }) {
     const v = context.vars;
+    const tools = this.mode === "tools";
+    let lunar: Lunarnav | undefined;
     try {
+      lunar = tools ? await connection() : undefined;
       const { review, ledgerIds, steps } = await reviewSite({
         lat: Number(v.lat),
         lon: Number(v.lon),
         landingUtc: String(v.landing_utc),
         landerId: String(v.lander),
         launchVehicleId: String(v.launch_vehicle_id),
-        noTools: this.mode === "baseline",
-        blindExclude: this.mode === "tools" ? String(v.mission_id) : undefined,
-        connection: this.mode === "tools" ? await connection() : undefined,
+        noTools: !tools,
+        blindExclude: tools ? String(v.mission_id) : undefined,
+        connection: lunar,
       });
       return { output: JSON.stringify(review), metadata: { ledgerIds: ledgerIds.length, steps } };
     } catch (err) {
+      if (tools && !lunar) shared = null;
       return { error: String(err) };
+    } finally {
+      if (lunar) await lunar.setBlind(null).catch(() => {});
     }
   }
 }

@@ -1,7 +1,7 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { generateText, isStepCount, Output, type ModelMessage } from "ai";
+import { z } from "zod";
+import { runClaude } from "./claude";
 import { connectLunarnav, type Lunarnav } from "./mcp";
-import { BASELINE, REVIEW_BOARD, requestText, STRUCTURE } from "./prompt";
+import { loadPrompt, requestText } from "./prompt";
 import { CRITERIA, ReviewSchema, type Review } from "./schema";
 
 export type ReviewInput = {
@@ -21,12 +21,12 @@ export type ReviewResult = { review: Review; ledgerIds: string[]; steps: number 
 
 export class InvalidReview extends Error {}
 
-export const MODEL = process.env.LUNARNAV_EVAL_MODEL ?? "claude-sonnet-5-5";
-const MAX_STEPS = Number(process.env.LUNARNAV_EVAL_MAX_STEPS ?? 30);
+export const MODEL = process.env.LUNARNAV_EVAL_MODEL || "sonnet";
+const MAX_STEPS = Number(process.env.LUNARNAV_EVAL_MAX_STEPS || 30);
+export const DEFAULT_URL = "http://127.0.0.1:8765/mcp";
 
-function ledgerIdsIn(value: unknown): string[] {
-  const text = JSON.stringify(value) ?? "";
-  return [...new Set([...text.matchAll(/\\?"ledger_id\\?":\s*\\?"(L\d{4,})/g)].map((m) => m[1]))];
+export function mcpUrl(url?: string): string {
+  return url || process.env.LUNARNAV_MCP_URL || DEFAULT_URL;
 }
 
 export function checkEvidence(review: Review, ledgerIds: string[]): void {
@@ -41,29 +41,36 @@ export function checkEvidence(review: Review, ledgerIds: string[]): void {
   if (bad.length) throw new InvalidReview(`review cites missing evidence: ${bad.join("; ")}`);
 }
 
+function parseReview(value: unknown): Review {
+  const parsed = ReviewSchema.safeParse(value);
+  if (!parsed.success) throw new InvalidReview(`review does not match the schema: ${z.prettifyError(parsed.error)}`);
+  return parsed.data;
+}
+
+const SCHEMA = z.toJSONSchema(ReviewSchema);
+
 export async function reviewSite(input: ReviewInput): Promise<ReviewResult> {
-  const model = anthropic(MODEL);
-  const request = requestText({ ...input, missionHours: input.missionHours ?? 336 });
+  const prompt = requestText({ ...input, missionHours: input.missionHours ?? 336 });
+  const common = { schema: SCHEMA, model: MODEL, maxTurns: MAX_STEPS, prompt };
   if (input.noTools) {
-    const res = await generateText({ model, system: BASELINE, prompt: request, output: Output.object({ schema: ReviewSchema }) });
-    return { review: res.output, ledgerIds: [], steps: 0 };
+    const run = await runClaude({ ...common, system: loadPrompt("baseline") });
+    return { review: parseReview(run.structured), ledgerIds: [], steps: 0 };
   }
+  const url = mcpUrl(input.url);
   const own = !input.connection;
-  const lunar = input.connection ?? (await connectLunarnav({ blindExclude: input.blindExclude, url: input.url }));
+  let lunar: Lunarnav;
   try {
-    if (input.connection && input.blindExclude !== undefined) await lunar.setBlind(input.blindExclude ?? null);
-    await lunar.recordRequest(request);
-    const first: ModelMessage[] = [{ role: "user", content: request }];
-    const loop = await generateText({ model, system: REVIEW_BOARD, messages: first, tools: lunar.tools, stopWhen: isStepCount(MAX_STEPS) });
-    const ledgerIds = ledgerIdsIn(loop.steps.map((s) => s.toolResults));
-    const final = await generateText({
-      model,
-      system: REVIEW_BOARD,
-      messages: [...first, ...loop.response.messages, { role: "user", content: STRUCTURE }],
-      output: Output.object({ schema: ReviewSchema }),
-    });
-    checkEvidence(final.output, ledgerIds);
-    return { review: final.output, ledgerIds, steps: loop.steps.length };
+    lunar = input.connection ?? (await connectLunarnav({ url }));
+  } catch (err) {
+    throw new Error(`cannot reach the lunarnav MCP server at ${url}; start it with: bash ~/wslfast.sh 'uv run lunarnav mcp --http 8765' (${err})`);
+  }
+  try {
+    await lunar.setBlind(input.blindExclude ?? null);
+    await lunar.recordRequest(prompt);
+    const run = await runClaude({ ...common, system: loadPrompt("review-board"), mcpUrl: url });
+    const review = parseReview(run.structured);
+    checkEvidence(review, run.ledgerIds);
+    return { review, ledgerIds: run.ledgerIds, steps: run.turns };
   } finally {
     if (own) await lunar.close();
   }
