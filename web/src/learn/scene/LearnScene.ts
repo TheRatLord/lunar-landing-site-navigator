@@ -174,6 +174,12 @@ export class LearnScene {
     this.requestRender();
   }
 
+  setWalkStick(x: number, y: number) {
+    if (this.view !== "walk" || !this.walk) return;
+    this.walk.input.setStick(x, y);
+    this.requestRender();
+  }
+
   private teardown() {
     window.clearTimeout(this.flyTimer);
     this.space.controls.removeEventListener("change", this.requestRender);

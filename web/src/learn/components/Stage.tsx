@@ -144,7 +144,7 @@ export function Stage() {
     push();
     const unsub = useLearn.subscribe(push);
     const unsubPanel = useLearn.subscribe((s, p) => {
-      if (s.panel !== p.panel) layout();
+      if (s.panel !== p.panel || s.chapter !== p.chapter) layout();
     });
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     mq.addEventListener("change", push);
@@ -234,7 +234,7 @@ export function Stage() {
           </div>
         )}
         {view === "ground" && <GroundUi look={look} onLook={onLook} />}
-        {view === "walk" && <WalkHud />}
+        {view === "walk" && <WalkHud onStick={(x, y) => sceneRef.current?.setWalkStick(x, y)} />}
       </div>
       <p className="sr-only" ref={live} />
     </div>

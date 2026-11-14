@@ -59,12 +59,12 @@ export function ExploreCard() {
   const siteId = useLearn((s) => s.siteId);
   const view = useLearn((s) => s.view);
   const speed = useLearn((s) => s.speed);
-  const { setSite, setView, setSpeed } = useLearn.getState();
+  const { setSite, setView, setSpeed, setWalkBody } = useLearn.getState();
   const polar = siteId === "rim" || siteId === "floor";
   const views = [
     { value: "space", label: "Space" },
     { value: "ground", label: "Ground" },
-    { value: "walk", label: "Walk" },
+    { value: "walk", label: "Rover" },
     ...(polar ? [{ value: "crater", label: "Close-up" }] : []),
   ];
   return (
@@ -75,7 +75,6 @@ export function ExploreCard() {
           {EXPLORE.title}
         </h1>
         <p className="l-copy">{EXPLORE.copy}</p>
-        <Lessons />
         <div className="l-field" role="group" aria-labelledby="l-pick">
           <span id="l-pick" className="l-control-label">
             Place
@@ -88,35 +87,39 @@ export function ExploreCard() {
               </button>
             ))}
           </div>
-          <p className="l-site-blurb">{SITES[siteId].blurb}</p>
         </div>
         <div className="l-field l-control">
           <span className="l-control-label">View</span>
-          <Toggle label="View" value={view} options={views} onChange={(v) => setView(v as ViewKind)} />
+          <Toggle label="View" value={view} options={views} onChange={(v) => { if (v === "walk") setWalkBody("rover"); setView(v as ViewKind); }} />
         </div>
-        <div className="l-field l-control">
-          <span className="l-control-label">Speed</span>
-          <Toggle
-            label="Speed"
-            value={speed > 5 ? "fast" : "slow"}
-            options={[
-              { value: "slow", label: "Slow" },
-              { value: "fast", label: "Fast" },
-            ]}
-            onChange={(v) => setSpeed(v === "fast" ? 14 : 2)}
-          />
-        </div>
-        <p className="l-prompt">{EXPLORE.prompt}</p>
-        <p className="l-planner-link">
-          <Link to="/">
-            Want exact times from real Moon maps? Open the Planner, the tool mission engineers use{" "}
-            <ArrowRightIcon size={16} />
-          </Link>
-        </p>
-        <p className="l-teacher">
-          Works with a keyboard: <kbd>K</kbd> plays or pauses, <kbd>←</kbd> <kbd>→</kbd> move time (add <kbd>Shift</kbd> for a
-          whole day), <kbd>[</kbd> <kbd>]</kbd> step through the lessons.
-        </p>
+        <details className="l-explore-more">
+          <summary>Lessons, speed and site details</summary>
+          <div className="l-field l-control">
+            <span className="l-control-label">Time speed</span>
+            <Toggle
+              label="Speed"
+              value={speed > 5 ? "fast" : "slow"}
+              options={[
+                { value: "slow", label: "Slow" },
+                { value: "fast", label: "Fast" },
+              ]}
+              onChange={(v) => setSpeed(v === "fast" ? 14 : 2)}
+            />
+          </div>
+          <p className="l-site-blurb">{SITES[siteId].blurb}</p>
+          <Lessons />
+          <p className="l-prompt">{EXPLORE.prompt}</p>
+          <p className="l-planner-link">
+            <Link to="/">
+              Want exact times from real Moon maps? Open the Planner, the tool mission engineers use{" "}
+              <ArrowRightIcon size={16} />
+            </Link>
+          </p>
+          <p className="l-teacher">
+            Works with a keyboard: <kbd>K</kbd> plays or pauses, <kbd>←</kbd> <kbd>→</kbd> move time (add <kbd>Shift</kbd> for a
+            whole day), <kbd>[</kbd> <kbd>]</kbd> step through the lessons. In Rover view, use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the arrow keys to drive.
+          </p>
+        </details>
       </div>
     </article>
   );

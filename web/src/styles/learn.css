@@ -1529,6 +1529,151 @@
   }
 }
 
+.learn.is-explore {
+  --l-safe: 0px;
+}
+.learn.is-explore .l-story {
+  top: auto;
+  left: 50%;
+  bottom: 126px;
+  transform: translateX(-50%);
+  width: min(880px, calc(100% - 32px));
+  height: auto;
+  max-height: min(45vh, 430px);
+}
+.learn.is-explore .l-story-scroll {
+  padding: 0 20px 12px;
+}
+.learn.is-explore .l-panelbar {
+  padding: 8px 12px 0 20px;
+}
+.learn.is-explore .l-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.learn.is-explore .l-copy {
+  display: none;
+}
+.learn.is-explore .l-field {
+  margin: 0 0 10px;
+}
+.learn.is-explore .l-control-label {
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.learn.is-explore .l-sitechips {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+.learn.is-explore .l-sitechip,
+.learn.is-explore .l-sitechip:last-child:nth-child(odd) {
+  flex: 1 0 125px;
+  min-height: 42px;
+  padding: 5px 10px;
+}
+.learn.is-explore .l-sitechip-where {
+  display: none;
+}
+.learn.is-explore .l-control {
+  display: inline-block;
+  vertical-align: top;
+  width: min(100%, 370px);
+  margin-right: 12px;
+}
+.learn.is-explore .l-explore-more {
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.learn.is-explore .l-explore-more summary {
+  padding: 7px 0 2px;
+  color: var(--accent-text);
+  cursor: pointer;
+  font-weight: 600;
+}
+.learn.is-explore .l-timebar {
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
+}
+@media (max-width: 759px) {
+  .learn.is-explore .l-main {
+    display: block;
+    background: var(--l-space);
+  }
+  .learn.is-explore .l-stage {
+    position: absolute;
+    inset: 0;
+  }
+  .learn.is-explore .l-story {
+    position: absolute;
+    left: 8px;
+    bottom: 105px;
+    width: min(230px, calc(100% - 16px));
+    transform: none;
+    max-height: min(38vh, 300px);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    background: var(--l-card);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px);
+  }
+  .learn.is-explore .l-story-scroll {
+    padding: 0 12px 6px;
+  }
+  .learn.is-explore .l-panelbar {
+    padding: 0 6px 0 12px;
+    min-height: 28px;
+  }
+  .learn.is-explore .l-panelbar .l-iconbtn {
+    width: 28px;
+    height: 28px;
+  }
+  .learn.is-explore .l-title {
+    display: none;
+  }
+  .learn.is-explore .l-field {
+    margin-bottom: 5px;
+  }
+  .learn.is-explore .l-control-label {
+    margin-bottom: 2px;
+  }
+  .learn.is-explore .l-sitechip,
+  .learn.is-explore .l-sitechip:last-child:nth-child(odd) {
+    min-height: 34px;
+  }
+  .learn.is-explore .l-explore-more summary {
+    padding: 3px 0 0;
+  }
+  .learn.is-explore .l-timebar {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 8px;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    background: var(--l-card);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px);
+  }
+  .learn.is-explore .l-readouts {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    padding: 0;
+  }
+  .learn.is-explore .l-tiles {
+    display: none;
+  }
+  .learn.is-explore .l-control {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .learn *,
   .learn *::before,
@@ -1597,11 +1742,60 @@
   display: flex;
   gap: 8px;
 }
+.learn.is-explore .l-walk-actions {
+  top: 66px;
+  right: 20px;
+  bottom: auto;
+  left: auto;
+  display: grid;
+  width: min(270px, calc(100% - 40px));
+  max-width: none;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--l-card);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+.l-walk-drive {
+  display: flex;
+  gap: 5px;
+}
+.l-walk-drive button {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  touch-action: none;
+}
+.l-walk-drive button:hover {
+  background: var(--panel-hover);
+}
+.learn.is-explore .l-walk-switch {
+  min-height: 34px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
 @media (max-width: 759px) {
   .l-walk-hint {
     display: none;
   }
   .l-walk-actions {
     bottom: 12px;
+  }
+  .learn.is-explore .l-walk-actions {
+    top: 64px;
+    right: 8px;
+    bottom: auto;
+    width: min(245px, calc(100% - 16px));
+    padding: 8px;
   }
 }

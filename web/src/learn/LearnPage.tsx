@@ -79,6 +79,7 @@ function useKeyboard(current: ChapterKey | null) {
       }
       if (radio || range) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        if (s.view === "walk") return;
         e.preventDefault();
         const step = e.shiftKey ? 1 : 0.25;
         s.nudge(e.key === "ArrowLeft" ? -step : step);
@@ -102,7 +103,7 @@ export default function LearnPage() {
   const view = useLearn((s) => s.view);
   const panel = useLearn((s) => s.panel);
   return (
-    <div className={`learn v-${view} ${panel ? "" : "panel-hidden"}`}>
+    <div className={`learn v-${view} ${current === "explore" ? "is-explore" : ""} ${panel ? "" : "panel-hidden"}`}>
       <a className="l-skip" href="#l-main">
         Skip to the controls
       </a>
