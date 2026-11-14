@@ -53,9 +53,9 @@ Data lives in `data/` (or `$LUNARNAV_DATA`) and is not part of the repository.
 
 ### Data
 
-Built terrain stores, kernels and caches are shared in the team bucket `gs://lunarnav-1114-19887-data`. Its
-layout matches `data/`, and the deployed site reads from it. With `gcloud` installed and your Google account
-given access (ask the project owner), pull what you need:
+Built terrain stores, kernels and caches are shared in the public bucket `gs://lunarnav-1114-19887-data`. Its
+layout matches `data/`, and the deployed site reads from it. Install the
+[gcloud CLI](https://cloud.google.com/sdk/docs/install) (no login needed), then pull what you need:
 
 ```bash
 scripts/data.sh pull              # kernels and a starter set of stores (~3.5 GB): global, 60N/60S and the regional windows

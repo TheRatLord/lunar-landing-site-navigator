@@ -30,6 +30,7 @@ USAGE
 
 need_gcloud() {
   command -v gcloud >/dev/null || { echo "gcloud is not installed: https://cloud.google.com/sdk/docs/install" >&2; exit 1; }
+  export CLOUDSDK_AUTH_DISABLE_CREDENTIALS=True
 }
 
 sync_down() {
