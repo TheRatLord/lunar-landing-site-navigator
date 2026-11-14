@@ -1,0 +1,91 @@
+import { useCallback, useEffect, useReducer, useRef } from "react";
+import { ApiError, isAbort, reportError } from "../../api/client";
+import { runAnalysis } from "../../api/jobs";
+import { SITE_ENDPOINTS, attributionBody, type AttributionRequest, type AttributionResult } from "../../api/site";
+import { useOverlays } from "../../scenario/alternatives";
+import type { Scenario } from "../../scenario/types";
+import { blockerMark } from "./adapt";
+
+export interface AttributionState {
+  phase: "idle" | "running" | "done" | "error";
+  label: string;
+  az_deg: number | null;
+  result: AttributionResult | null;
+  error: Error | null;
+  missing: boolean;
+  doc: Scenario | null;
+}
+
+const IDLE: AttributionState = { phase: "idle", label: "", az_deg: null, result: null, error: null, missing: false, doc: null };
+
+type Action = { type: "start"; label: string; az_deg: number | null; doc: Scenario } | { type: "done"; result: AttributionResult } | { type: "fail"; error: Error } | { type: "clear" };
+
+function reduce(s: AttributionState, a: Action): AttributionState {
+  switch (a.type) {
+    case "start":
+      return { phase: "running", label: a.label, az_deg: a.az_deg, result: null, error: null, missing: false, doc: a.doc };
+    case "done":
+      return { ...s, phase: "done", result: a.result };
+    case "fail":
+      return { ...s, phase: "error", error: a.error, missing: a.error instanceof ApiError && (a.error.status === 404 || a.error.status === 405) };
+    case "clear":
+      return IDLE;
+  }
+}
+
+export function useAttribution(scenario: Scenario) {
+  const [state, dispatch] = useReducer(reduce, IDLE);
+  const ctlRef = useRef<AbortController | null>(null);
+  const setBlocker = useOverlays((s) => s.setBlocker);
+
+  useEffect(() => {
+    ctlRef.current?.abort();
+    setBlocker(null);
+  }, [scenario, setBlocker]);
+
+  useEffect(
+    () => () => {
+      ctlRef.current?.abort();
+      setBlocker(null);
+    },
+    [setBlocker],
+  );
+
+  const request = useCallback(
+    (req: AttributionRequest, label: string, az_deg: number | null) => {
+      ctlRef.current?.abort();
+      const ctl = new AbortController();
+      ctlRef.current = ctl;
+      dispatch({ type: "start", label, az_deg, doc: scenario });
+      runAnalysis<AttributionResult>(SITE_ENDPOINTS.attribution, attributionBody(scenario, "auto", req), { signal: ctl.signal }).then(
+        (result) => {
+          dispatch({ type: "done", result });
+          const ev = result.event;
+          const az = result.azimuth;
+          const mark = ev
+            ? blockerMark(scenario, label, ev.az_deg, ev.blocker_dist_m, ev.blocker)
+            : az
+              ? blockerMark(scenario, label, az.az_deg, az.blocker_dist_m, az.blocker)
+              : null;
+          setBlocker(mark);
+        },
+        (e: unknown) => {
+          if (ctl.signal.aborted || isAbort(e)) return;
+          const error = e instanceof Error ? e : new Error(String(e));
+          dispatch({ type: "fail", error });
+          setBlocker(null);
+          if (!(error instanceof ApiError && (error.status === 404 || error.status === 405))) reportError(error, "Could not trace the blocker");
+        },
+      );
+    },
+    [scenario, setBlocker],
+  );
+
+  const clear = useCallback(() => {
+    ctlRef.current?.abort();
+    dispatch({ type: "clear" });
+    setBlocker(null);
+  }, [setBlocker]);
+
+  return { state: state.doc === scenario ? state : IDLE, request, clear };
+}

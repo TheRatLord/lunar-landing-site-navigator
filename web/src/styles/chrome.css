@@ -1,0 +1,59 @@
+/* Shared chrome: limits, validation chips, provenance rows, service notice. */
+
+/* ---------- key/value rows inside popovers ---------- */
+.ch-dl { margin: 0; display: flex; flex-direction: column; gap: var(--sp-1); font-size: var(--fs-sm); }
+.ch-dl-row { display: grid; grid-template-columns: minmax(80px, 30%) minmax(0, 1fr); gap: var(--sp-3); align-items: baseline; }
+.ch-dl dt { color: var(--text-3); }
+.ch-dl dd { margin: 0; overflow-wrap: anywhere; }
+
+/* ---------- limits ---------- */
+.lim { display: inline-flex; align-items: center; }
+.lim-pop, .an-detail { display: flex; flex-direction: column; gap: var(--sp-1); font-size: var(--fs-sm); }
+.lim-pop > section + section { border-top: var(--hairline) solid var(--border); padding-top: var(--sp-1); }
+.lim-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lim-item + .lim-item { border-top: var(--hairline) solid var(--border); }
+.lim-body { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-1) 0 var(--sp-2); }
+.lim-text, .lim-src { margin: 0; overflow-wrap: anywhere; }
+.lim-text { color: var(--text-2); }
+.lim-src { font-size: var(--fs-xs); color: var(--text-3); }
+.lim-quote { margin: 0; padding-left: var(--sp-2); border-left: 2px solid var(--border-strong); color: var(--text-2); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+
+/* ---------- analysis status: inline, no box ---------- */
+.an-status { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--control-h-sm); font-size: var(--fs-sm); color: var(--text-2); min-width: 0; }
+.an-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--text-3); }
+.an-dot-ok { background: var(--c-pass); }
+.an-running { min-width: 260px; }
+.an-stage { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-bar { flex: 1; min-width: 60px; }
+.an-pct { min-width: 3ch; text-align: right; }
+.an-job { font-size: var(--fs-xs); }
+.an-detail p { margin: 0; }
+.an-chip { display: inline-flex; align-items: center; gap: var(--sp-1-5); height: var(--chip-h); padding: 0; font-size: var(--fs-xs); font-weight: var(--fw-medium); }
+.an-chip-stale { color: var(--c-marginal); background: none; }
+.an-chip .btn { color: inherit; }
+
+/* ---------- validation / provenance chips ---------- */
+.vn { display: inline-flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; }
+.vn-pop { display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); }
+.vn-sources { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.vn-sources a { color: var(--accent-text); }
+.vn-conf { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-0); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.vn-scroll { overflow: auto; max-height: 50vh; }
+.vn-table { width: 100%; border-collapse: collapse; font-size: var(--fs-xs); }
+.vn-table th, .vn-table td { padding: var(--sp-1) var(--sp-2); text-align: left; vertical-align: top; border-bottom: var(--hairline) solid var(--border); }
+.vn-table thead th { position: sticky; top: 0; background: var(--panel); color: var(--text-3); font-weight: var(--fw-medium); }
+.vn-table td:nth-child(2) { min-width: 18ch; }
+.vn-table td:nth-child(3) { min-width: 22ch; }
+.vn-table td:nth-child(n + 4) { white-space: nowrap; }
+.vn-table tbody th { font-weight: var(--fw-medium); white-space: nowrap; }
+
+/* ---------- service notice and crash fallback ---------- */
+.sn { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); background: var(--c-fail-bg); border-radius: var(--r-md); font-size: var(--fs-sm); min-width: 0; }
+.sn-icon { flex: none; margin-top: 2px; color: var(--c-fail); }
+.sn-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sn-head { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; }
+.sn-title { font-weight: var(--fw-medium); color: var(--text); }
+.sn-what { color: var(--text-2); overflow-wrap: anywhere; }
+.sn-detail { margin: 0; color: var(--text-2); overflow-wrap: anywhere; }
+.sn-meta { margin: 0; font-size: var(--fs-xs); color: var(--text-3); }
+.sn > .btn { flex: none; align-self: center; }

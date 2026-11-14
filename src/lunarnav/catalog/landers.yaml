@@ -1,0 +1,300 @@
+entries:
+  - id: peregrine
+    name: Astrobotic Peregrine
+    operator: Astrobotic Technology
+    country: US
+    status: flown
+    missions: [Peregrine Mission One]
+    confidence: high
+    notes: >
+      Peregrine Mission One launched 2024-01-08 and did not attempt landing (propellant leak); it reentered
+      2024-01-18 (Wikipedia). Payload capacity conflicts between guide versions (v4.0 100 kg, v5.0 70-90 kg).
+      Antenna height is not published: antenna_height_m is half the vehicle height, antenna_height_max_m the
+      full vehicle height (see header).
+    sources:
+      - url: https://www.astrobotic.com/wp-content/uploads/2022/01/PUGLanders_011222.pdf
+        title: Astrobotic Lunar Landers Payload User's Guide v5.0 (Aug 2021)
+        locator: pp. 5, 13, 14, 18, 20, 35-36, 51
+      - url: https://www.astrobotic.com/wp-content/uploads/2021/01/Peregrine-Payload-Users-Guide.pdf
+        title: Astrobotic Peregrine Payload User's Guide v4.0 (Jun 2020)
+        locator: p. 12 (payload delivery capacity)
+      - url: https://en.wikipedia.org/wiki/Peregrine_Mission_One
+        title: "Wikipedia: Peregrine Mission One"
+        locator: lander description and outcome
+      - url: https://www.isas.jaxa.jp/en/topics/files/SLIM-press-briefing-20241226.pdf
+        title: JAXA SLIM project review press briefing, 26 Dec 2024
+        locator: p. 7 comparison table (masses, 24 km x 6 km)
+    params:
+      launch_mass_kg: {value: 1300, unit: kg, basis: published, source: 3, note: approximate}
+      payload_capacity_kg: {value: [70, 90], unit: kg, basis: published, source: 0, note: "v5.0 p.13 mid-latitude; v4.0 says 100 kg"}
+      height_m: {value: 1.9, unit: m, basis: published, source: 2}
+      power_type: {value: solar array + Li-ion battery, basis: published, source: 0, note: "GaInP/GaAs/Ge triple-junction cells; 28 Vdc; battery capacity not published"}
+      array_geometry: {value: top-mounted panel (mid/equatorial latitudes); side-mounted panels (polar), basis: published, source: 0, note: "p.18"}
+      payload_specific_power_w_per_kg: {value: 1.0, unit: W/kg, basis: published, source: 0, note: "nominal per kilogram of payload; 2.5 W/kg peak"}
+      antenna_height_m: {value: 0.95, unit: m, basis: estimate, note: "Not published by the operator. Conservative estimate = half the vehicle height (assumption: the Earth-link antenna sits in the upper half of the vehicle); the upper bound is antenna_height_max_m."}
+      antenna_height_max_m: {value: 1.9, unit: m, basis: estimate, note: "Upper bound = published vehicle height 1.9 m (Wikipedia); antenna position not published. Actuated MGA/HGA after touchdown."}
+      comm_bands: {value: [X], basis: published, source: 0, note: "p.20; LGAs in transit, actuated MGA/HGA after touchdown"}
+      payload_downlink_rate_kbps_per_kg: {value: 10, unit: kbps/kg, basis: published, source: 0, note: "p. 5; rate per kilogram of payload mass"}
+      landing_area_m: {value: [24000, 6000], unit: m, basis: published, source: 0, note: "24 km x 6 km ellipse (p. 51), not stated whether semi- or full axes; 100 m x 100 m only with OPAL terrain-relative navigation (Griffin onward)"}
+      max_slope_deg: {value: 10, unit: deg, basis: published, source: 0, note: "'typically selected with an effective slope <=10 deg' p.51"}
+      max_hazard_m: {value: 0.3, unit: m, basis: published, source: 0, note: "maximum expected rock height preferred, p.51"}
+      surface_lifetime_days: {value: 8, unit: d, basis: published, source: 0, note: "192 h at mid-latitude (p.13); polar 192+ h"}
+      night_survival: {value: false, basis: published, source: 2, note: "No heaters; first Peregrine landers not expected to survive the lunar night"}
+      landing_sun_elevation_deg: {value: [28, 56], unit: deg, basis: derived, note: "Guide gives only 'land 55-110 h after sunrise'. Derived at the equator, equinox geometry, hour angle 0.508 deg/h; 19-36 deg at 45 deg latitude. Not published by Astrobotic."}
+      thermal_limits: {value: "payload interface -30 to +80 C on the surface (excluding night/equatorial)", basis: published, source: 0, note: "pp.35-36"}
+
+  - id: griffin
+    name: Astrobotic Griffin
+    operator: Astrobotic Technology
+    country: US
+    status: in_development
+    missions: [Griffin Mission One]
+    confidence: medium
+    notes: >
+      Griffin Mission One launch NET Jan 2027 on Falcon Heavy per Wikipedia (opened 2026-11-12); target Nobile
+      region near Mons Mouton. Power and antenna details are guide statements about options, not the flight
+      configuration. Antenna height not published. Wikipedia gives a 1265 kg lander mass without saying wet or
+      dry, so no mass is recorded.
+    sources:
+      - url: https://www.astrobotic.com/wp-content/uploads/2022/01/PUGLanders_011222.pdf
+        title: Astrobotic Lunar Landers Payload User's Guide v5.0 (Aug 2021)
+        locator: Griffin sections; p. 51 landing guidance
+      - url: https://en.wikipedia.org/wiki/Griffin_Mission_One
+        title: "Wikipedia: Griffin Mission One"
+        locator: mass, target, schedule
+    params:
+      payload_capacity_kg: {value: 625, unit: kg, basis: published, source: 0, note: polar configuration}
+      power_type: {value: solar array + Li-ion battery, basis: published, source: 0, note: "same cells and battery as Peregrine; larger or deployable arrays possible"}
+      array_geometry: {value: side-mounted panels (polar); deployable panels optional, basis: published, source: 0}
+      comm_bands: {value: [X], basis: published, source: 0}
+      landing_area_m: {value: [100, 100], unit: m, basis: published, source: 0, note: "100 m x 100 m ellipse with OPAL terrain-relative navigation (p. 51); the guide does not say whether these are semi-axes or full axes"}
+      max_slope_deg: {value: 10, unit: deg, basis: published, source: 0, note: "effective slope; guidance shared with Peregrine (p.51)"}
+      max_hazard_m: {value: 0.3, unit: m, basis: published, source: 0, note: rock height preferred}
+      surface_lifetime_days: {value: 14, unit: d, basis: published, source: 0, note: "'Up to 14 days' (polar)"}
+
+  - id: nova-c
+    name: Intuitive Machines Nova-C
+    operator: Intuitive Machines
+    country: US
+    status: flown
+    missions: [IM-1 Odysseus, IM-2 Athena, IM-3]
+    confidence: medium
+    notes: >
+      Specification values come mainly from Wikipedia and eoPortal (no opened primary PUG). Height 4.3 m
+      (Wikipedia) versus 3.938 m (eoPortal) conflict; payload >130 kg versus 100 kg conflict. IM-1 and IM-2 both
+      ended tipped over. Antenna height is not published (low value half the vehicle height, high value the vehicle height).
+    sources:
+      - url: https://en.wikipedia.org/wiki/Nova-C_lander
+        title: "Wikipedia: Nova-C"
+        locator: specifications, power, slope
+      - url: https://www.eoportal.org/satellite-missions/intuitive-machines
+        title: "eoPortal: Intuitive Machines"
+        locator: comms, IM-3 data volume, height
+      - url: https://www.nasa.gov/wp-content/uploads/2025/02/np-2025-02-005-jsc-clps-intuitive-machines-press-kit-508-2-25-25.pdf
+        title: NASA CLPS IM-2 press kit
+        locator: surface operations about 10 days
+      - url: https://www.lroc.im-ldi.com/images/1360
+        title: "LROC: IM-1 Odysseus landing site"
+        locator: rest position, 12 deg local slope
+    params:
+      launch_mass_kg: {value: 1908, unit: kg, basis: published, source: 0}
+      dry_mass_kg: {value: 675, unit: kg, basis: published, source: 0}
+      height_m: {value: 4.3, unit: m, basis: published, source: 0, note: "eoPortal gives 3.938 m"}
+      payload_capacity_kg: {value: 130, unit: kg, basis: published, source: 0, note: "'>130 kg' Wikipedia; eoPortal 100 kg"}
+      power_type: {value: solar arrays + Li-ion battery, basis: published, source: 0, note: "25 Ah battery on 28 VDC bus"}
+      array_geometry: {value: three fixed panels (top deck + two body panels), basis: published, source: 0}
+      array_power_w: {value: 200, unit: W, basis: published, source: 0, note: combined maximum on the lunar surface}
+      antenna_height_m: {value: 2.15, unit: m, basis: estimate, note: "Not published by the operator. Conservative estimate = half the vehicle height (assumption: the Earth-link antenna sits in the upper half of the vehicle); the upper bound is antenna_height_max_m."}
+      antenna_height_max_m: {value: 4.3, unit: m, basis: estimate, note: "Upper bound = vehicle height 4.3 m (Wikipedia; eoPortal gives 3.938 m); antenna position not published."}
+      comm_bands: {value: [S], basis: published, source: 1, note: Intuitive Machines Lunar Telemetry and Tracking Network}
+      max_slope_deg: {value: 10, unit: deg, basis: published, source: 0, note: designed to stay upright on slopes up to 10 deg}
+      surface_lifetime_days: {value: 10, unit: d, basis: published, source: 2, note: approximate design}
+      night_survival: {value: false, basis: estimate, note: "Not designed for the lunar night; IM-1 and IM-2 both ended by night or power loss."}
+      achieved_landing_error_m: {value: 250, unit: m, basis: published, source: 1, note: "IM-2 about 250 m from intended site; IM-1 about 1500 m (Wikipedia / eoPortal 'within approximately a mile')"}
+
+  - id: blue-ghost
+    name: Firefly Blue Ghost
+    operator: Firefly Aerospace
+    country: US
+    status: flown
+    missions: [Blue Ghost Mission 1, Blue Ghost Mission 2]
+    confidence: high
+    notes: >
+      Mission 1 landed upright 2025-03-02 within its 100 m target and operated about 14 days plus just over
+      5 h into the lunar night. The published 1.8 m (six-foot) mast belongs to the LMS science payload,
+      not the Earth-link antenna, whose position is not published (vehicle height 2 m is the upper bound). Slope and hazard limits not found in opened sources.
+    sources:
+      - url: https://satcatalog.s3.amazonaws.com/components/1105/SatCatalog_-_Firefly_Aerospace_-_Blue_Ghost_-_Datasheet.pdf
+        title: Firefly Blue Ghost condensed Payload User's Guide (6 Feb 2021)
+        locator: Tables 1, 3, 4; power and comms sections
+      - url: https://fireflyspace.com/missions/blue-ghost-mission-1/
+        title: "Firefly: Blue Ghost Mission 1 page"
+        locator: size, power, antennas, operations
+      - url: https://fireflyspace.com/news/firefly-aerospace-becomes-first-commercial-company-to-successfully-land-on-the-moon/
+        title: Firefly landing press release
+        locator: 100 m landing target
+      - url: https://fireflyspace.com/news/firefly-aerospace-successfully-completes-14-days-of-surface-operations-on-the-moon/
+        title: Firefly end-of-mission release
+        locator: mast, night operations, data returned
+      - url: https://fireflyspace.com/blue-ghost/
+        title: "Firefly: Blue Ghost product page"
+        locator: mass to surface, power
+    params:
+      height_m: {value: 2.0, unit: m, basis: published, source: 1}
+      payload_capacity_kg: {value: 240, unit: kg, basis: published, source: 4, note: "'Up to 240 kg' current; condensed PUG 2021: 85-155 kg"}
+      power_type: {value: solar arrays + battery, basis: published, source: 1}
+      array_geometry: {value: "three fixed arrays (two side + one top deck) at mid/equatorial latitudes; deployable single-axis gimbaled panel for polar missions", basis: published, source: 0}
+      array_power_w: {value: 400, unit: W, basis: published, source: 1, note: "'up to 400 W'; product page '>400 W'"}
+      payload_power_w: {value: 450, unit: W, basis: published, source: 0, note: "surface operations nominal; 650 W peak (Table 3)"}
+      antenna_height_m: {value: 1.0, unit: m, basis: estimate, note: "Not published by the operator. Conservative estimate = half the vehicle height (assumption: the Earth-link antenna sits in the upper half of the vehicle); the upper bound is antenna_height_max_m."}
+      antenna_height_max_m: {value: 2.0, unit: m, basis: estimate, note: "Upper bound = published vehicle height 2 m (Firefly mission page 'Our Ride'); the 1.8 m LMS mast is a science payload, not the Earth-link antenna. Antenna position not published."}
+      array_height_m: {value: 2.0, unit: m, basis: estimate, note: "Top-deck array at about vehicle height; not published."}
+      comm_bands: {value: [X, S], basis: published, source: 1, note: "1 X-band + 3 S-band antennas; Wi-Fi to rovers; SSC ground network"}
+      downlink_rate_kbps: {value: 6000, unit: kbps, basis: published, source: 0, note: "average 6 Mbps surface downlink, 10 Mbps peak with 13 m ground antenna"}
+      landing_accuracy_m: {value: 100, unit: m, basis: published, source: 2, note: "'within its 100-meter landing target'; terrain-relative navigation and hazard avoidance"}
+      surface_lifetime_days: {value: 14, unit: d, basis: published, source: 0, note: "'as long as it is illuminated, up to 14 days'"}
+      night_survival: {value: false, basis: published, source: 1, note: "Mission 1 achieved just over 5 h of operations into the lunar night; product page advertises 'Lunar day + night' for future missions"}
+
+  - id: slim
+    name: JAXA SLIM
+    operator: JAXA
+    country: JP
+    status: flown
+    missions: [SLIM]
+    confidence: high
+    notes: >
+      Landed 2024-01-19 UTC about 55 m east of target (JAXA press release) or about 60 m (project review);
+      ended inverted with solar cells facing west. Not designed for the night yet survived three. Antenna height
+      not published.
+    sources:
+      - url: https://global.jaxa.jp/countdown/slim/SLIM-mediakit-EN_2310.pdf
+        title: JAXA SLIM Project Press Kit (Oct 2023)
+        locator: pp. 5-7, 11, 18
+      - url: https://global.jaxa.jp/press/2024/01/20240125-1_e.html
+        title: JAXA press release 25 Jan 2024, Outcome for SLIM's Moon Landing
+        locator: accuracy, anomaly
+      - url: https://www.isas.jaxa.jp/en/topics/files/SLIM-press-briefing-20241226.pdf
+        title: JAXA SLIM project review press briefing, 26 Dec 2024
+        locator: pp. 4, 5, 9
+    params:
+      dry_mass_kg: {value: 200, unit: kg, basis: published, source: 0}
+      launch_mass_kg: {value: 715, unit: kg, basis: published, source: 2, note: "press kit 700-730 kg wet"}
+      power_type: {value: thin-film triple-junction solar sheets + Li-ion battery, basis: published, source: 0}
+      array_geometry: {value: body-conformal sheets on flat and curved surfaces, basis: published, source: 0}
+      comm_bands: {value: [S], basis: published, source: 0}
+      landing_accuracy_m: {value: 100, unit: m, basis: published, source: 0, note: aimed accuracy requirement}
+      achieved_landing_error_m: {value: 55, unit: m, basis: published, source: 1, note: "about 60 m per the December 2024 review (source 2)"}
+      max_slope_deg: {value: 15, unit: deg, basis: published, source: 0, note: "target site slope '15 degrees or less'; p.18"}
+      night_survival: {value: false, basis: published, source: 2, note: "not designed for the night; continued to function after three nights"}
+
+  - id: vikram
+    name: ISRO Chandrayaan-3 Vikram
+    operator: ISRO
+    country: IN
+    status: flown
+    missions: [Chandrayaan-3]
+    confidence: high
+    notes: >
+      Landed 2023-08-23 ~12:33 UTC near the south pole at 69.37 S; did not wake after the first lunar night.
+      Landing area 4 km x 2.4 km (ISRO) versus 16 km^2 (Wikipedia). Achieved error about 0.36 km is derived
+      from the ISRO target and LROC position (LROC longitude rounded to 0.01 deg).
+    sources:
+      - url: https://www.isro.gov.in/Chandrayaan3_Details.html
+        title: "ISRO: Chandrayaan-3 Details"
+        locator: specification table rows 1, 2, 5, 6, 12
+      - url: https://www.sac.gov.in/SAC_Industry_Portal/images/prg/Chandrayaan-3.pdf
+        title: ISRO/SAC Chandrayaan-3 brochure
+        locator: p. 6
+      - url: https://lroc.im-ldi.com/images/1314
+        title: "LROC: Chandrayaan-3 Landing Site"
+        locator: landing coordinates
+    params:
+      launch_mass_kg: {value: 1752, unit: kg, basis: published, source: 0, note: "lander module including 26 kg rover; SAC brochure 1749.86 kg"}
+      height_m: {value: 1.166, unit: m, basis: published, source: 1, note: "dimensions 2000 x 2000 x 1166 mm"}
+      power_type: {value: solar panels, basis: published, source: 0}
+      array_power_w: {value: 738, unit: W, basis: published, source: 0, note: winter solstice with bias}
+      comm_bands: {value: [X], basis: published, source: 0, note: IDSN DTE; rover link; Chandrayaan-2 orbiter as relay}
+      antenna_height_m: {value: 0.58, unit: m, basis: estimate, note: "Not published by the operator. Conservative estimate = half the vehicle height (assumption: the Earth-link antenna sits in the upper half of the vehicle); the upper bound is antenna_height_max_m."}
+      antenna_height_max_m: {value: 1.17, unit: m, basis: estimate, note: "Upper bound = published body height 1.166 m (SAC brochure p. 6); the antenna mechanism may protrude above it."}
+      landing_area_m: {value: [4000, 2400], unit: m, basis: published, source: 0, note: "ISRO: 4 km x 2.4 km landing area (length x width); Wikipedia gives 16 km^2"}
+      achieved_landing_error_m: {value: 360, unit: m, basis: derived, note: "ISRO target (69.367621 S, 32.348126 E) vs LROC (69.3741 S, 32.32 E)"}
+      max_slope_deg: {value: 12, unit: deg, basis: published, source: 0}
+      surface_lifetime_days: {value: 14, unit: d, basis: published, source: 0, note: one lunar day}
+      night_survival: {value: false, basis: published, source: 0, note: "designed for one lunar day; did not wake 2023-09-22"}
+
+  - id: ispace-apex
+    name: ispace APEX 1.0 / ULTRA
+    operator: ispace
+    country: JP
+    status: in_development
+    missions: [ispace M3, ispace M4, ispace M5]
+    confidence: medium
+    notes: >
+      APEX 1.0 merged with Series 3 into ULTRA on 2026-03-27 (ispace release; M3 2028, M4 2029, M5 2030).
+      Values are from the APEX 1.0 PUG Rev 4 and may change. Series 1 (HAKUTO-R M1 crash 2023-04-25, M2
+      RESILIENCE crash 2025-06-05) had several-km design landing precision per the JAXA comparison table.
+    sources:
+      - url: https://assets.ispace-us.com/wp-content/uploads/2025/03/28161539/APEX-PUG-v01.pdf
+        title: ispace-U.S. APEX 1.0 Payload User's Guide Rev 4 (Mar 2025)
+        locator: capacity, power, thermal, hazard avoidance
+      - url: https://www.ispace-inc.com/2026/03/27/ispace-announces-new-ultra-lunar-lander-integrating-japanese-and-u-s-lander-models/
+        title: ispace news release, 27 Mar 2026
+        locator: ULTRA schedule
+    params:
+      payload_capacity_kg: {value: 300, unit: kg, basis: published, source: 0}
+      payload_power_w: {value: 280, unit: W, basis: published, source: 0, note: "peak in all mission phases, 28 VDC"}
+      max_hazard_m: {value: 0.3, unit: m, basis: published, source: 0, note: "obstructions smaller than 1 ft"}
+      night_survival: {value: false, basis: published, source: 0, note: "nominal surface power limited to sunlit conditions; post-sunset operations may be accommodated"}
+      thermal_limits: {value: "ambient -100 to +130 C", basis: published, source: 0}
+
+  - id: blue-moon-mk1
+    name: Blue Origin Blue Moon MK1
+    operator: Blue Origin
+    country: US
+    status: in_development
+    missions: [Blue Moon MK1 Pathfinder]
+    confidence: medium
+    notes: >
+      Pathfinder not launched; slip to 2027 per Wikipedia Griffin page but 2026 per Wikipedia Blue Moon page
+      (conflict). blueorigin.com returned HTTP 403 and the MK1 payload guide (MLMA-96737) was not obtained.
+      Power, slope, lifetime and night capability are unknown.
+    sources:
+      - url: https://www.hou.usra.edu/meetings/lunarsurface24/pdf/5028.pdf
+        title: LPI Lunar Surface Science Workshop 2024 abstract 5028 (Blue Moon MK1)
+        locator: payload capacity, interfaces
+      - url: https://en.wikipedia.org/wiki/Blue_Moon_(spacecraft)
+        title: "Wikipedia: Blue Moon (spacecraft)"
+        locator: dimensions, mass, accuracy
+    params:
+      payload_capacity_kg: {value: 3000, unit: kg, basis: published, source: 0}
+      launch_mass_kg: {value: 21350, unit: kg, basis: published, source: 1, note: fueled mass}
+      height_m: {value: 8.05, unit: m, basis: published, source: 1}
+      antenna_height_m: {value: 4.0, unit: m, basis: estimate, note: "Not published by the operator. Conservative estimate = half the vehicle height (assumption: the Earth-link antenna sits in the upper half of the vehicle); the upper bound is antenna_height_max_m."}
+      antenna_height_max_m: {value: 8.05, unit: m, basis: estimate, note: "Upper bound = published vehicle height 8.05 m (Wikipedia); antenna position not published."}
+      landing_accuracy_m: {value: 100, unit: m, basis: published, source: 1, note: "'within 100 meters' (Pathfinder)"}
+
+  - id: apollo-lm
+    name: Apollo Lunar Module
+    operator: NASA
+    country: US
+    status: retired
+    missions: [Apollo 11, Apollo 12, Apollo 14, Apollo 15, Apollo 16, Apollo 17]
+    confidence: high
+    notes: >
+      Reference profile for historical lighting constraints. Antenna height is derived from published stage
+      dimensions and is not itself published.
+    sources:
+      - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-059C
+        title: NSSDCA Apollo 11 Lunar Module / EASEP
+        locator: mass, geometry, power
+      - url: https://www.nasa.gov/history/50-years-ago-lunar-landing-sites-selected/
+        title: "NASA History: 50 Years Ago: Lunar Landing Sites Selected"
+        locator: Sun angle 7-20 deg, slope < 2 deg, 3 x 5 mile landing areas
+    params:
+      launch_mass_kg: {value: 15103, unit: kg, basis: published, source: 0, note: "Apollo 11 LM-5, ascent + descent stages with propellant"}
+      power_type: {value: silver-zinc batteries, basis: published, source: 0}
+      antenna_height_m: {value: 6.0, unit: m, basis: derived, note: "1.5 m stage bottom + 1.7 m descent stage + about 2.8 m ascent stage; S-band dish atop the ascent stage. Derived, not published."}
+      landing_area_m: {value: [4800, 8000], unit: m, basis: published, source: 1, note: "candidate landing areas 3 x 5 statute miles (rectangular area, length x width)"}
+      max_slope_deg: {value: 2, unit: deg, basis: published, source: 1, note: general slope of landing area and approach path}
+      night_survival: {value: false, basis: published, source: 0, note: all-battery design}
+      landing_sun_elevation_deg: {value: [7, 20], unit: deg, basis: published, source: 1, note: "Sun behind the LM during approach"}

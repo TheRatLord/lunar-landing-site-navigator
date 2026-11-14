@@ -1,0 +1,1060 @@
+entries:
+- id: dss-14
+  name: DSS-14 (Goldstone, 70 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: US
+  lat_deg: 35.4259009
+  lon_deg: -116.8895382
+  alt_m: 1001.39
+  alt_known: true
+  dish_m: 70
+  bands:
+  - S
+  - X
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-23
+  name: DSS-23 (Goldstone, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104. Rev P gives a VLBI-measured position.
+  network: DSN
+  operator: NASA/JPL
+  country: US
+  lat_deg: 35.3395584
+  lon_deg: -116.8721419
+  alt_m: 953.511
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-24
+  name: DSS-24 (Goldstone, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: US
+  lat_deg: 35.3398928
+  lon_deg: -116.8747944
+  alt_m: 951.499
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - K
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-25
+  name: DSS-25 (Goldstone, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: US
+  lat_deg: 35.337612
+  lon_deg: -116.8753632
+  alt_m: 959.634
+  alt_known: true
+  dish_m: 34
+  bands:
+  - X
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-26
+  name: DSS-26 (Goldstone, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: US
+  lat_deg: 35.3356892
+  lon_deg: -116.8730165
+  alt_m: 968.686
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - K
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-34
+  name: DSS-34 (Canberra, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: AU
+  lat_deg: -35.3984788
+  lon_deg: 148.9819644
+  alt_m: 692.02
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - K
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-35
+  name: DSS-35 (Canberra, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: AU
+  lat_deg: -35.3957955
+  lon_deg: 148.9814558
+  alt_m: 694.897
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-36
+  name: DSS-36 (Canberra, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: AU
+  lat_deg: -35.3951018
+  lon_deg: 148.9785442
+  alt_m: 685.503
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - K
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-43
+  name: DSS-43 (Canberra, 70 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104. Transmit above 20 kW needs elevation of at least 17.6
+    deg.
+  network: DSN
+  operator: NASA/JPL
+  country: AU
+  lat_deg: -35.4024242
+  lon_deg: 148.9812673
+  alt_m: 688.867
+  alt_known: true
+  dish_m: 70
+  bands:
+  - L
+  - S
+  - X
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-53
+  name: DSS-53 (Madrid, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: ES
+  lat_deg: 40.4270838
+  lon_deg: -4.2534044
+  alt_m: 842.806
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - K
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-54
+  name: DSS-54 (Madrid, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: ES
+  lat_deg: 40.4256217
+  lon_deg: -4.2540968
+  alt_m: 837.051
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - K
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-55
+  name: DSS-55 (Madrid, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104. Transmit mask 18.36 deg for azimuth 304.9-360 deg.
+  network: DSN
+  operator: NASA/JPL
+  country: ES
+  lat_deg: 40.4242959
+  lon_deg: -4.2526333
+  alt_m: 819.061
+  alt_known: true
+  dish_m: 34
+  bands:
+  - X
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-56
+  name: DSS-56 (Madrid, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: ES
+  lat_deg: 40.4259647
+  lon_deg: -4.2520607
+  alt_m: 835.746
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  - K
+  - Ka
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-63
+  name: DSS-63 (Madrid, 70 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104.
+  network: DSN
+  operator: NASA/JPL
+  country: ES
+  lat_deg: 40.4312098
+  lon_deg: -4.2480085
+  alt_m: 864.816
+  alt_known: true
+  dish_m: 70
+  bands:
+  - L
+  - S
+  - X
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: dss-65
+  name: DSS-65 (Madrid, 34 m)
+  confidence: high
+  sources:
+  - url: https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301P.pdf
+    title: DSN Telecommunications Link Design Handbook 810-005, Module 301 Coverage and Geometry, Rev. P (22 May 2026)
+    locator: Table 5 geodetic coordinates (WGS84, ITRF93 epoch 2003.0); sec. 2.2.3 elevation masks
+  notes: Position from 810-005 Table 5; bands from Modules 101/103/104. HEF antenna; Module 301 Rev P mentions its future
+    decommissioning. Transmit mask 10.3 deg, 14.0 deg in two azimuth sectors.
+  network: DSN
+  operator: NASA/JPL
+  country: ES
+  lat_deg: 40.4272064
+  lon_deg: -4.2506989
+  alt_m: 833.854
+  alt_known: true
+  dish_m: 34
+  bands:
+  - S
+  - X
+  min_elevation_deg: 6.0
+  min_elevation_source: '810-005 Module 301 Rev P sec. 2.2.3: generic receive mask 6.0 deg; low-power transmit 10.0 deg (10.1
+    statutory incl. uncertainty); high-power transmit 13.5 deg (13.6); per-antenna horizon masks in Figs 10-25 not digitised'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: esa-nno1
+  name: ESTRACK New Norcia NNO-1 (35 m)
+  confidence: medium
+  sources:
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: ITRF93 XYZ converted to WGS84 geodetic with spiceypy recgeo
+  - url: https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations/ESA_Ground_Stations_Live
+    title: ESA Ground Stations Live
+    locator: station DMS coordinates; datum not stated
+  notes: Derived from SPICE kernel XYZ; ESA page DMS gives longitude 116.1915 (about 3 m difference, internal ESA inconsistency).
+  network: ESTRACK
+  operator: ESA
+  country: AU
+  lat_deg: -31.0482253
+  lon_deg: 116.1914678
+  alt_m: 251.86
+  alt_known: true
+  dish_m: 35
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - HAKUTO-R M1
+  status: active
+  alt_basis: published
+- id: esa-ceb1
+  name: ESTRACK Cebreros CEB-1 (35 m)
+  confidence: medium
+  sources:
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: ITRF93 XYZ converted to WGS84 geodetic with spiceypy recgeo
+  - url: https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations/ESA_Ground_Stations_Live
+    title: ESA Ground Stations Live
+    locator: station DMS coordinates; datum not stated
+  notes: ''
+  network: ESTRACK
+  operator: ESA
+  country: ES
+  lat_deg: 40.45269
+  lon_deg: -4.3675499
+  alt_m: 793.68
+  alt_known: true
+  dish_m: 35
+  bands:
+  - X
+  - K
+  - Ka
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - HAKUTO-R M1
+  status: active
+  alt_basis: published
+- id: esa-mlg1
+  name: ESTRACK Malargue MLG-1 (35 m)
+  confidence: medium
+  sources:
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: ITRF93 XYZ converted to WGS84 geodetic with spiceypy recgeo
+  - url: https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations/ESA_Ground_Stations_Live
+    title: ESA Ground Stations Live
+    locator: station DMS coordinates; datum not stated
+  notes: ESA page quotes 1550 m above sea level; the SPICE value is ellipsoidal.
+  network: ESTRACK
+  operator: ESA
+  country: AR
+  lat_deg: -35.7760085
+  lon_deg: -69.3981934
+  alt_m: 1549.6
+  alt_known: true
+  dish_m: 35
+  bands:
+  - X
+  - K
+  - Ka
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - HAKUTO-R M1
+  - Chandrayaan-3
+  status: active
+  alt_basis: published
+- id: esa-kru1
+  name: ESTRACK Kourou KRU-1 (15 m)
+  confidence: medium
+  sources:
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: ITRF93 XYZ converted to WGS84 geodetic with spiceypy recgeo
+  - url: https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations/ESA_Ground_Stations_Live
+    title: ESA Ground Stations Live
+    locator: station DMS coordinates; datum not stated
+  notes: ''
+  network: ESTRACK
+  operator: ESA
+  country: GF
+  lat_deg: 5.2514391
+  lon_deg: -52.8046646
+  alt_m: -15.07
+  alt_known: true
+  dish_m: 15
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - IM-1
+  - Chang'e-6
+  - Chandrayaan-3
+  - HAKUTO-R M1
+  status: active
+  alt_basis: published
+- id: esa-msp
+  name: ESTRACK Maspalomas (15 m)
+  confidence: medium
+  sources:
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: ITRF93 XYZ converted to WGS84 geodetic with spiceypy recgeo
+  - url: https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations/ESA_Ground_Stations_Live
+    title: ESA Ground Stations Live
+    locator: station DMS coordinates; datum not stated
+  notes: ''
+  network: ESTRACK
+  operator: ESA
+  country: ES
+  lat_deg: 27.7628889
+  lon_deg: -15.6338
+  alt_m: 204.7
+  alt_known: true
+  dish_m: 15
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - Chang'e-5
+  - Chang'e-6
+  status: active
+  alt_basis: published
+- id: esa-kir1
+  name: ESTRACK Kiruna KIR-1 (15 m)
+  confidence: medium
+  sources:
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: ITRF93 XYZ converted to WGS84 geodetic with spiceypy recgeo
+  - url: https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations/ESA_Ground_Stations_Live
+    title: ESA Ground Stations Live
+    locator: station DMS coordinates; datum not stated
+  notes: ''
+  network: ESTRACK
+  operator: ESA
+  country: SE
+  lat_deg: 67.8571242
+  lon_deg: 20.964325
+  alt_m: 401.76
+  alt_known: true
+  dish_m: 15
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: esa-redu
+  name: ESTRACK Redu (15 m)
+  confidence: medium
+  sources:
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: ITRF93 XYZ converted to WGS84 geodetic with spiceypy recgeo
+  - url: https://www.esa.int/Enabling_Support/Operations/ESA_Ground_Stations/ESA_Ground_Stations_Live
+    title: ESA Ground Stations Live
+    locator: station DMS coordinates; datum not stated
+  notes: ''
+  network: ESTRACK
+  operator: ESA
+  country: BE
+  lat_deg: 50.0004577
+  lon_deg: 5.1453438
+  alt_m: 386.27
+  alt_known: true
+  dish_m: 15
+  bands:
+  - L
+  - S
+  - X
+  - Ku
+  - Ka
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: goonhilly-ghy6
+  name: Goonhilly GHY-6 (32 m)
+  confidence: medium
+  sources:
+  - url: https://www.goonhilly.org/ghy-6-32m-x/s-band
+    title: Goonhilly GHY-6 32 m X/S-band
+    locator: dual-band, simultaneous uplink and downlink
+  - url: https://www.goonhilly.org/ges-supports-im-1-lunar-mission
+    title: Goonhilly supports IM-1 lunar mission
+    locator: LEOP to surface support
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: ITRF93 XYZ converted to WGS84 geodetic with spiceypy recgeo
+  notes: Coordinates derived from the ESA SPICE kernel (medium); RF and mission usage from Goonhilly pages.
+  network: Goonhilly
+  operator: Goonhilly Earth Station
+  country: GB
+  lat_deg: 50.0504359
+  lon_deg: -5.183271
+  alt_m: 108.59
+  alt_known: true
+  dish_m: 32
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - Artemis I
+  - HAKUTO-R M1
+  - IM-1
+  - Chandrayaan-3
+  status: active
+  alt_basis: published
+- id: ssc-ushi01
+  name: SSC South Point USHI-01 (13 m)
+  confidence: medium
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20205005784/downloads/453NENUGRev5__clean_final_82420.pdf
+    title: NASA Near Earth Network Users Guide 453-NENUG Rev 5
+    locator: Table 2-1 station locations (latitude/longitude to 4 decimals; no altitude)
+  - url: https://sscspace.com/news/fireflys-blue-ghost-completes-moon-landing-with-support-from-ssc/
+    title: 'SSC: Firefly''s Blue Ghost completes Moon landing with support from SSC'
+    locator: Hawaii ground station link
+  - &id001
+    url: https://api.opentopodata.org/v1/srtm30m
+    title: OpenTopoData API, SRTM 30 m dataset (queried 2026-11-12)
+    locator: elevation at the station coordinates, metres above the EGM96 geoid
+  - &id002
+    url: https://geographiclib.sourceforge.io/cgi-bin/GeoidEval
+    title: GeographicLib GeoidEval online calculator, EGM2008 geoid height (queried 2026-11-12)
+    locator: EGM2008 geoid undulation N at the station coordinates
+  notes: 'Altitude is not published in the source; alt_m=0 is a placeholder (alt_known false). A 2 km altitude error changes
+    the Earth-direction elevation at lunar distance by well under 0.001 deg. Altitude derived (the source gives none): SRTM
+    30 m 361 m above geoid + EGM2008 undulation +17.19 m = 378 m above the WGS84 ellipsoid. Method check: the same procedure
+    gives 988 m at DSS-14 against the handbook 1001.39 m (-13 m) and 735 m at Santiago against the ESA kernel 730.45 m (+4
+    m), so about 30 m is a fair uncertainty; the effect on the Earth-direction elevation at lunar distance is far below 0.001
+    deg.'
+  network: SSC
+  operator: Swedish Space Corporation
+  country: US
+  lat_deg: 19.014
+  lon_deg: -155.6633
+  alt_m: 378.0
+  alt_known: true
+  dish_m: 13
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - Blue Ghost M1
+  - Artemis II
+  status: active
+  alt_basis: derived
+- id: ssc-santiago-sa1
+  name: SSC Santiago SA-1 (9 m)
+  confidence: medium
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20205005784/downloads/453NENUGRev5__clean_final_82420.pdf
+    title: NASA Near Earth Network Users Guide 453-NENUG Rev 5
+    locator: Table 2-1 station locations (latitude/longitude to 4 decimals; no altitude)
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp
+    locator: SANTIAGO station position (Earth-centred XYZ converted to WGS84 height)
+  notes: Altitude is not published in the source; alt_m=0 is a placeholder (alt_known false). A 2 km altitude error changes
+    the Earth-direction elevation at lunar distance by well under 0.001 deg. Altitude 730.45 m from the ESA kernel's SANTIAGO
+    (SSC, augmented) station, about 0.17 km from this antenna in the NEN table; SRTM 30 m + EGM2008 gives 735 m, consistent
+    within 5 m.
+  network: SSC
+  operator: Swedish Space Corporation
+  country: CL
+  lat_deg: -33.1511
+  lon_deg: -70.6664
+  alt_m: 730.45
+  alt_known: true
+  dish_m: 9
+  bands:
+  - S
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - Artemis II
+  status: active
+  alt_basis: published
+- id: ssc-dongara-auwa01
+  name: SSC Dongara AUWA-01 (13 m)
+  confidence: medium
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20205005784/downloads/453NENUGRev5__clean_final_82420.pdf
+    title: NASA Near Earth Network Users Guide 453-NENUG Rev 5
+    locator: Table 2-1 station locations (latitude/longitude to 4 decimals; no altitude)
+  - *id001
+  - *id002
+  notes: 'Altitude is not published in the source; alt_m=0 is a placeholder (alt_known false). A 2 km altitude error changes
+    the Earth-direction elevation at lunar distance by well under 0.001 deg. Altitude derived (the source gives none): SRTM
+    30 m 271 m above geoid + EGM2008 undulation -25.71 m = 245 m above the WGS84 ellipsoid. Method check: the same procedure
+    gives 988 m at DSS-14 against the handbook 1001.39 m (-13 m) and 735 m at Santiago against the ESA kernel 730.45 m (+4
+    m), so about 30 m is a fair uncertainty; the effect on the Earth-direction elevation at lunar distance is far below 0.001
+    deg.'
+  network: SSC
+  operator: Swedish Space Corporation
+  country: AU
+  lat_deg: -29.0457
+  lon_deg: 115.3487
+  alt_m: 245.0
+  alt_known: true
+  dish_m: 13
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions: []
+  status: active
+  alt_basis: derived
+- id: sansa-hbk01
+  name: SANSA Hartebeesthoek HBK-01 (12 m)
+  confidence: medium
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20205005784/downloads/453NENUGRev5__clean_final_82420.pdf
+    title: NASA Near Earth Network Users Guide 453-NENUG Rev 5
+    locator: Table 2-1 station locations (latitude/longitude to 4 decimals; no altitude)
+  - *id001
+  - *id002
+  notes: 'Altitude is not published in the source; alt_m=0 is a placeholder (alt_known false). A 2 km altitude error changes
+    the Earth-direction elevation at lunar distance by well under 0.001 deg. Mapping of the 12 m antenna used for IM-1 and
+    IM-2 to HBK01 is an inference. Altitude derived (the source gives none): SRTM 30 m 1524 m above geoid + EGM2008 undulation
+    +25.30 m = 1549 m above the WGS84 ellipsoid. Method check: the same procedure gives 988 m at DSS-14 against the handbook
+    1001.39 m (-13 m) and 735 m at Santiago against the ESA kernel 730.45 m (+4 m), so about 30 m is a fair uncertainty; the
+    effect on the Earth-direction elevation at lunar distance is far below 0.001 deg.'
+  network: SANSA
+  operator: SANSA
+  country: ZA
+  lat_deg: -25.887
+  lon_deg: 27.712
+  alt_m: 1549.0
+  alt_known: true
+  dish_m: 12
+  bands:
+  - S
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - IM-1
+  - IM-2
+  status: active
+  alt_basis: derived
+- id: csiro-parkes
+  name: CSIRO Parkes Murriyang (64 m)
+  confidence: high
+  sources:
+  - url: https://www.narrabri.atnf.csiro.au/observing/users_guide/html/chunked/apg.html
+    title: ATNF Users Guide Appendix G
+    locator: 'G.1.2: PARKES 148.2635101 -32.9984064 414.80m'
+  notes: Receive-only per Wikipedia; DSS-49 designation from Wikipedia (medium). Bands not confirmed from an opened primary
+    source.
+  network: CSIRO
+  operator: CSIRO
+  country: AU
+  lat_deg: -32.9984064
+  lon_deg: 148.2635101
+  alt_m: 414.8
+  alt_known: true
+  dish_m: 64
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - IM-1
+  status: active, receive only
+  alt_basis: published
+- id: jaxa-udsc
+  name: JAXA Usuda Deep Space Center (64 m, DSS-48)
+  confidence: high
+  sources:
+  - url: https://ddor.nav.isas.jaxa.jp/station_coordinates/
+    title: JAXA Station Coordinates (updated 11 Jan 2026)
+    locator: ITRF2014 epoch 2026.0 geodetic, GRS80 ellipsoidal height
+  notes: JAXA publishes a horizon mask file (UDSC_horizon_mask.xls) that was not downloaded; 10 deg is an assumed default.
+    Bands not confirmed from an opened source.
+  network: JAXA
+  operator: JAXA
+  country: JP
+  lat_deg: 36.132403748
+  lon_deg: 138.362773862
+  alt_m: 1532.8122
+  alt_known: true
+  dish_m: 64
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - SLIM
+  status: active
+  alt_basis: published
+- id: jaxa-misasa
+  name: JAXA Misasa GREAT (54 m, DSS-30)
+  confidence: high
+  sources:
+  - url: https://ddor.nav.isas.jaxa.jp/station_coordinates/
+    title: JAXA Station Coordinates (updated 11 Jan 2026)
+    locator: Misasa 54-m antenna, DSN station id DSS-30
+  notes: No S-band receive per the source page. Horizon mask file not downloaded.
+  network: JAXA
+  operator: JAXA
+  country: JP
+  lat_deg: 36.140984502
+  lon_deg: 138.35212867
+  alt_m: 1655.993
+  alt_known: true
+  dish_m: 54
+  bands:
+  - X
+  - Ka
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: jaxa-uchinoura-34
+  name: JAXA Uchinoura (34 m, DSS-38)
+  confidence: high
+  sources:
+  - url: https://ddor.nav.isas.jaxa.jp/station_coordinates/
+    title: JAXA Station Coordinates (updated 11 Jan 2026)
+    locator: Uchinoura 34-m; horizon mask USC_horizon_mask.xls not downloaded
+  notes: Bands not extracted.
+  network: JAXA
+  operator: JAXA
+  country: JP
+  lat_deg: 31.25430804
+  lon_deg: 131.078392333
+  alt_m: 375.7827
+  alt_known: true
+  dish_m: 34
+  bands: []
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions: []
+  status: active
+  alt_basis: published
+- id: isro-idsn32
+  name: ISRO IDSN-32 Byalalu (32 m)
+  confidence: medium
+  sources:
+  - url: https://spiftp.esac.esa.int/data/SPICE/JUICE/kernels/spk/estrack_v07.bsp
+    title: ESA ESTRACK SPICE kernel estrack_v07.bsp (FK v0.7, 26 Nov 2025)
+    locator: BYALALU entry converted to WGS84
+  - url: https://en.wikipedia.org/wiki/Indian_Deep_Space_Network
+    title: 'Wikipedia: Indian Deep Space Network'
+    locator: S 20/2 kW and X 2.5 kW uplink
+  - *id001
+  - *id002
+  notes: 'Position is from the ESA SPICE kernel, not from ISRO. CONFLICT on height: the kernel''s Earth-centred coordinates
+    correspond to 1437.6 m above the WGS84 ellipsoid, but SRTM 30 m gives 821 m above the geoid (Open-Meteo/Copernicus 90
+    m: 812 m) and EGM2008 undulation is -86.49 m, i.e. 734.5 m ellipsoidal. The kernel height is about 700 m too high for
+    the Byalalu plateau, so the DEM-derived 735 m is stored. Method check: the same procedure gives 988 m at DSS-14 against
+    the handbook 1001.39 m (-13 m) and 735 m at Santiago against the ESA kernel 730.45 m (+4 m), so about 30 m is a fair uncertainty;
+    the effect on the Earth-direction elevation at lunar distance is far below 0.001 deg.'
+  network: IDSN
+  operator: ISRO
+  country: IN
+  lat_deg: 12.8991385
+  lon_deg: 77.368233
+  alt_m: 735.0
+  alt_known: true
+  dish_m: 32
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions:
+  - Chandrayaan-1
+  - Chandrayaan-2
+  - Chandrayaan-3
+  status: active
+  alt_basis: derived
+- id: cnsa-jiamusi
+  name: China Jiamusi (66 m)
+  confidence: medium
+  sources:
+  - url: http://scis.scichina.com/en/2017/012203.pdf
+    title: Dong et al., Sci China Inf Sci 2017 60:012203
+    locator: Table 5 ITRF2008-aligned XYZ, epoch 2014.0; WGS84 conversion by this project
+  notes: WGS84 conversion of VLBI XYZ.
+  network: CDSN
+  operator: CNSA/CLEP
+  country: CN
+  lat_deg: 46.4936748
+  lon_deg: 130.7710525
+  alt_m: 299.74
+  alt_known: true
+  dish_m: 66
+  bands:
+  - S
+  - X
+  min_elevation_deg: 10.0
+  min_elevation_source: assumed default 10 deg; the CDSN coverage figure in the UNOOSA COPUOS 2019 China deck is drawn at
+    10 deg elevation
+  lunar_missions:
+  - Chang'e-3
+  - Chang'e-4
+  - Chang'e-5
+  - Chang'e-6
+  status: active
+  alt_basis: published
+- id: cnsa-kashi
+  name: China Kashi (35 m)
+  confidence: medium
+  sources:
+  - url: http://scis.scichina.com/en/2017/012203.pdf
+    title: Dong et al., Sci China Inf Sci 2017 60:012203
+    locator: Table 5 ITRF2008-aligned XYZ, epoch 2014.0; WGS84 conversion by this project
+  notes: WGS84 conversion of VLBI XYZ.
+  network: CDSN
+  operator: CNSA/CLEP
+  country: CN
+  lat_deg: 38.4211524
+  lon_deg: 76.714709
+  alt_m: 1385.83
+  alt_known: true
+  dish_m: 35
+  bands:
+  - S
+  - X
+  - Ka
+  min_elevation_deg: 10.0
+  min_elevation_source: assumed default 10 deg; the CDSN coverage figure in the UNOOSA COPUOS 2019 China deck is drawn at
+    10 deg elevation
+  lunar_missions:
+  - Chang'e-3
+  - Chang'e-4
+  - Chang'e-5
+  - Chang'e-6
+  status: active
+  alt_basis: published
+- id: cnsa-neuquen
+  name: China Espacio Lejano Neuquen (35 m)
+  confidence: medium
+  sources:
+  - url: https://www.unoosa.org/documents/pdf/copuos/2019/copuos2019tech45E.pdf
+    title: China Deep Space TT&C and International Cooperation (COPUOS 2019)
+    locator: 'p. 14: 38 deg 11 min 28.90 s S, 70 deg 8 min 58.20 s W; datum not stated'
+  - *id001
+  - *id002
+  notes: 'Altitude not published; alt_m=0 placeholder. Datum not stated. Altitude derived (the source gives none): SRTM 30
+    m 812 m above geoid + EGM2008 undulation +23.45 m = 836 m above the WGS84 ellipsoid. Method check: the same procedure
+    gives 988 m at DSS-14 against the handbook 1001.39 m (-13 m) and 735 m at Santiago against the ESA kernel 730.45 m (+4
+    m), so about 30 m is a fair uncertainty; the effect on the Earth-direction elevation at lunar distance is far below 0.001
+    deg.'
+  network: CDSN
+  operator: CNSA/CLEP
+  country: AR
+  lat_deg: -38.191361
+  lon_deg: -70.1495
+  alt_m: 836.0
+  alt_known: true
+  dish_m: 35
+  bands:
+  - S
+  - X
+  - Ka
+  min_elevation_deg: 10.0
+  min_elevation_source: assumed default 10 deg; the CDSN coverage figure in the UNOOSA COPUOS 2019 China deck is drawn at
+    10 deg elevation
+  lunar_missions:
+  - Chang'e-4
+  status: active
+  alt_basis: derived
+- id: nasa-legs-1
+  name: NASA LEGS-1 White Sands, NM
+  confidence: medium
+  sources:
+  - url: https://essp.larc.nasa.gov/EVI-6/pdf_files/LEGS%20Brochure%20r20.pdf
+    title: NASA Lunar Exploration Ground Sites (LEGS) brochure r20
+    locator: LEGS Locations; coverage 'Continuous (TBR) 0-90 deg Elevation' is a coverage spec, not a mask
+  - *id001
+  - *id002
+  notes: 'Dish size is stated variously as D > 18 m, 18-24 m and 20 m, so it is left empty. Procurement was paused in July
+    2025 and re-planned as a public-private partnership (May 2026 notice); the antenna may not exist yet. Altitude derived
+    (the source gives none): SRTM 30 m 1457 m above geoid + EGM2008 undulation -24.04 m = 1433 m above the WGS84 ellipsoid.
+    Method check: the same procedure gives 988 m at DSS-14 against the handbook 1001.39 m (-13 m) and 735 m at Santiago against
+    the ESA kernel 730.45 m (+4 m), so about 30 m is a fair uncertainty; the effect on the Earth-direction elevation at lunar
+    distance is far below 0.001 deg.'
+  network: LEGS
+  operator: NASA
+  country: US
+  lat_deg: 32.544863
+  lon_deg: -106.612504
+  alt_m: 1433.0
+  alt_known: true
+  dish_m: null
+  bands:
+  - S
+  - X
+  - Ka
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions: []
+  status: planned
+  alt_basis: derived
+- id: nasa-legs-2
+  name: NASA LEGS-2 Matjiesfontein, South Africa
+  confidence: low
+  sources:
+  - url: https://essp.larc.nasa.gov/EVI-6/pdf_files/LEGS%20Brochure%20r20.pdf
+    title: NASA Lunar Exploration Ground Sites (LEGS) brochure r20
+    locator: 'LEGS Locations: Matjiesfontein ''-33.231224, 20.58163 (TBD)''; coverage ''Continuous (TBR) 0-90 deg Elevation''
+      is a coverage spec, not a mask'
+  - *id001
+  - *id002
+  notes: 'The brochure prints ''-33.231224, 20.58163 (TBD)'': the whole coordinate pair is marked TBD, so the position is
+    provisional, not a surveyed site (confidence low). SANSA projected construction for Q3 2026; not confirmed operational.
+    Altitude derived at that provisional position: SRTM 30 m 901 m above geoid + EGM2008 undulation +33.86 m = 935 m above
+    the WGS84 ellipsoid. Method check: the same procedure gives 988 m at DSS-14 against the handbook 1001.39 m (-13 m) and
+    735 m at Santiago against the ESA kernel 730.45 m (+4 m), so about 30 m is a fair uncertainty; the effect on the Earth-direction
+    elevation at lunar distance is far below 0.001 deg.'
+  network: LEGS
+  operator: NASA/SANSA
+  country: ZA
+  lat_deg: -33.231224
+  lon_deg: 20.58163
+  alt_m: 935.0
+  alt_known: true
+  dish_m: null
+  bands:
+  - S
+  - X
+  - Ka
+  min_elevation_deg: 10.0
+  min_elevation_source: 'assumed default 10 deg: no public elevation mask found for this station'
+  lunar_missions: []
+  status: planned
+  alt_basis: derived

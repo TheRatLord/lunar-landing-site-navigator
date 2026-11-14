@@ -1,0 +1,6 @@
+.rp { position: relative; display: inline-flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.rp-status { list-style: none; margin: 0; padding: var(--sp-1) var(--sp-2); border-top: var(--hairline) solid var(--border); display: flex; flex-direction: column; gap: var(--sp-1); font-size: var(--fs-xs); color: var(--c-marginal); }
+.rp-status li { display: flex; align-items: flex-start; gap: var(--sp-1-5); overflow-wrap: anywhere; }
+.rp-status svg { flex: none; margin-top: 1px; }
+.rp-msg { display: inline-flex; align-items: center; gap: var(--sp-1-5); max-width: 420px; margin: 0; font-size: var(--fs-xs); color: var(--c-fail); overflow-wrap: anywhere; white-space: pre-wrap; }
+.rp-stage { font-size: var(--fs-xs); color: var(--text-3); }

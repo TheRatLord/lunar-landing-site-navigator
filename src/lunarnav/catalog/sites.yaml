@@ -1,0 +1,2116 @@
+entries:
+- id: apollo-11
+  name: Apollo 11 Eagle LM
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Apollo 11 LM
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html
+    title: NSSDCA Apollo Landing Site Coordinates
+    locator: planetocentric ME, DE421 (Wagner et al. 2017)
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-059C
+    title: 'NSSDCA spacecraft page 1969-059C: Apollo 11 LM'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: 0.67416
+  lon_deg: 23.47314
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Apollo 11
+  operator: NASA
+  country: US
+  status: historic
+  landing_utc: '1969-07-20T20:17:40Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: apollo-12
+  name: Apollo 12 Intrepid LM
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Apollo 12 LM
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-099C
+    title: 'NSSDCA spacecraft page 1969-099C: Apollo 12 LM'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: -3.0128
+  lon_deg: -23.4219
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Apollo 12
+  operator: NASA
+  country: US
+  status: historic
+  landing_utc: '1969-11-19T06:54:35Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: apollo-14
+  name: Apollo 14 Antares LM
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Apollo 14 LM
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1971-008C
+    title: 'NSSDCA spacecraft page 1971-008C: Apollo 14 LM'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: -3.64589
+  lon_deg: -17.47194
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Apollo 14
+  operator: NASA
+  country: US
+  status: historic
+  landing_utc: '1971-02-05T09:18:11Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: apollo-15
+  name: Apollo 15 Falcon LM
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Apollo 15 LM
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1971-063C
+    title: 'NSSDCA spacecraft page 1971-063C: Apollo 15 LM'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: 26.13239
+  lon_deg: 3.6333
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Apollo 15
+  operator: NASA
+  country: US
+  status: historic
+  landing_utc: '1971-07-30T22:16:29Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: apollo-16
+  name: Apollo 16 Orion LM
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Apollo 16 LM
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1972-031C
+    title: 'NSSDCA spacecraft page 1972-031C: Apollo 16 LM'
+    locator: landing time
+  notes: NSSDCA apolloland table lists 20 Apr 1972 (US local date); the LM page gives 02:23:35 UT on 21 April, used here.
+  kind: landed
+  lat_deg: -8.9734
+  lon_deg: 15.5011
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Apollo 16
+  operator: NASA
+  country: US
+  status: historic
+  landing_utc: '1972-04-21T02:23:35Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: apollo-17
+  name: Apollo 17 Challenger LM
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Apollo 17 LM
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1972-096C
+    title: 'NSSDCA spacecraft page 1972-096C: Apollo 17 LM'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: 20.1911
+  lon_deg: 30.7723
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Apollo 17
+  operator: NASA
+  country: US
+  status: historic
+  landing_utc: '1972-12-11T19:54:57Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: surveyor-1
+  name: Surveyor 1
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Surveyor 1
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1966-045A
+    title: 'NSSDCA spacecraft page 1966-045A: Surveyor 1'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: -2.4745
+  lon_deg: -43.3398
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Surveyor 1
+  operator: NASA/JPL
+  country: US
+  status: historic
+  landing_utc: '1966-06-02T06:17:36Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: surveyor-3
+  name: Surveyor 3
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Surveyor 3
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1967-035A
+    title: 'NSSDCA spacecraft page 1967-035A: Surveyor 3'
+    locator: landing time
+  notes: Final touchdown time; initial touchdown 00:04:17 UT. Position is the final rest point.
+  kind: landed
+  lat_deg: -3.0162
+  lon_deg: -23.418
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Surveyor 3
+  operator: NASA/JPL
+  country: US
+  status: historic; bounced twice
+  landing_utc: '1967-04-20T00:04:53Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: surveyor-5
+  name: Surveyor 5
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Surveyor 5
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1967-084A
+    title: 'NSSDCA spacecraft page 1967-084A: Surveyor 5'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: 1.4551
+  lon_deg: 23.1943
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Surveyor 5
+  operator: NASA/JPL
+  country: US
+  status: historic
+  landing_utc: '1967-09-11T00:46:44Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: surveyor-6
+  name: Surveyor 6
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Surveyor 6
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1967-112A
+    title: 'NSSDCA spacecraft page 1967-112A: Surveyor 6'
+    locator: landing time
+  notes: Position is after the hop.
+  kind: landed
+  lat_deg: 0.4742
+  lon_deg: -1.4275
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Surveyor 6
+  operator: NASA/JPL
+  country: US
+  status: historic; hopped about 2.5 m on 1967-11-17
+  landing_utc: '1967-11-10T01:01:06Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: surveyor-7
+  name: Surveyor 7
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Surveyor 7
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1968-001A
+    title: 'NSSDCA spacecraft page 1968-001A: Surveyor 7'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: -40.9812
+  lon_deg: -11.5127
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Surveyor 7
+  operator: NASA/JPL
+  country: US
+  status: historic
+  landing_utc: '1968-01-10T01:05:36Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-9
+  name: Luna 9
+  confidence: low
+  sources:
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  notes: 'Wagner et al. (2017) note in NSSDCA: LROC finds no lander at the reported position; the true site is probably at
+    least 10 km away in an unknown direction. Do not use for precision work.'
+  kind: landed
+  lat_deg: 7.13
+  lon_deg: -64.37
+  frame_note: Raw 7.13 N 64.37 W from the initial Soviet report; converted to east-positive. Not an LROC-derived position.
+  mission: Luna 9
+  operator: USSR
+  country: SU
+  status: historic
+  landing_utc: null
+  landing_date: '1966-02-03'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-13
+  name: Luna 13
+  confidence: medium
+  sources:
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1966-116A
+    title: 'NSSDCA spacecraft page 1966-116A: Luna 13 (archived copy)'
+    locator: landing time
+  notes: ''
+  kind: landed
+  lat_deg: 18.87
+  lon_deg: -62.05
+  frame_note: Raw 18.87 N 62.05 W from Soviet-era reports; converted. Not confirmed by LROC imaging.
+  mission: Luna 13
+  operator: USSR
+  country: SU
+  status: historic
+  landing_utc: 1966-12-24T18:01Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-16
+  name: Luna 16
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Luna 16
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  notes: ''
+  kind: landed
+  lat_deg: -0.5137
+  lon_deg: 56.3638
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Luna 16
+  operator: USSR
+  country: SU
+  status: historic sample return
+  landing_utc: null
+  landing_date: '1970-09-20'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-17
+  name: Luna 17 lander (Lunokhod 1 carrier)
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Luna 17
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  notes: ''
+  kind: landed
+  lat_deg: 38.23764
+  lon_deg: -35.00163
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Luna 17
+  operator: USSR
+  country: SU
+  status: historic
+  landing_utc: null
+  landing_date: '1970-11-17'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: lunokhod-1
+  name: Lunokhod 1 final rover position
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Lunokhod 1
+  notes: Date is delivery date.
+  kind: landed
+  lat_deg: 38.315
+  lon_deg: -35.0081
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Luna 17
+  operator: USSR
+  country: SU
+  status: historic rover, final position
+  landing_utc: null
+  landing_date: '1970-11-17'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-20
+  name: Luna 20
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Luna 20
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  notes: ''
+  kind: landed
+  lat_deg: 3.7863
+  lon_deg: 56.6242
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Luna 20
+  operator: USSR
+  country: SU
+  status: historic sample return
+  landing_utc: null
+  landing_date: '1972-02-21'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-21
+  name: Luna 21 lander (Lunokhod 2 carrier)
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Luna 21
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  notes: ''
+  kind: landed
+  lat_deg: 25.9994
+  lon_deg: 30.4076
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Luna 21
+  operator: USSR
+  country: SU
+  status: historic
+  landing_utc: null
+  landing_date: '1973-01-15'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: lunokhod-2
+  name: Lunokhod 2 final rover position
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Lunokhod 2
+  notes: Date is delivery date.
+  kind: landed
+  lat_deg: 25.8323
+  lon_deg: 30.9222
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Luna 21
+  operator: USSR
+  country: SU
+  status: historic rover, final position
+  landing_utc: null
+  landing_date: '1973-01-15'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-23
+  name: Luna 23
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Luna 23
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  notes: ''
+  kind: landed
+  lat_deg: 12.6667
+  lon_deg: 62.1511
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Luna 23
+  operator: USSR
+  country: SU
+  status: historic; damaged on landing
+  landing_utc: null
+  landing_date: '1974-11-06'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-24
+  name: Luna 24
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Luna 24
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  notes: ''
+  kind: landed
+  lat_deg: 12.7142
+  lon_deg: 62.2129
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Luna 24
+  operator: USSR
+  country: SU
+  status: historic sample return
+  landing_utc: null
+  landing_date: '1976-08-18'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: change-3
+  name: Chang'e 3 lander
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/938
+    title: 'LROC: Spacecraft Related Coordinates - 2016 Update (M. Robinson, 25 Nov 2016)'
+    locator: table row Chang'e 3
+  - url: https://spaceflightnow.com/china/change3/131214landing/
+    title: 'Spaceflight Now: China successfully lands robotic rover on the moon'
+    locator: touchdown about 1311 GMT
+  notes: Time is approximate (press report).
+  kind: landed
+  lat_deg: 44.1214
+  lon_deg: -19.5117
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Chang'e 3
+  operator: CNSA
+  country: CN
+  status: landed 2013; later operational status not re-verified
+  landing_utc: 2013-12-14T13:11Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: change-4
+  name: Chang'e 4 lander
+  confidence: high
+  sources:
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  - url: https://lroc.im-ldi.com/images/1087
+    title: 'LROC: Chang''e 4 Lander Coordinates'
+    locator: 45.457 S, 177.589 E, plus or minus 20 m
+  - url: https://www.cnsa.gov.cn/english/n6465652/n6465653/c6805049/content.html
+    title: CNSA/Xinhua landing report
+    locator: 0226 GMT
+  notes: 'Three sources: LROC 45.457 S 177.589 E; NSSDCA -45.4561 177.5885 (same fix at more digits); CNSA 45.5 S 177.6 E
+    (rounded preselected). LROC/NSSDCA used. Another report (Wikipedia via CNSA) gives 45.4446 S 177.5991 E, about 0.4 km
+    away.'
+  kind: landed
+  lat_deg: -45.4561
+  lon_deg: 177.5885
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Chang'e 4
+  operator: CNSA
+  country: CN
+  status: far-side lander; current status not checked
+  landing_utc: 2019-01-03T02:26Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: change-5
+  name: Chang'e 5 lander
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1172
+    title: 'LROC: First Look: Chang''e 5'
+    locator: 43.0576 N, 308.0839 E, -2570 m, plus or minus 20 m
+  notes: ''
+  kind: landed
+  lat_deg: 43.0576
+  lon_deg: -51.9161
+  frame_note: LROC; raw longitude 308.0839 E
+  mission: Chang'e 5
+  operator: CNSA
+  country: CN
+  status: sample returned 2020
+  landing_utc: 2020-12-01T15:11Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: change-6
+  name: Chang'e 6 lander
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1374
+    title: 'LROC: First Look: Chang''e 6'
+    locator: 41.6385 S, 206.0148 E, -5256 m, plus or minus 30 m
+  - url: https://www.cnsa.gov.cn/english//n6465652/n6465653/c10541840/content.html
+    title: CNSA/Xinhua landing report
+    locator: 6:23 a.m. Beijing Time
+  notes: UTC converted from 06:23 Beijing time on 2 June (medium confidence for the time).
+  kind: landed
+  lat_deg: -41.6385
+  lon_deg: -153.9852
+  frame_note: LROC; raw longitude 206.0148 E
+  mission: Chang'e 6
+  operator: CNSA
+  country: CN
+  status: sample returned 2024
+  landing_utc: 2024-06-01T22:23Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: beresheet
+  name: Beresheet crash site
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1101
+    title: 'LROC: Beresheet Crash Site Spotted!'
+    locator: 32.5956 N, 19.3496 E; 20 m x 8 m 95% confidence
+  notes: ''
+  kind: impact
+  lat_deg: 32.5956
+  lon_deg: 19.3496
+  frame_note: LROC
+  mission: Beresheet
+  operator: SpaceIL/IAI
+  country: IL
+  status: crashed
+  landing_utc: null
+  landing_date: '2019-04-11'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: chandrayaan-2-vikram
+  name: Chandrayaan-2 Vikram impact
+  confidence: high
+  sources:
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  notes: ''
+  kind: impact
+  lat_deg: -70.881
+  lon_deg: 22.784
+  frame_note: Planetocentric, east-positive, mean-Earth/polar-axis (ME) per source.
+  mission: Chandrayaan-2
+  operator: ISRO
+  country: IN
+  status: crashed
+  landing_utc: null
+  landing_date: '2019-09-06'
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: hakuto-r-m1
+  name: HAKUTO-R Mission 1 impact
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1302
+    title: 'LROC: Impact Site of the HAKUTO-R Mission 1 Lunar Lander'
+    locator: 47.581 N, 44.094 E; comms ceased 25 April 12:40 p.m. EDT
+  notes: Time is the loss of communication (12:40 EDT) converted to UTC; actual impact time not given.
+  kind: impact
+  lat_deg: 47.581
+  lon_deg: 44.094
+  frame_note: LROC
+  mission: HAKUTO-R Mission 1
+  operator: ispace
+  country: JP
+  status: crashed
+  landing_utc: 2023-04-25T16:40Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: hakuto-r-m2
+  name: HAKUTO-R Mission 2 Resilience impact
+  confidence: high
+  sources:
+  - url: https://www.ispace-inc.com/wp-content/uploads/2026/06/ispace-Updates-Timing-for-Expected-Touchdown-on-the-Lunar-Surface-to-4-17-a.m.-JST.pdf
+    title: 'ispace press release, 4 June 2025: expected touchdown 4:17 a.m. JST'
+    locator: '''4:17 a.m. JST on June 6, 2025 JST (19:17 UTC, June 5, 2025)''; site 60.5 N, 4.6 W'
+  - url: https://www.ispace-inc.com/wp-content/uploads/2025/11/20250606-Update-1.pdf
+    title: 'ispace press release, 6 June 2025: Status Update on Mission 2'
+    locator: 'Sequence of Events: landing-sequence commands sent 3:13 a.m. JST; telemetry lost after the braking burn'
+  - url: https://lroc.im-ldi.com/images/1456
+    title: 'LROC: ispace Mission 2 Impact Site'
+    locator: 60.4445 N, 355.4120 E, -2431.6 m; 'hard landing on 5 June 2025 18:13 UTC' (position source)
+  notes: Time is the scheduled touchdown, 04:17 JST on 6 June 2025 = 19:17 UTC on 5 June (ispace, 4 June 2025); ispace did
+    not publish an actual impact time, only that telemetry was lost after the braking burn began at about 20 km altitude.
+    The LROC page's '18:13 UTC' equals 03:13 JST, the time ispace says it transmitted the landing-sequence commands, about
+    64 min earlier, so it is not the touchdown time (our reading of the coincidence; LROC does not say what the time refers
+    to). Position is LROC's impact crater.
+  kind: impact
+  lat_deg: 60.4445
+  lon_deg: -4.588
+  frame_note: LROC; NSSDCA lists the same position as 4.588 W
+  mission: HAKUTO-R Mission 2
+  operator: ispace
+  country: JP
+  status: crashed
+  landing_utc: 2025-06-05T19:17Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: luna-25-impact
+  name: Luna 25 impact crater
+  confidence: high
+  sources:
+  - url: https://www.nasa.gov/humans-in-space/nasas-lro-observes-crater-likely-from-luna-25-impact/
+    title: NASA's LRO Observes Crater Likely from Luna 25 Impact
+    locator: 57.865 S, 61.360 E; 11:58 UTC 19 Aug 2023
+  notes: ''
+  kind: impact
+  lat_deg: -57.865
+  lon_deg: 61.36
+  frame_note: NASA/LRO
+  mission: Luna 25
+  operator: Roscosmos
+  country: RU
+  status: crashed
+  landing_utc: 2023-08-19T11:58Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: chandrayaan-3-vikram
+  name: Chandrayaan-3 Vikram (Statio Shiv Shakti)
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1314
+    title: 'LROC: Chandrayaan-3 Landing Site'
+    locator: 69.3741 S, 32.32 E, 532 m
+  - url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+    title: NSSDCA Table of Anthropogenic Impacts and Spacecraft on the Moon
+    locator: DE421 mean Earth/polar rotation axis; dates in UTC
+  - url: https://www.isro.gov.in/Chandrayaan3_Details.html
+    title: 'ISRO: Chandrayaan-3 Details'
+    locator: target 69.367621 S, 32.348126 E
+  notes: Time converted from 18:04 IST (news live blog; medium). Wikipedia gives 69.373 S 32.319 E (30-40 m different); LROC
+    used. ISRO target was 69.367621 S 32.348126 E.
+  kind: landed
+  lat_deg: -69.3741
+  lon_deg: 32.32
+  frame_note: LROC
+  mission: Chandrayaan-3
+  operator: ISRO
+  country: IN
+  status: mission ended; did not wake after first night
+  landing_utc: 2023-08-23T12:34Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: slim
+  name: SLIM
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1358
+    title: 'LROC: JAXA SLIM Landing'
+    locator: 13.3160 S, 25.2510 E, -912 m; 19 January 2024 15:20 UTC
+  - url: https://global.jaxa.jp/press/2024/01/20240125-1_e.html
+    title: 'JAXA: Outcome for SLIM''s Moon Landing'
+    locator: about 55 m east of target
+  - url: https://www.isas.jaxa.jp/en/outreach/announcements/files/SLIM-pressconf-20240125.pdf
+    title: JAXA SLIM press conference 2024-01-25
+    locator: target 25.24889 E, -13.31549 (ME)
+  notes: JAXA review slides give 13.3160 S, 25.2510 E (ME, NASA LRO estimate) and about 60 m east of target; the press release
+    says about 55 m.
+  kind: landed
+  lat_deg: -13.316
+  lon_deg: 25.251
+  frame_note: LROC; JAXA states mean-Earth/polar-axis (ME) for its target and result
+  mission: SLIM
+  operator: JAXA
+  country: JP
+  status: landed inverted; operations ended 2024
+  landing_utc: 2024-01-19T15:20Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: im-1-odysseus
+  name: IM-1 Odysseus
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1360
+    title: 'LROC: Intuitive Machines IM-1 On The Moon!'
+    locator: 80.13 S, 1.44 E, 2579 m; touchdown 22 February 23:23:53 UTC; 12 deg local slope
+  notes: ''
+  kind: landed
+  lat_deg: -80.13
+  lon_deg: 1.44
+  frame_note: LROC
+  mission: IM-1
+  operator: Intuitive Machines (NASA CLPS)
+  country: US
+  status: landed tilted; mission ended
+  landing_utc: '2024-02-22T23:23:53Z'
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: im-2-athena
+  name: IM-2 Athena
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1408
+    title: 'LROC: IM-2 Athena Seen Obliquely'
+    locator: 84.7906 S, 29.1957 E in a 20 m crater
+  - url: https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=PRIME-1
+    title: 'NSSDCA spacecraft page PRIME-1: PRIME-1 / IM-2 (live page)'
+    locator: landing time
+  notes: Time is NSSDCA 'about 17:30 UT' (approximate).
+  kind: landed
+  lat_deg: -84.7906
+  lon_deg: 29.1957
+  frame_note: LROC; NSSDCA identical
+  mission: IM-2
+  operator: Intuitive Machines (NASA CLPS)
+  country: US
+  status: landed on its side; mission ended
+  landing_utc: 2025-03-06T17:30Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: blue-ghost-m1
+  name: Blue Ghost Mission 1
+  confidence: high
+  sources:
+  - url: https://lroc.im-ldi.com/images/1407
+    title: 'LROC: Blue Ghost landing site'
+    locator: 18.5623 N, 61.8103 E, -3650 m
+  - url: https://lroc.im-ldi.com/images/1406
+    title: 'LROC: Blue Ghost Seen Obliquely'
+    locator: 18.562 N, 61.810 E, -3650 m
+  - url: https://fireflyspace.com/missions/blue-ghost-mission-1/
+    title: 'Firefly: Blue Ghost Mission 1'
+    locator: landed Mare Crisium
+  notes: Time converted from 3:34 a.m. EST (NASA release; medium). Position from the later LROC post (7 Mar 2025, 4 decimals); the earlier post (4 Mar 2025) gives 18.562 N, 61.810 E, 3 decimals, about 30 m away.
+  kind: landed
+  lat_deg: 18.5623
+  lon_deg: 61.8103
+  frame_note: LROC
+  mission: Blue Ghost Mission 1
+  operator: Firefly (NASA CLPS)
+  country: US
+  status: successful; operations completed 2025
+  landing_utc: 2025-03-02T08:34Z
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: peregrine-m1-target
+  name: Peregrine Mission One planned target
+  confidence: medium
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20240003416/downloads/CohenSinusAbstract.pdf
+    title: Gawronska, Cohen et al., LPSC 2024 abstract 2791 (Sinus Viscositatis)
+    locator: 'Fig. 1 caption: PM1 landing coordinates 35.0718 N, 41.7602 W'
+  - url: https://www.astrobotic.com/wp-content/uploads/2022/01/PUGLanders_011222.pdf
+    title: Astrobotic Lunar Landers Payload User's Guide v5.0
+    locator: Lacus Mortis 44 N, 25 E in the guide (conflict)
+  notes: 'Conflict: the PUG gives Lacus Mortis (44 N, 25 E), Wikipedia names Gruithuisen Gamma, the LPSC 2024 abstract uses
+    35.0718 N 41.7602 W (Sinus Viscositatis region). The abstract value is used.'
+  kind: not_landed
+  lat_deg: 35.0718
+  lon_deg: -41.7602
+  frame_note: Raw 35.0718 N, 41.7602 W; frame not stated
+  mission: Peregrine Mission One
+  operator: Astrobotic (NASA CLPS)
+  country: US
+  status: 'did not land: propellant leak; reentered 2024-01-18'
+  landing_utc: null
+  landing_date: null
+  planned_date: Feb 2024
+  extent_km: null
+  extent_kind: null
+- id: luna-25-target
+  name: Luna 25 intended landing point
+  confidence: high
+  sources:
+  - url: https://www.nasa.gov/humans-in-space/nasas-lro-observes-crater-likely-from-luna-25-impact/
+    title: NASA's LRO Observes Crater Likely from Luna 25 Impact
+    locator: intended landing point 69.545 S, 43.544 E
+  notes: ''
+  kind: not_landed
+  lat_deg: -69.545
+  lon_deg: 43.544
+  frame_note: NASA/LRO
+  mission: Luna 25
+  operator: Roscosmos
+  country: RU
+  status: crashed 2023-08-19 before reaching the point
+  landing_utc: null
+  landing_date: null
+  planned_date: '2023-08-21'
+  extent_km: null
+  extent_kind: null
+- id: artemis-region-peak-near-cabeus-b
+  name: 'Artemis candidate region: Peak near Cabeus B'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
+    title: NASA Provides Update on Artemis III Moon Landing Regions (28 Oct 2024)
+    locator: list of nine regions; no coordinates
+  - url: https://doi.org/10.5066/P1MEQ6UK
+    title: USGS Artemis III navigational grids (McClernan 2024)
+    locator: ScienceBase item 671a6fa8d34efed5620f89f8; 1 km grid bounding-box centre inverse-projected by this project
+  notes: 'Nominal region 15 x 15 km (NASA 2022 release); USGS grid envelope 21 x 21 km. Mons Mouton Plateau (the ninth region,
+    larger than the other eight combined) is not listed: no centre obtained.'
+  kind: region
+  lat_deg: -83.6514
+  lon_deg: -68.7263
+  frame_note: ME DE421 (USGS grid datum). Centre is the 1 km grid bounding-box centre, not an official NASA centre; envelope
+    17-31 km exceeds the nominal 15 x 15 km.
+  mission: Artemis first south-pole landing (originally Artemis III)
+  operator: NASA
+  country: US
+  status: candidate region (Oct 2024 list of nine); the first landing is now Artemis IV, early 2028
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-haworth
+  name: 'Artemis candidate region: Haworth'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
+    title: NASA Provides Update on Artemis III Moon Landing Regions (28 Oct 2024)
+    locator: list of nine regions; no coordinates
+  - url: https://doi.org/10.5066/P1MEQ6UK
+    title: USGS Artemis III navigational grids (McClernan 2024)
+    locator: ScienceBase item 671a6fa8d34efed5620f89f8; 1 km grid bounding-box centre inverse-projected by this project
+  notes: 'Nominal region 15 x 15 km (NASA 2022 release); USGS grid envelope 31 x 30 km. Mons Mouton Plateau (the ninth region,
+    larger than the other eight combined) is not listed: no centre obtained.'
+  kind: region
+  lat_deg: -86.7661
+  lon_deg: -22.6199
+  frame_note: ME DE421 (USGS grid datum). Centre is the 1 km grid bounding-box centre, not an official NASA centre; envelope
+    17-31 km exceeds the nominal 15 x 15 km.
+  mission: Artemis first south-pole landing (originally Artemis III)
+  operator: NASA
+  country: US
+  status: candidate region (Oct 2024 list of nine); the first landing is now Artemis IV, early 2028
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-malapert-massif
+  name: 'Artemis candidate region: Malapert Massif'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
+    title: NASA Provides Update on Artemis III Moon Landing Regions (28 Oct 2024)
+    locator: list of nine regions; no coordinates
+  - url: https://doi.org/10.5066/P1MEQ6UK
+    title: USGS Artemis III navigational grids (McClernan 2024)
+    locator: ScienceBase item 671a6fa8d34efed5620f89f8; 1 km grid bounding-box centre inverse-projected by this project
+  notes: 'Nominal region 15 x 15 km (NASA 2022 release); USGS grid envelope 21 x 22 km. Mons Mouton Plateau (the ninth region,
+    larger than the other eight combined) is not listed: no centre obtained.'
+  kind: region
+  lat_deg: -85.9872
+  lon_deg: -0.2368
+  frame_note: ME DE421 (USGS grid datum). Centre is the 1 km grid bounding-box centre, not an official NASA centre; envelope
+    17-31 km exceeds the nominal 15 x 15 km.
+  mission: Artemis first south-pole landing (originally Artemis III)
+  operator: NASA
+  country: US
+  status: candidate region (Oct 2024 list of nine); the first landing is now Artemis IV, early 2028
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-mons-mouton
+  name: 'Artemis candidate region: Mons Mouton'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
+    title: NASA Provides Update on Artemis III Moon Landing Regions (28 Oct 2024)
+    locator: list of nine regions; no coordinates
+  - url: https://doi.org/10.5066/P1MEQ6UK
+    title: USGS Artemis III navigational grids (McClernan 2024)
+    locator: ScienceBase item 671a6fa8d34efed5620f89f8; 1 km grid bounding-box centre inverse-projected by this project
+  notes: 'Nominal region 15 x 15 km (NASA 2022 release); USGS grid envelope 17 x 17 km. Mons Mouton Plateau (the ninth region,
+    larger than the other eight combined) is not listed: no centre obtained.'
+  kind: region
+  lat_deg: -85.4218
+  lon_deg: 31.6755
+  frame_note: ME DE421 (USGS grid datum). Centre is the 1 km grid bounding-box centre, not an official NASA centre; envelope
+    17-31 km exceeds the nominal 15 x 15 km.
+  mission: Artemis first south-pole landing (originally Artemis III)
+  operator: NASA
+  country: US
+  status: candidate region (Oct 2024 list of nine); the first landing is now Artemis IV, early 2028
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-nobile-rim-1
+  name: 'Artemis candidate region: Nobile Rim 1'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
+    title: NASA Provides Update on Artemis III Moon Landing Regions (28 Oct 2024)
+    locator: list of nine regions; no coordinates
+  - url: https://doi.org/10.5066/P1MEQ6UK
+    title: USGS Artemis III navigational grids (McClernan 2024)
+    locator: ScienceBase item 671a6fa8d34efed5620f89f8; 1 km grid bounding-box centre inverse-projected by this project
+  notes: 'Nominal region 15 x 15 km (NASA 2022 release); USGS grid envelope 21 x 21 km. Mons Mouton Plateau (the ninth region,
+    larger than the other eight combined) is not listed: no centre obtained.'
+  kind: region
+  lat_deg: -85.4338
+  lon_deg: 37.3276
+  frame_note: ME DE421 (USGS grid datum). Centre is the 1 km grid bounding-box centre, not an official NASA centre; envelope
+    17-31 km exceeds the nominal 15 x 15 km.
+  mission: Artemis first south-pole landing (originally Artemis III)
+  operator: NASA
+  country: US
+  status: candidate region (Oct 2024 list of nine); the first landing is now Artemis IV, early 2028
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-nobile-rim-2
+  name: 'Artemis candidate region: Nobile Rim 2'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
+    title: NASA Provides Update on Artemis III Moon Landing Regions (28 Oct 2024)
+    locator: list of nine regions; no coordinates
+  - url: https://doi.org/10.5066/P1MEQ6UK
+    title: USGS Artemis III navigational grids (McClernan 2024)
+    locator: ScienceBase item 671a6fa8d34efed5620f89f8; 1 km grid bounding-box centre inverse-projected by this project
+  notes: 'Nominal region 15 x 15 km (NASA 2022 release); USGS grid envelope 20 x 21 km. Mons Mouton Plateau (the ninth region,
+    larger than the other eight combined) is not listed: no centre obtained.'
+  kind: region
+  lat_deg: -83.9545
+  lon_deg: 58.7938
+  frame_note: ME DE421 (USGS grid datum). Centre is the 1 km grid bounding-box centre, not an official NASA centre; envelope
+    17-31 km exceeds the nominal 15 x 15 km.
+  mission: Artemis first south-pole landing (originally Artemis III)
+  operator: NASA
+  country: US
+  status: candidate region (Oct 2024 list of nine); the first landing is now Artemis IV, early 2028
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-de-gerlache-rim-2
+  name: 'Artemis candidate region: de Gerlache Rim 2'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
+    title: NASA Provides Update on Artemis III Moon Landing Regions (28 Oct 2024)
+    locator: list of nine regions; no coordinates
+  - url: https://doi.org/10.5066/P1MEQ6UK
+    title: USGS Artemis III navigational grids (McClernan 2024)
+    locator: ScienceBase item 671a6fa8d34efed5620f89f8; 1 km grid bounding-box centre inverse-projected by this project
+  notes: 'Nominal region 15 x 15 km (NASA 2022 release); USGS grid envelope 21 x 21 km. Mons Mouton Plateau (the ninth region,
+    larger than the other eight combined) is not listed: no centre obtained.'
+  kind: region
+  lat_deg: -88.2263
+  lon_deg: -65.1126
+  frame_note: ME DE421 (USGS grid datum). Centre is the 1 km grid bounding-box centre, not an official NASA centre; envelope
+    17-31 km exceeds the nominal 15 x 15 km.
+  mission: Artemis first south-pole landing (originally Artemis III)
+  operator: NASA
+  country: US
+  status: candidate region (Oct 2024 list of nine); the first landing is now Artemis IV, early 2028
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-slater-plain
+  name: 'Artemis candidate region: Slater Plain'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
+    title: NASA Provides Update on Artemis III Moon Landing Regions (28 Oct 2024)
+    locator: list of nine regions; no coordinates
+  - url: https://doi.org/10.5066/P1MEQ6UK
+    title: USGS Artemis III navigational grids (McClernan 2024)
+    locator: ScienceBase item 671a6fa8d34efed5620f89f8; 1 km grid bounding-box centre inverse-projected by this project
+  notes: 'Nominal region 15 x 15 km (NASA 2022 release); USGS grid envelope 21 x 21 km. Mons Mouton Plateau (the ninth region,
+    larger than the other eight combined) is not listed: no centre obtained.'
+  kind: region
+  lat_deg: -87.1697
+  lon_deg: 125.4596
+  frame_note: ME DE421 (USGS grid datum). Centre is the 1 km grid bounding-box centre, not an official NASA centre; envelope
+    17-31 km exceeds the nominal 15 x 15 km.
+  mission: Artemis first south-pole landing (originally Artemis III)
+  operator: NASA
+  country: US
+  status: candidate region (Oct 2024 list of nine); the first landing is now Artemis IV, early 2028
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-peak-near-shackleton
+  name: 'Artemis 2022 candidate region: Peak Near Shackleton (author exploration-zone centre)'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/
+    title: NASA Identifies Candidate Regions for Landing Next Americans on Moon (19 Aug 2022)
+    locator: regions about 15 x 15 km within 6 degrees of the pole
+  - url: https://www.hou.usra.edu/meetings/lpsc2024/pdf/1695.pdf
+    title: Gracy & Lee, LPSC 2024 abstract 1695
+    locator: 89.01701 S, 126.27302 E, 2 km radius exploration zone
+  notes: ''
+  kind: region
+  lat_deg: -89.01701
+  lon_deg: 126.27302
+  frame_note: LROC QuickMap (ME); author-chosen centre, not NASA's
+  mission: Artemis III 2022 list
+  operator: NASA
+  country: US
+  status: dropped from the Oct 2024 list
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-connecting-ridge
+  name: 'Artemis 2022 candidate region: Connecting Ridge (author exploration-zone centre)'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/
+    title: NASA Identifies Candidate Regions for Landing Next Americans on Moon (19 Aug 2022)
+    locator: regions about 15 x 15 km within 6 degrees of the pole
+  - url: https://www.hou.usra.edu/meetings/lpsc2024/pdf/1695.pdf
+    title: Gracy & Lee, LPSC 2024 abstract 1695
+    locator: raw 89.53432 S, 209.94767 E
+  notes: ''
+  kind: region
+  lat_deg: -89.53432
+  lon_deg: -150.05233
+  frame_note: LROC QuickMap (ME); author-chosen centre; raw 0-360 E converted
+  mission: Artemis III 2022 list
+  operator: NASA
+  country: US
+  status: dropped from the Oct 2024 list
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: artemis-region-amundsen-rim
+  name: 'Artemis 2022 candidate region: Amundsen Rim (author site)'
+  confidence: medium
+  sources:
+  - url: https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/
+    title: NASA Identifies Candidate Regions for Landing Next Americans on Moon (19 Aug 2022)
+    locator: regions about 15 x 15 km within 6 degrees of the pole
+  - url: https://www.hou.usra.edu/meetings/lpsc2026/pdf/1197.pdf
+    title: Longo & Liu, LPSC 2026 abstract 1197
+    locator: 84.228 S, 69.451 E
+  notes: ''
+  kind: region
+  lat_deg: -84.228
+  lon_deg: 69.451
+  frame_note: Author site; frame not stated
+  mission: Artemis III 2022 list
+  operator: NASA
+  country: US
+  status: dropped from the Oct 2024 list
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 15.0
+  extent_kind: side
+- id: chandrayaan-4-mm4
+  name: Chandrayaan-4 candidate site MM-4 (Mons Mouton)
+  confidence: high
+  sources:
+  - url: https://www.hou.usra.edu/meetings/lpsc2026/pdf/1198.pdf
+    title: Amitabh et al., LPSC 2026 abstract 1198
+    locator: 'Table 2: 1 km x 1 km area around MM-4 (-84.289, 32.808)'
+  notes: 'Alternates from the same table: MM-1 (-84.944, 25.110), MM-3 (-84.745, 29.297), MM-5 (-84.641, 36.170); MM-2 rejected
+    as shadowed.'
+  kind: planned
+  lat_deg: -84.289
+  lon_deg: 32.808
+  frame_note: Not stated (LOLA/LRO-derived)
+  mission: Chandrayaan-4
+  operator: ISRO
+  country: IN
+  status: candidate site; mission not launched
+  landing_utc: null
+  landing_date: null
+  planned_date: 2028 (Wikipedia, India Today 2026-02-07; medium)
+  extent_km: 1.0
+  extent_kind: side
+- id: change-7-target
+  name: Chang'e 7 planned site (Shackleton rim ridge)
+  confidence: low
+  sources:
+  - url: https://www.scientificamerican.com/article/china-delays-ambitious-change-7-moon-mission-until-2027/
+    title: 'Scientific American: China delays ambitious Chang''e 7 Moon mission until 2027'
+    locator: launch scrubbed Aug 2026
+  - url: https://en.wikipedia.org/wiki/Chang%27e_7
+    title: 'Wikipedia: Chang''e 7'
+    locator: infobox 88.8 S 123.4 E, sourced to a 2023 Weibo post
+  notes: Coordinates trace to a 2023 Weibo post via Wikipedia (low). Consistent with published illumination peaks east of
+    Shackleton (Bussey point D, De Rosa SV1).
+  kind: planned
+  lat_deg: -88.8
+  lon_deg: 123.4
+  frame_note: Not stated
+  mission: Chang'e 7
+  operator: CNSA
+  country: CN
+  status: not launched; August 2026 window indefinitely delayed
+  landing_utc: null
+  landing_date: null
+  planned_date: 2027 or later
+  extent_km: null
+  extent_kind: null
+- id: im-3-reiner-gamma
+  name: 'IM-3 target: Reiner Gamma (feature centre)'
+  confidence: medium
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Reiner Gamma centre; albedo feature 73.44 km
+  - url: https://en.wikipedia.org/wiki/IM-3
+    title: 'Wikipedia: IM-3'
+    locator: Reiner Gamma target; early 2027
+  notes: The target is the swirl; the lander aim point is not published.
+  kind: planned
+  lat_deg: 7.39
+  lon_deg: -58.96
+  frame_note: Gazetteer planetographic +East -180..180 (= planetocentric for the spherical Moon); feature centre, not a landing
+    point
+  mission: IM-3
+  operator: Intuitive Machines (NASA CLPS)
+  country: US
+  status: not launched
+  landing_utc: null
+  landing_date: null
+  planned_date: first part of 2027
+  extent_km: 73.44
+  extent_kind: diameter
+- id: griffin-1-nobile
+  name: Griffin Mission One target region (Nobile crater, near Mons Mouton; feature centre)
+  confidence: low
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Nobile centre -85.28, 53.27
+  - url: https://en.wikipedia.org/wiki/Griffin_Mission_One
+    title: 'Wikipedia: Griffin Mission One'
+    locator: target Nobile region near Mons Mouton; NET Jan 2027
+  notes: The aim point is on the Nobile rim, not at the crater centre; the Nobile Rim 1 and 2 Artemis regions are a better
+    proxy for geometry studies.
+  kind: planned
+  lat_deg: -85.28
+  lon_deg: 53.27
+  frame_note: Gazetteer feature centre
+  mission: 'Griffin Mission One (VIPER legacy target: western edge of Nobile)'
+  operator: Astrobotic (NASA CLPS)
+  country: US
+  status: not launched
+  landing_utc: null
+  landing_date: null
+  planned_date: NET Jan 2027 (Wikipedia; NASA Aug 2026 said late 2026)
+  extent_km: 79.27
+  extent_kind: diameter
+- id: poi-bussey-a
+  name: Bussey 2010 point A, Shackleton rim
+  confidence: high
+  sources:
+  - url: https://spudislunarresources.nss.org/Bibliography/p/98.pdf
+    title: 'Bussey et al. 2010, Icarus 208, 558: Illumination conditions of the south pole of the Moon derived using Kaguya
+      topography'
+    locator: Section 5 and Table 2
+  notes: Annual mean illumination 81% mean illumination (Kaguya, 2020). Raw 166.0 W.
+  kind: poi
+  lat_deg: -89.68
+  lon_deg: -166.0
+  frame_note: Kaguya LALT DEM (year 2020, 12 h steps); frame not stated, planetocentric east-positive assumed
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-bussey-b
+  name: Bussey 2010 point B, ridge near Shackleton (connecting ridge)
+  confidence: high
+  sources:
+  - url: https://spudislunarresources.nss.org/Bibliography/p/98.pdf
+    title: 'Bussey et al. 2010, Icarus 208, 558: Illumination conditions of the south pole of the Moon derived using Kaguya
+      topography'
+    locator: Section 5 and Table 2
+  notes: Annual mean illumination 82% (Kaguya, 2020). Raw 141.8 W. A and B together are illuminated more than 94% of the time.
+  kind: poi
+  lat_deg: -89.44
+  lon_deg: -141.8
+  frame_note: Kaguya LALT DEM (year 2020, 12 h steps); frame not stated, planetocentric east-positive assumed
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-bussey-c
+  name: Bussey 2010 point C, de Gerlache rim
+  confidence: high
+  sources:
+  - url: https://spudislunarresources.nss.org/Bibliography/p/98.pdf
+    title: 'Bussey et al. 2010, Icarus 208, 558: Illumination conditions of the south pole of the Moon derived using Kaguya
+      topography'
+    locator: Section 5 and Table 2
+  notes: Annual mean illumination 85% (Kaguya, 2020). Raw 68.7 W. Shortest maximum eclipse 6 days.
+  kind: poi
+  lat_deg: -88.71
+  lon_deg: -68.7
+  frame_note: Kaguya LALT DEM (year 2020, 12 h steps); frame not stated, planetocentric east-positive assumed
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-bussey-d
+  name: Bussey 2010 point D, ridge off Shackleton rim along 120 E
+  confidence: medium
+  sources:
+  - url: https://spudislunarresources.nss.org/Bibliography/p/98.pdf
+    title: 'Bussey et al. 2010, Icarus 208, 558: Illumination conditions of the south pole of the Moon derived using Kaguya
+      topography'
+    locator: Section 5 and Table 2
+  notes: 'Annual mean illumination 86% (Kaguya, 2020). Latitude conflict inside the paper: Table 2 88.79 S, abstract and conclusions
+    88.74 S, section 5 text 99.79 S (typo). Table 2 used.'
+  kind: poi
+  lat_deg: -88.79
+  lon_deg: 124.5
+  frame_note: Kaguya LALT DEM (year 2020, 12 h steps); frame not stated, planetocentric east-positive assumed
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-bussey-m1
+  name: Bussey 2010 Malapert M1
+  confidence: high
+  sources:
+  - url: https://spudislunarresources.nss.org/Bibliography/p/98.pdf
+    title: 'Bussey et al. 2010, Icarus 208, 558: Illumination conditions of the south pole of the Moon derived using Kaguya
+      topography'
+    locator: Section 5 and Table 2
+  notes: Annual mean illumination 74% (Kaguya, 2020). Raw 2.7 E.
+  kind: poi
+  lat_deg: -86.04
+  lon_deg: 2.7
+  frame_note: Kaguya LALT DEM (year 2020, 12 h steps); frame not stated, planetocentric east-positive assumed
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-bussey-m2
+  name: Bussey 2010 Malapert M2
+  confidence: high
+  sources:
+  - url: https://spudislunarresources.nss.org/Bibliography/p/98.pdf
+    title: 'Bussey et al. 2010, Icarus 208, 558: Illumination conditions of the south pole of the Moon derived using Kaguya
+      topography'
+    locator: Section 5 and Table 2
+  notes: Annual mean illumination 74% (Kaguya, 2020). Raw 2.9 W.
+  kind: poi
+  lat_deg: -86.0
+  lon_deg: -2.9
+  frame_note: Kaguya LALT DEM (year 2020, 12 h steps); frame not stated, planetocentric east-positive assumed
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-glaser-c1
+  name: Glaser 2018 Connecting Ridge C1 (2 m above ground)
+  confidence: high
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf
+    title: 'Glaser et al. 2018, PSS: Illumination conditions at the lunar poles'
+    locator: Tables 1-3, LOLA 20 m/px, 20 years
+  notes: Max average illumination 88.0%, solar visibility 92.1%, longest shadow 112 h (20-year average, 2 m above ground,
+    Table 2). Raw longitude 222.83 E.
+  kind: poi
+  lat_deg: -89.4398
+  lon_deg: -137.17
+  frame_note: LOLA 20 m/px DTM (ME assumed; frame not stated in the paper); raw longitude 0-360 E
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-glaser-c2
+  name: Glaser 2018 Connecting Ridge C2 (2 m above ground)
+  confidence: high
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf
+    title: 'Glaser et al. 2018, PSS: Illumination conditions at the lunar poles'
+    locator: Tables 1-3, LOLA 20 m/px, 20 years
+  notes: Max average illumination 78.1%, solar visibility 82.0%, longest shadow 165 h (20-year average, 2 m above ground,
+    Table 2). Raw longitude 245.98 E.
+  kind: poi
+  lat_deg: -89.313
+  lon_deg: -114.02
+  frame_note: LOLA 20 m/px DTM (ME assumed; frame not stated in the paper); raw longitude 0-360 E
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-glaser-s
+  name: Glaser 2018 Shackleton rim maximum average illumination (2 m)
+  confidence: high
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf
+    title: 'Glaser et al. 2018, PSS: Illumination conditions at the lunar poles'
+    locator: Tables 1-3, LOLA 20 m/px, 20 years
+  notes: Max average illumination 85.5%, solar visibility 89.4%, longest shadow 66 h (20-year average, 2 m above ground, Table
+    2). Raw longitude 197.19 E.
+  kind: poi
+  lat_deg: -89.6866
+  lon_deg: -162.81
+  frame_note: LOLA 20 m/px DTM (ME assumed; frame not stated in the paper); raw longitude 0-360 E
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-glaser-s-sv
+  name: Glaser 2018 Shackleton rim maximum solar visibility (2 m)
+  confidence: high
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf
+    title: 'Glaser et al. 2018, PSS: Illumination conditions at the lunar poles'
+    locator: Tables 1-3, LOLA 20 m/px, 20 years
+  notes: Max average illumination 82.1%, solar visibility 89.8%, longest shadow 65 h (20-year average, 2 m above ground, Table
+    2). Raw longitude 204.7 E.
+  kind: poi
+  lat_deg: -89.7815
+  lon_deg: -155.3
+  frame_note: LOLA 20 m/px DTM (ME assumed; frame not stated in the paper); raw longitude 0-360 E
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-cr1
+  name: De Rosa 2012 Connecting Ridge CR1
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -89.4679
+  lon_deg: -137.411
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-gr1
+  name: De Rosa 2012 de Gerlache Rim GR1
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -88.6952
+  lon_deg: -68.2846
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-gr2
+  name: De Rosa 2012 de Gerlache Rim GR2
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -89.0073
+  lon_deg: -94.7636
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-lp1
+  name: De Rosa 2012 Leibnitz beta Plateau LP1
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -85.4596
+  lon_deg: 31.78053
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-lp2
+  name: De Rosa 2012 Leibnitz beta Plateau LP2
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -85.2934
+  lon_deg: 37.0304
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-lp3
+  name: De Rosa 2012 Leibnitz beta Plateau LP3
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -85.5566
+  lon_deg: 37.4649
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-mp1
+  name: De Rosa 2012 Malapert Peak MP1
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -85.9756
+  lon_deg: -2.11241
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-mp2
+  name: De Rosa 2012 Malapert Peak MP2
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -86.0265
+  lon_deg: 2.757964
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-sr1
+  name: De Rosa 2012 Shackleton Rim SR1
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -89.7755
+  lon_deg: -156.448
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-sr2
+  name: De Rosa 2012 Shackleton Rim SR2
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -89.689
+  lon_deg: -162.351
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-sr3
+  name: De Rosa 2012 Shackleton Rim SR3
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -89.812
+  lon_deg: 52.125
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-derosa-sv1
+  name: De Rosa 2012 Shackleton vicinity SV1
+  confidence: high
+  sources:
+  - url: https://arxiv.org/pdf/1208.5587v1
+    title: De Rosa et al. 2012, PSS 74, 224 (arXiv preprint)
+    locator: 'Table 2: centre points in ME/PA (DE421)'
+  notes: Centre of a region of interest a few hundred metres across (LQCIP areas).
+  kind: poi
+  lat_deg: -88.8247
+  lon_deg: 124.1359
+  frame_note: Mean Earth/Polar Axis (ME/PA), DE421, per the paper
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published region-of-interest centre
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-mazarico-connecting-ridge
+  name: Mazarico 2011 Connecting Ridge (as tabulated by Glaser 2018)
+  confidence: medium
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf
+    title: 'Glaser et al. 2018, PSS: Illumination conditions at the lunar poles'
+    locator: Tables 1-3, LOLA 20 m/px, 20 years
+  notes: Average illumination 89.0%, solar visibility 92.7%, longest shadow 141.12 h. Original Icarus 211, 1066 paper is paywalled
+    and was not opened.
+  kind: poi
+  lat_deg: -89.45
+  lon_deg: -137.31
+  frame_note: LOLA 240 m/px; raw longitude 222.69 E; quoted via Glaser 2018 Table 1
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-mazarico-shackleton-rim
+  name: Mazarico 2011 Shackleton rim (as tabulated by Glaser 2018)
+  confidence: medium
+  sources:
+  - url: https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf
+    title: 'Glaser et al. 2018, PSS: Illumination conditions at the lunar poles'
+    locator: Tables 1-3, LOLA 20 m/px, 20 years
+  notes: Average illumination 86.7%, solar visibility 90.5%. Original paper not opened.
+  kind: poi
+  lat_deg: -89.78
+  lon_deg: -155.73
+  frame_note: LOLA 240 m/px; raw longitude 204.27 E; quoted via Glaser 2018 Table 1
+  mission: polar illumination study
+  operator: ''
+  country: ''
+  status: published illumination maximum
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: poi-nr2-sanchez-lozano
+  name: Nobile Rim 2 optimal site (Sanchez-Lozano et al.)
+  confidence: high
+  sources:
+  - url: https://www.hou.usra.edu/meetings/lpsc2025/pdf/1149.pdf
+    title: Sanchez-Lozano et al., LPSC 2025 abstract 1149
+    locator: 'Table 1 and text: 84 12 5.61 S, 60 41 59.61 E'
+  notes: ''
+  kind: poi
+  lat_deg: -84.20156
+  lon_deg: 60.69989
+  frame_note: LOLA 5 m DEM; frame not stated
+  mission: Artemis study
+  operator: ''
+  country: ''
+  status: author proposal
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: null
+  extent_kind: null
+- id: gaz-shackleton
+  name: Shackleton crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 20.92 km.
+  kind: poi
+  lat_deg: -89.67
+  lon_deg: 129.78
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 20.92
+  extent_kind: diameter
+- id: gaz-de-gerlache
+  name: de Gerlache crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 32.71 km.
+  kind: poi
+  lat_deg: -88.48
+  lon_deg: -88.34
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 32.71
+  extent_kind: diameter
+- id: gaz-sverdrup
+  name: Sverdrup crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 32.83 km.
+  kind: poi
+  lat_deg: -88.32
+  lon_deg: -153.39
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 32.83
+  extent_kind: diameter
+- id: gaz-henson
+  name: Henson crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 43.0 km.
+  kind: poi
+  lat_deg: -88.57
+  lon_deg: -130.63
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 43.0
+  extent_kind: diameter
+- id: gaz-shoemaker
+  name: Shoemaker crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 51.82 km.
+  kind: poi
+  lat_deg: -88.14
+  lon_deg: 45.91
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 51.82
+  extent_kind: diameter
+- id: gaz-faustini
+  name: Faustini crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 42.48 km.
+  kind: poi
+  lat_deg: -87.18
+  lon_deg: 84.31
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 42.48
+  extent_kind: diameter
+- id: gaz-slater
+  name: Slater crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 25.12 km.
+  kind: poi
+  lat_deg: -88.08
+  lon_deg: 111.29
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 25.12
+  extent_kind: diameter
+- id: gaz-haworth-crater
+  name: Haworth crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 51.42 km.
+  kind: poi
+  lat_deg: -87.45
+  lon_deg: -5.17
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 51.42
+  extent_kind: diameter
+- id: gaz-mons-malapert
+  name: Mons Malapert
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 67.0 km.
+  kind: poi
+  lat_deg: -85.98
+  lon_deg: -1.67
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 67.0
+  extent_kind: diameter
+- id: gaz-mons-mouton-feature
+  name: Mons Mouton (former Leibnitz beta)
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 130.0 km.
+  kind: poi
+  lat_deg: -84.6
+  lon_deg: 31.0
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 130.0
+  extent_kind: diameter
+- id: gaz-nobile-crater
+  name: Nobile crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 79.27 km.
+  kind: poi
+  lat_deg: -85.28
+  lon_deg: 53.27
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 79.27
+  extent_kind: diameter
+- id: gaz-amundsen
+  name: Amundsen crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 103.39 km.
+  kind: poi
+  lat_deg: -84.44
+  lon_deg: 83.07
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 103.39
+  extent_kind: diameter
+- id: gaz-cabeus
+  name: Cabeus crater
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 100.58 km.
+  kind: poi
+  lat_deg: -85.33
+  lon_deg: -42.13
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 100.58
+  extent_kind: diameter
+- id: gaz-mons-kocher
+  name: Mons Kocher
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 67.0 km.
+  kind: poi
+  lat_deg: -85.46
+  lon_deg: -118.06
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 67.0
+  extent_kind: diameter
+- id: gaz-schrodinger
+  name: Schrodinger basin
+  confidence: high
+  sources:
+  - url: https://planetarynames.wr.usgs.gov/SearchResults?Target=16_Moon
+    title: USGS Gazetteer of Planetary Nomenclature (Moon)
+    locator: Center Lat/Lon; planetographic +East -180..180
+  notes: Feature diameter 316.0 km.
+  kind: poi
+  lat_deg: -74.73
+  lon_deg: 132.93
+  frame_note: 'Gazetteer: planetographic, +East, -180..180 (= planetocentric for the spherical Moon). Feature centre.'
+  mission: named feature
+  operator: ''
+  country: ''
+  status: IAU feature
+  landing_utc: null
+  landing_date: null
+  planned_date: ''
+  extent_km: 316.0
+  extent_kind: diameter

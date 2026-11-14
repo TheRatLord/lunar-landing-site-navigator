@@ -1,0 +1,661 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import type { Interval, LineMark, LineRow, TimelineRow } from "../../contract/types";
+import { bandEnvelope, minMaxEnvelope } from "../../lib/decimate";
+import { formatNum, formatValue, tickDecimals } from "../../lib/format";
+import { visibleIntervals } from "../../lib/intervals";
+import { clamp, niceTicks, panDomain, zoomDomain, type Range } from "../../lib/scale";
+import { MS_HOUR, formatDuration, formatUtc, timeTicks } from "../../lib/time";
+import { IconButton } from "../ui/Button";
+import { Panel } from "../ui/Panel";
+import { Popover } from "../ui/Popover";
+import { Canvas } from "./canvas";
+import { MONO, SANS, drawReadout, fitText, localPoint, type Size, type ThemeColors } from "./draw";
+import { useColors } from "./useColors";
+import { describeInterval, describeLine, gutterNote, gutterReadout } from "./timelineText";
+
+export interface TimelineProps {
+  rows: TimelineRow[];
+  extent: Range;
+  timeMs: number;
+  onTimeChange: (ms: number) => void;
+  range: { start_ms: number; end_ms: number };
+  onRangeChange: (r: { start_ms: number; end_ms: number }) => void;
+  title?: string;
+}
+
+const GUTTER = 176;
+const PAD_R = 14;
+const AXIS_H = 26;
+const INTERVAL_H = 26;
+const LINE_H = 74;
+const OVERVIEW_H = 30;
+const MIN_SPAN = 10 * 60_000;
+
+const rowHeight = (r: TimelineRow) => (r.kind === "intervals" ? INTERVAL_H : LINE_H);
+
+function lineExtent(r: LineRow): Range {
+  if (r.domain) return r.domain;
+  let lo = Infinity;
+  let hi = -Infinity;
+  const scan = (a: ArrayLike<number> | undefined) => {
+    if (!a) return;
+    for (let i = 0; i < a.length; i++) {
+      const v = a[i]!;
+      if (v < lo) lo = v;
+      if (v > hi) hi = v;
+    }
+  };
+  scan(r.value);
+  scan(r.lo);
+  scan(r.hi);
+  if (r.threshold) {
+    lo = Math.min(lo, r.threshold.value);
+    hi = Math.max(hi, r.threshold.value);
+  }
+  if (!(hi > lo)) return [lo - 1, hi + 1];
+  const pad = (hi - lo) * 0.08;
+  return [lo - pad, hi + pad];
+}
+
+const FADE_STEPS = 6;
+const FADE_STEP_PX = 3;
+
+function fillOpen(ctx: CanvasRenderingContext2D, xs: number, xe: number, y: number, h: number, startOpen: boolean, endOpen: boolean): void {
+  const fade = Math.min(FADE_STEPS * FADE_STEP_PX, (xe - xs) / (startOpen && endOpen ? 2 : 1));
+  const n = Math.max(1, Math.round(fade / FADE_STEP_PX));
+  const w = fade / n;
+  const alpha = ctx.globalAlpha;
+  ctx.fillRect(startOpen ? xs + fade : xs, y, Math.max(1, xe - xs - (startOpen ? fade : 0) - (endOpen ? fade : 0)), h);
+  for (let k = 0; k < n; k++) {
+    ctx.globalAlpha = alpha * (1 - (k + 0.5) / n);
+    if (endOpen) ctx.fillRect(xe - fade + k * w, y, w, h);
+    if (startOpen) ctx.fillRect(xs + fade - (k + 1) * w, y, w, h);
+  }
+  ctx.globalAlpha = alpha;
+}
+
+function drawIntervals(
+  ctx: CanvasRenderingContext2D,
+  list: readonly Interval[],
+  t0: number,
+  t1: number,
+  x: (t: number) => number,
+  y: number,
+  h: number,
+): void {
+  const [a, b] = visibleIntervals(list, t0, t1);
+  for (let i = a; i < b; i++) {
+    const iv = list[i]!;
+    const xs = x(iv.start_ms);
+    const xe = x(iv.end_ms);
+    if (iv.start_open || iv.end_open) fillOpen(ctx, xs, xe, y, h, iv.start_open === true, iv.end_open === true);
+    else ctx.fillRect(xs, y, Math.max(1, xe - xs), h);
+  }
+}
+
+const MARK_R = 5;
+const MARK_GLYPH: Record<string, string> = { optimistic: "▲", nominal: "◆", pessimistic: "▼" };
+
+function markY(world: string, top: number, bottom: number): number {
+  return world === "optimistic" ? top + MARK_R + 1 : world === "pessimistic" ? bottom - MARK_R - 1 : (top + bottom) / 2;
+}
+
+function drawMark(ctx: CanvasRenderingContext2D, world: string, x: number, y: number, top: number, bottom: number, c: ThemeColors): void {
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = c.get("text-2");
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 3]);
+  ctx.beginPath();
+  ctx.moveTo(Math.round(x) + 0.5, top);
+  ctx.lineTo(Math.round(x) + 0.5, bottom);
+  ctx.stroke();
+  ctx.restore();
+  ctx.beginPath();
+  if (world === "optimistic") {
+    ctx.moveTo(x, y - MARK_R);
+    ctx.lineTo(x + MARK_R, y + MARK_R - 1);
+    ctx.lineTo(x - MARK_R, y + MARK_R - 1);
+  } else if (world === "pessimistic") {
+    ctx.moveTo(x, y + MARK_R);
+    ctx.lineTo(x + MARK_R, y - MARK_R + 1);
+    ctx.lineTo(x - MARK_R, y - MARK_R + 1);
+  } else {
+    ctx.moveTo(x, y - MARK_R);
+    ctx.lineTo(x + MARK_R, y);
+    ctx.lineTo(x, y + MARK_R);
+    ctx.lineTo(x - MARK_R, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = c.get("text");
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = c.get("bg");
+  ctx.stroke();
+}
+export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeChange, title = "Timeline" }: TimelineProps) {
+  const colors = useColors();
+  const [size, setSize] = useState<Size>({ w: 0, h: 0 });
+  const [view, setView] = useState<Range>(extent);
+  const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
+  const [brush, setBrush] = useState<Range | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const extentKey = `${extent[0]}:${extent[1]}`;
+  const [seenExtent, setSeenExtent] = useState(extentKey);
+  if (seenExtent !== extentKey) {
+    setSeenExtent(extentKey);
+    setView([extent[0], extent[1]]);
+  }
+
+  const rowsTop = AXIS_H;
+  const rowsH = rows.reduce((s, r) => s + rowHeight(r), 0);
+  const totalH = rowsTop + rowsH + 8 + OVERVIEW_H + 8;
+  const plotX0 = GUTTER;
+  const plotX1 = Math.max(GUTTER + 50, size.w - PAD_R);
+  const plotW = plotX1 - plotX0;
+
+  const lineExtents = useMemo(() => new Map(rows.filter((r): r is LineRow => r.kind === "line").map((r) => [r.id, lineExtent(r)])), [rows]);
+  const marked = useMemo(() => rows.flatMap((row) => (row.kind === "line" ? (row.marks ?? []).map((mark) => ({ row, mark })) : [])), [rows]);
+  const markedWorlds = useMemo(() => [...new Set(marked.map((m) => m.mark.world))], [marked]);
+
+  const markAt = (px: number, py: number) => {
+    let y = rowsTop;
+    for (const row of rows) {
+      const h = rowHeight(row);
+      if (row.kind === "line" && row.marks && py >= y && py <= y + h) {
+        const top = y + 22;
+        const bottom = y + h - 6;
+        let best: LineMark | null = null;
+        let bestD = Infinity;
+        for (const mk of row.marks) {
+          const dx = Math.abs(px - tx(mk.t_ms));
+          const dy = Math.abs(py - markY(mk.world, top, bottom));
+          if (dx <= MARK_R + 2 && dy <= MARK_R + 3 && dx + dy < bestD) {
+            best = mk;
+            bestD = dx + dy;
+          }
+        }
+        if (best) return best;
+      }
+      y += h;
+    }
+    return null;
+  };
+
+  const tx = useCallback((t: number) => plotX0 + ((t - view[0]) / (view[1] - view[0])) * plotW, [plotX0, plotW, view]);
+  const tFromX = useCallback((x: number) => view[0] + ((x - plotX0) / plotW) * (view[1] - view[0]), [plotX0, plotW, view]);
+  const ox = useCallback((t: number) => plotX0 + ((t - extent[0]) / (extent[1] - extent[0])) * plotW, [plotX0, plotW, extent]);
+  const tFromOx = useCallback((x: number) => extent[0] + ((x - plotX0) / plotW) * (extent[1] - extent[0]), [plotX0, plotW, extent]);
+  const overviewY = rowsTop + rowsH + 8;
+
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, sz: Size) => {
+      const c: ThemeColors = colors;
+      const [t0, t1] = view;
+      const plotTop = rowsTop;
+      const plotBottom = rowsTop + rowsH;
+      const hovering = hover !== null && hover.x >= plotX0 && hover.x <= plotX1 && hover.y >= plotTop && hover.y <= plotBottom;
+
+      ctx.font = `11px ${MONO}`;
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      const ticks = timeTicks(t0, t1, Math.max(3, Math.floor(plotW / 100)));
+      ctx.lineWidth = 1;
+      for (const t of ticks) {
+        const x = Math.round(tx(t.ms)) + 0.5;
+        ctx.strokeStyle = t.major ? c.get("grid-strong") : c.get("grid");
+        ctx.beginPath();
+        ctx.moveTo(x, AXIS_H - 6);
+        ctx.lineTo(x, plotBottom);
+        ctx.stroke();
+        ctx.fillStyle = t.major ? c.get("text") : c.get("text-3");
+        ctx.fillText(t.label, x, 10);
+      }
+      ctx.textAlign = "left";
+      ctx.fillStyle = c.get("text-3");
+      ctx.font = `600 10px ${SANS}`;
+      ctx.fillText("UTC", 8, 10);
+
+      let y = rowsTop;
+      rows.forEach((row) => {
+        const h = rowHeight(row);
+        ctx.strokeStyle = c.get("border");
+        ctx.beginPath();
+        ctx.moveTo(0, Math.round(y) + 0.5);
+        ctx.lineTo(sz.w, Math.round(y) + 0.5);
+        ctx.stroke();
+        ctx.textAlign = "left";
+        ctx.textBaseline = row.kind === "line" ? "top" : "middle";
+        ctx.font = `500 12px ${SANS}`;
+        ctx.fillStyle = c.get("text");
+        const labelY = row.kind === "line" ? y + 8 : y + h / 2;
+        ctx.fillText(fitText(ctx, row.label, GUTTER - 24 - 8), 24, labelY);
+        ctx.fillStyle = c.get(row.color);
+        ctx.fillRect(8, row.kind === "line" ? y + 10 : y + h / 2 - 5, 8, 10);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(plotX0, y, plotW, h);
+        ctx.clip();
+
+        if (row.kind === "intervals") {
+          const color = c.get(row.color);
+          const bh = 12;
+          const by = y + (h - bh) / 2;
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 1;
+          drawIntervals(ctx, row.best, t0, t1, tx, by, bh);
+          if (row.optimistic) drawIntervals(ctx, row.optimistic, t0, t1, tx, by - 4, 3);
+          if (row.pessimistic) drawIntervals(ctx, row.pessimistic, t0, t1, tx, by + bh + 1, 3);
+        } else {
+          const [e0, e1] = lineExtents.get(row.id)!;
+          const top = y + 22;
+          const bottom = y + h - 6;
+          const yv = (v: number) => bottom - ((v - e0) / (e1 - e0)) * (bottom - top);
+          ctx.restore();
+          ctx.save();
+          ctx.font = `10px ${MONO}`;
+          ctx.fillStyle = c.get("text-3");
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          const yTicks = niceTicks(e0, e1, 3);
+          for (const v of yTicks) {
+            const yy = yv(v);
+            if (yy < top - 2 || yy > bottom + 2) continue;
+            ctx.fillText(formatNum(v, tickDecimals(yTicks, row.decimals ?? 2)), GUTTER - 6, yy);
+            ctx.strokeStyle = c.get("grid");
+            ctx.beginPath();
+            ctx.moveTo(plotX0, Math.round(yy) + 0.5);
+            ctx.lineTo(plotX1, Math.round(yy) + 0.5);
+            ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.rect(plotX0, y, plotW, h);
+          ctx.clip();
+
+          const buckets = Math.max(1, Math.floor(plotW));
+          if (row.lo && row.hi) {
+            const env = bandEnvelope(row.utc_ms, row.lo, row.hi, t0, t1, buckets);
+            let runStart = 0;
+            const fillRun = (a: number, b: number) => {
+              if (b - a < 3) return;
+              ctx.beginPath();
+              for (let i = a; i < b; i += 3) ctx.lineTo(tx(env[i]!), yv(env[i + 2]!));
+              for (let i = b - 3; i >= a; i -= 3) ctx.lineTo(tx(env[i]!), yv(env[i + 1]!));
+              ctx.closePath();
+              ctx.fillStyle = c.get(row.color);
+              ctx.globalAlpha = 0.22;
+              ctx.fill();
+              ctx.globalAlpha = 1;
+            };
+            for (let i = 0; i < env.length; i += 3) {
+              if (Number.isNaN(env[i + 1]!)) {
+                fillRun(runStart, i);
+                runStart = i + 3;
+              }
+            }
+            fillRun(runStart, env.length);
+          }
+          if (row.threshold) {
+            const ty = yv(row.threshold.value);
+            ctx.setLineDash([5, 4]);
+            ctx.strokeStyle = c.get("c-fail");
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(plotX0, Math.round(ty) + 0.5);
+            ctx.lineTo(plotX1, Math.round(ty) + 0.5);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.font = `10px ${MONO}`;
+            ctx.fillStyle = c.get("c-fail");
+            ctx.textAlign = "right";
+            ctx.textBaseline = "bottom";
+            ctx.fillText(row.threshold.label, plotX1 - 4, ty - 2);
+          }
+          const env = row.noNominal ? new Float64Array(0) : minMaxEnvelope(row.utc_ms, row.value, t0, t1, buckets);
+          ctx.beginPath();
+          let pen = false;
+          for (let i = 0; i < env.length; i += 2) {
+            if (Number.isNaN(env[i + 1]!)) {
+              pen = false;
+              continue;
+            }
+            const px = tx(env[i]!);
+            const py = yv(env[i + 1]!);
+            if (pen) ctx.lineTo(px, py);
+            else ctx.moveTo(px, py);
+            pen = true;
+          }
+          ctx.strokeStyle = c.get(row.color);
+          ctx.lineWidth = 1.4;
+          ctx.lineJoin = "round";
+          ctx.stroke();
+          for (const mk of row.marks ?? []) {
+            const mx = tx(mk.t_ms);
+            if (mx < plotX0 - MARK_R || mx > plotX1 + MARK_R) continue;
+            drawMark(ctx, mk.world, mx, markY(mk.world, top, bottom), top, bottom, c);
+          }
+          ctx.restore();
+          ctx.save();
+          ctx.textAlign = "left";
+          ctx.textBaseline = "top";
+          const at = hovering ? tFromX(hover.x) : timeMs;
+          const cur = gutterReadout(row, at);
+          ctx.font = `500 13px ${MONO}`;
+          ctx.fillStyle = c.get("text");
+          ctx.fillText(cur, 24, y + 27);
+          let nx = 24 + ctx.measureText(cur).width + 4;
+          if (row.unit) {
+            ctx.font = `10px ${SANS}`;
+            ctx.fillStyle = c.get("text-3");
+            ctx.fillText(row.unit, nx, y + 31);
+            nx += ctx.measureText(row.unit).width + 8;
+          } else nx += 4;
+          ctx.beginPath();
+          ctx.arc(nx, y + 34, 3, 0, Math.PI * 2);
+          if (hovering) {
+            ctx.strokeStyle = c.get("text-2");
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = c.get("c-sun");
+            ctx.fill();
+          }
+          ctx.font = `10px ${MONO}`;
+          ctx.fillStyle = c.get("text-3");
+          const note = gutterNote(row, at);
+          if (note !== null) ctx.fillText(note, 24, y + 47);
+        }
+        ctx.restore();
+        y += h;
+      });
+
+      ctx.strokeStyle = c.get("border");
+      ctx.beginPath();
+      ctx.moveTo(0, Math.round(plotBottom) + 0.5);
+      ctx.lineTo(sz.w, Math.round(plotBottom) + 0.5);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(plotX0, plotTop, plotW, rowsH);
+      ctx.clip();
+      const rx0 = tx(range.start_ms);
+      const rx1 = tx(range.end_ms);
+      ctx.fillStyle = c.get("accent");
+      ctx.globalAlpha = 0.07;
+      ctx.fillRect(rx0, plotTop, rx1 - rx0, rowsH);
+      ctx.globalAlpha = 0.8;
+      ctx.fillRect(rx0 - 0.5, plotTop, 1.5, rowsH);
+      ctx.fillRect(rx1 - 0.5, plotTop, 1.5, rowsH);
+      ctx.globalAlpha = 1;
+
+      if (brush) {
+        const b0 = tx(Math.min(...brush));
+        const b1 = tx(Math.max(...brush));
+        ctx.fillStyle = c.get("accent");
+        ctx.globalAlpha = 0.22;
+        ctx.fillRect(b0, plotTop, b1 - b0, rowsH);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = c.get("accent");
+        ctx.strokeRect(b0 + 0.5, plotTop + 0.5, b1 - b0 - 1, rowsH - 1);
+      }
+
+      const cx = Math.round(tx(timeMs)) + 0.5;
+      ctx.strokeStyle = c.get("c-sun");
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, AXIS_H - 6);
+      ctx.lineTo(cx, plotBottom);
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = c.get("c-sun");
+      ctx.beginPath();
+      ctx.moveTo(cx - 5, AXIS_H - 8);
+      ctx.lineTo(cx + 5, AXIS_H - 8);
+      ctx.lineTo(cx, AXIS_H - 1);
+      ctx.closePath();
+      if (cx >= plotX0 - 5 && cx <= plotX1 + 5) ctx.fill();
+
+      const oy = overviewY;
+      ctx.fillStyle = c.get("bg");
+      ctx.fillRect(plotX0, oy, plotW, OVERVIEW_H);
+      ctx.strokeStyle = c.get("border");
+      ctx.strokeRect(plotX0 + 0.5, oy + 0.5, plotW - 1, OVERVIEW_H - 1);
+      ctx.font = `10px ${MONO}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillStyle = c.get("text-3");
+      for (const t of timeTicks(extent[0], extent[1], Math.max(3, Math.floor(plotW / 110)))) {
+        const x = Math.round(ox(t.ms)) + 0.5;
+        ctx.strokeStyle = c.get("grid");
+        ctx.beginPath();
+        ctx.moveTo(x, oy + 1);
+        ctx.lineTo(x, oy + OVERVIEW_H - 1);
+        ctx.stroke();
+        ctx.fillText(t.label, x, oy + OVERVIEW_H - 3);
+      }
+      ctx.fillStyle = c.get("accent");
+      ctx.globalAlpha = 0.28;
+      ctx.fillRect(ox(range.start_ms), oy + 1, Math.max(1, ox(range.end_ms) - ox(range.start_ms)), OVERVIEW_H - 2);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = c.get("text");
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(ox(view[0]) + 0.5, oy + 2, Math.max(3, ox(view[1]) - ox(view[0])), OVERVIEW_H - 4);
+      ctx.fillStyle = c.get("c-sun");
+      ctx.fillRect(Math.round(ox(timeMs)) - 1, oy + 1, 2, OVERVIEW_H - 2);
+
+      if (hovering) {
+        const t = tFromX(hover.x);
+        ctx.strokeStyle = c.get("text-2");
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(hover.x + 0.5, plotTop);
+        ctx.lineTo(hover.x + 0.5, plotBottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const lines: Array<[string, string]> = [["Time", formatUtc(t, { seconds: false })]];
+        for (const r of rows) lines.push([r.label, r.kind === "intervals" ? describeInterval(r, t) : describeLine(r, t)]);
+        drawReadout(ctx, lines, hover.x, hover.y, sz, c);
+      }
+    },
+    [colors, view, rows, rowsH, plotW, plotX0, plotX1, tx, tFromX, ox, timeMs, range, brush, hover, extent, lineExtents, overviewY, rowsTop],
+  );
+
+  type Drag =
+    | { kind: "pan"; x: number; view: Range; moved: number }
+    | { kind: "brush"; anchor: number; moved: number }
+    | { kind: "overview"; grab: number; view: Range };
+  const drag = useRef<Drag | null>(null);
+
+  const onPointerDown = (e: PointerEvent<HTMLCanvasElement>) => {
+    const p = localPoint(e, e.currentTarget);
+    if (p.x < plotX0 || p.x > plotX1) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (p.y >= overviewY) {
+      const t = tFromOx(p.x);
+      const half = (view[1] - view[0]) / 2;
+      const inside = t >= view[0] && t <= view[1];
+      const nextView = inside ? view : panDomain(view, t - half - view[0], extent);
+      if (!inside) setView(nextView);
+      drag.current = { kind: "overview", grab: inside ? t - view[0] : half, view: nextView };
+      return;
+    }
+    if (p.y < rowsTop) {
+      onTimeChange(tFromX(p.x));
+      return;
+    }
+    drag.current = e.shiftKey ? { kind: "brush", anchor: clamp(tFromX(p.x), extent[0], extent[1]), moved: 0 } : { kind: "pan", x: p.x, view, moved: 0 };
+  };
+
+  const onPointerMove = (e: PointerEvent<HTMLCanvasElement>) => {
+    const p = localPoint(e, e.currentTarget);
+    setHover(p);
+    const d = drag.current;
+    if (!d) return;
+    if (d.kind === "pan") {
+      d.moved = Math.max(d.moved, Math.abs(p.x - d.x));
+      if (d.moved >= 4) setView(panDomain(d.view, -((p.x - d.x) / plotW) * (d.view[1] - d.view[0]), extent));
+    } else if (d.kind === "brush") {
+      d.moved = Math.max(d.moved, Math.abs(tx(d.anchor) - p.x));
+      if (d.moved >= 3) setBrush([clamp(d.anchor, extent[0], extent[1]), clamp(tFromX(p.x), extent[0], extent[1])]);
+    } else {
+      const t = tFromOx(p.x);
+      const span = d.view[1] - d.view[0];
+      setView(panDomain([t - d.grab, t - d.grab + span], 0, extent));
+    }
+  };
+
+  const onPointerUp = (e: PointerEvent<HTMLCanvasElement>) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d) return;
+    if (d.kind === "brush") {
+      if (brush && Math.abs(brush[1] - brush[0]) >= MS_HOUR / 4) {
+        onRangeChange({ start_ms: Math.min(...brush), end_ms: Math.max(...brush) });
+      }
+      setBrush(null);
+    } else if (d.kind === "pan" && d.moved < 4) {
+      const p = localPoint(e, e.currentTarget);
+      const hit = markAt(p.x, p.y);
+      onTimeChange(hit ? hit.t_ms : clamp(tFromX(p.x), extent[0], extent[1]));
+    }
+  };
+
+  const zoom = useCallback(
+    (factor: number, anchor = 0.5) => setView((v) => zoomDomain(v, anchor, factor, extent, MIN_SPAN)),
+    [extent],
+  );
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const p = localPoint(e, el);
+      if (p.x < plotX0 || p.x > plotX1) return;
+      e.preventDefault();
+      if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        const d = (e.shiftKey ? e.deltaY : e.deltaX) / plotW;
+        setView((v) => panDomain(v, d * (v[1] - v[0]), extent));
+      } else zoom(Math.exp(-e.deltaY * 0.0018), (p.x - plotX0) / plotW);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [zoom, plotX0, plotX1, plotW, extent]);
+
+  const onKey = (e: KeyboardEvent) => {
+    const span = view[1] - view[0];
+    if (e.key === "ArrowLeft") setView((v) => panDomain(v, -span * 0.1, extent));
+    else if (e.key === "ArrowRight") setView((v) => panDomain(v, span * 0.1, extent));
+    else if (e.key === "+" || e.key === "=") zoom(1.5);
+    else if (e.key === "-") zoom(1 / 1.5);
+    else if (e.key === "Home") setView([extent[0], extent[1]]);
+    else return;
+    e.preventDefault();
+  };
+
+  const summary = `Timeline of ${rows.map((r) => r.label).join(", ")} from ${formatUtc(view[0], { seconds: false })} to ${formatUtc(view[1], { seconds: false })}. Arrow keys pan, plus and minus zoom, Home shows everything.`;
+
+  const rangeOnly = rows.filter((r): r is LineRow => r.kind === "line" && r.noNominal === true && (r.notes?.length ?? 0) > 0);
+
+  return (
+    <Panel
+      title={title}
+      subtitle={formatDuration(view[1] - view[0])}
+      flush
+      className="viz-panel"
+      actions={
+        <>
+          {rangeOnly.length > 0 && (
+            <Popover label="Range only" tone="marginal" align="end" width={360}>
+              <div className="viz-notes">
+                {rangeOnly.map((r) => (
+                  <div key={r.id} className="viz-note">
+                    <div className="viz-note-title">{r.label}</div>
+                    <p>{r.notes!.join(" ")}</p>
+                  </div>
+                ))}
+              </div>
+            </Popover>
+          )}
+          {marked.length > 0 && (
+            <Popover label={`${marked.length} minima`} align="end" width={340}>
+              <ul className="viz-marks" aria-label="Instants marked on the timeline">
+                {marked.map(({ row, mark }) => (
+                  <li key={`${row.id}:${mark.world}`}>
+                    <button type="button" className="viz-mark" aria-label={`Move the clock to the ${mark.label} marker, ${mark.text}`} onClick={() => onTimeChange(mark.t_ms)}>
+                      <span className="viz-mark-head">
+                        <span className="lg-glyph" aria-hidden="true">
+                          {MARK_GLYPH[mark.world] ?? "●"}
+                        </span>
+                        <span>{mark.world}</span>
+                        <span className="grow" />
+                        <span className="num dim">{formatUtc(mark.t_ms, { seconds: false })}</span>
+                        <span className="num">{mark.value === null ? "—" : formatValue(mark.value, row.unit, row.decimals ?? 2)}</span>
+                      </span>
+                      <span className="viz-mark-text">{mark.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Popover>
+          )}
+          <div className="toolstrip">
+            <IconButton icon="plus" size="sm" label="Zoom in" onClick={() => zoom(1.5)} />
+            <IconButton icon="minus" size="sm" label="Zoom out" onClick={() => zoom(1 / 1.5)} />
+            <IconButton icon="reset" size="sm" label="Show whole mission" onClick={() => setView([extent[0], extent[1]])} />
+            <span className="toolstrip-sep" aria-hidden="true" />
+            <IconButton icon="expand" size="sm" label="Zoom to analysis range" onClick={() => setView([range.start_ms, range.end_ms])} />
+            <IconButton icon="ruler" size="sm" label="Set analysis range to view" onClick={() => onRangeChange({ start_ms: view[0], end_ms: view[1] })} />
+          </div>
+        </>
+      }
+    >
+      <div className="viz-stack">
+        <Canvas
+          className="timeline-canvas"
+          wrapStyle={{ height: totalH }}
+          canvasRef={canvasRef}
+          label={summary}
+          draw={draw}
+          onSize={setSize}
+          tabIndex={0}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={() => setHover(null)}
+          onKeyDown={onKey}
+          onDoubleClick={() => setView([extent[0], extent[1]])}
+        />
+        <ul className="legend" aria-label="Legend">
+          <li>
+            <i className="lg-bar solid" /> Best
+          </li>
+          {rows.some((r) => r.kind === "intervals" && r.optimistic) ? (
+            <li>
+              <i className="lg-bar stripe-above" /> Optimistic
+            </li>
+          ) : null}
+          {rows.some((r) => r.kind === "intervals" && r.pessimistic) ? (
+            <li>
+              <i className="lg-bar stripe-below" /> Pessimistic
+            </li>
+          ) : null}
+          <li>
+            <i className="lg-line" style={{ background: "var(--c-sun)" }} /> Cursor
+          </li>
+          {markedWorlds.map((w) => (
+            <li key={w}>
+              <span className="lg-glyph" aria-hidden="true">
+                {MARK_GLYPH[w] ?? "●"}
+              </span>{" "}
+              Min · {w}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Panel>
+  );
+}
