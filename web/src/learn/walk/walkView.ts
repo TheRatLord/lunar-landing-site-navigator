@@ -5,6 +5,7 @@ import type { SceneFrame, Shared } from "../scene/types";
 import { Astronaut } from "./astronaut";
 import type { Obstacle } from "./collide";
 import { FollowCamera } from "./followCamera";
+import { SolarPanel } from "./solarPanel";
 import { WalkInput } from "./walkInput";
 import { WalkSky } from "./walkSky";
 import { WalkTerrain } from "./walkTerrain";
@@ -19,6 +20,7 @@ export class WalkView {
   private readonly terrain = new WalkTerrain();
   private readonly sky: WalkSky;
   private readonly astronaut = new Astronaut();
+  private readonly panel = new SolarPanel();
   private readonly light = new DirectionalLight(0xffffff, 3.4);
   private readonly ambient = new AmbientLight(0xffffff, 0.05);
   private readonly bounce = new HemisphereLight(0x000000, 0x9a9a96, 0);
@@ -43,7 +45,7 @@ export class WalkView {
     cam.bottom = -SHADOW_HALF;
     cam.near = 1;
     cam.far = 2000;
-    this.scene.add(this.sky.group, this.terrain.group, this.astronaut.object, this.light, this.light.target, this.ambient, this.bounce);
+    this.scene.add(this.sky.group, this.terrain.group, this.astronaut.object, this.panel.object, this.light, this.light.target, this.ambient, this.bounce);
   }
 
   get camera() {
@@ -57,10 +59,11 @@ export class WalkView {
   update(f: SceneFrame): void {
     this.frame = f;
     this.terrain.setSite(f.site as RealSite);
+    this.panel.place(this.terrain);
     if (f.site.id !== this.siteId) {
       this.siteId = f.site.id;
       this.input.clear();
-      this.obstacles = this.terrain.rockObstacles();
+      this.obstacles = [...this.terrain.rockObstacles(), this.panel.obstacle];
       this.astronaut.reset();
       this.settle();
     }
@@ -72,6 +75,7 @@ export class WalkView {
     this.light.castShadow = sunlit;
     const earthshine = (0.02 + 0.06 * sky.earth.litFraction) * sky.earth.frac;
     this.ambient.intensity = sunlit ? 0.07 : (Math.PI / 1.6) * Math.max(0.012, earthshine);
+    this.panel.update(this.sunDir, sky.sunlight > 0.5);
     this.bounce.intensity = 0.9 * sky.sunlight * (0.25 + Math.max(0, Math.sin(sky.sun.el * RAD)));
     this.placeLight();
   }

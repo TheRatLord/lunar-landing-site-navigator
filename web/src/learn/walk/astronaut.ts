@@ -99,11 +99,11 @@ export class Astronaut {
     this.object.position.copy(this.position);
     this.object.rotation.y = -this.heading * RAD;
     if (this.kneeling) {
-      this.body.position.y = -0.38;
-      this.legL.rotation.x = -1.4;
-      this.legL.position.set(-0.14, 0.62, -0.2);
-      this.legR.rotation.x = 0;
-      this.legR.position.set(0.14, 0.42, 0);
+      this.body.position.y = -0.32;
+      this.legL.rotation.x = -0.25;
+      this.legL.position.set(-0.14, 0.72, -0.28);
+      this.legR.rotation.x = 1.45;
+      this.legR.position.set(0.14, 0.46, 0.3);
       this.armR.rotation.x = -1.1;
       this.armL.rotation.x = -0.6;
       return;

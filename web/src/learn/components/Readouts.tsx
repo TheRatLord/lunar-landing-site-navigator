@@ -67,12 +67,13 @@ function BatteryTile() {
 export function Readouts() {
   const note = useLearn((s) => s.note);
   const chips = chapterOf(useLearn((s) => s.chapter)).chips;
+  const walking = useLearn((s) => s.view === "walk");
   return (
     <div className="l-readouts" role="group" aria-label="Right now">
       <div className="l-tiles">
         {chips.includes("sun") && <SunTile />}
         {chips.includes("earth") && <EarthTile />}
-        {chips.includes("power") && <BatteryTile />}
+        {(chips.includes("power") || walking) && <BatteryTile />}
       </div>
       {note === "showing" && chips.includes("power") && (
         <div className="l-note" role="note">
