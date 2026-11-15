@@ -148,7 +148,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
       const r0 = box.getBoundingClientRect();
       const hero = box.closest(".home-hero");
       const obstacles: Rect[] = [];
-      hero?.querySelectorAll(".home-verdict > *, .home-figures, .home-finder, .home-actions, .globe-tools").forEach((el) => {
+      hero?.querySelectorAll(".home-plan, .home-finder, .home-sky-note, .globe-tools").forEach((el) => {
         const r = el.getBoundingClientRect();
         if (r.width > 0) obstacles.push([r.left - r0.left, r.top - r0.top, r.right - r0.left, r.bottom - r0.top]);
       });
