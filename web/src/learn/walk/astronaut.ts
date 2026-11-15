@@ -217,8 +217,8 @@ export class Astronaut {
     this.legR.position.set(0.14, 0.78, 0);
     this.legL.rotation.x = swing * 0.35 + this.airborne * 0.12;
     this.legR.rotation.x = -swing * 0.35 + this.airborne * 0.12;
-    if (this.kneeL) this.kneeL.rotation.x = Math.max(0, Math.cos(this.phase)) * this.stride * 0.38 + this.airborne * 0.32 + this.landing * 0.16;
-    if (this.kneeR) this.kneeR.rotation.x = Math.max(0, -Math.cos(this.phase)) * this.stride * 0.38 + this.airborne * 0.32 + this.landing * 0.16;
+    if (this.kneeL) this.kneeL.rotation.x = Math.max(0, Math.cos(this.phase)) * this.stride * 0.38 - this.airborne * 0.42 - this.landing * 0.16;
+    if (this.kneeR) this.kneeR.rotation.x = Math.max(0, -Math.cos(this.phase)) * this.stride * 0.38 - this.airborne * 0.42 - this.landing * 0.16;
     this.armL.rotation.x = -swing * 0.28 + this.airborne * 0.25;
     this.armR.rotation.x = swing * 0.28 + this.airborne * 0.25;
   }
