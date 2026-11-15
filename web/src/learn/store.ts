@@ -7,6 +7,7 @@ import { SITES, type SiteId } from "./sites";
 import type { WalkBody } from "./walk/walkView";
 import type { WalkPov } from "./walk/walkCamera";
 import type { PropId } from "./walk/facts";
+import { buildTimeline } from "./timeline";
 
 export type Landing = 0 | 7 | 14;
 export type ChapterKey = ChapterSlug;
@@ -27,13 +28,15 @@ export interface LearnState {
   view: ViewKind;
   follow: Follow;
   answers: Partial<Record<ChapterSlug, Answer>>;
-  interacted: boolean;
   termHome: Partial<Record<TermId, ChapterSlug>>;
   note: "never" | "showing" | "done";
   glFailed: boolean;
   /** Bumped whenever a site's real terrain finishes loading (see terrain.ts). */
   terrainRev: number;
   craterTerrain: CraterSource;
+  fast: boolean;
+  setFast(f: boolean): void;
+  celebrate: boolean;
   panel: boolean;
   setPanel(open: boolean): void;
   walkBody: WalkBody;
@@ -48,7 +51,6 @@ export interface LearnState {
   nudge(dt: number): void;
   togglePlay(): void;
   setPlaying(p: boolean): void;
-  setSpeed(s: number): void;
   setSite(id: SiteId): void;
   setLat(v: number): void;
   setLanding(o: Landing): void;
@@ -64,6 +66,20 @@ export const landingOf = (s: Pick<LearnState, "chapter" | "landingOffset">): num
 
 const LAST_KEY = "lunarnav.learn.last";
 
+const exploreSpeed = (view: ViewKind, fast: boolean): number => (view === "walk" ? 0.05 : 1.5) * (fast ? 10 : 1);
+
+function morning(siteId: SiteId, from: number, force: boolean): number {
+  const c = chapterOf("explore");
+  const tl = buildTimeline(SITES[siteId], 0, c.epochD, c.spanDays, null);
+  const lit = (t: number) => (tl.sun[Math.round(t / tl.stepD)] ?? 0) > 0.5;
+  if (!force && lit(from)) return from;
+  const rises = tl.events.filter((e) => e.kind === "sunrise");
+  const rise = rises.find((e) => e.t > from) ?? rises[0];
+  if (!rise) return from;
+  for (const dt of [2, 1, 0.5]) if (lit(rise.t + dt)) return rise.t + dt;
+  return rise.t + 0.25;
+}
+
 export const useLearn = create<LearnState>()((set, get) => ({
   chapter: "explore",
   t: 0,
@@ -75,19 +91,21 @@ export const useLearn = create<LearnState>()((set, get) => ({
   view: "space",
   follow: "sun",
   answers: {},
-  interacted: false,
   termHome: {},
   note: "never",
   glFailed: false,
   terrainRev: 0,
-  walkBody: "astronaut",
+  walkBody: "rover",
   walkPov: "third",
-  setWalkPov: (walkPov) => set({ walkPov, interacted: true }),
+  setWalkPov: (walkPov) => set({ walkPov }),
   walkEdge: false,
   walkHint: true,
   nearProp: null,
-  setWalkBody: (walkBody) => set({ walkBody, interacted: true }),
+  setWalkBody: (walkBody) => set({ walkBody }),
   craterTerrain: "real",
+  fast: false,
+  setFast: (fast) => set({ fast, speed: get().chapter === "explore" ? exploreSpeed(get().view, fast) : get().speed }),
+  celebrate: false,
   panel: true,
   setPanel: (panel) => set({ panel }),
 
@@ -100,49 +118,62 @@ export const useLearn = create<LearnState>()((set, get) => ({
         localStorage.setItem(LAST_KEY, slug);
       } catch {}
     }
+    const explore = slug === "explore";
     set({
       chapter: slug,
-      t: slug === "timing" ? landingT(0) - 0.5 : 0,
+      t: slug === "timing" ? landingT(0) - 0.5 : explore ? morning(c.defaultSite, 0, true) : 0,
       playing: !reducedMotion,
-      speed: c.speed,
+      speed: explore ? exploreSpeed(c.view, false) : c.speed,
+      fast: false,
       siteId: c.defaultSite,
-      lat: 0,
+      lat: slug === "pole" ? -45 : 0,
       landingOffset: 0,
       view: c.view,
       follow: c.follow,
-      interacted: false,
       termHome,
-      walkBody: "astronaut",
+      walkBody: explore ? "rover" : "astronaut",
+      walkPov: "third",
       walkEdge: false,
-      ...(slug === "explore" ? {} : { panel: true }),
+      nearProp: null,
+      panel: true,
     });
   },
   setT: (t) => {
     const span = chapterOf(get().chapter).spanDays;
-    set({ t: clamp(t, 0, span), interacted: true });
+    set({ t: clamp(t, 0, span) });
   },
   nudge: (dt) => get().setT(get().t + dt),
   togglePlay: () => {
     const s = get();
     const span = chapterOf(s.chapter).spanDays;
     const restart = !s.playing && s.t >= span - 1e-6;
-    set({ playing: !s.playing, t: restart ? 0 : s.t, interacted: true });
+    set({ playing: !s.playing, t: restart ? 0 : s.t });
   },
   setPlaying: (p) => set({ playing: p }),
-  setSpeed: (speed) => set({ speed, interacted: true }),
   setSite: (id) => {
     const s = get();
     let view = s.view;
     if (view === "crater" && id !== "rim" && id !== "floor") view = "ground";
     const follow: Follow = s.chapter === "earth" ? "earth" : s.follow === "free" ? chapterOf(s.chapter).follow : s.follow;
-    set({ siteId: SITES[id] ? id : "apollo11", view, follow, interacted: true, walkEdge: false });
+    const siteId = SITES[id] ? id : "apollo11";
+    const t = s.chapter === "explore" && view === "walk" ? morning(siteId, s.t, false) : s.t;
+    set({ siteId, view, follow, t, walkEdge: false, nearProp: null });
   },
-  setLat: (lat) => set({ lat, interacted: true }),
+  setLat: (lat) => set({ lat }),
   setLanding: (o) => {
     const t = landingT(o) - 0.5;
-    set({ landingOffset: o, t, interacted: true, playing: get().playing });
+    set({ landingOffset: o, t, playing: get().playing });
   },
-  setView: (view) => set({ view, interacted: true, follow: get().follow === "free" ? "sun" : get().follow }),
+  setView: (view) => {
+    const s = get();
+    const explore = s.chapter === "explore";
+    set({
+      view,
+      follow: s.follow === "free" ? "sun" : s.follow,
+      ...(explore ? { speed: exploreSpeed(view, s.fast) } : {}),
+      ...(explore && view === "walk" ? { t: morning(s.siteId, s.t, false) } : {}),
+    });
+  },
   setFollow: (follow) => set({ follow }),
   answer: (slug, i, correct) =>
     set((s) => ({ answers: { ...s.answers, [slug]: { picked: i, correct: s.answers[slug]?.correct || correct } } })),

@@ -10,7 +10,7 @@ const TURN = 110;
 const G_MOON = 1.62;
 const JUMP_V = 1.3;
 const BODY_R = 0.4;
-const HOME = new Vector3(0.76, 0, 0.49);
+const HOME = new Vector3(1.6, 0, 0.8);
 
 const suit = new MeshLambertMaterial({ color: 0xeeeeea });
 const dark = new MeshLambertMaterial({ color: 0x55575c });

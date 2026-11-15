@@ -36,10 +36,9 @@ interface Transition {
   half: number;
 }
 
-function insetRect(w: number, h: number, phone: boolean): { x: number; y: number; size: number } {
-  const size = Math.round(Math.max(110, Math.min(phone ? 0.36 * w : 0.3 * w, (phone ? 0.5 : 0.42) * h, 340)));
+function insetRect(w: number, h: number, phone: boolean, bottom: number): { x: number; y: number; size: number } {
+  const size = Math.round(Math.max(110, Math.min(phone ? 0.36 * w : 0.3 * w, (phone ? 0.5 : 0.42) * h - bottom / 2, 340)));
   const margin = phone ? 12 : 28;
-  const bottom = phone ? 12 : 150;
   return { x: w - margin - size, y: bottom, size };
 }
 
@@ -67,6 +66,8 @@ export class LearnScene {
   private w = 1;
   private h = 1;
   private safeLeft = 0;
+  private bottom = 12;
+  private afterCbs: (() => void)[] = [];
   private phone = false;
   private raf = 0;
   private lastNow = 0;
@@ -88,6 +89,7 @@ export class LearnScene {
   onWalkPov: (() => void) | null = null;
   onWalkEdge: ((atEdge: boolean) => void) | null = null;
   onWalkNear: ((id: PropId | null) => void) | null = null;
+  onWalkActive: (() => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement, opts: { pixelRatioCap: number }) {
     this.canvas = canvas;
@@ -143,7 +145,7 @@ export class LearnScene {
     this.insetTitle = new Label("", { px: 14, anchorY: 0 });
     this.insetLine = new Label("", { px: 13, anchorY: 0, color: "#ffd98a" });
     this.overlay.add(this.insetDisc, this.insetRing, this.insetTitle.sprite, this.insetLine.sprite);
-    if (this.w > 1) this.resize(this.w, this.h, this.safeLeft);
+    if (this.w > 1) this.resize(this.w, this.h, this.safeLeft, this.bottom);
   }
 
   private ensureCrater(): CraterView {
@@ -163,7 +165,10 @@ export class LearnScene {
   private ensureWalk(): WalkView {
     if (!this.walk) {
       this.walk = new WalkView(this.shared);
-      this.walk.input.onActive = this.requestRender;
+      this.walk.input.onActive = () => {
+        this.requestRender();
+        this.onWalkActive?.();
+      };
       this.walk.input.onSwitch = () => this.onWalkSwitch?.();
       this.walk.input.onPov = () => this.onWalkPov?.();
       this.walk.onEdge = (e) => this.onWalkEdge?.(e);
@@ -173,6 +178,25 @@ export class LearnScene {
       this.applyCamera(this.walk.camera);
     }
     return this.walk;
+  }
+
+  get walkReady(): boolean {
+    return this.walk !== null;
+  }
+
+  get currentView(): ViewKind {
+    return this.trans ? this.trans.to : this.view;
+  }
+
+  buildWalk(f: SceneFrame) {
+    const w = this.ensureWalk();
+    w.update(f);
+    this.renderer.compile(w.scene, w.camera);
+  }
+
+  afterRender(cb: () => void) {
+    this.afterCbs.push(cb);
+    this.requestRender();
   }
 
   setWalkPov(p: WalkPov) {
@@ -273,10 +297,11 @@ export class LearnScene {
     cam.updateProjectionMatrix();
   }
 
-  resize(w: number, h: number, safeLeft = 0) {
+  resize(w: number, h: number, safeLeft = 0, bottom = 12) {
     this.w = Math.max(1, Math.round(w));
     this.h = Math.max(1, Math.round(h));
     this.safeLeft = safeLeft;
+    this.bottom = bottom;
     this.phone = window.innerWidth < 760;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 700 ? 1.5 : this.pixelRatioCap));
     this.renderer.setSize(this.w, this.h, false);
@@ -294,7 +319,7 @@ export class LearnScene {
     this.overlayCam.top = this.h;
     this.overlayCam.bottom = 0;
     this.overlayCam.updateProjectionMatrix();
-    const r = insetRect(this.w, this.h, this.phone);
+    const r = insetRect(this.w, this.h, this.phone, this.bottom);
     const px = Math.round(r.size * this.renderer.getPixelRatio());
     this.insetRT.setSize(px, px);
     this.insetDisc.scale.setScalar(r.size);
@@ -309,7 +334,7 @@ export class LearnScene {
   }
 
   private placeCaption() {
-    const r = insetRect(this.w, this.h, this.phone);
+    const r = insetRect(this.w, this.h, this.phone, this.bottom);
     const cx = r.x + r.size / 2;
     const fitX = (l: Label) => Math.min(cx, this.w - 8 - l.widthPx / 2);
     this.insetTitle.fitPixels();
@@ -505,6 +530,11 @@ export class LearnScene {
       }
     }
     this.render();
+    if (this.afterCbs.length && !this.trans) {
+      const cbs = this.afterCbs;
+      this.afterCbs = [];
+      for (const cb of cbs) cb();
+    }
     if (more) this.requestRender();
   };
 
@@ -526,7 +556,7 @@ export class LearnScene {
       this.emitLook();
     }
     if (f.inset === "ground" && this.view !== "ground" && this.insetAlpha > 0.01) {
-      const size = insetRect(this.w, this.h, this.phone).size;
+      const size = insetRect(this.w, this.h, this.phone, this.bottom).size;
       this.ground.fitLabels(size * 1.5, this.ground.insetCamera);
       r.setRenderTarget(this.insetRT);
       r.render(this.ground.scene, this.ground.insetCamera);

@@ -9,7 +9,7 @@ const BACK = new Set(["KeyS", "ArrowDown"]);
 const LEFT = new Set(["KeyA", "ArrowLeft"]);
 const RIGHT = new Set(["KeyD", "ArrowRight"]);
 const HANDLED = new Set([...FORWARD, ...BACK, ...LEFT, ...RIGHT, "Space", "KeyE", "KeyL", "KeyV"]);
-const BLOCK = "input, textarea, select, [role=radio], [role=slider], [contenteditable=true]";
+const BLOCK = "input, textarea, select, [role=radio], [role=slider], [role=dialog], [contenteditable=true]";
 const PRESSABLE = "button, a, summary";
 
 export class WalkInput {
@@ -38,7 +38,6 @@ export class WalkInput {
     if (!this.enabled || !HANDLED.has(e.code) || e.ctrlKey || e.metaKey || e.altKey) return;
     const t = e.target as HTMLElement | null;
     if (t?.closest?.(BLOCK)) return;
-    if (e.code === "Space" && t?.closest?.(PRESSABLE)) return;
     e.preventDefault();
     if (e.repeat) return;
     if (e.code === "Space") this.jumpQueued = true;
@@ -51,6 +50,7 @@ export class WalkInput {
 
   private readonly onUp = (e: KeyboardEvent) => {
     this.down.delete(e.code);
+    if (this.enabled && e.code === "Space" && (e.target as HTMLElement | null)?.closest?.(PRESSABLE)) e.preventDefault();
   };
 
   readonly clear = () => {

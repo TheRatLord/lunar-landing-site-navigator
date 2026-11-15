@@ -27,6 +27,7 @@ import { heightAt, type GroundPatch, type RealSite } from "../terrain";
 import { detailHeight, lunarSoil, regolithAlbedo, regolithNormalMap, rockColorMap, rockGeometry, rockNormalMap } from "./surface";
 import { Label, glowSprite, rng, starField } from "./textures";
 import type { SceneFrame, Shared } from "./types";
+import { blueGhostLander } from "../walk/props/blueghost";
 
 const EYE = 1.7;
 const R_GROUND = 300;
@@ -47,6 +48,7 @@ const N_ROCK_SHAPES = 8;
 /** Albedo scale of the real ground so a sun-facing slope reads bright under the scene's light (Lambert divides by pi). */
 const REAL_ALBEDO = 1.6;
 const AZ_N = 720;
+const LANDER_M = 16;
 const SEGS = 180;
 
 interface Rock {
@@ -110,6 +112,7 @@ export class GroundView {
   private patch: GroundPatch | null = null;
   private detail0 = 0;
   private relief: [number, number] = [0, 0];
+  private readonly lander = blueGhostLander();
 
   look: Look = { yaw: 90, pitch: 10 };
   inset: Look = { yaw: 90, pitch: 10 };
@@ -124,6 +127,12 @@ export class GroundView {
     this.stars = starField(1200);
     s.add(this.stars);
     s.add(this.light, this.light.target, this.ambient);
+    this.lander.visible = false;
+    this.lander.traverse((o) => {
+      o.castShadow = true;
+      o.receiveShadow = true;
+    });
+    s.add(this.lander);
 
     const br = rng(9);
     this.bumps = Array.from({ length: 30 }, () => ({
@@ -588,6 +597,15 @@ export class GroundView {
       rk.shadow.visible = showShadow && !this.patch;
       rk.shadow.rotation.y = away + Math.PI;
       rk.shadow.scale.set(rk.size * 0.7 * shadowLen, 1, rk.size * 1.2);
+    }
+
+    this.lander.visible = f.landerAz !== null;
+    if (f.landerAz !== null) {
+      const v = dirFromAzEl(f.landerAz, 0);
+      const x = v[0] * LANDER_M;
+      const z = v[2] * LANDER_M;
+      this.lander.position.set(x, this.groundY(x, z), z);
+      this.lander.rotation.y = -f.landerAz * RAD;
     }
 
     const trailOn = f.trail === "earth";

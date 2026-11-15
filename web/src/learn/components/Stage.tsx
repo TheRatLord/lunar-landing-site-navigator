@@ -7,13 +7,12 @@ import { WalkHud } from "./walk/WalkHud";
 import { chapterOf, useLearn } from "../store";
 import { ensureTerrain, siteById } from "../terrain";
 import { sampleAt } from "../timeline";
-import { isPhoneLayout, prefersReducedMotion, useIsPhone } from "../../lib/media";
+import { isPhoneLayout, prefersReducedMotion } from "../../lib/media";
 import { Compass } from "./Compass";
 import { ShowPanel } from "./PanelBar";
 import { ArrowDownIcon, ArrowUpIcon, CrosshairIcon } from "./icons";
 import { SunPath } from "./SunPath";
 import { TruthNote } from "./TruthNote";
-import { WhereBadge } from "./WhereBadge";
 
 function sentence(): string {
   const s = useLearn.getState();
@@ -43,7 +42,7 @@ function GroundUi({ look, onLook }: { look: LookState; onLook: (az: number, el: 
   const hint = hintDone !== chapter;
   const wants = chapterOf(chapter).follow === "earth" ? "earth" : "sun";
   const h = glFailed ? (wants === "earth" ? sky.earth.az : sky.sun.az) : look.heading;
-  const below = sky.earth.el < -10;
+  const below = sky.earth.el < -10 && wants === "earth";
   const body = wants === "earth" ? sky.earth : sky.sun;
   const bodyUp = wants === "earth" ? sky.earth.visible : sky.sun.status !== "night" && sky.sun.status !== "behindHill";
   const overhead = !glFailed && follow !== "free" && bodyUp && body.el - body.radius > look.pitch + look.vfov / 2;
@@ -51,21 +50,21 @@ function GroundUi({ look, onLook }: { look: LookState; onLook: (az: number, el: 
     <>
       {below && (
         <p className="l-below">
-          <ArrowDownIcon size={18} /> Earth is below your feet, behind the Moon
+          <ArrowDownIcon size={18} /> Earth is behind the Moon
         </p>
       )}
       {overhead && (
         <p className="l-overhead">
-          <ArrowUpIcon size={18} /> {wants === "earth" ? "Earth" : "The Sun"} is high overhead, above this view
+          <ArrowUpIcon size={18} /> {wants === "earth" ? "Earth" : "Sun"} overhead
         </p>
       )}
       <div className="l-look">
-        {follow === "free" ? (
+        {follow === "free" && bodyUp ? (
           <button type="button" className="l-pill" onClick={() => useLearn.getState().setFollow(wants)}>
             <CrosshairIcon size={18} /> {wants === "earth" ? "Follow Earth" : "Follow the Sun"}
           </button>
         ) : (
-          hint && <span className="l-hint">Drag to look around</span>
+          hint && follow !== "free" && <span className="l-hint">Drag to look around</span>
         )}
       </div>
       <Compass heading={h} fov={glFailed ? 60 : look.fov} sky={sky} onLook={onLook} />
@@ -84,23 +83,34 @@ export function Stage() {
   const live = useRef<HTMLParagraphElement>(null);
   const sceneRef = useRef<LearnScene | null>(null);
   const [look, setLook] = useState<LookState>({ heading: 0, fov: 60, pitch: 0, vfov: 60 });
-  const { view, chapter, siteId, lat, glFailed, craterTerrain, panel } = useLearn(
+  const { view, chapter, siteId, glFailed, craterTerrain, panel } = useLearn(
     useShallow((s) => ({
       view: s.view,
       chapter: s.chapter,
       siteId: s.siteId,
-      lat: s.lat,
       glFailed: s.glFailed,
       craterTerrain: s.craterTerrain,
       panel: s.panel,
     })),
   );
-  useLearn((s) => s.terrainRev);
-  const terrain = siteById(siteId).terrain;
   useEffect(() => ensureTerrain(siteId), [siteId]);
-  const phone = useIsPhone();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let stop = () => {};
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        stop = mount() ?? stop;
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      stop();
+    };
+  }, []);
+
+  function mount(): (() => void) | undefined {
     const el = host.current;
     if (!el) return;
     const canvas = document.createElement("canvas");
@@ -114,6 +124,7 @@ export function Stage() {
     } catch {
       canvas.remove();
       useLearn.setState({ glFailed: true });
+      setLoading(false);
       return;
     }
     sceneRef.current = scene;
@@ -129,28 +140,68 @@ export function Stage() {
     };
     scene.onWalkEdge = (walkEdge) => useLearn.setState({ walkEdge });
     scene.onWalkNear = (nearProp) => useLearn.setState({ nearProp });
+    scene.onWalkActive = () => {
+      if (useLearn.getState().walkHint) useLearn.setState({ walkHint: false });
+    };
     scene.onUserLook = () => {
       if (useLearn.getState().follow !== "free") useLearn.getState().setFollow("free");
     };
+    const main = el.closest<HTMLElement>(".l-main");
+    let ro: ResizeObserver | null = null;
     const layout = () => {
       const r = el.getBoundingClientRect();
+      const bar = main?.querySelector(".l-dock") ?? main?.querySelector(".l-timebar");
+      if (bar) ro?.observe(bar);
+      const above = Math.round(Math.max(0, bar ? r.bottom - bar.getBoundingClientRect().top : 0) + 12);
+      main?.style.setProperty("--l-above", `${above}px`);
       const safe = parseFloat(getComputedStyle(el).getPropertyValue("--l-safe"));
-      scene.resize(r.width, r.height, isPhoneLayout() || !useLearn.getState().panel || !Number.isFinite(safe) ? 0 : safe);
+      scene.resize(r.width, r.height, isPhoneLayout() || !useLearn.getState().panel || !Number.isFinite(safe) ? 0 : safe, above);
     };
-    const ro = new ResizeObserver(layout);
+    ro = new ResizeObserver(layout);
     ro.observe(el);
     layout();
+    let building = false;
+    let alive = true;
+    let shown = "";
+    const later = (fn: () => void) => requestAnimationFrame(() => requestAnimationFrame(() => window.setTimeout(() => alive && fn(), 0)));
     const push = () => {
       const s = useLearn.getState();
-      scene.update(frameFrom(s, prefersReducedMotion()));
+      const f = frameFrom(s, prefersReducedMotion());
+      if (f.view === "walk" && !scene.walkReady) {
+        if (!building) {
+          building = true;
+          setLoading(true);
+          later(() => {
+            scene.buildWalk(frameFrom(useLearn.getState(), prefersReducedMotion()));
+            building = false;
+            push();
+            scene.afterRender(() => alive && setLoading(false));
+          });
+        }
+        scene.update({ ...f, view: scene.currentView === "walk" ? "space" : scene.currentView });
+      } else if (f.view === "walk" && scene.currentView === "walk" && f.site.id !== shown) {
+        if (!building) {
+          building = true;
+          setLoading(true);
+          later(() => {
+            building = false;
+            shown = useLearn.getState().siteId;
+            push();
+            scene.afterRender(() => alive && setLoading(false));
+          });
+        }
+        return;
+      } else scene.update(f);
+      shown = f.site.id;
       scene.setWalkBody(s.walkBody);
       scene.setWalkPov(s.walkPov);
       canvas.style.touchAction = s.view === "ground" ? "pan-y" : "none";
     };
     push();
+    if (!building) scene.afterRender(() => alive && setLoading(false));
     const unsub = useLearn.subscribe(push);
     const unsubPanel = useLearn.subscribe((s, p) => {
-      if (s.panel !== p.panel || s.chapter !== p.chapter) layout();
+      if (s.panel !== p.panel || s.chapter !== p.chapter || s.view !== p.view) layout();
     });
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     mq.addEventListener("change", push);
@@ -167,16 +218,17 @@ export function Stage() {
     };
     const iv = window.setInterval(describeTick, 1000);
     return () => {
+      alive = false;
       window.clearInterval(iv);
       unsub();
       unsubPanel();
       mq.removeEventListener("change", push);
-      ro.disconnect();
+      ro?.disconnect();
       scene.dispose();
       canvas.remove();
       sceneRef.current = null;
     };
-  }, []);
+  }
 
   useEffect(() => {
     let raf = 0;
@@ -223,24 +275,27 @@ export function Stage() {
       <div className="l-canvas-host" ref={host}>
         {glFailed && (
           <div className="l-fallback">
-            <p>Your device can't show the 3D view, but everything below still works.</p>
+            <p>No 3D on this device. The lessons still work.</p>
           </div>
         )}
       </div>
       <div className="l-stage-ui">
         <div className="l-stage-top">
           {!panel && <ShowPanel />}
-          <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} terrain={terrain} />
-          {chapter === "pole" && !phone && <WhereBadge lat={lat} />}
-          {chapter === "pole" && !phone && <PoleDiagram />}
+          <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} />
         </div>
-        {chapter === "pole" && phone && (
-          <div className="l-where-phone">
+        {chapter === "pole" && (
+          <div className="l-pole">
             <PoleDiagram />
           </div>
         )}
+        {loading && (
+          <p className="l-loading" role="status">
+            <span className="l-loading-dot" aria-hidden /> {view === "walk" ? `Landing at ${siteById(siteId).name}…` : "Loading the Moon…"}
+          </p>
+        )}
         {view === "ground" && <GroundUi look={look} onLook={onLook} />}
-        {view === "walk" && <WalkHud onStick={(x, y) => sceneRef.current?.setWalkStick(x, y)} />}
+        {view === "walk" && !loading && <WalkHud onStick={(x, y) => sceneRef.current?.setWalkStick(x, y)} />}
       </div>
       <p className="sr-only" ref={live} />
     </div>

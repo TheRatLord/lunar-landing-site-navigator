@@ -1,30 +1,33 @@
 import { Link } from "react-router-dom";
-import { CHAPTERS, STORY, learnPath } from "../chapters";
+import { STORY, learnPath } from "../chapters";
 import { useLearn, type ChapterKey } from "../store";
-import { CheckIcon } from "./icons";
 
 export function LessonNav({ current }: { current: ChapterKey | null }) {
   const answers = useLearn((s) => s.answers);
   return (
-    <nav className="l-dots" aria-label="Explore and lessons">
-      {CHAPTERS.map((c) => {
-        const done = answers[c.slug]?.correct;
-        const label =
-          c.slug === "explore" ? "Explore" : `Lesson ${c.n} of ${STORY.length}: ${c.short}${done ? ", answered" : ""}`;
-        const here = current === c.slug;
+    <nav className="l-lessons-nav" aria-label="Lessons">
+      <span className="l-lessons-label" aria-hidden>
+        Lessons
+      </span>
+      <ol>
+        {STORY.map((c) => {
+          const done = answers[c.slug]?.correct;
+          const here = current === c.slug;
           return (
-          <Link
-            key={c.slug}
-            to={learnPath(c.slug)}
-            className={`l-dot ${here ? "is-here" : ""} ${done ? "is-done" : ""} ${c.slug === "explore" ? "is-explore" : ""}`}
-            aria-label={label}
-            aria-current={here ? "step" : undefined}
-            title={c.short}
-          >
-            <span className="l-dot-mark">{done ? <CheckIcon size={12} /> : null}</span>
-          </Link>
-        );
-      })}
+            <li key={c.slug}>
+              <Link
+                to={learnPath(c.slug)}
+                className={`l-lesson-pill ${here ? "is-here" : ""} ${done ? "is-done" : ""}`}
+                aria-label={`Lesson ${c.n}: ${c.short}${done ? ", done" : ""}`}
+                aria-current={here ? "step" : undefined}
+                title={c.short}
+              >
+                {c.n}
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
 }

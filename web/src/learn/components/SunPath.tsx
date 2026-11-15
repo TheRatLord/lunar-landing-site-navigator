@@ -57,7 +57,7 @@ export function SunPath({ lat, d, sky }: { lat: number; d: number; sky: SkyState
         </text>
         {up && <circle cx={sx} cy={sy} r={6} className="l-sp-sun" />}
       </svg>
-      <figcaption>The Sun's path, seen from the side</figcaption>
+      <figcaption>Sun's path</figcaption>
     </figure>
   );
 }

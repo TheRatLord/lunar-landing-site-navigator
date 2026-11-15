@@ -12,8 +12,8 @@ const TURN = 40;
 const HALF_TRACK = 0.95;
 const HALF_BASE = 1.25;
 const WHEEL_R = 0.42;
-const HOME = new Vector3(-0.4, 0, 1.55);
-const HOME_HEADING = 340;
+export const ROVER_HOME = new Vector3(-0.6, 0, 1.2);
+export const ROVER_HEADING = 310;
 
 const white = new MeshLambertMaterial({ color: 0xdedfe2 });
 const grey = new MeshLambertMaterial({ color: 0x6b6e75 });
@@ -30,7 +30,7 @@ function box(w: number, h: number, d: number, mat: MeshLambertMaterial | MeshPho
 export class Rover {
   readonly object = new Group();
   readonly position = new Vector3();
-  heading = HOME_HEADING;
+  heading = ROVER_HEADING;
   atEdge = false;
   private readonly chassis = new Group();
   private readonly wheels: Mesh[] = [];
@@ -81,8 +81,8 @@ export class Rover {
   }
 
   reset(): void {
-    this.position.copy(HOME);
-    this.heading = HOME_HEADING;
+    this.position.copy(ROVER_HOME);
+    this.heading = ROVER_HEADING;
     this.speed = 0;
     this.atEdge = false;
   }
@@ -107,7 +107,8 @@ export class Rover {
     let x = this.position.x + Math.sin(this.heading * RAD) * this.speed * dt;
     let z = this.position.z - Math.cos(this.heading * RAD) * this.speed * dt;
     const [px, pz] = pushOut(x, z, 1.5, obs);
-    if (px !== x || pz !== z) this.speed *= 0.5;
+    const into = ((px - x) * Math.sin(this.heading * RAD) - (pz - z) * Math.cos(this.heading * RAD)) * Math.sign(this.speed);
+    if (into < -1e-4) this.speed *= 0.5;
     let edge: boolean;
     [x, z, edge] = clampRadius(px, pz, WALK_RADIUS_M);
     this.atEdge = edge;

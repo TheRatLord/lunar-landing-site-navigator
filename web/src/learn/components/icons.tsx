@@ -127,24 +127,6 @@ export function CheckIcon({ size, ...p }: P) {
   );
 }
 
-export function SunriseIcon({ size, ...p }: P) {
-  return (
-    <svg {...base(size)} {...p}>
-      <path d="M7 17a5 5 0 0 1 10 0" fill="currentColor" fillOpacity="0.9" />
-      <path d="M3 17h18M12 3.5v5M9.5 6 12 3.5 14.5 6" />
-    </svg>
-  );
-}
-
-export function SunsetIcon({ size, ...p }: P) {
-  return (
-    <svg {...base(size)} {...p}>
-      <path d="M7 17a5 5 0 0 1 10 0" fill="currentColor" fillOpacity="0.4" />
-      <path d="M3 17h18M12 3.5v5M9.5 6 12 8.5 14.5 6" />
-    </svg>
-  );
-}
-
 export function LanderIcon({ size, ...p }: P) {
   return (
     <svg {...base(size)} {...p}>

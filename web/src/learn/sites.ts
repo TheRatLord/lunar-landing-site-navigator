@@ -7,9 +7,7 @@ export interface Site extends Place {
   id: SiteId;
   catalogId: string;
   name: string;
-  short: string;
   where: string;
-  blurb: string;
 }
 
 type RealId = Exclude<SiteId, "custom">;
@@ -30,9 +28,7 @@ export const SITES: Record<SiteId, Site> = {
     id: "apollo11",
     catalogId: "apollo-11",
     name: "Apollo 11",
-    short: "Near the equator",
     where: "at the Apollo 11 landing site, near the Moon's equator",
-    blurb: "Where people first walked on the Moon, in 1969.",
     lat: 0.67416,
     lon: 23.47314,
     horizon: realHorizon("apollo11"),
@@ -41,9 +37,7 @@ export const SITES: Record<SiteId, Site> = {
     id: "blueghost",
     catalogId: "blue-ghost-m1",
     name: "Blue Ghost",
-    short: "Sea of Crises",
     where: "at Blue Ghost's landing site in the Sea of Crises",
-    blurb: "A robot lander that worked for two weeks in 2025.",
     lat: 18.562,
     lon: 61.81,
     horizon: realHorizon("blueghost"),
@@ -52,9 +46,7 @@ export const SITES: Record<SiteId, Site> = {
     id: "rim",
     catalogId: "poi-glaser-s",
     name: "Shackleton rim",
-    short: "South pole, crater edge",
     where: "on Shackleton crater's rim, near the Moon's south pole",
-    blurb: "A high crater edge where the Sun almost never sets.",
     lat: -89.687,
     lon: -162.81,
     horizon: realHorizon("rim"),
@@ -63,9 +55,7 @@ export const SITES: Record<SiteId, Site> = {
     id: "floor",
     catalogId: "gaz-shackleton",
     name: "Shackleton floor",
-    short: "South pole, inside the crater",
     where: "on the floor of Shackleton crater, at the Moon's south pole",
-    blurb: "A deep crater floor that has been dark for billions of years.",
     lat: -89.67,
     lon: 129.78,
     horizon: realHorizon("floor"),
@@ -74,9 +64,7 @@ export const SITES: Record<SiteId, Site> = {
     id: "change4",
     catalogId: "change-4",
     name: "Chang'e 4",
-    short: "Far side",
     where: "at Chang'e 4's landing site on the far side of the Moon",
-    blurb: "The first landing on the far side, in 2019.",
     lat: -45.456,
     lon: 177.589,
     horizon: realHorizon("change4"),
@@ -85,9 +73,7 @@ export const SITES: Record<SiteId, Site> = {
     id: "custom",
     catalogId: "",
     name: "Flat ground",
-    short: "Walking south",
     where: "on flat ground",
-    blurb: "A pretend flat spot, so only the tilt matters.",
     lat: 0,
     lon: 0,
     horizon: () => 0,

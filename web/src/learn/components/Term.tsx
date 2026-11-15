@@ -25,7 +25,7 @@ export function Term({ id, children }: { id: TermId; children: ReactNode }) {
     const r = el.getBoundingClientRect();
     const half = Math.min(150, window.innerWidth / 2 - 16);
     const x = clamp(r.left + r.width / 2, 16 + half, window.innerWidth - 16 - half);
-    const above = r.bottom + 130 > window.innerHeight;
+    const above = r.top > 200 || r.bottom + 130 > window.innerHeight;
     setPos({ x, y: above ? r.top - 8 : r.bottom + 8, above });
   };
   const hide = () => {

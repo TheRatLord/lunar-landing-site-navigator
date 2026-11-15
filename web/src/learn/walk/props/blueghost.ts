@@ -2,7 +2,7 @@ import { CylinderGeometry, Group } from "three";
 import type { PropSpec } from "./index";
 import { box, cells, darkGrey, foil, legs, mesh, silver } from "./parts";
 
-function lander(): Group {
+export function blueGhostLander(): Group {
   const g = new Group();
   const body = mesh(new CylinderGeometry(1.5, 1.6, 1.4, 6), foil, 0, 1.45, 0);
   g.add(body);
@@ -21,5 +21,5 @@ function lander(): Group {
 }
 
 export function blueghost(): PropSpec[] {
-  return [{ id: "blueghost-lander", object: lander(), x: -10, z: -6, r: 2.0 }];
+  return [{ id: "blueghost-lander", object: blueGhostLander(), x: -10, z: -6, r: 2.0 }];
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ChapterSlug, QuizCheck } from "../chapters";
 import { useLearn } from "../store";
 import { CheckIcon } from "./icons";
@@ -7,6 +7,7 @@ export function Check({ slug, check }: { slug: ChapterSlug; check: QuizCheck }) 
   const saved = useLearn((s) => s.answers[slug]);
   const answer = useLearn((s) => s.answer);
   const [picked, setPicked] = useState<number | null>(saved?.picked ?? null);
+  const fb = useRef<HTMLParagraphElement>(null);
   const right = picked === check.correct;
   return (
     <section className="l-check" aria-labelledby={`q-${slug}`}>
@@ -25,6 +26,7 @@ export function Check({ slug, check }: { slug: ChapterSlug; check: QuizCheck }) 
               onClick={() => {
                 setPicked(i);
                 answer(slug, i, i === check.correct);
+                requestAnimationFrame(() => fb.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
               }}
             >
               <span className="l-opt-mark" aria-hidden>
@@ -35,15 +37,13 @@ export function Check({ slug, check }: { slug: ChapterSlug; check: QuizCheck }) 
           );
         })}
       </div>
-      <p className={`l-check-fb ${picked === null ? "" : right ? "right" : "wrong"}`} aria-live="polite">
+      <p ref={fb} className={`l-check-fb ${picked === null ? "" : right ? "right" : "wrong"}`} aria-live="polite">
         {picked === null ? null : right ? (
           <>
             <CheckIcon size={18} /> <strong>Yes!</strong> {check.explain}
           </>
         ) : (
-          <>
-            <strong>Not quite.</strong> {check.hint} Try again.
-          </>
+          check.hint
         )}
       </p>
     </section>

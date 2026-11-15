@@ -4,83 +4,69 @@ import { chapterOf, useLearn } from "../store";
 import { powerWord } from "../timeline";
 import { BatteryIcon, CloseIcon, BehindHillIcon, EclipseIcon, GlobeIcon, NightIcon, PeekIcon, SunIcon } from "./icons";
 
-function Tile({ tone, on, icon, label, says }: { tone: string; on: boolean; icon: ReactNode; label: string; says: string }) {
+function Chip({ tone, on, icon, label }: { tone: string; on: boolean; icon: ReactNode; label: string }) {
   return (
-    <div className={`l-tile tone-${tone} ${on ? "is-on" : "is-off"}`} role="img" aria-label={says} title={says}>
-      <span className="l-tile-icon">{icon}</span>
-      <span className="l-tile-label" aria-hidden>
-        {label}
-      </span>
-    </div>
+    <span className={`l-chip tone-${tone} ${on ? "is-on" : "is-off"}`}>
+      {icon}
+      {label}
+    </span>
   );
 }
 
-function SunTile() {
+function SunChip() {
   const { sky, site } = useLive();
-  const wall = site.id === "floor" ? "the crater wall" : "a hill";
   switch (sky.sun.status) {
     case "up":
-      return <Tile tone="sun" on icon={<SunIcon size={26} />} label="Sun" says="The Sun is up" />;
+      return <Chip tone="sun" on icon={<SunIcon size={16} />} label="Sun up" />;
     case "peeking":
-      return <Tile tone="sun" on icon={<PeekIcon size={26} />} label="Sun" says="The Sun is just peeking over the horizon" />;
+      return <Chip tone="sun" on icon={<PeekIcon size={16} />} label="Sunrise" />;
     case "eclipse":
-      return <Tile tone="eclipse" on icon={<EclipseIcon size={26} />} label="Eclipse" says="Eclipse: Earth is blocking the Sun" />;
+      return <Chip tone="eclipse" on icon={<EclipseIcon size={16} />} label="Eclipse" />;
     case "behindHill":
-      return <Tile tone="sun" on={false} icon={<BehindHillIcon size={26} />} label="Sun" says={`The Sun is hidden behind ${wall}`} />;
+      return <Chip tone="sun" on={false} icon={<BehindHillIcon size={16} />} label={site.id === "floor" ? "Behind wall" : "Behind hill"} />;
     default:
-      return <Tile tone="sun" on={false} icon={<NightIcon size={26} />} label="Sun" says="Night: the Sun is down" />;
+      return <Chip tone="sun" on={false} icon={<NightIcon size={16} />} label="Night" />;
   }
 }
 
-function EarthTile() {
+function EarthChip() {
   const { sky } = useLive();
   return sky.earth.visible ? (
-    <Tile tone="earth" on icon={<GlobeIcon size={26} />} label="Earth" says="Earth is in the sky, so you can call home" />
+    <Chip tone="earth" on icon={<GlobeIcon size={16} />} label="Earth in sky" />
   ) : (
-    <Tile tone="earth" on={false} icon={<GlobeIcon size={26} hollow />} label="Earth" says="Earth is out of sight, so no direct calls" />
+    <Chip tone="earth" on={false} icon={<GlobeIcon size={16} hollow />} label="No Earth" />
   );
 }
 
-function BatteryTile() {
+function Battery() {
   const { sky, battery } = useLive();
   const landed = !Number.isNaN(battery);
   const seg = !landed || battery <= 0 ? 0 : Math.ceil(battery * 5 - 1e-6);
-  const charging = landed && sky.sunlight > 0.05;
+  const charging = landed && sky.sunlight > 0.05 && battery < 1;
   const tone = !landed ? "dim" : seg === 0 ? "fail" : seg <= 1 ? "warn" : "power";
-  const says = landed ? `Battery: ${powerWord(battery).toLowerCase()}${charging ? ", charging in the sunlight" : ", not charging"}` : "Not landed yet";
+  const word = !landed ? "Not landed yet" : battery <= 0 ? "Empty" : `${powerWord(battery)}${charging ? ", charging" : ""}`;
   return (
-    <Tile
-      tone={tone}
-      on={landed}
-      icon={
-        <span className="l-batt">
-          <BatteryIcon segments={seg} size={30} />
-          {charging && <span className="l-batt-bolt" aria-hidden />}
-        </span>
-      }
-      label="Battery"
-      says={says}
-    />
+    <div className={`l-battery tone-${tone}`} role="img" aria-label={`Battery: ${word}`}>
+      <span className="l-battery-label">Battery</span>
+      <BatteryIcon segments={seg} size={88} height={70} />
+      <span className="l-battery-word">{word}</span>
+    </div>
   );
 }
 
 export function Readouts() {
   const note = useLearn((s) => s.note);
   const chips = chapterOf(useLearn((s) => s.chapter)).chips;
-  const walking = useLearn((s) => s.view === "walk");
   return (
     <div className="l-readouts" role="group" aria-label="Right now">
-      <div className="l-tiles">
-        {chips.includes("sun") && <SunTile />}
-        {chips.includes("earth") && <EarthTile />}
-        {(chips.includes("power") || walking) && <BatteryTile />}
+      <div className="l-chips">
+        {chips.includes("sun") && <SunChip />}
+        {chips.includes("earth") && <EarthChip />}
       </div>
+      {chips.includes("power") && <Battery />}
       {note === "showing" && chips.includes("power") && (
         <div className="l-note" role="note">
-          <p>
-            With no sunlight, a lander gets too cold and runs out of power. India's Chandrayaan-3 never woke up after its first
-            night on the Moon.
-          </p>
+          <p>No sun, no power. India's Chandrayaan-3 never woke up after its first night.</p>
           <button type="button" className="l-note-close" aria-label="Close note" onClick={() => useLearn.setState({ note: "done" })}>
             <CloseIcon size={18} />
           </button>

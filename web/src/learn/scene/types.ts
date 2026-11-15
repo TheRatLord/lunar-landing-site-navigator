@@ -19,6 +19,7 @@ export interface SceneFrame {
   chapter: ChapterKey;
   epochD: number;
   spanDays: number;
+  landerAz: number | null;
 }
 
 export interface Shared {

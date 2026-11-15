@@ -18,12 +18,9 @@ function Latitude() {
   const v = -lat;
   return (
     <div className="l-walk">
-      <label htmlFor="l-walk" className="l-control-label">
-        How far south you are
-      </label>
       <input
-        id="l-walk"
         type="range"
+        aria-label="How far south you are"
         className="l-range"
         min={0}
         max={89.5}
@@ -111,8 +108,8 @@ export function ChapterControl({ kind }: { kind: ControlKind }) {
         label="Which spot"
         value={siteId === "floor" ? "floor" : "rim"}
         options={[
-          { value: "rim", label: "On the rim" },
-          { value: "floor", label: "On the crater floor" },
+          { value: "rim", label: "Rim" },
+          { value: "floor", label: "Floor" },
         ]}
         onChange={(v) => setSite(v === "floor" ? "floor" : "rim")}
       />

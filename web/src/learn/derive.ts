@@ -16,12 +16,14 @@ export function frameFrom(s: LearnState, reducedMotion: boolean): SceneFrame {
   const site = siteOf(s);
   const d = c.epochD + s.t;
   const lat = latArg(s);
+  const landing = landingOf(s);
+  const sky = skyAt(site, d, lat);
   return {
     view: s.view,
     d,
     site,
     lat,
-    sky: skyAt(site, d, lat),
+    sky,
     space: spaceAt(d),
     inset: c.inset,
     trail: c.trail,
@@ -30,6 +32,7 @@ export function frameFrom(s: LearnState, reducedMotion: boolean): SceneFrame {
     chapter: s.chapter,
     epochD: c.epochD,
     spanDays: c.spanDays,
+    landerAz: landing !== null && s.t >= landing ? sky.sun.az - 22 : null,
   };
 }
 

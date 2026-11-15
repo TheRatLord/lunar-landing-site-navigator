@@ -11,11 +11,10 @@ export function FactCard() {
           <h2 id="l-fact-title" className="l-fact-title">
             {f.title}
           </h2>
-          <p className="l-fact-body">{f.body}</p>
-          <p className="l-fact-source">
-            Source:{" "}
-            <a href={f.source.url} target="_blank" rel="noreferrer">
-              {f.source.title}
+          <p className="l-fact-body">
+            {f.body}{" "}
+            <a className="l-fact-source" href={f.source} target="_blank" rel="noreferrer" aria-label="Source (opens in a new tab)">
+              Source ↗
             </a>
           </p>
         </article>

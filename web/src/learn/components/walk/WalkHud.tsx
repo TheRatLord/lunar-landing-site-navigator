@@ -1,17 +1,23 @@
 import type { PointerEvent } from "react";
 import { useLearn } from "../../store";
-import { CloseIcon } from "../icons";
+import { useIsTouch } from "../../touch";
 import { FactCard } from "./FactCard";
+
+const PAD = [
+  { label: "Turn left", x: -1, y: 0, glyph: "◀", cls: "is-left" },
+  { label: "Forward", x: 0, y: 1, glyph: "▲", cls: "is-up" },
+  { label: "Back", x: 0, y: -1, glyph: "▼", cls: "is-down" },
+  { label: "Turn right", x: 1, y: 0, glyph: "▶", cls: "is-right" },
+];
 
 export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }) {
   const body = useLearn((s) => s.walkBody);
-  const chapter = useLearn((s) => s.chapter);
   const edge = useLearn((s) => s.walkEdge);
   const hint = useLearn((s) => s.walkHint);
   const setBody = useLearn((s) => s.setWalkBody);
   const pov = useLearn((s) => s.walkPov);
   const setPov = useLearn((s) => s.setWalkPov);
-  const other = body === "rover" ? "astronaut" : "rover";
+  const touch = useIsTouch();
   const start = (e: PointerEvent<HTMLButtonElement>, x: number, y: number) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     onStick(x, y);
@@ -21,35 +27,42 @@ export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }
     <div className="l-walk-hud">
       {pov === "first" && body === "astronaut" && <div className="l-walk-visor" aria-hidden="true" />}
       {hint && (
-        <div className="l-walk-hint" role="note">
-          <p>
-            <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or arrows to move · drag to look around · <kbd>Space</kbd> to jump ·{" "}
-            <kbd>E</kbd> to switch · <kbd>V</kbd> to change view · <kbd>K</kbd> to play time
-          </p>
-          <button
-            type="button"
-            className="l-note-close"
-            aria-label="Hide the controls"
-            onClick={() => useLearn.setState({ walkHint: false })}
-          >
-            <CloseIcon size={16} />
-          </button>
-        </div>
+        <p className="l-walk-hint" role="note">
+          {touch ? (
+            <>Drag to look · ▲ to {body === "rover" ? "drive" : "walk"}</>
+          ) : (
+            <>
+              <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> {body === "rover" ? "drive" : "walk"} · drag look · <kbd>E</kbd> switch
+            </>
+          )}
+        </p>
       )}
       <FactCard />
-      {edge && <p className="l-walk-edge">This is as far as the map goes. Turn back to explore more.</p>}
+      {edge && <p className="l-walk-edge">Edge of the map. Turn back.</p>}
+      {touch && (
+        <div className="l-walk-pad" role="group" aria-label="Move">
+          {PAD.map((b) => (
+            <button
+              key={b.cls}
+              type="button"
+              className={b.cls}
+              aria-label={b.label}
+              onPointerDown={(e) => start(e, b.x, b.y)}
+              onPointerUp={stop}
+              onPointerCancel={stop}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              {b.glyph}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="l-walk-actions">
-        {chapter === "explore" && <div className="l-walk-drive" role="group" aria-label="Movement controls">
-          <button type="button" aria-label="Turn left" onPointerDown={(e) => start(e, -1, 0)} onPointerUp={stop} onPointerCancel={stop}>A ◀</button>
-          <button type="button" aria-label="Move forward" onPointerDown={(e) => start(e, 0, 1)} onPointerUp={stop} onPointerCancel={stop}>W ▲</button>
-          <button type="button" aria-label="Move backward" onPointerDown={(e) => start(e, 0, -1)} onPointerUp={stop} onPointerCancel={stop}>S ▼</button>
-          <button type="button" aria-label="Turn right" onPointerDown={(e) => start(e, 1, 0)} onPointerUp={stop} onPointerCancel={stop}>D ▶</button>
-        </div>}
-        <button type="button" className="l-btn l-walk-pov" aria-pressed={pov === "first"} onClick={() => setPov(pov === "first" ? "third" : "first")}>
-          {pov === "first" ? "Third person view" : body === "rover" ? "Driver's seat view" : "Through the visor"}
+        <button type="button" className="l-btn l-walk-pov" onClick={() => setPov(pov === "first" ? "third" : "first")}>
+          {pov === "first" ? "Outside" : "Inside"}
         </button>
-        <button type="button" className="l-btn l-btn-primary l-walk-switch" onClick={() => setBody(other)}>
-          {body === "rover" ? "Switch to the astronaut" : "Switch to the rover"}
+        <button type="button" className="l-btn l-btn-primary l-walk-switch" onClick={() => setBody(body === "rover" ? "astronaut" : "rover")}>
+          {body === "rover" ? "Be the astronaut" : "Drive the rover"}
         </button>
       </div>
     </div>

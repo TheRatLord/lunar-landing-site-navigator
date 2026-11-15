@@ -7,8 +7,7 @@ import type { Obstacle } from "./collide";
 import type { PropId } from "./facts";
 import { WalkCamera, type WalkPov } from "./walkCamera";
 import { PropSet } from "./props/propSet";
-import { Rover } from "./rover";
-import { SolarPanel } from "./solarPanel";
+import { ROVER_HEADING, ROVER_HOME, Rover } from "./rover";
 import { WalkInput, type Drive } from "./walkInput";
 import { WalkSky } from "./walkSky";
 import { WalkTerrain } from "./walkTerrain";
@@ -18,6 +17,13 @@ export type WalkBody = "astronaut" | "rover";
 const SHADOW_HALF = 75;
 const IDLE: Drive = { forward: 0, turn: 0, jump: false };
 
+const lane = (): Obstacle[] =>
+  [4, 8, 12].map((d) => ({
+    x: ROVER_HOME.x + Math.sin(ROVER_HEADING * RAD) * d,
+    z: ROVER_HOME.z - Math.cos(ROVER_HEADING * RAD) * d,
+    r: 2,
+  }));
+
 export class WalkView {
   readonly scene = new Scene();
   readonly input = new WalkInput();
@@ -26,7 +32,6 @@ export class WalkView {
   private readonly sky: WalkSky;
   private readonly astronaut = new Astronaut();
   private readonly rover = new Rover();
-  private readonly panel = new SolarPanel();
   private readonly light = new DirectionalLight(0xffffff, 3.4);
   private readonly ambient = new AmbientLight(0xffffff, 0.05);
   private readonly bounce = new HemisphereLight(0x000000, 0x9a9a96, 0);
@@ -62,7 +67,6 @@ export class WalkView {
       this.terrain.group,
       this.astronaut.object,
       this.rover.object,
-      this.panel.object,
       this.props.group,
       this.light,
       this.light.target,
@@ -107,11 +111,10 @@ export class WalkView {
   update(f: SceneFrame): void {
     this.frame = f;
     this.terrain.setSite(f.site as RealSite);
-    this.panel.place(this.terrain);
     if (f.site.id !== this.siteId) {
       this.siteId = f.site.id;
       this.input.clear();
-      this.fixed = [...this.props.build(f.site.id, this.terrain, [{ x: 0, z: 0, r: 4 }, this.panel.obstacle]), this.panel.obstacle];
+      this.fixed = this.props.build(f.site.id, this.terrain, [{ x: 0, z: 0, r: 4 }, ...lane()]);
       this.near = null;
       this.onNear?.(null);
       this.astronaut.reset();
@@ -128,7 +131,6 @@ export class WalkView {
     this.light.castShadow = sunlit;
     const earthshine = (0.02 + 0.06 * sky.earth.litFraction) * sky.earth.frac;
     this.ambient.intensity = sunlit ? 0.07 : (Math.PI / 1.6) * Math.max(0.012, earthshine);
-    this.panel.update(this.sunDir, sky.sunlight > 0.5);
     this.bounce.intensity = 0.9 * sky.sunlight * (0.25 + Math.max(0, Math.sin(sky.sun.el * RAD)));
     this.placeLight();
   }

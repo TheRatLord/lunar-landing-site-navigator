@@ -1,4 +1,4 @@
-import { useMemo, type KeyboardEvent } from "react";
+import { useMemo, useRef, type KeyboardEvent } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type { Chapter } from "../chapters";
 import { useTimeline } from "../derive";
@@ -32,12 +32,27 @@ function dayText(t: number): { day: number; hours: number } {
   return { day, hours };
 }
 
+function Speed() {
+  const fast = useLearn((s) => s.fast);
+  const setFast = useLearn((s) => s.setFast);
+  return (
+    <div className="l-speed" role="group" aria-label="Time speed">
+      {[false, true].map((f) => (
+        <button key={String(f)} type="button" aria-pressed={fast === f} onClick={() => setFast(f)}>
+          {f ? "10×" : "1×"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function TimeBar({ c }: { c: Chapter }) {
   const { t, playing, chapter, landingOffset } = useLearn(
     useShallow((s) => ({ t: s.t, playing: s.playing, chapter: s.chapter, landingOffset: s.landingOffset })),
   );
   const setT = useLearn((s) => s.setT);
   const togglePlay = useLearn((s) => s.togglePlay);
+  const resume = useRef(false);
   const jump = (to: number) => {
     useLearn.getState().setPlaying(false);
     setT(to);
@@ -53,23 +68,36 @@ export function TimeBar({ c }: { c: Chapter }) {
     e.preventDefault();
     useLearn.getState().nudge(dt);
   };
+  const grab = () => {
+    const s = useLearn.getState();
+    resume.current = s.playing;
+    if (s.playing) s.setPlaying(false);
+  };
+  const release = () => {
+    if (resume.current) useLearn.getState().setPlaying(true);
+    resume.current = false;
+  };
   const tl = useTimeline();
   const span = c.spanDays;
+  const explore = c.slug === "explore";
   const d = c.epochD + t;
   const { day, hours } = dayText(t);
   const landing = landingOf({ chapter, landingOffset });
-  const showEarth = c.chips.includes("earth");
+  const earthChanges = useMemo(() => tl.earth.some((v) => v !== tl.earth[0]), [tl]);
+  const showEarth = c.chips.includes("earth") && earthChanges;
   const sunBands = useMemo(() => bands(tl.sun, tl.stepD, span, "var(--l-day)", "var(--l-night)"), [tl, span]);
   const earthBands = useMemo(() => bands(tl.earth, tl.stepD, span, "var(--c-earth)", "transparent"), [tl, span]);
   const eclipses = c.ticks.includes("eclipse") ? tl.events.filter((e) => e.kind === "eclipse" && e.t > 0.05 && e.t < span - 0.05) : [];
-  const valueText = `Day ${day}${hours ? ` and ${hours} hour${hours === 1 ? "" : "s"}` : ""}, ${fmt(d, "long")} on Earth's calendar`;
+  const valueText = explore
+    ? fmt(d, "long")
+    : `Day ${day}${hours ? ` and ${hours} hour${hours === 1 ? "" : "s"}` : ""}, ${fmt(d, "long")} on Earth's calendar`;
   return (
-    <div className="l-timebar" role="group" aria-label="Time">
+    <div className={`l-timebar ${explore ? "is-docked" : ""}`} role="group" aria-label="Time">
       <button
         type="button"
         className="l-play"
         aria-label={playing ? "Pause" : "Play"}
-        aria-keyshortcuts="Space"
+        aria-keyshortcuts="K"
         onClick={togglePlay}
       >
         {playing ? <PauseIcon size={22} /> : <PlayIcon size={22} />}
@@ -97,9 +125,7 @@ export function TimeBar({ c }: { c: Chapter }) {
         </div>
         <div className="l-strips" aria-hidden>
           <span className="l-strip l-strip-sun" style={{ background: sunBands }} />
-          {showEarth && (
-            <span className="l-strip l-strip-earth" style={{ background: earthBands }} />
-          )}
+          {showEarth && <span className="l-strip l-strip-earth" style={{ background: earthBands }} />}
         </div>
         <input
           type="range"
@@ -108,27 +134,30 @@ export function TimeBar({ c }: { c: Chapter }) {
           max={span}
           step={1 / 24}
           value={t}
-          aria-label="Time in Earth days"
-          aria-keyshortcuts="Shift+ArrowRight Shift+ArrowLeft PageUp PageDown"
+          aria-label="Time"
           onKeyDown={onRangeKey}
+          onPointerDown={grab}
+          onPointerUp={release}
+          onPointerCancel={release}
           aria-valuetext={valueText}
           onChange={(e) => setT(Number(e.target.value))}
         />
       </div>
       <div className="l-timelabel" aria-hidden>
-        <span className="l-day">Day {day}</span>
+        {!explore && <span className="l-day">Day {day}</span>}
         <span className="l-date">{fmt(d, "short")}</span>
       </div>
+      {explore && <Speed />}
       <div className="l-legend" aria-hidden>
         <span className="l-legend-item">
-          <span className="l-swatch l-swatch-day" /> Sunlight
+          <span className="l-swatch l-swatch-day" /> Sun
         </span>
         <span className="l-legend-item">
-          <span className="l-swatch l-swatch-night" /> Dark
+          <span className="l-swatch l-swatch-night" /> Night
         </span>
         {showEarth && (
           <span className="l-legend-item">
-            <span className="l-swatch l-swatch-earth" /> Earth in the sky
+            <span className="l-swatch l-swatch-earth" /> Earth
           </span>
         )}
       </div>

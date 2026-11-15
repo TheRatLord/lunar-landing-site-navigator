@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { CHAPTERS, chapterBySlug, learnPath } from "./chapters";
 import { Announcer } from "./components/Announcer";
-import { ExploreCard } from "./components/Explore";
+import { Dock } from "./components/Dock";
+import { Finale } from "./components/Finale";
 import { LessonNav } from "./components/LessonNav";
 import { Readouts } from "./components/Readouts";
 import { Stage } from "./components/Stage";
@@ -13,18 +14,16 @@ import { useLearn, type ChapterKey } from "./store";
 import { prefersReducedMotion } from "../lib/media";
 import { TopBar } from "../shell/TopBar";
 
-const EXPLORE = chapterBySlug("explore")!;
-
 function ExploreRoute() {
-  const panel = useLearn((s) => s.panel);
+  const celebrate = useLearn((s) => s.celebrate);
   useEffect(() => {
     useLearn.getState().enterChapter("explore", prefersReducedMotion());
   }, []);
   return (
     <>
       <Readouts />
-      {panel && <ExploreCard />}
-      <TimeBar c={EXPLORE} />
+      <Dock />
+      {celebrate && <Finale />}
     </>
   );
 }
@@ -91,8 +90,17 @@ function useKeyboard(current: ChapterKey | null) {
         s.setT(Number.MAX_SAFE_INTEGER);
       }
     };
+    const onPointerUp = (e: PointerEvent) => {
+      if (useLearn.getState().view !== "walk") return;
+      const t = (e.target as HTMLElement | null)?.closest?.(".l-main button, .l-main input[type=range]");
+      if (t) window.setTimeout(() => (document.activeElement === t ? (t as HTMLElement).blur() : undefined), 0);
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("pointerup", onPointerUp, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerup", onPointerUp, true);
+    };
   }, [current, navigate]);
 }
 
