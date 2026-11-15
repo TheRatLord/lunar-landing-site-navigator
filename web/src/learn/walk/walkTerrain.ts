@@ -1,6 +1,6 @@
 import { BufferAttribute, InstancedMesh, Matrix4, Mesh, MeshLambertMaterial, Object3D, PlaneGeometry, Quaternion, Vector3, Group } from "three";
 import { heightAt, type RealSite } from "../terrain";
-import { detailHeight, lunarSoil, regolithAlbedo, regolithNormalMap, rockColorMap, rockGeometry, rockNormalMap } from "../scene/surface";
+import { detailHeight, lunarSoil, noise2, regolithAlbedo, regolithNormalMap, rockColorMap, rockGeometry, rockNormalMap } from "../scene/surface";
 import { rng } from "../scene/textures";
 
 export const WALK_HALF_M = 500;
@@ -47,10 +47,21 @@ export class WalkTerrain {
     albedo.repeat.set(1 / 7, 1 / 7);
     const uv = this.geo.getAttribute("uv") as BufferAttribute;
     const pos = this.geo.getAttribute("position") as BufferAttribute;
-    for (let i = 0; i < pos.count; i++) uv.setXY(i, pos.getX(i), -pos.getZ(i));
-    const mat = lunarSoil(new MeshLambertMaterial({ map: albedo, normalMap: regolithNormalMap(3) }));
-    mat.normalScale.set(1.6, 1.6);
-    mat.color.setScalar(1.05);
+    const tint = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      uv.setXY(i, x, -z);
+      const v = 1 + 0.13 * noise2(x / 140, z / 140, 91) + 0.07 * noise2(x / 37, z / 37, 92) + 0.04 * noise2(x / 9, z / 9, 93);
+      tint.fill(v, i * 3, i * 3 + 3);
+    }
+    this.geo.setAttribute("color", new BufferAttribute(tint, 3));
+    const normal = regolithNormalMap(3);
+    albedo.anisotropy = 8;
+    normal.anisotropy = 8;
+    const mat = lunarSoil(new MeshLambertMaterial({ map: albedo, normalMap: normal, vertexColors: true }));
+    mat.normalScale.set(1.1, 1.1);
+    mat.color.setRGB(1.07, 1.03, 0.96);
     const mesh = new Mesh(this.geo, mat);
     mesh.receiveShadow = true;
     mesh.castShadow = true;

@@ -29,7 +29,7 @@ function hash3(x: number, y: number, z: number, seed: number): number {
 const fade = (t: number) => t * t * (3 - 2 * t);
 
 /** Value noise in [-1, 1]; `period` (cells) makes it tile. */
-function noise2(x: number, y: number, seed: number, period = 0): number {
+export function noise2(x: number, y: number, seed: number, period = 0): number {
   const xi = Math.floor(x);
   const yi = Math.floor(y);
   const tx = fade(x - xi);

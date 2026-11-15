@@ -59,6 +59,7 @@ export class WalkView {
     this.light.shadow.mapSize.set(2048, 2048);
     this.light.shadow.bias = -0.0006;
     this.light.shadow.normalBias = 0.6;
+    this.light.shadow.radius = 1.5;
     const cam = this.light.shadow.camera;
     cam.left = -SHADOW_HALF;
     cam.right = SHADOW_HALF;

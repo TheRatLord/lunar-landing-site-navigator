@@ -7,6 +7,8 @@ import {
   Scene,
   WebGLRenderTarget,
   PCFShadowMap,
+  ACESFilmicToneMapping,
+  NoToneMapping,
   WebGLRenderer,
   type PerspectiveCamera,
   type Object3D,
@@ -41,6 +43,8 @@ function insetRect(w: number, h: number, phone: boolean, bottom: number): { x: n
   const margin = phone ? 12 : 28;
   return { x: w - margin - size, y: bottom, size };
 }
+
+const WALK_EXPOSURE = 0.85;
 
 export class LearnScene {
   private readonly canvas: HTMLCanvasElement;
@@ -566,7 +570,10 @@ export class LearnScene {
     } else if (this.view === "crater" && this.crater) {
       r.render(this.crater.scene, this.crater.camera);
     } else if (this.view === "walk" && this.walk) {
+      r.toneMapping = ACESFilmicToneMapping;
+      r.toneMappingExposure = WALK_EXPOSURE;
       r.render(this.walk.scene, this.walk.camera);
+      r.toneMapping = NoToneMapping;
     } else {
       this.ground.fitLabels(this.h, this.ground.camera);
       r.render(this.ground.scene, this.ground.camera);

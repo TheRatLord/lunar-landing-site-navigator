@@ -32,6 +32,7 @@ function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: Crater
     if (site === "apollo11" || site === "change4" || site === "blueghost")
       out.push(`The spacecraft and gear on the ground are really here, drawn as simple models about where they stand.${site === "change4" ? " Yutu-2 has since driven away." : ""}`);
     out.push("The lamps are pretend. With them off, the dark is real.");
+    out.push("The glow around the Sun and the faint stars by day are what a camera sees. The Moon has no air to make a glow.");
     out.push("The battery is pretend. Its panel follows the site's sunlight, not the exact shadow on it.");
   }
   if (site === "blueghost" && chapter === "timing") out.push("The battery is pretend.", "The eclipse view is zoomed in.");

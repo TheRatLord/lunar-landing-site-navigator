@@ -1,4 +1,5 @@
 import {
+  type PointsMaterial,
   BufferAttribute,
   BufferGeometry,
   DoubleSide,
@@ -25,6 +26,8 @@ export class WalkSky {
   readonly group = new Group();
   private readonly sunDisc: Sprite;
   private readonly sunGlow: Sprite;
+  private readonly stars = starField(6400);
+  private readonly starMat = this.stars.material as PointsMaterial;
   private readonly earth: Mesh;
   private readonly earthMat: ShaderMaterial;
   private readonly ringGeo = new BufferGeometry();
@@ -35,7 +38,8 @@ export class WalkSky {
   private ringKey = "";
 
   constructor(shared: Shared) {
-    this.group.add(starField(6400));
+    this.starMat.transparent = true;
+    this.group.add(this.stars);
     this.sunDisc = new Sprite(new SpriteMaterial({ map: shared.disc, color: "#fff7e6", transparent: true, fog: false }));
     this.sunGlow = glowSprite(shared.glow, "#ffc96b", 0.9);
     this.sunGlow.material.depthTest = true;
@@ -72,7 +76,8 @@ export class WalkSky {
     const rs = R_SUN * Math.tan(sky.sun.radius * RAD);
     this.sunDisc.scale.setScalar(rs * 2);
     this.sunGlow.position.copy(this.sunDisc.position);
-    this.sunGlow.scale.setScalar(rs * 16);
+    this.sunGlow.scale.setScalar(rs * 26);
+    this.starMat.opacity = 1 - 0.85 * Math.min(1, sky.sunlight * 2);
     this.sunGlow.material.opacity = 0.9 * (1 - sky.eclipsed * 0.95);
     const e = dirFromAzEl(sky.earth.az, sky.earth.el);
     this.earth.position.set(e[0] * R_EARTH, e[1] * R_EARTH, e[2] * R_EARTH);
