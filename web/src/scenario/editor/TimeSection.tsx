@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Segmented } from "../../components/ui/Segmented";
 import { MS_LUNATION } from "../../lib/time";
-import { planStay, useScenario } from "../store";
-import { whenText } from "../when";
-import { NumberField, Readout, UtcField } from "./controls";
+import { useScenario } from "../store";
+import { NumberField } from "./controls";
 
 const DURATION_PRESETS: Array<{ label: string; hours: number }> = [
   { label: "2 d", hours: 48 },
@@ -18,14 +17,12 @@ export function TimeSection() {
   const edit = useScenario((s) => s.edit);
   const [custom, setCustom] = useState(false);
   if (!doc) return null;
-  const stay = planStay(doc);
   const preset = DURATION_PRESETS.find((p) => p.hours === doc.mission_duration_h);
   const boxed = custom || !preset;
 
   return (
     <div className="sc-section">
       <div className="sc-group">
-        <UtcField path={["landing_utc"]} label="Landing" />
         <div className="sc-row">
           <span className="sc-label">Stay</span>
           <div className="sc-control">
@@ -43,7 +40,6 @@ export function TimeSection() {
           </div>
         </div>
         {boxed && <NumberField path={["mission_duration_h"]} label={<span className="sr-only">Stay in hours</span>} unit="h" min={0} exclusiveMin step={1} />}
-        {stay && <Readout label="Ends" value={whenText(stay.end_ms)} />}
       </div>
     </div>
   );

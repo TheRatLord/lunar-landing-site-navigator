@@ -3,18 +3,17 @@ import { lazy, Suspense } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Icon } from "../components/ui/Icon";
 import { Spinner } from "../components/ui/Progress";
-import { formatLat, formatLon } from "../lib/coords";
-import { MS_DAY, parseUtc } from "../lib/time";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { CONSTRAINT_META } from "../scenario/editor/fieldSpecs";
 import { TimeSection } from "../scenario/editor/TimeSection";
-import { DEFAULT_RANK, effectiveRank, effectiveWindow, rankLabel, usePlanSearch } from "../scenario/planSearch";
-import { shiftPlanLanding, useScenario } from "../scenario/store";
+import { effectiveWindow, usePlanSearch } from "../scenario/planSearch";
+import { useSearchSite } from "../scenario/searchAnchor";
+import { useScenario } from "../scenario/store";
 import type { Limit } from "../scenario/types";
-import { hoursOrDays, whenText } from "../scenario/when";
+import { hoursOrDays } from "../scenario/when";
 import { SETUP_WORKSPACE } from "../workspaces/registry";
 import { Card } from "./plan/Card";
-import { landerFacts, landerName, sameProfile } from "./plan/landerFacts";
+import { landerName, sameProfile } from "./plan/landerFacts";
 import { usePresets } from "../scenario/editor/usePresets";
 import { LanderPicker } from "./plan/LanderPicker";
 import { RequirementsPicker } from "./plan/RequirementsPicker";
@@ -34,27 +33,23 @@ export function PlanPanel() {
   const show = useEditorUi((s) => s.show);
   const radius = usePlanSearch((s) => s.radius_km);
   const win = usePlanSearch((s) => s.window);
-  const rankBy = usePlanSearch((s) => s.rankBy);
+  const centre = useSearchSite();
   const onMap = useLocation().pathname.startsWith("/map");
   const presets = usePresets();
 
   if (!doc) return <aside className="plan-side" aria-hidden="true" />;
 
-  const landing = parseUtc(doc.landing_utc);
-  const siteName = siteLabel(doc.site.name) || "Unnamed site";
+  const siteName = siteLabel(centre?.name ?? doc.site.name) || "Unnamed site";
   const active = CONSTRAINT_META.filter((m) => doc.constraints[m.key]);
   const span = windowText(effectiveWindow(doc, win));
-  const coordText = `${formatLat(doc.site.lat_deg, 2)} ${formatLon(doc.site.lon_deg, 2)}`;
-  const rank = effectiveRank(rankBy, doc);
   const preset = presets.status === "ready" ? presets.data.profiles.find((e) => e.profile.id === doc.profile.id) : undefined;
   const landerTitle = `${landerName(doc.profile.name)}${preset && !sameProfile(preset.profile, doc.profile) ? " (edited)" : ""}`;
 
   return (
-    <aside className="plan-side" aria-label="Mission requirements">
+    <aside className="plan-side" aria-label="Requirements">
       <div className="plan-cards">
         <div className="plan-head">
-          <h2>Mission requirements</h2>
-          <p>What a landing has to meet. The Overview ranks the landings that do.</p>
+          <h2>Requirements</h2>
         </div>
         <Card
           field="site"
@@ -62,12 +57,7 @@ export function PlanPanel() {
           label="Where"
           value={siteName}
           width={onMap ? 360 : 860}
-          lines={
-            <>
-              {coordText !== siteName && <span className="plan-card-line num">{coordText}</span>}
-              <span className="plan-card-line plan-card-widen">{radius === null ? "This site only" : `Plus spots within ${radius} km`}</span>
-            </>
-          }
+          lines={radius === null ? undefined : <span className="plan-card-line">{`Within ${radius} km`}</span>}
         >
           <Suspense
             fallback={
@@ -80,29 +70,7 @@ export function PlanPanel() {
           </Suspense>
         </Card>
 
-        <Card
-          field="time"
-          icon="calendar"
-          label="When"
-          value={span}
-          width={420}
-          lines={
-            <>
-              <span className="plan-card-line">{`Plan lands ${landing === null ? doc.landing_utc : whenText(landing)}`}</span>
-              <span className="plan-card-line">{`${hoursOrDays(doc.mission_duration_h)} on the surface`}</span>
-            </>
-          }
-          extra={
-            <div className="plan-card-steps">
-              <button type="button" className="sc-step" disabled={landing === null} aria-label="Land one day earlier" onClick={() => shiftPlanLanding(-MS_DAY)}>
-                <Icon name="chevronLeft" size={12} /> 1 day
-              </button>
-              <button type="button" className="sc-step" disabled={landing === null} aria-label="Land one day later" onClick={() => shiftPlanLanding(MS_DAY)}>
-                1 day <Icon name="chevronRight" size={12} />
-              </button>
-            </div>
-          }
-        >
+        <Card field="time" icon="calendar" label="When" value={span} width={420} lines={<span className="plan-card-line">{`${hoursOrDays(doc.mission_duration_h)} on the surface`}</span>}>
           <div className="plan-pick">
             <div className="plan-pick-scroll plan-pick-form">
               <WindowControl />
@@ -111,19 +79,15 @@ export function PlanPanel() {
           </div>
         </Card>
 
-        <Card field="lander" icon="lander" label="Lander" value={landerTitle} width={480} lines={landerFacts(doc.profile).map((f) => (
-            <span key={f} className="plan-card-line">
-              {f}
-            </span>
-          ))}>
+        <Card field="lander" icon="lander" label="Lander" value={landerTitle} width={480}>
           <LanderPicker />
         </Card>
 
         <Card
           field="constraints"
           icon="checklist"
-          label="Requirements"
-          value={active.length === 0 ? "No requirements" : `${active.length} requirement${active.length === 1 ? "" : "s"}`}
+          label="Limits"
+          value={active.length === 0 ? "None set" : `${active.length} set`}
           width={520}
           lines={
             <>
@@ -134,7 +98,6 @@ export function PlanPanel() {
                 </span>
               ))}
               {active.length > MAX_LISTED && <span className="plan-card-line">+{active.length - MAX_LISTED} more</span>}
-              {rank !== DEFAULT_RANK && <span className="plan-card-line plan-card-widen">{`Ranked by ${rankLabel(rank)}`}</span>}
             </>
           }
         >

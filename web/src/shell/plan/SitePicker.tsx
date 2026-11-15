@@ -12,7 +12,8 @@ import { useEditorUi } from "../../scenario/editor/editorUi";
 import { SiteSection } from "../../scenario/editor/SiteSection";
 import { FEATURED_SITES } from "../../scenario/starter";
 import { usePlanSearch } from "../../scenario/planSearch";
-import { movePlanSite, useScenario } from "../../scenario/store";
+import { searchHere, useSearchSite } from "../../scenario/searchAnchor";
+import { movePlanSite } from "../../scenario/store";
 import { HomeMap, type MapFocus } from "../../workspaces/home/HomeMap";
 import { AreaControl } from "./Widen";
 
@@ -36,7 +37,7 @@ const coords = (lat: number, lon: number) => `${formatLat(lat, 2)} ${formatLon(l
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
 
 export function SitePicker() {
-  const site = useScenario((s) => s.doc?.site);
+  const site = useSearchSite();
   const pins = useAlternatives((s) => s.items);
   const openField = useEditorUi((s) => s.openField);
   const radiusKm = usePlanSearch((s) => s.radius_km);
@@ -76,6 +77,7 @@ export function SitePicker() {
 
   const choose = useCallback(
     (next: PlanSite) => {
+      searchHere();
       movePlanSite(next);
       openField(null);
     },

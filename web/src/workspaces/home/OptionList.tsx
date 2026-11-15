@@ -1,10 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { Button, IconButton } from "../../components/ui/Button";
-import { Select } from "../../components/ui/Fields";
 import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Progress";
 import { formatQuantity } from "../../lib/requirements";
-import { RANK_OPTIONS, hoursText, type RankBy } from "../../scenario/planSearch";
+import { hoursText, type RankBy } from "../../scenario/planSearch";
 import { dayText } from "../../scenario/when";
 import { VERDICT_LABEL } from "../../lib/verdict";
 import type { LandingOption } from "./options";
@@ -18,6 +17,7 @@ interface OptionListProps {
   notice: ReactNode;
   search: ReactNode;
   bar: ReactNode;
+  selection: ReactNode;
   scope: string;
   onRank(r: RankBy): void;
   onSelect(o: LandingOption): void;
@@ -81,9 +81,8 @@ function Row({ o, n, rank, values, requirements, selected, onSelect, onOpen, too
   );
 }
 
-export function OptionList({ pinned, ranked, rank, requirements, selectedKey, notice, search, bar, scope, onRank, onSelect, onOpen, onPin, onUnpin, canPin }: OptionListProps) {
+export function OptionList({ pinned, ranked, rank, requirements, selectedKey, notice, search, bar, selection, scope, onRank, onSelect, onOpen, onPin, onUnpin, canPin }: OptionListProps) {
   const [all, setAll] = useState(false);
-  const options = RANK_OPTIONS.filter((o) => !(requirements === 0 && o.value === "margin")).map((o) => ({ value: o.value, label: o.label }));
   const values = VALUES.filter((v) => !(requirements === 0 && v.key === "margin"));
   const cols = 5 + values.length + (requirements > 0 ? 1 : 0);
   const shown = all ? ranked : ranked.slice(0, SHOWN);
@@ -109,16 +108,8 @@ export function OptionList({ pinned, ranked, rank, requirements, selectedKey, no
   );
   return (
     <section className="opts" aria-label="Landing options">
-      <header className="opts-head">
-        <div className="opts-title">
-          <h2>Landing options</h2>
-          <p>{scope}</p>
-        </div>
-        <label className="opts-rank">
-          <span>Rank by</span>
-          <Select aria-label="Rank landing options by" value={rank} options={options} onChange={(v) => onRank(v as RankBy)} />
-        </label>
-      </header>
+      <h2 className="sr-only">Landing options</h2>
+      {selection}
       {bar}
       <div className="ot-wrap">
         <table className="ot">
@@ -134,8 +125,10 @@ export function OptionList({ pinned, ranked, rank, requirements, selectedKey, no
               <th scope="col">Limited by</th>
               {values.map((v) => (
                 <th key={v.key} scope="col" className="ot-val" data-rank={v.key === rank || undefined} aria-sort={v.key === rank ? "descending" : undefined}>
-                  {v.key === rank && <Icon name="chevronDown" size={12} />}
-                  {v.label}
+                  <button type="button" className="ot-sort" title={`Rank by ${v.label.toLowerCase()}`} onClick={() => onRank(v.key)}>
+                    {v.key === rank && <Icon name="chevronDown" size={12} />}
+                    {v.label}
+                  </button>
                 </th>
               ))}
               <th scope="col" className="ot-tools">
@@ -156,7 +149,7 @@ export function OptionList({ pinned, ranked, rank, requirements, selectedKey, no
           <tbody>
             <tr className="ot-group">
               <th scope="colgroup" colSpan={cols}>
-                {requirements === 0 ? "Ranked · no requirements set, so every landing counts" : "Ranked"}
+                Ranked
               </th>
             </tr>
             {notice && (

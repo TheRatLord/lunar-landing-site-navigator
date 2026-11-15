@@ -515,12 +515,6 @@
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-tight);
 }
-.plan-head p {
-  margin: 2px 0 0;
-  font-size: var(--fs-xs);
-  line-height: var(--lh-tight);
-  color: var(--text-3);
-}
 .plan-card-label {
   font-size: var(--fs-2xs);
   font-weight: var(--fw-semibold);
@@ -561,17 +555,6 @@
 .plan-card-req > .num {
   flex: none;
   color: var(--text);
-}
-.plan-card-steps {
-  display: flex;
-  gap: var(--sp-1);
-  padding: 0 var(--sp-3) var(--sp-3) calc(var(--sp-3) + 30px + var(--sp-3));
-}
-.plan-card-steps .sc-step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-1);
 }
 .plan-side-foot {
   display: flex;
@@ -892,9 +875,6 @@
   }
 }
 
-.plan-card-widen {
-  color: var(--accent-text);
-}
 .plan-widen {
   display: flex;
   flex-direction: column;

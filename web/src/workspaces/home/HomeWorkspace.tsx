@@ -10,14 +10,14 @@ import { usePublishScreenContext } from "../../ask/screenContext";
 import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { ProgressBar, Spinner } from "../../components/ui/Progress";
-import { VERDICT_LABEL } from "../../lib/verdict";
-import { parseUtc, toIsoUtc } from "../../lib/time";
+import { MS_DAY, parseUtc, toIsoUtc } from "../../lib/time";
 import { catalogApi } from "../../scenario/api";
 import { useAlternatives } from "../../scenario/alternatives";
 import { DEFAULT_RADIUS_KM, activeRequirements, effectiveWindow, isYear, rankLabel, shiftYear, usePlanSearch, useRankBy, yearFrom, yearText, type LandingWindow, type RankBy } from "../../scenario/planSearch";
-import { movePlanSite, routeStackIssues, useScenario } from "../../scenario/store";
+import { chooseSite, searchHere, useSearchSite } from "../../scenario/searchAnchor";
+import { movePlanSite, routeStackIssues, shiftPlanLanding, useScenario } from "../../scenario/store";
 import type { Scenario } from "../../scenario/types";
-import { spanText, whenText } from "../../scenario/when";
+import { spanText } from "../../scenario/when";
 import { leftText } from "../map/eta";
 import { announceSiteMove, pointName, siteSnapshot } from "../map/siteMove";
 import { useFindOutOfDate, useFindPlan, useSearchCovers } from "../search/findSites";
@@ -32,6 +32,7 @@ import { OptionList } from "./OptionList";
 import { closestOption, hereOptions, pinOption, samePlace, sortOptions, spotOptions, type LandingOption, type Place } from "./options";
 import { adaptScan, limitingAt, scanIndexAt, scanParams, verdictAt, yearScanBody, type YearScan } from "./scan";
 import { adaptSurvey, surveyBody } from "./survey";
+import { Selection } from "./Selection";
 import { YearBar } from "./YearBar";
 import "../../styles/home.css";
 
@@ -77,12 +78,20 @@ export function HomeWorkspace() {
   const sites = useMemo(() => (sitesLoad.state.status === "ready" ? sitesLoad.state.data.items : []), [sitesLoad.state]);
   const navigate = useNavigate();
 
-  const lat = doc.site.lat_deg;
-  const lon = doc.site.lon_deg;
-  const name = doc.site.name ?? "";
-  const catalogId = doc.site.catalog_id ?? null;
+  const centre = useSearchSite();
+  const lat = centre?.lat_deg ?? doc.site.lat_deg;
+  const lon = centre?.lon_deg ?? doc.site.lon_deg;
+  const name = centre?.name ?? doc.site.name ?? "";
+  const catalogId = centre?.catalog_id ?? null;
   const site = useMemo<Place>(() => ({ lat_deg: lat, lon_deg: lon, name, catalog_id: catalogId }), [lat, lon, name, catalogId]);
   const siteName = siteLabel(name) || "Unnamed site";
+  const cLat = doc.site.lat_deg;
+  const cLon = doc.site.lon_deg;
+  const cName = doc.site.name ?? "";
+  const cId = doc.site.catalog_id ?? null;
+  const chosen = useMemo<Place>(() => ({ lat_deg: cLat, lon_deg: cLon, name: cName, catalog_id: cId }), [cLat, cLon, cName, cId]);
+  const chosenName = siteLabel(cName) || pointName(cLat, cLon);
+  const away = !samePlace(chosen, site);
   const landingMs = parseUtc(doc.landing_utc) ?? FALLBACK_MS;
 
   const win = effectiveWindow(doc, planWindow);
@@ -93,13 +102,13 @@ export function HomeWorkspace() {
   const listWin = draftWin ?? win;
   const whole = listWin.first_ms <= view.first_ms && listWin.last_ms >= view.last_ms;
 
-  const [focus, setFocus] = useState<GlobeFocus>(() => ({ lat_deg: lat, lon_deg: lon, radius_m: 0, nonce: 0 }));
-  const placeKey = `${lat},${lon}`;
+  const [focus, setFocus] = useState<GlobeFocus>(() => ({ lat_deg: cLat, lon_deg: cLon, radius_m: 0, nonce: 0 }));
+  const placeKey = `${cLat},${cLon}`;
   const [shownPlace, setShownPlace] = useState(placeKey);
   const [mapPlace, setMapPlace] = useState<string | null>(null);
   if (shownPlace !== placeKey) {
     setShownPlace(placeKey);
-    if (mapPlace !== placeKey) setFocus((f) => ({ lat_deg: lat, lon_deg: lon, radius_m: 0, nonce: f.nonce + 1 }));
+    if (mapPlace !== placeKey) setFocus((f) => ({ lat_deg: cLat, lon_deg: cLon, radius_m: 0, nonce: f.nonce + 1 }));
   }
 
   const requirements = activeRequirements(doc);
@@ -164,8 +173,10 @@ export function HomeWorkspace() {
   );
   const ranked = useMemo(() => sortOptions([...(closest ? [closest] : here), ...spots]), [closest, here, spots]);
 
-  const atLanding = (o: LandingOption) => samePlace(o.place, site) && o.t_ms !== null && Math.abs(o.t_ms - landingMs) < 30 * 60_000;
-  const selectedKey = [...pinned, ...ranked].find(atLanding)?.key ?? null;
+  const atLanding = (o: LandingOption) => samePlace(o.place, chosen) && o.t_ms !== null && Math.abs(o.t_ms - landingMs) < 30 * 60_000;
+  const selectedOpt = [...pinned, ...ranked].find(atLanding) ?? null;
+  const selectedKey = selectedOpt?.key ?? null;
+  const selectedN = ranked.findIndex(atLanding) + 1 || null;
 
   const keepYear = useCallback(
     (t: number | null) => {
@@ -181,23 +192,28 @@ export function HomeWorkspace() {
     [keepYear, edit],
   );
   const moveTo = useCallback(
-    (p: Place, t: number | null, fromGlobe: boolean) => {
+    (p: Place, t: number | null, fromGlobe: boolean, choice = false) => {
       const prev = siteSnapshot();
       keepYear(t);
       if (fromGlobe) setMapPlace(`${p.lat_deg},${p.lon_deg}`);
-      movePlanSite({ lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id });
+      const next = { lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id };
+      if (choice) chooseSite(next);
+      else {
+        searchHere();
+        movePlanSite(next);
+      }
       if (t !== null) edit(["landing_utc"], toIsoUtc(t));
-      announceSiteMove(prev, () => navigate("/site"));
+      if (!choice) announceSiteMove(prev, () => navigate("/site"));
     },
     [keepYear, edit, navigate],
   );
   const select = useCallback(
     (o: LandingOption) => {
-      if (samePlace(o.place, site)) {
+      if (samePlace(o.place, chosen)) {
         if (o.t_ms !== null) land(o.t_ms);
-      } else moveTo(o.place, o.t_ms, false);
+      } else moveTo(o.place, o.t_ms, false, true);
     },
-    [site, land, moveTo],
+    [chosen, land, moveTo],
   );
   const pinOf = (p: Place) => ({ id: p.catalog_id ?? `point:${p.lat_deg},${p.lon_deg}`, name: p.name || pointName(p.lat_deg, p.lon_deg), lat_deg: p.lat_deg, lon_deg: p.lon_deg, catalog_id: p.catalog_id });
 
@@ -210,44 +226,46 @@ export function HomeWorkspace() {
   );
   const setPoint = useCallback((la: number, lo: number) => moveTo({ lat_deg: round5(la), lon_deg: round5(lo), name: pointName(la, lo), catalog_id: null }, null, true), [moveTo]);
   const takeCell = useCallback(
-    (c: Cell, withDate: boolean) => moveTo({ lat_deg: round5(c.lat_deg), lon_deg: round5(c.lon_deg), name: pointName(c.lat_deg, c.lon_deg), catalog_id: null }, withDate && c.best_ms !== null ? c.best_ms : null, true),
+    (c: Cell, withDate: boolean) => moveTo({ lat_deg: round5(c.lat_deg), lon_deg: round5(c.lon_deg), name: pointName(c.lat_deg, c.lon_deg), catalog_id: null }, withDate && c.best_ms !== null ? c.best_ms : null, true, true),
     [moveTo],
   );
 
   const sub = useSubpoints(view.first_ms, view.last_ms);
-  const pinMarks = useMemo(() => pins.filter((p) => !samePlace(p, site)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, site]);
+  const pinMarks = useMemo(() => pins.filter((p) => !samePlace(p, chosen)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, chosen]);
 
   const windowPhrase = whole ? `any time in ${yearText(view)}` : spanText(listWin.first_ms, listWin.last_ms - 1);
   const scope = `${siteName}${radiusKm !== null ? ` and ${radiusKm} km around` : ""} · ${windowPhrase}`;
-  const planIndex = scan ? scanIndexAt(scan, landingMs) : null;
-  const planVerdict = scan && planIndex !== null ? verdictAt(scan, planIndex) : null;
+  const planIndex = scan && !away ? scanIndexAt(scan, landingMs) : null;
+  const planVerdict = requirements === 0 ? null : scan && planIndex !== null ? verdictAt(scan, planIndex) : (selectedOpt?.verdict ?? null);
+  const planLimiting = scan && planIndex !== null ? limitingAt(scan, planIndex) : (selectedOpt?.limiting ?? null);
+  const chosenPin = pins.find((p) => samePlace(p, chosen)) ?? null;
 
   const notice = scanRun.phase === "error" ? (
     <p className="opts-note" role="alert">
-      Couldn't check the year.{" "}
+      Couldn't check {yearText(view)}.{" "}
       <button type="button" className="opts-link" onClick={scanRun.rerun}>
         Retry
       </button>
     </p>
   ) : !scan ? (
     <p className="opts-note" role="status">
-      <Spinner size={12} /> Checking every landing hour in {yearText(view)}
+      <Spinner size={12} /> Checking {yearText(view)}
     </p>
   ) : here.length === 0 ? (
     <div className="opts-empty">
       <p>
-        <strong>Nothing at {siteName} meets the requirements {whole ? `in ${yearText(view)}` : "in this window"}.</strong>
-        {scan.closing ? ` It is most often limited by ${scan.closing}.` : ""} The closest landing is below.
+        <strong>No landing meets the limits.</strong>
+        {scan.closing ? ` Mostly ${scan.closing}.` : ""}
       </p>
       <div className="opts-empty-actions">
         {!whole && (
           <Button size="sm" onClick={() => setWindow(view)}>
-            Search the whole year
+            Whole year
           </Button>
         )}
         {radiusKm === null && (
           <Button size="sm" onClick={() => setRadius(DEFAULT_RADIUS_KM)}>
-            Look within {DEFAULT_RADIUS_KM} km
+            Within {DEFAULT_RADIUS_KM} km
           </Button>
         )}
       </div>
@@ -256,16 +274,15 @@ export function HomeWorkspace() {
 
   const search =
     radiusKm === null ? (
-      <p className="opts-note">
-        Only this site is searched.{" "}
-        <button type="button" className="opts-link" onClick={() => setRadius(DEFAULT_RADIUS_KM)}>
-          Add spots within {DEFAULT_RADIUS_KM} km
-        </button>
-      </p>
+      <Button size="sm" variant="ghost" icon="plus" onClick={() => setRadius(DEFAULT_RADIUS_KM)}>
+        Spots within {DEFAULT_RADIUS_KM} km
+      </Button>
     ) : searchPhase === "running" && searchStarted !== null ? (
       <div className="opts-search" role="status">
         <div className="opts-search-row">
-          <span>Searching within {radiusKm} km · {leftText(searchStarted, searchProgress, searchGuess)}</span>
+          <span>
+            Searching {radiusKm} km · {leftText(searchStarted, searchProgress, searchGuess)}
+          </span>
           <Button size="sm" variant="ghost" onClick={cancelSearch}>
             Cancel
           </Button>
@@ -273,23 +290,10 @@ export function HomeWorkspace() {
         <ProgressBar value={searchProgress ?? 0} label="Search progress" />
       </div>
     ) : covers ? (
-      <div className="opts-search">
-        <p className="opts-note">
-          {spots.length === 0 ? `No other spot within ${radiusKm} km made the top of the search.` : `Includes the best spots within ${radiusKm} km`}
-          {searchBodyDone && !samePlace(searchBodyDone.region, site) ? ` of ${pointName(searchBodyDone.region.lat_deg, searchBodyDone.region.lon_deg)}.` : spots.length === 0 ? "" : "."}
-        </p>
-        {searchBodyDone && !samePlace(searchBodyDone.region, site) && (
-          <Button size="sm" icon="search" disabled={!findPlan.body} onClick={() => findPlan.body && runSearch(findPlan.body, findPlan.guessS)}>
-            Search around this site · {findPlan.about}
-          </Button>
-        )}
-      </div>
+      spots.length === 0 ? <p className="opts-note">No better spot within {radiusKm} km.</p> : null
     ) : (
       <div className="opts-search">
-        <p className="opts-note">
-          {searchResult ? "The nearby search is out of date." : `Spots within ${radiusKm} km need a search across the window.`}
-          {searchPhase === "error" && searchError ? ` ${searchError}` : ""}
-        </p>
+        {searchPhase === "error" && searchError && <p className="opts-note">{searchError}</p>}
         <Button size="sm" variant="primary" icon="search" disabled={!findPlan.body} title={findPlan.reason ?? undefined} onClick={() => findPlan.body && runSearch(findPlan.body, findPlan.guessS)}>
           Search within {radiusKm} km · {findPlan.about}
         </Button>
@@ -315,7 +319,8 @@ export function HomeWorkspace() {
       ))}
       <section className="home-hero" data-theme="dark" data-stale={!scan}>
         <MoonGlobe
-          site={site}
+          site={chosen}
+          centre={site}
           focus={focus}
           sites={sites}
           pins={pinMarks}
@@ -330,18 +335,6 @@ export function HomeWorkspace() {
           onUseCell={takeCell}
           onPickPin={(p) => moveTo({ lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: pins.find((x) => x.id === p.id)?.catalog_id ?? null }, null, true)}
         />
-        <div className="home-plan">
-          <p className="home-plan-site">{siteName}</p>
-          <p className="home-plan-when">
-            {whenText(landingMs)}
-            {requirements > 0 && planVerdict && (
-              <span className="home-plan-verdict" data-tone={planVerdict}>
-                {VERDICT_LABEL[planVerdict]}
-                {planVerdict !== "pass" && planIndex !== null && scan && limitingAt(scan, planIndex) ? ` · ${limitingAt(scan, planIndex)}` : ""}
-              </span>
-            )}
-          </p>
-        </div>
         {lattice && !searchStale && (
           <div className="home-finder" data-theme="dark">
             <GlobeSearch lattice={lattice} tools={false} />
@@ -363,6 +356,23 @@ export function HomeWorkspace() {
         notice={notice}
         search={search}
         scope={scope}
+        selection={
+          <Selection
+            name={chosenName}
+            t_ms={landingMs}
+            verdict={planVerdict}
+            limiting={planLimiting}
+            n={selectedN}
+            pinned={chosenPin !== null}
+            canPin={pins.length < MAX_PINS}
+            away={away}
+            onShift={(d) => shiftPlanLanding(d * MS_DAY)}
+            onPin={() => addPin(pinOf(chosen))}
+            onUnpin={() => chosenPin && removePin(chosenPin.id)}
+            onSearchHere={searchHere}
+            onOpen={() => navigate("/site")}
+          />
+        }
         bar={
           <YearBar
             view={view}

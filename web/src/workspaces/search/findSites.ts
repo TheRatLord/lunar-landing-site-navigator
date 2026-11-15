@@ -3,6 +3,7 @@ import { checkSearch, searchBody, type SearchBody } from "../../api/search";
 import { distance_m } from "../../lib/projection";
 import { toIsoUtc } from "../../lib/time";
 import { DEFAULT_RADIUS_KM, effectiveRank, effectiveWindow, epochSpacing_h, niceSpacing_m, usePlanSearch, windowDays } from "../../scenario/planSearch";
+import { useSearchSite } from "../../scenario/searchAnchor";
 import { useScenario } from "../../scenario/store";
 import type { Scenario } from "../../scenario/types";
 import { aboutText, pace } from "../map/eta";
@@ -30,21 +31,24 @@ export function useFindPlan(): FindPlan {
   const planRadius = usePlanSearch((s) => s.radius_km);
   const planWindow = usePlanSearch((s) => s.window);
   const rankBy = usePlanSearch((s) => s.rankBy);
+  const centre = useSearchSite();
+  const lat = centre?.lat_deg;
+  const lon = centre?.lon_deg;
   return useMemo(() => {
     const radiusKm = planRadius ?? DEFAULT_RADIUS_KM;
-    if (!doc) return { body: null, reason: "Plan not loaded yet", guessS: 0, about: "", radiusKm };
+    if (!doc || lat === undefined || lon === undefined) return { body: null, reason: "Plan not loaded yet", guessS: 0, about: "", radiusKm };
     const window = effectiveWindow(doc, planWindow);
     const radius_m = radiusKm * 1000;
     const spacing = niceSpacing_m(radius_m);
     const step = epochSpacing_h(window);
     const epochs = { first_utc: toIsoUtc(window.first_ms), last_utc: toIsoUtc(window.last_ms), spacing_h: step };
-    const region = { kind: "disc" as const, lat_deg: doc.site.lat_deg, lon_deg: doc.site.lon_deg, radius_m };
+    const region = { kind: "disc" as const, lat_deg: lat, lon_deg: lon, radius_m };
     const check = checkSearch(region, spacing, TOP_K, epochs);
     if (check.errors.length > 0) return { body: null, reason: check.errors[0]!, guessS: 0, about: "", radiusKm };
     const landings = Math.floor((windowDays(window) * 24) / step) + 1;
     const guessS = 60 * (1 + (landings - 1) / 40) * pace("search");
     return { body: searchBody(doc, region, spacing, TOP_K, epochs, effectiveRank(rankBy, doc)), reason: null, guessS, about: aboutText(guessS), radiusKm };
-  }, [doc, planRadius, planWindow, rankBy]);
+  }, [doc, lat, lon, planRadius, planWindow, rankBy]);
 }
 
 export function useFindOutOfDate(plan: FindPlan): boolean {

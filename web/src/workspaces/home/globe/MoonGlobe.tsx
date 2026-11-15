@@ -34,6 +34,7 @@ type Popup =
 
 interface MoonGlobeProps {
   site: { lat_deg: number; lon_deg: number; name: string };
+  centre?: { lat_deg: number; lon_deg: number };
   focus: GlobeFocus;
   sites: SiteEntry[];
   pins: AltMark[];
@@ -148,7 +149,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
       const r0 = box.getBoundingClientRect();
       const hero = box.closest(".home-hero");
       const obstacles: Rect[] = [];
-      hero?.querySelectorAll(".home-plan, .home-finder, .home-sky-note, .globe-tools").forEach((el) => {
+      hero?.querySelectorAll(".home-finder, .home-sky-note, .globe-tools").forEach((el) => {
         const r = el.getBoundingClientRect();
         if (r.width > 0) obstacles.push([r.left - r0.left, r.top - r0.top, r.right - r0.left, r.bottom - r0.top]);
       });
@@ -277,7 +278,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
     scene?.setCells(cells, latticeStale);
   }, [scene, cells, latticeStale]);
 
-  const ringCentre = lattice ? { lat: lattice.lat0, lon: lattice.lon0, r: lattice.radius_m } : { lat: site.lat_deg, lon: site.lon_deg, r: areaRadius_m };
+  const ringCentre = lattice ? { lat: lattice.lat0, lon: lattice.lon0, r: lattice.radius_m } : { lat: (props.centre ?? site).lat_deg, lon: (props.centre ?? site).lon_deg, r: areaRadius_m };
   useEffect(() => {
     scene?.setRing(ringCentre.r ? circle(ringCentre.lat, ringCentre.lon, ringCentre.r) : null);
   }, [scene, ringCentre.lat, ringCentre.lon, ringCentre.r]);

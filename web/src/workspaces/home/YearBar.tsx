@@ -109,7 +109,7 @@ export function YearBar({ view, window: win, spans, both, marks, landingMs, busy
         <IconButton icon="chevronLeft" size="sm" variant="ghost" label="Previous year" onClick={() => onYear(-1)} />
         <strong className="yb-year">{yearText(view)}</strong>
         <IconButton icon="chevronRight" size="sm" variant="ghost" label="Next year" onClick={() => onYear(1)} />
-        <span className="yb-window">{whole ? "Any time in the year" : `${dayText(shown.first_ms)} – ${dayText(shown.last_ms - 1)}`}</span>
+        {!whole && <span className="yb-window">{`${dayText(shown.first_ms)} – ${dayText(shown.last_ms - 1)}`}</span>}
       </div>
       <div
         ref={track}

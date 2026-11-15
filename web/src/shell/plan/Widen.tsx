@@ -1,16 +1,13 @@
 import { useId, useState } from "react";
 import { IconButton } from "../../components/ui/Button";
-import { DateTimeInput, Select, Toggle } from "../../components/ui/Fields";
+import { DateTimeInput, Toggle } from "../../components/ui/Fields";
 import { Segmented } from "../../components/ui/Segmented";
 import {
   DEFAULT_RADIUS_KM,
   MAX_RADIUS_KM,
   MIN_RADIUS_KM,
   RADIUS_PRESETS_KM,
-  RANK_OPTIONS,
-  activeRequirements,
   defaultWindow,
-  effectiveRank,
   effectiveWindow,
   isYear,
   shiftYear,
@@ -18,7 +15,6 @@ import {
   yearFrom,
   yearText,
   type LandingWindow,
-  type RankBy,
 } from "../../scenario/planSearch";
 import { useScenario } from "../../scenario/store";
 import { spanText } from "../../scenario/when";
@@ -151,23 +147,6 @@ export function WindowControl() {
           “To” must come after “From”
         </p>
       )}
-    </div>
-  );
-}
-
-export function RankControl() {
-  const doc = useScenario((s) => s.doc);
-  const rankBy = usePlanSearch((s) => s.rankBy);
-  const setRankBy = usePlanSearch((s) => s.setRankBy);
-  if (!doc) return null;
-  const none = activeRequirements(doc) === 0;
-  const options = RANK_OPTIONS.filter((o) => !(none && o.value === "margin")).map((o) => ({ value: o.value, label: o.label }));
-  return (
-    <div className="plan-widen plan-rank">
-      <div className="plan-widen-row">
-        <span className="plan-widen-label">Rank by</span>
-        <Select aria-label="Rank sites and dates by" value={effectiveRank(rankBy, doc)} options={options} onChange={(v) => setRankBy(v as RankBy)} />
-      </div>
     </div>
   );
 }
