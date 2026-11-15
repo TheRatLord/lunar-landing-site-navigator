@@ -23,6 +23,7 @@ shadow.
 6. **The astronaut and the rover stand for "you, visiting today"** (option 1 of three). They appear at every
    site; the hardware on the ground is what was really left there. "How true is this picture?" says so.
 7. **Approach C**: a new walk view beside the existing ones; the lessons are not touched.
+8. **Two points of view** (added later the same day): the astronaut can be seen from behind (third person) or through its visor (first person), and the rover from behind or from the driver's seat. **V** or a button switches; in first person the astronaut is hidden from the camera but still casts its shadow.
 
 ## Goals
 

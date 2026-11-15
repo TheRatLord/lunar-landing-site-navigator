@@ -5,6 +5,7 @@ import type { CraterSource } from "./scene/craterView";
 import { termsIn, type TermId } from "./glossary";
 import { SITES, type SiteId } from "./sites";
 import type { WalkBody } from "./walk/walkView";
+import type { WalkPov } from "./walk/walkCamera";
 import type { PropId } from "./walk/facts";
 
 export type Landing = 0 | 7 | 14;
@@ -36,6 +37,8 @@ export interface LearnState {
   panel: boolean;
   setPanel(open: boolean): void;
   walkBody: WalkBody;
+  walkPov: WalkPov;
+  setWalkPov(p: WalkPov): void;
   walkEdge: boolean;
   walkHint: boolean;
   nearProp: PropId | null;
@@ -78,6 +81,8 @@ export const useLearn = create<LearnState>()((set, get) => ({
   glFailed: false,
   terrainRev: 0,
   walkBody: "astronaut",
+  walkPov: "third",
+  setWalkPov: (walkPov) => set({ walkPov, interacted: true }),
   walkEdge: false,
   walkHint: true,
   nearProp: null,

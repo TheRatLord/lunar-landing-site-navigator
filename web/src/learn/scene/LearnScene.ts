@@ -23,6 +23,7 @@ import moonMap from "./maps/moon.jpg";
 import { CameraTween } from "./tween";
 import { SPACE_BG, type SceneFrame, type Shared, type ViewKind } from "./types";
 import { WalkView, type WalkBody } from "../walk/walkView";
+import type { WalkPov } from "../walk/walkCamera";
 import type { PropId } from "../walk/facts";
 
 type Phase = "fly" | "out" | "in";
@@ -52,6 +53,7 @@ export class LearnScene {
   private crater: CraterView | null = null;
   private walk: WalkView | null = null;
   private walkBody: WalkBody = "astronaut";
+  private walkPov: WalkPov = "third";
   private overlay!: Scene;
   private overlayCam!: OrthographicCamera;
   private insetRT!: WebGLRenderTarget;
@@ -83,6 +85,7 @@ export class LearnScene {
   onUserLook: (() => void) | null = null;
   onCraterTerrain: ((source: CraterSource) => void) | null = null;
   onWalkSwitch: (() => void) | null = null;
+  onWalkPov: (() => void) | null = null;
   onWalkEdge: ((atEdge: boolean) => void) | null = null;
   onWalkNear: ((id: PropId | null) => void) | null = null;
 
@@ -162,12 +165,21 @@ export class LearnScene {
       this.walk = new WalkView(this.shared);
       this.walk.input.onActive = this.requestRender;
       this.walk.input.onSwitch = () => this.onWalkSwitch?.();
+      this.walk.input.onPov = () => this.onWalkPov?.();
       this.walk.onEdge = (e) => this.onWalkEdge?.(e);
       this.walk.onNear = (id) => this.onWalkNear?.(id);
       this.walk.setBody(this.walkBody);
+      this.walk.setPov(this.walkPov);
       this.applyCamera(this.walk.camera);
     }
     return this.walk;
+  }
+
+  setWalkPov(p: WalkPov) {
+    if (p === this.walkPov) return;
+    this.walkPov = p;
+    this.walk?.setPov(p);
+    this.requestRender();
   }
 
   setWalkBody(b: WalkBody) {

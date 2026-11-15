@@ -1,13 +1,12 @@
-import { AmbientLight, DirectionalLight, Group, HemisphereLight, Scene, Vector3 } from "three";
-import { disposeTree } from "../../lib/three";
+import { AmbientLight, DirectionalLight, HemisphereLight, Scene, Vector3 } from "three";
 import { RAD } from "../geometry";
 import type { RealSite } from "../terrain";
 import type { SceneFrame, Shared } from "../scene/types";
 import { Astronaut } from "./astronaut";
 import type { Obstacle } from "./collide";
 import type { PropId } from "./facts";
-import { FollowCamera } from "./followCamera";
-import { propsFor, type PropSpec } from "./props";
+import { WalkCamera, type WalkPov } from "./walkCamera";
+import { PropSet } from "./props/propSet";
 import { Rover } from "./rover";
 import { SolarPanel } from "./solarPanel";
 import { WalkInput, type Drive } from "./walkInput";
@@ -22,7 +21,7 @@ const IDLE: Drive = { forward: 0, turn: 0, jump: false };
 export class WalkView {
   readonly scene = new Scene();
   readonly input = new WalkInput();
-  private readonly follow = new FollowCamera();
+  private readonly cam = new WalkCamera();
   private readonly terrain = new WalkTerrain();
   private readonly sky: WalkSky;
   private readonly astronaut = new Astronaut();
@@ -33,9 +32,9 @@ export class WalkView {
   private readonly bounce = new HemisphereLight(0x000000, 0x9a9a96, 0);
   private readonly sunDir = new Vector3(0, 1, 0);
   private readonly focus = new Vector3();
+  private readonly eye = new Vector3();
   private fixed: Obstacle[] = [];
-  private readonly propGroup = new Group();
-  private props: PropSpec[] = [];
+  private readonly props = new PropSet();
   private near: PropId | null = null;
   onNear: ((id: PropId | null) => void) | null = null;
   private body: WalkBody = "astronaut";
@@ -57,13 +56,14 @@ export class WalkView {
     cam.bottom = -SHADOW_HALF;
     cam.near = 1;
     cam.far = 2000;
+    cam.layers.enable(1);
     this.scene.add(
       this.sky.group,
       this.terrain.group,
       this.astronaut.object,
       this.rover.object,
       this.panel.object,
-      this.propGroup,
+      this.props.group,
       this.light,
       this.light.target,
       this.ambient,
@@ -72,7 +72,7 @@ export class WalkView {
   }
 
   get camera() {
-    return this.follow.camera;
+    return this.cam.camera;
   }
 
   setActive(on: boolean): void {
@@ -84,9 +84,24 @@ export class WalkView {
     this.body = b;
     this.input.clear();
     if (b === "rover") this.astronaut.kneeling = false;
-    this.follow.setDistance(b === "rover" ? 10 : 7);
+    this.cam.setDistance(b === "rover" ? 10 : 7);
     this.aim();
-    if (this.frame?.reducedMotion) this.follow.snap(this.focus, this.heading(), this.ground);
+    this.applyLayers();
+    if (this.frame?.reducedMotion || this.cam.pov === "first") this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
+  }
+
+  setPov(p: WalkPov): void {
+    if (p === this.cam.pov) return;
+    this.aim();
+    this.cam.setPov(p, this.focus, this.heading(), this.ground);
+    this.applyLayers();
+    this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
+    this.sky.group.position.copy(this.camera.position);
+  }
+
+  private applyLayers(): void {
+    const hide = this.cam.pov === "first" && this.body === "astronaut";
+    this.astronaut.object.traverse((o) => o.layers.set(hide ? 1 : 0));
   }
 
   update(f: SceneFrame): void {
@@ -96,12 +111,14 @@ export class WalkView {
     if (f.site.id !== this.siteId) {
       this.siteId = f.site.id;
       this.input.clear();
-      this.buildProps(f.site.id);
+      this.fixed = [...this.props.build(f.site.id, this.terrain, [{ x: 0, z: 0, r: 4 }, this.panel.obstacle]), this.panel.obstacle];
+      this.near = null;
+      this.onNear?.(null);
       this.astronaut.reset();
       this.rover.reset();
       this.settle();
     }
-    this.placeProps();
+    this.props.place(this.terrain);
     this.rover.pose(this.terrain);
     this.sky.update(f.sky, f.site, f.d);
     this.sky.sunDir(this.sunDir);
@@ -116,59 +133,27 @@ export class WalkView {
     this.placeLight();
   }
 
-  private buildProps(id: SceneFrame["site"]["id"]): void {
-    for (const c of [...this.propGroup.children]) {
-      this.propGroup.remove(c);
-      disposeTree(c);
-    }
-    this.props = propsFor(id);
-    for (const p of this.props) this.propGroup.add(p.object);
-    const solid = this.props.filter((p) => !p.walkOver);
-    this.terrain.setClearings([{ x: 0, z: 0, r: 4 }, this.panel.obstacle, ...solid]);
-    this.fixed = [...this.terrain.rockObstacles(), this.panel.obstacle, ...solid.map((p) => ({ x: p.x, z: p.z, r: p.r }))];
-    this.near = null;
-    this.onNear?.(null);
-  }
-
-  private placeProps(): void {
-    for (const p of this.props) {
-      if (p.decal) {
-        for (const c of p.object.children) c.position.y = this.terrain.heightAt(c.position.x, c.position.z) + 0.02;
-      } else p.object.position.set(p.x, this.terrain.heightAt(p.x, p.z), p.z);
-    }
-  }
-
-  private checkNear(x: number, z: number): void {
-    let best: PropId | null = null;
-    let bestD = Infinity;
-    for (const p of this.props) {
-      if (!p.id) continue;
-      const d = Math.hypot(x - p.x, z - p.z) - p.r;
-      if (d <= 8 && d < bestD) {
-        best = p.id;
-        bestD = d;
-      }
-    }
-    if (best !== this.near) {
-      this.near = best;
-      this.onNear?.(best);
-    }
-  }
-
   private heading(): number {
     return this.body === "rover" ? this.rover.heading : this.astronaut.heading;
   }
 
   private aim(): void {
-    if (this.body === "rover") this.focus.copy(this.rover.position).setY(this.rover.position.y + 1.6);
-    else this.focus.copy(this.astronaut.position).setY(this.astronaut.position.y + 1.2);
+    if (this.body === "rover") {
+      this.focus.copy(this.rover.position).setY(this.rover.position.y + 1.6);
+      this.rover.object.updateMatrixWorld();
+      this.rover.object.localToWorld(this.eye.set(-0.38, 1.75, -0.1));
+    } else {
+      const a = this.astronaut;
+      this.focus.copy(a.position).setY(a.position.y + 1.2);
+      this.eye.set(a.position.x + Math.sin(a.heading * RAD) * 0.12, a.position.y + 1.62, a.position.z - Math.cos(a.heading * RAD) * 0.12);
+    }
   }
 
   private settle(): void {
     this.astronaut.step(0, IDLE, this.terrain, [], true);
     this.rover.step(0, IDLE, this.terrain, []);
     this.aim();
-    this.follow.snap(this.focus, this.heading(), this.ground);
+    this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
     this.sky.group.position.copy(this.camera.position);
   }
 
@@ -198,15 +183,23 @@ export class WalkView {
       this.onEdge?.(edge);
     }
     this.aim();
-    this.checkNear(this.focus.x, this.focus.z);
-    this.follow.step(dt, this.focus, this.heading(), reduced, this.ground);
+    const near = this.props.nearest(this.focus.x, this.focus.z, 8);
+    if (near !== this.near) {
+      this.near = near;
+      this.onNear?.(near);
+    }
+    this.cam.step(dt, this.focus, this.eye, this.heading(), reduced, this.ground);
     this.sky.group.position.copy(this.camera.position);
     this.placeLight();
-    return moving || this.follow.settling;
+    return moving || this.cam.settling;
   }
 
   drag(dxDeg: number, dyDeg: number): void {
-    this.follow.orbit(dxDeg, dyDeg);
+    if (this.cam.pov === "first" && this.body === "astronaut") {
+      this.astronaut.kneeling = false;
+      this.astronaut.heading = (this.astronaut.heading - dxDeg + 360) % 360;
+      this.cam.orbit(0, dyDeg, false);
+    } else this.cam.orbit(dxDeg, dyDeg, true);
   }
 
   dispose(): void {

@@ -9,6 +9,8 @@ export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }
   const edge = useLearn((s) => s.walkEdge);
   const hint = useLearn((s) => s.walkHint);
   const setBody = useLearn((s) => s.setWalkBody);
+  const pov = useLearn((s) => s.walkPov);
+  const setPov = useLearn((s) => s.setWalkPov);
   const other = body === "rover" ? "astronaut" : "rover";
   const start = (e: PointerEvent<HTMLButtonElement>, x: number, y: number) => {
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -17,11 +19,12 @@ export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }
   const stop = () => onStick(0, 0);
   return (
     <div className="l-walk-hud">
+      {pov === "first" && body === "astronaut" && <div className="l-walk-visor" aria-hidden="true" />}
       {hint && (
         <div className="l-walk-hint" role="note">
           <p>
             <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or arrows to move · drag to look around · <kbd>Space</kbd> to jump ·{" "}
-            <kbd>E</kbd> to switch · <kbd>K</kbd> to play time
+            <kbd>E</kbd> to switch · <kbd>V</kbd> to change view · <kbd>K</kbd> to play time
           </p>
           <button
             type="button"
@@ -42,6 +45,9 @@ export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }
           <button type="button" aria-label="Move backward" onPointerDown={(e) => start(e, 0, -1)} onPointerUp={stop} onPointerCancel={stop}>S ▼</button>
           <button type="button" aria-label="Turn right" onPointerDown={(e) => start(e, 1, 0)} onPointerUp={stop} onPointerCancel={stop}>D ▶</button>
         </div>}
+        <button type="button" className="l-btn l-walk-pov" aria-pressed={pov === "first"} onClick={() => setPov(pov === "first" ? "third" : "first")}>
+          {pov === "first" ? "Third person view" : body === "rover" ? "Driver's seat view" : "Through the visor"}
+        </button>
         <button type="button" className="l-btn l-btn-primary l-walk-switch" onClick={() => setBody(other)}>
           {body === "rover" ? "Switch to the astronaut" : "Switch to the rover"}
         </button>

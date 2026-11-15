@@ -75,4 +75,5 @@ Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/sup
 - [x] Solar panel and the Battery tile in Walk
 - [x] Rover and switching
 - [x] Hardware at the historical sites and fact cards
+- [x] First and third person views for the astronaut and the rover (V or a button)
 - [ ] Touch controls, lights, reduced motion, honesty notes

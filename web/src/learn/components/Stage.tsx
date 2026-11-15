@@ -123,6 +123,10 @@ export function Stage() {
       const s = useLearn.getState();
       s.setWalkBody(s.walkBody === "rover" ? "astronaut" : "rover");
     };
+    scene.onWalkPov = () => {
+      const s = useLearn.getState();
+      s.setWalkPov(s.walkPov === "first" ? "third" : "first");
+    };
     scene.onWalkEdge = (walkEdge) => useLearn.setState({ walkEdge });
     scene.onWalkNear = (nearProp) => useLearn.setState({ nearProp });
     scene.onUserLook = () => {
@@ -140,6 +144,7 @@ export function Stage() {
       const s = useLearn.getState();
       scene.update(frameFrom(s, prefersReducedMotion()));
       scene.setWalkBody(s.walkBody);
+      scene.setWalkPov(s.walkPov);
       canvas.style.touchAction = s.view === "ground" ? "pan-y" : "none";
     };
     push();

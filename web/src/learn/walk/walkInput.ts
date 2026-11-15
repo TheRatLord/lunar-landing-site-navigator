@@ -8,7 +8,7 @@ const FORWARD = new Set(["KeyW", "ArrowUp"]);
 const BACK = new Set(["KeyS", "ArrowDown"]);
 const LEFT = new Set(["KeyA", "ArrowLeft"]);
 const RIGHT = new Set(["KeyD", "ArrowRight"]);
-const HANDLED = new Set([...FORWARD, ...BACK, ...LEFT, ...RIGHT, "Space", "KeyE", "KeyL"]);
+const HANDLED = new Set([...FORWARD, ...BACK, ...LEFT, ...RIGHT, "Space", "KeyE", "KeyL", "KeyV"]);
 const BLOCK = "input, textarea, select, [role=radio], [role=slider], [contenteditable=true]";
 const PRESSABLE = "button, a, summary";
 
@@ -18,6 +18,7 @@ export class WalkInput {
   private jumpQueued = false;
   onSwitch: (() => void) | null = null;
   onLights: (() => void) | null = null;
+  onPov: (() => void) | null = null;
   onActive: (() => void) | null = null;
   private enabled = false;
 
@@ -43,6 +44,7 @@ export class WalkInput {
     if (e.code === "Space") this.jumpQueued = true;
     else if (e.code === "KeyE") this.onSwitch?.();
     else if (e.code === "KeyL") this.onLights?.();
+    else if (e.code === "KeyV") this.onPov?.();
     else this.down.add(e.code);
     this.onActive?.();
   };

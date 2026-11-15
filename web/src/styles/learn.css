@@ -1779,6 +1779,21 @@
 .l-walk-drive button:hover {
   background: var(--panel-hover);
 }
+.l-walk-pov {
+  border-color: var(--border-strong);
+  background: var(--panel-2);
+  color: var(--text);
+}
+.l-walk-pov:hover {
+  background: var(--panel-hover);
+}
+.l-walk-visor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 78% 70% at 50% 46%, transparent 62%, rgba(212, 160, 60, 0.12) 74%, rgba(8, 8, 10, 0.92) 92%);
+}
+.learn.is-explore .l-walk-pov,
 .learn.is-explore .l-walk-switch {
   min-height: 34px;
   padding: 4px 8px;
