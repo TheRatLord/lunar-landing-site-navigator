@@ -262,9 +262,17 @@ export function HomeWorkspace() {
         <ProgressBar value={searchProgress ?? 0} label="Search progress" />
       </div>
     ) : covers ? (
-      <p className="opts-note">
-        {spots.length === 0 ? `No other spot within ${radiusKm} km made the top of the search.` : `Includes the best spots within ${radiusKm} km.`}
-      </p>
+      <div className="opts-search">
+        <p className="opts-note">
+          {spots.length === 0 ? `No other spot within ${radiusKm} km made the top of the search.` : `Includes the best spots within ${radiusKm} km`}
+          {searchBodyDone && !samePlace(searchBodyDone.region, site) ? ` of ${pointName(searchBodyDone.region.lat_deg, searchBodyDone.region.lon_deg)}.` : spots.length === 0 ? "" : "."}
+        </p>
+        {searchBodyDone && !samePlace(searchBodyDone.region, site) && (
+          <Button size="sm" icon="search" disabled={!findPlan.body} onClick={() => findPlan.body && runSearch(findPlan.body, findPlan.guessS)}>
+            Search around this site · {findPlan.about}
+          </Button>
+        )}
+      </div>
     ) : (
       <div className="opts-search">
         <p className="opts-note">

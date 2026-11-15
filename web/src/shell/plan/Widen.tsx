@@ -102,6 +102,8 @@ export function AreaControl() {
   );
 }
 
+let lastYear: LandingWindow | null = null;
+
 export function WindowControl() {
   const doc = useScenario((s) => s.doc);
   const stored = usePlanSearch((s) => s.window);
@@ -116,7 +118,11 @@ export function WindowControl() {
         size="sm"
         label="Landing window"
         value={year ? "year" : "dates"}
-        onChange={(v) => setWindow(v === "year" ? yearFrom(win.first_ms) : defaultWindow(doc))}
+        onChange={(v) => {
+          if (v === "year") return setWindow(lastYear ?? yearFrom(win.first_ms));
+          if (year) lastYear = win;
+          setWindow(defaultWindow(doc));
+        }}
         options={[
           { value: "year", label: "A whole year" },
           { value: "dates", label: "Between dates" },
