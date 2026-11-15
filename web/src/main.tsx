@@ -11,7 +11,6 @@ import "./styles/analyst.css";
 import "./styles/evidence.css";
 import "./styles/scenario.css";
 
-import "./demo";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";

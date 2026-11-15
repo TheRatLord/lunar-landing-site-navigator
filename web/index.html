@@ -9,6 +9,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if (/^\/demo\/?$/.test(location.pathname)) {
+        try {
+          for (const key of ["lunarnav.scenario.draft", "lunarnav.alternatives", "lunarnav.compare"]) localStorage.removeItem(key);
+          const search = JSON.parse(localStorage.getItem("lunarnav.plan-search.v2") || "{}");
+          delete search.draft;
+          localStorage.setItem("lunarnav.plan-search.v2", JSON.stringify(search));
+        } catch {}
+        history.replaceState(null, "", "/overview");
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
