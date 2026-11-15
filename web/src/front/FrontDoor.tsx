@@ -17,7 +17,6 @@ export function FrontDoor() {
       <main className="front-main" id="main">
         <header className="front-head">
           <h1>Where can a lander work on the Moon?</h1>
-          <p>Sunlight and a view of Earth decide it.</p>
         </header>
 
         <div className="front-doors">

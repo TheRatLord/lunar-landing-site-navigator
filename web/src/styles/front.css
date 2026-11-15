@@ -27,17 +27,11 @@
   max-width: 880px;
 }
 .front-head h1 {
-  margin: 0 0 var(--sp-3);
+  margin: 0;
   font-size: var(--fs-display);
   font-weight: var(--fw-semibold);
   line-height: var(--lh-tight);
   letter-spacing: var(--tracking-display);
-}
-.front-head p {
-  margin: 0;
-  color: var(--text-2);
-  font-size: var(--fs-lg);
-  line-height: var(--lh-body);
 }
 .front-doors {
   display: grid;
@@ -175,9 +169,6 @@
   .front-main {
     gap: var(--sp-5);
     padding: var(--sp-4) var(--sp-4) var(--sp-5);
-  }
-  .front-head p {
-    font-size: var(--fs-md);
   }
   .front-doors {
     grid-template-columns: minmax(0, 1fr);
