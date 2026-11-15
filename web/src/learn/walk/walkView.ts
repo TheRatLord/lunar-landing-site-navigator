@@ -71,6 +71,7 @@ export class WalkView {
     this.marker.add(ring, beam);
     this.marker.visible = false;
     this.rover.onModelReady = () => this.onModelReady?.();
+    this.panel.onModelReady = () => this.onModelReady?.();
     this.astronaut.onModelReady = () => this.onModelReady?.();
     this.rover.setDriver(false, false);
     this.sky = new WalkSky(shared);

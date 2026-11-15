@@ -26,3 +26,14 @@ python3 -m http.server 8766 --bind 127.0.0.1
 Open `http://127.0.0.1:8766/tools/models/preview.html`. Drag to orbit, scroll to zoom, or select a matching view for both models. The Inside view also offers the existing driver eye position.
 
 The Learn rover loads copies of the proposed GLBs from `web/src/learn/walk/models/`. Its procedural geometry remains available while they load and if either file fails to load.
+
+## Solar panel (three.js)
+
+`solar_panel.glb` is built without Blender, from three.js shapes under bun:
+
+```sh
+cd web && bun scripts/models/solarPanel.ts
+```
+
+It writes the GLB to `web/src/learn/walk/models/` and `tools/models/out/`. The node `Head` turns about +Y to face the
+Sun, `Array` tilts about X, and the cell material is named `Cells` so the site can light it while charging.
