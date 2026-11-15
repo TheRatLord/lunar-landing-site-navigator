@@ -287,10 +287,10 @@ export function MapWorkspace() {
   const startedMs = search.startedMs;
   const findLabel =
     running && startedMs !== null
-      ? { label: "Searching", note: () => leftText(startedMs, useSearchResults.getState().progress, search.guessS).replace("about ", "~"), busy: true, stale: false }
+      ? { label: "Searching", note: () => leftText(startedMs, useSearchResults.getState().progress, search.guessS), busy: true, stale: false }
       : {
           label: "Find sites",
-          note: () => (current ? `${search.candidates.length} found` : stale ? `${search.candidates.length} found · out of date` : plan.body ? `${plan.radiusKm} km · ${plan.about.replace("about ", "~")}` : null),
+          note: () => (current ? `${search.candidates.length} found` : stale ? `${search.candidates.length} found · out of date` : plan.body ? `${plan.radiusKm} km · ${plan.about}` : null),
           busy: false,
           stale,
         };

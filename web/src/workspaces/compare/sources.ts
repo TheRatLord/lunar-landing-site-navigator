@@ -1,4 +1,6 @@
 import type { ScenarioItem } from "../../api/planning";
+import { parseUtc } from "../../lib/time";
+import { dateText } from "./gridModel";
 import type { Candidate } from "../../scenario/alternatives";
 import type { Scenario, ScenarioSummary } from "../../scenario/types";
 
@@ -51,7 +53,7 @@ export function buildSources(
       key: `saved:${s.id}`,
       group: "saved",
       name: s.name,
-      detail: `Saved v${s.version}, ${s.updated_utc.slice(0, 16).replace("T", " ")}Z`,
+      detail: `Saved ${dateText(parseUtc(s.updated_utc) ?? 0)}`,
       item: { scenario_id: s.id },
     });
   }

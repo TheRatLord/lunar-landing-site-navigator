@@ -90,3 +90,16 @@
   .evi-aside { position: static; order: -1; align-items: flex-end; max-height: none; }
   .evi-toc { display: none; }
 }
+
+@media (max-width: 700px) {
+  .evi-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .evi-list { flex-direction: row; gap: var(--sp-2); padding: var(--sp-2); border-right: 0; border-bottom: var(--hairline) solid var(--border); overflow-x: auto; }
+  .evi-group { flex: none; }
+  .evi-group ul { flex-direction: row; }
+  .evi-group-title { display: none; }
+  .evi-item { width: auto; white-space: nowrap; }
+  .evi-glance-scroll { padding: var(--sp-3); }
+  .evi-checks thead { display: none; }
+  .evi-layout .evi-checks tbody tr { display: block; padding: var(--sp-2) 0; border-bottom: var(--hairline) solid var(--border); }
+  .evi-layout .evi-checks tbody tr > * { display: block; width: auto; padding: var(--sp-0) var(--sp-3); border-bottom: 0; }
+}

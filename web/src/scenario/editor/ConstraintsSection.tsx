@@ -6,6 +6,7 @@ import { useScenario } from "../store";
 import type { Limit } from "../types";
 import { GroupHead, NumberField } from "./controls";
 import { USER_ORIGIN, editedOrigin } from "./fieldState";
+import { formatLimit } from "../../lib/requirements";
 import { CONSTRAINT_META, PARAMETER_META, type ConstraintMeta } from "./fieldSpecs";
 import { usePresets } from "./usePresets";
 
@@ -53,6 +54,7 @@ function LimitRow({ meta }: { meta: ConstraintMeta }) {
     <div className="sc-limit on">
       <div className="sc-limit-head">
         <span className="sc-limit-title">{meta.title}</span>
+        {((limit.unit === "h" && Math.max(limit.min ?? 0, limit.max ?? 0) >= 48) || !limit.unit || limit.unit === "fraction") && <span className="faint num">{formatLimit(limit.min, limit.max, limit.unit)}</span>}
         <span className="grow" />
         {sides.map((side) => (
           <NumberField key={side} layout="stacked" path={["constraints", meta.key, side]} label={<span className="sr-only">{side === "min" ? "At least" : "At most"}</span>} unit={`${side === "min" ? "≥" : "≤"}${unit ? ` ${unit}` : ""}`} step={meta.decimals >= 2 ? 0.01 : 0.5} nullable={side !== meta.side} onCommit={relabel} />

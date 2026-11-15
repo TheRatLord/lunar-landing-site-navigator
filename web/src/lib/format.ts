@@ -1,4 +1,4 @@
-import { clamp, wrap360 } from "./scale";
+import { wrap360 } from "./scale";
 export const NBSP = "\u00A0";
 
 export const glue = (text: string): string => text.replace(/ /g, NBSP);
@@ -24,19 +24,6 @@ export function formatSignedValue(v: number | null | undefined, unit: string | n
   return n === "—" ? n : withUnit(n, unit);
 }
 
-export function formatRange(a: number, b: number, unit: string | null | undefined, decimals = 2, sep = "…"): string {
-  return withUnit(`${formatNum(a, decimals)} ${sep} ${formatNum(b, decimals)}`, unit);
-}
-
-export function formatBounds(min: number | null | undefined, max: number | null | undefined, unit: string | null | undefined, decimals = 2): string {
-  const lo = min ?? null;
-  const hi = max ?? null;
-  if (lo !== null && hi !== null) return withUnit(`${formatNum(lo, decimals)} to ${formatNum(hi, decimals)}`, unit);
-  if (lo !== null) return withUnit(`≥ ${formatNum(lo, decimals)}`, unit);
-  if (hi !== null) return withUnit(`≤ ${formatNum(hi, decimals)}`, unit);
-  return "";
-}
-
 export function formatLimit(sense: "min" | "max", limit: number, unit: string | null | undefined, decimals = 2): string {
   return withUnit(`${sense === "min" ? "≥" : "≤"} ${formatNum(limit, decimals)}`, unit);
 }
@@ -58,18 +45,6 @@ export function formatDeg(v: number, decimals = 1, opts: { azimuth?: boolean } =
   if (opts.azimuth) r = wrap360(r);
   if (r === 0) r = 0;
   return `${formatNum(r, decimals)}°`;
-}
-
-export function formatSig(v: number, sig = 3, opts: { trim?: boolean } = {}): string {
-  if (!Number.isFinite(v)) return "—";
-  if (v === 0) return "0";
-  const mag = Math.floor(Math.log10(Math.abs(v)));
-  const decimals = clamp(sig - 1 - mag, 0, 20);
-  const fixed = Math.abs(v).toFixed(decimals);
-  const sign = v < 0 ? "−" : "";
-  if (Number(fixed) === 0) return `${sign}<0.${"0".repeat(19)}1`;
-  const body = opts.trim && fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed;
-  return `${sign}${body}`;
 }
 
 export function tickDecimals(ticks: readonly number[], max: number): number {

@@ -50,7 +50,6 @@ export type EllipseResult = Omit<Schemas["EllipseResult"], "best" | "worst" | "c
 };
 
 export type EllipseMapGrid = Schemas["EllipseMapGrid"];
-export const MAP_STATE = { unknown: -1, fail: 0, marginal: 1, pass: 2, outside: -2 } as const;
 
 export interface EllipseParams {
   n_samples: number;
@@ -66,29 +65,6 @@ export const ELLIPSE_LIMITS = {
   mapCells: { min: 3, max: 65 },
   seedMax: 2 ** 31 - 1,
 } as const;
-
-export const DEFAULT_PARAMS: EllipseParams = {
-  n_samples: 512,
-  seed: 0,
-  truncate: true,
-  map_cells: 17,
-  hazard_slope_deg: null,
-  hazard_roughness_m: null,
-};
-
-export function validateParams(p: EllipseParams, scenario: Scenario | null): string[] {
-  const out: string[] = [];
-  const L = ELLIPSE_LIMITS;
-  if (!scenario?.ellipse) out.push("The plan has no landing ellipse. Set its semi-axes on the Mission page.");
-  if (!Number.isInteger(p.n_samples) || p.n_samples < L.nSamples.min || p.n_samples > L.nSamples.max)
-    out.push(`Samples must be a whole number from ${L.nSamples.min} to ${L.nSamples.max.toLocaleString("en-US")}; the engine refuses more with a 422.`);
-  if (!Number.isInteger(p.seed) || p.seed < 0 || p.seed > L.seedMax) out.push(`Seed must be a whole number from 0 to ${L.seedMax.toLocaleString("en-US")}.`);
-  if (p.map_cells !== null && (!Number.isInteger(p.map_cells) || p.map_cells < L.mapCells.min || p.map_cells > L.mapCells.max))
-    out.push(`Map nodes per side must be a whole number from ${L.mapCells.min} to ${L.mapCells.max}, or empty to skip the map.`);
-  if (p.hazard_slope_deg !== null && !(p.hazard_slope_deg > 0 && p.hazard_slope_deg <= 90)) out.push("Hazard slope must be above 0 and at most 90 degrees.");
-  if (p.hazard_roughness_m !== null && !(p.hazard_roughness_m > 0)) out.push("Hazard roughness must be above 0 m.");
-  return out;
-}
 
 export interface EllipseBody extends EllipseParams {
   scenario: Scenario;

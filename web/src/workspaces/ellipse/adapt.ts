@@ -1,3 +1,4 @@
+import { formatLimit, requirementName } from "../../lib/requirements";
 import { clamp, wrap360 } from "../../lib/scale";
 import { formatSigned, withUnit } from "../../lib/format";
 import { quantityText } from "../../components/viz/units";
@@ -107,8 +108,7 @@ export function limitInfo(scenario: Scenario | { [key: string]: unknown } | null
   if (!lim || typeof lim !== "object" || !("unit" in lim)) return { label: key.replace(/_/g, " "), unit: "", rule: "" };
   const lo = lim.min ?? null;
   const hi = lim.max ?? null;
-  const rule = lo !== null && hi !== null ? `${lo} to ${hi}` : lo !== null ? `≥ ${lo}` : hi !== null ? `≤ ${hi}` : "";
-  return { label: lim.label || key.replace(/_/g, " "), unit: lim.unit, rule };
+  return { label: requirementName(key, lim.label), unit: lim.unit, rule: formatLimit(lo, hi, lim.unit) };
 }
 
 
@@ -153,7 +153,7 @@ export function samplesCsv(result: EllipseResult): string {
   const s = result.samples;
   if (!s) return "";
   const head = [
-    `# scenario: ${result.scenario_name}`,
+    `# plan: ${result.scenario_name}`,
     `# scenario_sha256: ${result.scenario_sha256 ?? ""}`,
     `# provider: ${result.provider}`,
     `# scheme: ${result.scheme}`,

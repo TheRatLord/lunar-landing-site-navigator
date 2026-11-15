@@ -1,3 +1,4 @@
+import { formatQuantity } from "../../lib/requirements";
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { IconButton } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Progress";
@@ -49,7 +50,7 @@ function Lane({ kind, list, start, end, lengths }: { kind: LaneKind; list: reado
         const days = (iv.end_ms - iv.start_ms) / MS_DAY;
         return (
           <i key={iv.start_ms} style={{ left: `${((iv.start_ms - start) / span) * 100}%`, width: `${((iv.end_ms - iv.start_ms) / span) * 100}%` }}>
-            {lengths && days >= 8 ? `${Math.round(days)} d` : null}
+            {lengths && days >= 8 ? formatQuantity(days * 24, "h") : null}
           </i>
         );
       })}

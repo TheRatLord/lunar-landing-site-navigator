@@ -1,3 +1,4 @@
+import { requirementName } from "../../lib/requirements";
 import type { ConstraintVerdict } from "../../contract/types";
 import { Panel } from "../../components/ui/Panel";
 import { Stat } from "../../components/ui/Stat";
@@ -71,7 +72,7 @@ export function HeadingPanel({ view, rows }: { view: HeadingView; rows: readonly
         <div className="hd-rings">
           {shown.map((c) => {
             const row = rows.find((r) => r.id === c.key);
-            const label = row?.label ?? c.key;
+            const label = requirementName(c.key, row?.label);
             return (
               <figure key={c.key} className="hd-fig">
                 <Ring view={view} c={c} label={label} />

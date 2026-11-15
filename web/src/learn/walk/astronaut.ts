@@ -78,9 +78,9 @@ export class Astronaut {
     let x = this.position.x + Math.sin(this.heading * RAD) * v * dt;
     let z = this.position.z - Math.cos(this.heading * RAD) * v * dt;
     [x, z] = pushOut(x, z, BODY_R, obs);
-    let edge: boolean;
-    [x, z, edge] = clampRadius(x, z, WALK_RADIUS_M);
-    this.atEdge = edge;
+    const clamped = clampRadius(x, z, WALK_RADIUS_M);
+    [x, z] = clamped;
+    this.atEdge = clamped[2];
     if (d.jump && this.lift <= 0) this.vy = JUMP_V;
     if (this.vy !== 0 || this.lift > 0) {
       this.vy -= G_MOON * dt;

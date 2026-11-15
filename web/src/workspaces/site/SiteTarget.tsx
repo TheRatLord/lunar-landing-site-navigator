@@ -1,3 +1,4 @@
+import { requirementName } from "../../lib/requirements";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { usePublishScreenContext } from "../../ask/screenContext";
 import type { CountdownKind } from "../../contract/types";
@@ -99,7 +100,7 @@ export function SiteTarget() {
   const horizon = useMemo(() => (horizonSrc ? adaptHorizon(horizonSrc) : null), [horizonSrc]);
 
   usePublishScreenContext({
-    where: "Site, Landing point",
+    where: "Site, Landing site",
     summary: VIEW_NAME[view],
     lines: [`The view is ${VIEW_NAME[view]}.`, ...(view === "panorama" ? [`The horizon is drawn for the ${observer} height.`] : [])],
   });
@@ -198,7 +199,7 @@ export function SiteTarget() {
                   setTime(span[0]);
                 }}
               />
-              {unevaluated.length > 0 && <p className="site-unevaluated">Not evaluated: {unevaluated.map((c) => c.label).join(", ")}</p>}
+              {unevaluated.length > 0 && <p className="site-unevaluated">Not evaluated: {unevaluated.map((c) => requirementName(c.key, c.label)).join(", ")}</p>}
               <Countdown
                 events={events}
                 timeMs={eventsAt}

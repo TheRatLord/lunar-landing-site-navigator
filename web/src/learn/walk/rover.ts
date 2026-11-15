@@ -131,9 +131,9 @@ export class Rover {
       const cap = TOP_SPEED * Math.sqrt(clamp(1 + into / len, 0, 1));
       this.speed = Math.sign(this.speed) * Math.min(Math.abs(this.speed), cap);
     }
-    let edge: boolean;
-    [x, z, edge] = clampRadius(px, pz, WALK_RADIUS_M);
-    this.atEdge = edge;
+    const clamped = clampRadius(px, pz, WALK_RADIUS_M);
+    [x, z] = clamped;
+    this.atEdge = clamped[2];
     this.position.set(x, 0, z);
     this.roll += (this.speed * dt) / WHEEL_R;
     this.pose(terrain);

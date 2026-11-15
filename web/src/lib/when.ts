@@ -1,5 +1,6 @@
-import { formatValue, glue } from "./format";
-import { formatUtc, parseUtc } from "./time";
+import { spanText, whenText } from "../components/viz/units";
+import { glue } from "./format";
+import { parseUtc } from "./time";
 
 interface ServedInstant {
   utc: string;
@@ -26,10 +27,10 @@ export function whenLines(when: ServedWhen | null | undefined, fmt?: (v: number)
       continue;
     }
     const ms = parseUtc(inst.utc);
-    const at = ms === null ? inst.utc : formatUtc(ms);
+    const at = ms === null ? inst.utc : whenText(ms);
     const value = typeof inst.value === "number" && Number.isFinite(inst.value) ? inst.value : null;
     const shown = value !== null && fmt ? `: ${fmt(value)}` : "";
-    const hold = inst.hold_s !== 0 ? `, holds ${formatValue(inst.hold_s, "s", 0)}` : "";
+    const hold = inst.hold_s !== 0 ? `, holds ${spanText(inst.hold_s * 1000)}` : "";
     out.push({ world, t_ms: ms, value, text: `${world} ${glue(at)}${shown}${hold}` });
   }
   return out;

@@ -19,6 +19,6 @@ export function slug(text: string): string {
       .toLowerCase()
       .normalize("NFKD")
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "scenario"
+      .replace(/^-+|-+$/g, "") || "plan"
   );
 }

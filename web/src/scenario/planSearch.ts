@@ -14,12 +14,6 @@ export const RANK_OPTIONS: Array<{ value: RankBy; label: string; short: string }
   { value: "margin", label: "Margin on the requirements", short: "margin" },
 ];
 
-export const TOTALS: Array<{ key: TotalKey; label: string; short: string }> = [
-  { key: "sunlit_h", label: "Sunlight", short: "Sun" },
-  { key: "contact_h", label: "Earth link", short: "Earth" },
-  { key: "sunlit_contact_h", label: "Both together", short: "Both" },
-];
-
 export const MIN_RADIUS_KM = 0.1;
 export const MAX_RADIUS_KM = 200;
 export const RADIUS_PRESETS_KM = [1, 5, 20, 50];
@@ -176,7 +170,7 @@ useScenario.subscribe((s, prev) => {
 
 export function importPlanFile(text: string): void {
   if (!useScenario.getState().importText(text)) return;
-  let raw: unknown = null;
+  let raw: unknown;
   try {
     raw = JSON.parse(text);
   } catch {
@@ -210,11 +204,6 @@ export const rankLabel = (rank: RankBy): string => RANK_OPTIONS.find((o) => o.va
 export function defaultWindow(doc: Scenario): LandingWindow {
   const landing = parseUtc(doc.landing_utc) ?? Date.UTC(2027, 0, 1);
   return { first_ms: landing, last_ms: landing + DEFAULT_WINDOW_DAYS * MS_DAY };
-}
-
-export function yearAround(doc: Scenario): LandingWindow {
-  const landing = parseUtc(doc.landing_utc) ?? Date.UTC(2027, 0, 1);
-  return { first_ms: landing - 30 * MS_DAY, last_ms: landing + 335 * MS_DAY };
 }
 
 export function windowDays(w: LandingWindow): number {

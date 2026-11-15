@@ -21,7 +21,7 @@ import { AddDate } from "./AddDate";
 import { AddSite } from "./AddSite";
 import { delayLabels } from "./delays";
 import { Grid, type Cell } from "./Grid";
-import { STATE_WORD, dateText, dayText, limitingName, marginText, marginValue, requestedSites, sameSite, servedByKey, works, type SiteRef } from "./gridModel";
+import { STATE_WORD, dateText, dayText, limitingName, marginValue, requestedSites, rowVerdict, sameSite, servedByKey, works, type SiteRef } from "./gridModel";
 import { BASELINE_SITE, MAX_SLIP_H, SEARCH_DAYS, normalizeSlips, useCompareOptions } from "./options";
 
 export function CompareWorkspace() {
@@ -164,9 +164,7 @@ function Detail({ site, row, slip_h, landingMs, stale, onDone }: { site: SiteRef
   const nextMs = ok ? null : parseUtc(row.next_open_utc ?? null);
   const target = nextMs ?? landingMs;
   const isCurrent = plan && slip_h === 0;
-  const lim = limitingName(row);
-  const margin = marginText(row);
-  const worst = marginValue(row)?.worst === true;
+  const sentence = rowVerdict(row);
   const label = ok
     ? isCurrent ? null : plan ? "Use this date" : slip_h === 0 ? "Use this site" : "Use this site and date"
     : nextMs === null ? null : plan ? `Use ${dayText(nextMs)} instead` : `Use this site on ${dayText(nextMs)}`;
@@ -181,18 +179,10 @@ function Detail({ site, row, slip_h, landingMs, stale, onDone }: { site: SiteRef
         </h2>
       </div>
       <dl className="cmp-facts">
-        {lim && (
+        {sentence && (
           <div>
-            <dt>Limiting</dt>
-            <dd>
-              {lim}
-              {margin && (
-                <span className="num cmp-margin" data-worst={worst || undefined}>
-                  {" "}
-                  {margin}
-                </span>
-              )}
-            </dd>
+            <dt>Verdict</dt>
+            <dd>{sentence}</dd>
           </div>
         )}
         {!ok && (

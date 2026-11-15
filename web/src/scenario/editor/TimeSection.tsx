@@ -6,8 +6,8 @@ import { whenText } from "../when";
 import { NumberField, Readout, UtcField } from "./controls";
 
 const DURATION_PRESETS: Array<{ label: string; hours: number }> = [
-  { label: "48 h", hours: 48 },
-  { label: "14 days", hours: 336 },
+  { label: "2 d", hours: 48 },
+  { label: "14 d", hours: 336 },
   { label: "Lunar day", hours: Math.round((MS_LUNATION / 3_600_000) * 10) / 10 },
 ];
 

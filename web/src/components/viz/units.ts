@@ -1,4 +1,5 @@
 import { NBSP } from "../../lib/format";
+import { formatQuantity } from "../../lib/requirements";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -17,26 +18,21 @@ function signed(text: string, v: number, sign: boolean): string {
 }
 
 export function hoursText(h: number, opts: { sign?: boolean } = {}): string {
-  if (!Number.isFinite(h)) return "—";
-  const a = Math.abs(h);
-  const text = a < 48 ? `${a.toFixed(1)}${NBSP}h` : `${(a / 24).toFixed(1)}${NBSP}d`;
-  return signed(text, h, opts.sign ?? false);
+  return formatQuantity(h, "h", opts);
 }
 
 export function spanText(ms: number): string {
   if (!Number.isFinite(ms)) return "—";
   const h = Math.max(0, ms) / 3_600_000;
   if (h < 1) return `${Math.round(h * 60)}${NBSP}min`;
-  if (h < 48) return `${Math.round(h)}${NBSP}h`;
-  const d = Math.floor(h / 24);
-  const rest = Math.round(h - d * 24);
-  return rest === 0 ? `${d}${NBSP}d` : `${d}${NBSP}d ${rest}${NBSP}h`;
+  return formatQuantity(h, "h");
 }
 
 const trim = (n: string, exact: boolean | undefined) => (exact ? String(Number(n)) : n);
 
 export function quantityText(v: number | null | undefined, unit: string | null | undefined, opts: { sign?: boolean; decimals?: number; bare?: boolean; exact?: boolean } = {}): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return "—";
+  if (!opts.bare && opts.decimals === undefined) return formatQuantity(v, unit, { sign: opts.sign });
   const sign = opts.sign ?? false;
   const u = unit ?? "";
   if (u === "h") {

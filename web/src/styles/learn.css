@@ -1741,29 +1741,36 @@ button.l-lessons-label {
     margin-bottom: 14px;
   }
   .l-try {
-    padding: 12px;
+    padding: 10px 12px;
   }
   .l-check {
-    margin-top: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
   }
   .l-check-opts {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
   }
   .l-opt {
-    width: auto;
+    justify-content: center;
     min-height: 38px;
-    padding: 6px 12px 6px 8px;
-    gap: 8px;
-    border-radius: var(--r-pill);
+    padding: 5px 6px;
+    gap: 4px;
+    border-radius: var(--r-md);
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.2;
   }
   .l-opt-mark {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
+  }
+  .l-opt:not(.right):not(.wrong) .l-opt-mark {
+    display: none;
   }
   .l-try-text {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .l-panel-foot {
     padding: 8px 16px;
@@ -1792,7 +1799,11 @@ button.l-lessons-label {
     font-size: var(--l-fs-body);
   }
   .l-landing-card {
-    min-height: 84px;
+    min-height: 0;
+    padding: 8px 6px;
+  }
+  .l-landing-card svg {
+    display: none;
   }
   .l-dock {
     left: 8px;

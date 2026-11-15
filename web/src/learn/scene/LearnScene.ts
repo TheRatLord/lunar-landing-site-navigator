@@ -434,13 +434,7 @@ export class LearnScene {
   private flyDown() {
     const f = this.frame;
     if (!f || this.view !== "space" || f.chapter !== "day") return;
-    const sv = this.space;
-    const now = performance.now();
-    this.tween.run(sv.camera, sv.controls.target, () => sv.pose("fly", this.phone), 1300, now, () => {
-      this.insetShown = true;
-      this.tween.run(sv.camera, sv.controls.target, () => sv.pose("day", this.phone), 1300, performance.now());
-      this.requestRender();
-    });
+    this.insetShown = true;
     this.requestRender();
   }
 

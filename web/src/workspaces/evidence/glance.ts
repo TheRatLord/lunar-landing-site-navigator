@@ -83,7 +83,7 @@ export const CHECKS: readonly Check[] = [
     section: "What a planner can take from this",
   },
   {
-    check: "Regional layers",
+    check: "Area maps (API)",
     reference: "Exact engine, 960 cells",
     result: "Sunlight mean error 0.11 points; Earth up to 6.47 points; longest shadow up to 8,920 h",
     status: "Mixed",

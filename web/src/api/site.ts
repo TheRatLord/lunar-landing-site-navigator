@@ -14,11 +14,8 @@ export type Column = ReadonlyArray<number | null>;
 export type IntervalJson = Schemas["Interval"];
 export type ConstraintVerdictJson = ServiceConstraintVerdict;
 export type MetricJson = Schemas["Metric"];
-export type NextEventJson = Schemas["NextEvent"];
 export type HeadingJson = Schemas["HeadingResult"];
-export type ConstraintBoundJson = Schemas["ConstraintBound"];
 export type TerrainStackJson = Schemas["TerrainStackUsed"];
-export type TerrainStoreJson = Schemas["TerrainStoreInfo"];
 export type LimitNoteJson = Schemas["LimitNote"];
 export type HorizonCurve = Schemas["HorizonCurve"];
 export type EvaluateSeries = Schemas["Series"];
@@ -60,10 +57,4 @@ export function requestExport(
   opts: { aem_horizon?: Observer; aem_bound?: "nominal" | "optimistic" | "pessimistic" } = {},
 ): Promise<ExportedFile[]> {
   return exportFiles(`${SITE_ENDPOINTS.exports}/${kind}`, { scenario, terrain, ...opts }, { fallback: kind, inlineManifest: kind === "bundle" });
-}
-
-export async function fetchPublishedPaths(signal?: AbortSignal): Promise<Set<string>> {
-  const res = await request("/openapi.json", { signal });
-  const doc = (await res.json()) as { paths?: Record<string, unknown> };
-  return new Set(Object.keys(doc.paths ?? {}).map((p) => p.replace(/^\/api\/v1/, "")));
 }

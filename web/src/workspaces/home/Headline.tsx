@@ -4,7 +4,7 @@ import type { AnalysisControls, AnalysisState } from "../../api/useAnalysis";
 import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Progress";
 import type { Verdict } from "../../contract/types";
-import { formatBounds, formatValue } from "../../lib/format";
+import { verdictSentence } from "../../lib/requirements";
 import { VERDICT_LABEL } from "../../lib/verdict";
 import type { VerdictSummary } from "../site/adapt";
 import { nextPass, scanAt, type BestLanding, type YearScan } from "./scan";
@@ -30,22 +30,12 @@ interface VerdictLine {
   tone: Tone;
   word: string;
   detail: string | null;
-  worst?: { value: number; margin: number; limit: string | null; unit: string };
 }
 
 function exactLine(s: VerdictSummary): VerdictLine {
   if (s.overall === "unknown") return { tone: "unknown", word: "Not evaluated", detail: null };
-  const n = s.counts.pass + s.counts.marginal + s.counts.fail;
-  const lim = s.limiting;
-  if (s.overall === "pass" || !lim) return { tone: s.overall, word: VERDICT_LABEL[s.overall], detail: n === 1 ? "requirement met" : `all ${n} requirements met` };
-  const value = lim.heading_dependent || !Number.isFinite(lim.value) ? null : formatValue(lim.value, lim.unit, 1);
-  const lo = lim.limit_range?.[0] ?? (lim.sense === "min" ? lim.limit : undefined);
-  const hi = lim.limit_range?.[1] ?? (lim.sense === "max" ? lim.limit : undefined);
-  const limit = formatBounds(lo, hi, lim.unit, [lo, hi].every((x) => x === undefined || Number.isInteger(x)) ? 0 : 1);
-  const world = lim.worst_world;
-  const worstValue = world ? lim.value_worlds?.[world] : null;
-  const worst = s.overall === "marginal" && worstValue !== null && worstValue !== undefined && lim.margin_worst !== undefined ? { value: worstValue, margin: lim.margin_worst, limit, unit: lim.unit } : undefined;
-  return { tone: s.overall, word: VERDICT_LABEL[s.overall], detail: `${lim.label}${value ? ` ${value}` : ""}${limit ? `, limit ${limit}` : ""}`, worst };
+  const v = verdictSentence(s.overall, s.outcomes, { batteryEveryHeading: s.batteryEveryHeading, batteryWorst: s.batteryWorst });
+  return { tone: s.overall, word: VERDICT_LABEL[s.overall], detail: v?.detail ?? null };
 }
 
 export function Headline({ survey, failed, onRetry, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump }: HeadlineProps) {
@@ -60,7 +50,7 @@ export function Headline({ survey, failed, onRetry, timeMs, dragging, requiremen
           ? { tone: preview.verdict, word: VERDICT_LABEL[preview.verdict], detail: preview.verdict === "pass" ? null : preview.limiting }
           : null;
   const current = line?.tone ?? null;
-  const next = scan && current !== null && current !== "pass" ? nextPass(scan, timeMs) : null;
+  const next = scan && current !== null && current !== "pass" ? nextPass(scan, timeMs, survey?.both ?? null) : null;
   const top = best.reduce<BestLanding | null>((a, b) => (!a || b.key > a.key ? b : a), null);
   const showTop = top && dayText(top.t_ms) !== dayText(timeMs) && (next === null || dayText(top.t_ms) !== dayText(next));
 
@@ -121,10 +111,10 @@ export function Headline({ survey, failed, onRetry, timeMs, dragging, requiremen
             {showTop && (
               <>
                 {" · "}
-                <span className="home-best-key" aria-hidden="true">
+                <span className="home-best-key" data-verdict={top.verdict} aria-hidden="true">
                   ◆
                 </span>
-                {" Best: "}
+                {top.verdict === "marginal" ? " Best (marginal): " : " Best: "}
                 <button type="button" className="home-jump" onClick={() => onJump(top.t_ms)}>
                   {dayText(top.t_ms)}
                 </button>

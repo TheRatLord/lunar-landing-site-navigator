@@ -1,10 +1,10 @@
 // Usage: bun scripts/screenshots.ts [base] [mode] [curated output directory]
 //   (no mode)   shell + gallery scratch shots in docs/screenshots-scratch/ (git-ignored)
 //   pages       the curated page shots, both themes, seeded study, in docs/screenshots/
-//   map-curated the two curated south-pole Map shots (real site search + area analysis), in docs/screenshots/
+//   map-curated the two curated south-pole Map shots (real site search, then a result pin), in docs/screenshots/
 import { mkdirSync } from "node:fs";
 import { chromium, type Browser, type Page } from "playwright";
-import { buildStudyDoc, runRealPreviews, seedStudy } from "./map-real";
+import { buildStudyDoc, runRealSearch, seedStudy } from "./map-real";
 
 const BASE = process.argv[2] ?? "http://127.0.0.1:5173";
 const MODE = process.argv[3] ?? "scratch";
@@ -43,6 +43,7 @@ interface PageShot {
   path: string;
   keys?: string;
   click?: string;
+  shows?: string;
   wait?: number;
 }
 const PAGE_SHOTS: PageShot[] = [
@@ -58,7 +59,7 @@ const PAGE_SHOTS: PageShot[] = [
   { name: "plan-landing", path: "/overview", click: "#plan-time", wait: 4000 },
   { name: "plan-lander", path: "/overview", click: "#plan-lander", wait: 4000 },
   { name: "plan-requirements", path: "/overview", click: "#plan-constraints", wait: 4000 },
-  { name: "ask", path: "/site", keys: "Alt+a", wait: 5000 },
+  { name: "ask", path: "/site", keys: "Alt+a", shows: "#ask-dock", wait: 5000 },
 ];
 
 // The UI tolerates this one failing (assistant instructions are optional).
@@ -145,7 +146,8 @@ async function pages(browser: Browser): Promise<void> {
           await page.click(shot.click);
           await page.waitForTimeout(2500);
         }
-        await page.screenshot({ path: `${CURATED}${shot.name}-${theme}.png` });
+        if (shot.shows && !(await page.locator(shot.shows).isVisible())) console.log(`${shot.name}-${theme}: ${shot.shows} not shown here, kept the old shot`);
+        else await page.screenshot({ path: `${CURATED}${shot.name}-${theme}.png` });
         await page.close();
       }
     });
@@ -159,7 +161,7 @@ async function mapCurated(browser: Browser): Promise<void> {
   for (const theme of THEMES) {
     await withContext(browser, theme, SIZE_1440, theme, doc, async (open) => {
       const page = await open();
-      await runRealPreviews(page, BASE);
+      await runRealSearch(page, BASE);
       await page.getByRole("button", { name: "Zoom to plan site" }).click();
       await fontsReady(page);
       await page.waitForFunction(() => document.querySelector<HTMLCanvasElement>("canvas.map-canvas")?.dataset["tilesLoading"] === "0", undefined, { timeout: 30_000 });
@@ -171,15 +173,17 @@ async function mapCurated(browser: Browser): Promise<void> {
       if (/E2E/.test(body)) errors.push(`${theme}: the page shows an "E2E" name`);
       if ((await page.getByRole("link", { name: /Components/ }).count()) > 0) errors.push(`${theme}: the nav has a dev-only Components entry`);
       if (/not yet validated/i.test(body)) errors.push(`${theme}: the page says "not yet validated"`);
-      await page.screenshot({ path: `${CURATED}map-south-preview-overlays-${theme}.png` });
+      await page.screenshot({ path: `${CURATED}map-south-results-${theme}.png` });
 
-      await page.getByRole("tab", { name: "Sites", exact: true }).click();
-      await page.getByRole("list", { name: "Sites", exact: true }).getByRole("button", { name: /Peak near Shackleton/i }).first().click();
-      await page.waitForTimeout(1000);
-      await page.mouse.move(box.x + 24, box.y + box.height - 24);
-      await page.waitForTimeout(300);
-      if (/E2E/.test(await page.locator("body").innerText())) errors.push(`${theme}: the site card page shows an "E2E" name`);
-      await page.screenshot({ path: `${CURATED}map-south-site-card-${theme}.png` });
+      const first = page.getByRole("list", { name: "Sites found" }).getByRole("button").first();
+      if ((await first.count()) > 0) {
+        await first.click();
+        await page.waitForTimeout(1000);
+        await page.mouse.move(box.x + 24, box.y + box.height - 24);
+        await page.waitForTimeout(300);
+        if (/E2E/.test(await page.locator("body").innerText())) errors.push(`${theme}: the result pin page shows an "E2E" name`);
+        await page.screenshot({ path: `${CURATED}map-south-pin-${theme}.png` });
+      }
     });
   }
   console.log("curated Map screenshots written to", CURATED);

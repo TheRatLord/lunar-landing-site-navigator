@@ -96,20 +96,6 @@ export function Stage() {
   useEffect(() => ensureTerrain(siteId), [siteId]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let stop = () => {};
-    let raf = requestAnimationFrame(() => {
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        stop = mount() ?? stop;
-      });
-    });
-    return () => {
-      cancelAnimationFrame(raf);
-      stop();
-    };
-  }, []);
-
   function mount(): (() => void) | undefined {
     const el = host.current;
     if (!el) return;
@@ -238,6 +224,20 @@ export function Stage() {
       sceneRef.current = null;
     };
   }
+
+  useEffect(() => {
+    let stop = () => {};
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        stop = mount() ?? stop;
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      stop();
+    };
+  }, []);
 
   useEffect(() => {
     let raf = 0;

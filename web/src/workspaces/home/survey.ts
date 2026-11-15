@@ -241,7 +241,7 @@ export function dayTimeText(ms: number): string {
   const d = new Date(ms);
   const hh = String(d.getUTCHours()).padStart(2, "0");
   const mm = String(d.getUTCMinutes()).padStart(2, "0");
-  return `${dayText(ms, true)}, ${hh}:${mm} UTC`;
+  return `${dayText(ms, true)} ${hh}:${mm} UTC`;
 }
 
 export function monthTicks(startMs: number, endMs: number): Array<{ ms: number; label: string; year: number | null }> {

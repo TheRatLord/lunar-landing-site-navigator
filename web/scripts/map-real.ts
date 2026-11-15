@@ -1,6 +1,4 @@
 import type { BrowserContext, Locator, Page } from "playwright";
-import type { RegionalResult } from "../src/api/regional";
-import type { SearchResult } from "../src/api/search";
 import { buildScenario } from "../src/scenario/editor/newScenario";
 
 export const STUDY_NAME = "Shackleton rim study";
@@ -38,55 +36,18 @@ export async function seedStudy(ctx: BrowserContext, theme: string, doc: unknown
   );
 }
 
-export interface RealResults {
-  search: SearchResult | null;
-  regional: RegionalResult | null;
-}
-
-export function captureResults(page: Page): RealResults {
-  const got: RealResults = { search: null, regional: null };
-  page.on("response", async (r) => {
-    if (!/\/jobs\/[^/]+\/result$|\/analyses\/(search|regional)$/.test(r.url())) return;
-    const j: unknown = await r.json().catch(() => null);
-    if (typeof j !== "object" || j === null || !("kind" in j)) return;
-    if (j.kind === "search") got.search = j as SearchResult;
-    if (j.kind === "regional") got.regional = j as RegionalResult;
-  });
-  return got;
-}
-
-export function expectedCells(result: RegionalResult, layer: string): { cells: number; unreliable: number } {
-  const values = result.inline[layer];
-  const flags = result.inline["censoring_flags"];
-  let cells = 0;
-  let unreliable = 0;
-  values?.forEach((row, r) =>
-    row.forEach((v, c) => {
-      if (v === null || !Number.isFinite(v)) return;
-      cells++;
-      if (((flags?.[r]?.[c] ?? 0) & 8) !== 0) unreliable++;
-    }),
-  );
-  return { cells, unreliable };
-}
-
 async function settle(what: string, ok: Locator, failed: Locator): Promise<void> {
   await ok.or(failed).first().waitFor({ timeout: 900_000 });
   if ((await ok.count()) === 0) throw new Error(`${what} failed: ${await failed.first().innerText()}`);
 }
 
-export async function runRealPreviews(page: Page, base: string): Promise<void> {
+export async function runRealSearch(page: Page, base: string): Promise<void> {
   await page.goto(`${base}/map?radius=0.3`);
   await page.locator("canvas.map-canvas").waitFor();
-  await page.getByRole("button", { name: /^Find sites/ }).click();
-  await page.getByRole("tab", { name: "Results", exact: true }).click();
-  await settle("search", page.getByRole("list", { name: "Sites found" }), page.locator(".se-error"));
-
-  await page.getByRole("tab", { name: "Layers", exact: true }).click();
-  await page.getByLabel("Area analysis metric").selectOption("longest_shadow_h");
-  await page.getByRole("button", { name: "Compute", exact: true }).click();
-  const shown = page.getByRole("list", { name: "Area analysis legend" }).or(page.getByRole("img", { name: /^Longest dark span:/ }));
-  await page.getByRole("status").filter({ hasText: /^Computing/ }).or(shown).first().waitFor({ timeout: 20_000 });
-  await settle("area analysis", shown, page.locator(".rg-hint", { hasText: /^Failed/ }));
+  const find = page.getByRole("button", { name: /^Find sites.* km/ });
+  await find.waitFor({ timeout: 60_000 });
+  await find.click();
+  const results = page.getByRole("complementary", { name: "Results" });
+  await settle("search", results.getByRole("list", { name: "Sites found" }).or(results.locator(".se-none")), results.locator(".se-error"));
   await page.waitForTimeout(400);
 }

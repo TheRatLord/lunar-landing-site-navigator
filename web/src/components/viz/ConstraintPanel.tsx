@@ -4,6 +4,7 @@ import type { WhenLine } from "../../lib/when";
 import { Icon, type IconName } from "../ui/Icon";
 import { Panel } from "../ui/Panel";
 import { quantityText, whenText } from "./units";
+import { requirementName } from "../../lib/requirements";
 
 export interface ConstraintPanelProps {
   constraints: ConstraintVerdict[];
@@ -111,7 +112,7 @@ export function ConstraintPanel({ constraints, limitingId, title = "Requirements
                         <span className={`cp-icon ${c.verdict}`} role="img" aria-label={VERDICT_WORD[c.verdict]}>
                           <Icon name={VERDICT_ICON[c.verdict]} size={12} strokeWidth={2.2} />
                         </span>
-                        <span>{c.label}</span>
+                        <span>{requirementName(c.id, c.label)}</span>
                       </span>
                     </th>
                     <td className="cp-n num">{valueText(c)}</td>
@@ -119,7 +120,7 @@ export function ConstraintPanel({ constraints, limitingId, title = "Requirements
                     <td className="cp-n num">
                       <span className={`cp-margin ${c.verdict}`}>{m === null ? "—" : quantityText(m, c.unit, { sign: true })}</span>
                       {c.heading_dependent && m !== null && <span className="cp-tag">worst</span>}
-                      {limitingId === c.id && <span className="cp-tag">limiting</span>}
+                      {limitingId === c.id && c.verdict !== "pass" && <span className="cp-tag">limiting</span>}
                     </td>
                   </tr>
                   {isOpen && (

@@ -61,31 +61,4 @@ export function storePlace(s: TerrainStoreInfo): string {
 
 export const sortedStores = (ids: readonly string[]): string[] => [...ids].sort();
 
-const NAMED_STORES = 3;
-
-export function stackName(stores: readonly string[] | null | undefined): string {
-  if (stores == null) return "default stack";
-  const ids = sortedStores(stores);
-  if (ids.length === 0) return "restricted stack: none";
-  if (ids.length <= NAMED_STORES) return `restricted stack: ${ids.join(", ")}`;
-  return `restricted stack: ${ids.length} stores (${ids.slice(0, NAMED_STORES).join(", ")}, …)`;
-}
-
 export const stackIds = (stores: readonly string[] | null | undefined): string => (stores == null ? "every installed store" : sortedStores(stores).join(", ") || "none");
-
-interface StackGroup {
-  stack: string;
-  ids: string;
-  names: string[];
-}
-
-export function stackMismatch(entries: ReadonlyArray<{ name: string; stores: readonly string[] | null | undefined }>): StackGroup[] | null {
-  const groups = new Map<string, StackGroup>();
-  for (const e of entries) {
-    const ids = stackIds(e.stores);
-    const g = groups.get(ids) ?? { stack: stackName(e.stores), ids, names: [] };
-    g.names.push(e.name);
-    groups.set(ids, g);
-  }
-  return groups.size > 1 ? [...groups.values()] : null;
-}

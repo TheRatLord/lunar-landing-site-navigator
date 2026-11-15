@@ -4,10 +4,11 @@ import { DataTable, type Column } from "../../components/ui/DataTable";
 import { Disclosure } from "../../components/ui/Disclosure";
 import { Popover } from "../../components/ui/Popover";
 import { quantityText, whenText } from "../../components/viz/units";
+import { metricName } from "../../lib/requirements";
 import { glueQuantities } from "../../lib/format";
 import { whenLines } from "../../lib/when";
 
-const q = (v: number | null, unit: string) => quantityText(v, unit, { decimals: unit === "fraction" || unit === "" ? 0 : 1 });
+const q = (v: number | null, unit: string) => quantityText(v, unit);
 
 function valueText(m: MetricJson, everyHeading: boolean): string {
   const lo = m.low;
@@ -38,7 +39,7 @@ const REPEATED = new Set(["contact_sunlit_hours", "time_to_next_sunset_h", "time
 
 function columns(everyHeading: boolean): Column<MetricJson>[] {
   return [
-    { key: "label", header: "Metric", render: (m) => m.label },
+    { key: "label", header: "Metric", render: (m) => metricName(m.key, m.label) },
     { key: "value", header: "Value", numeric: true, render: (m) => <span className="num">{valueText(m, everyHeading)}</span> },
     { key: "detail", header: <span className="sr-only">Details</span>, width: "1%", render: (m) => <MetricDetail m={m} /> },
   ];

@@ -1,3 +1,4 @@
+import { formatQuantity } from "../lib/requirements";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -19,7 +20,5 @@ export function spanText(first: number, last: number): string {
 }
 
 export function hoursOrDays(hours: number): string {
-  if (hours < 48) return `${Number(hours.toFixed(1))} h`;
-  const days = hours / 24;
-  return `${Number(days.toFixed(days % 1 === 0 ? 0 : 1))} days`;
+  return formatQuantity(hours, "h");
 }

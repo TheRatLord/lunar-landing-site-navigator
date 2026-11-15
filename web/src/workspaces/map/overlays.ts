@@ -1,7 +1,5 @@
 import type { SearchRow, SiteState } from "../../api/search";
-import { formatValue } from "../../lib/format";
-import { CONSTRAINT_META } from "../../scenario/editor/fieldSpecs";
-import { hoursOrDays } from "../../scenario/when";
+import { formatQuantity, requirementName } from "../../lib/requirements";
 
 export interface PinMark {
   rank: number;
@@ -14,13 +12,10 @@ export interface PinMark {
 
 export const STATE_WORD: Record<SiteState, string> = { pass: "Pass", marginal: "Marginal", fail: "Fail", unknown: "No verdict" };
 
-const SHORT = new Map<string, string>(CONSTRAINT_META.map((m) => [m.key, m.short]));
-
 export function marginText(r: SearchRow): string | null {
   if (r.margin === null) return null;
-  const name = (r.limitingKey && SHORT.get(r.limitingKey)) || r.limitingLabel;
-  const amount = r.unit === "h" ? hoursOrDays(Math.abs(r.margin)) : formatValue(Math.abs(r.margin), r.unit, 1);
-  return `${name ? `${name} ` : ""}${r.margin >= 0 ? `${amount} spare` : `misses by ${amount}`}`;
+  const name = requirementName(r.limitingKey, r.limitingLabel);
+  return `${name ? `${name} ` : ""}${formatQuantity(r.margin, r.unit, { sign: true })}`;
 }
 
 export function pinMarks(rows: readonly SearchRow[]): PinMark[] {

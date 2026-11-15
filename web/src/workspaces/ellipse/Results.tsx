@@ -1,3 +1,4 @@
+import { requirementName } from "../../lib/requirements";
 import type { EllipseResult, EllipseSampleRef, SampleState } from "../../api/ellipse";
 import { DataTable, type Column } from "../../components/ui/DataTable";
 import { Disclosure } from "../../components/ui/Disclosure";
@@ -20,7 +21,7 @@ export function ResultStats({ result }: { result: EllipseResult }) {
   const shares = stateShares(result);
   const c = result.convergence;
   const worst = result.worst;
-  const worstLimit = worst.limiting ? limitInfo(result.scenario, worst.limiting).label : null;
+  const worstLimit = worst.limiting ? requirementName(worst.limiting, limitInfo(result.scenario, worst.limiting).label) : null;
   const tone = (s: SampleState, v: number | null) => (s !== "unknown" && (v ?? 0) > 0 ? s : "default");
   const margin = marginText(worst);
   const cut = margin.search(/\s\S+$/);
@@ -77,7 +78,7 @@ export function PointsPanel({ result, selected, onSelect }: { result: EllipseRes
       render: (r) => (
         <span className="el-cellstack">
           <span>{r.role}</span>
-          {r.ref.limiting && <span className="faint">{limitInfo(result.scenario, r.ref.limiting).label}</span>}
+          {r.ref.limiting && <span className="faint">{requirementName(r.ref.limiting, limitInfo(result.scenario, r.ref.limiting).label)}</span>}
         </span>
       ),
     },
@@ -100,7 +101,7 @@ export function PointsPanel({ result, selected, onSelect }: { result: EllipseRes
           <Pairs
             className="el-dl"
             rows={[
-              ["Limiting", sel.limiting ? limitInfo(result.scenario, sel.limiting).label : "none"],
+              ["Limiting", sel.limiting ? requirementName(sel.limiting, limitInfo(result.scenario, sel.limiting).label) : "none"],
               ["Offset", offsetText(sel.east_m, sel.north_m)],
               sel.slope_deg !== null && sel.slope_deg !== undefined ? ["Slope", withUnit(sel.slope_deg.toFixed(1), "°")] : null,
               sel.margin_note ? ["Note", <span key="n" data-testid="ellipse-margin-note">{sel.margin_note}</span>] : null,
@@ -124,7 +125,7 @@ interface ConstraintRow {
 export function ConstraintTable({ result }: { result: EllipseResult }) {
   const rows: ConstraintRow[] = Object.entries(result.constraint_probability).map(([key, p]) => {
     const info = limitInfo(result.scenario, key);
-    return { key, label: info.label, rule: info.rule ? (info.unit === "deg" ? `${info.rule}°` : withUnit(info.rule, info.unit)) : "", pass: p["pass"] ?? null, notFail: p["not_fail"] ?? null, unknown: p["unknown"] ?? null };
+    return { key, label: info.label, rule: info.rule, pass: p["pass"] ?? null, notFail: p["not_fail"] ?? null, unknown: p["unknown"] ?? null };
   });
   if (rows.length === 0) return null;
   const anyUnknown = rows.some((r) => (r.unknown ?? 0) > 0);

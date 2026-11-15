@@ -40,7 +40,7 @@ export function AreaControl() {
           setDraft(null);
           setRadius(on ? DEFAULT_RADIUS_KM : null);
         }}
-        label="Search nearby"
+        label="Search radius"
       />
       {radius !== null && (
         <div className="plan-widen-row">

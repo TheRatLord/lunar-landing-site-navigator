@@ -19,6 +19,7 @@ import { LanderPicker } from "./plan/LanderPicker";
 import { RequirementsPicker } from "./plan/RequirementsPicker";
 import { WindowControl, areaText, windowText } from "./plan/Widen";
 import { PlanFile } from "./PlanFile";
+import { formatLimit } from "../lib/requirements";
 
 const SitePicker = lazy(() => import("./plan/SitePicker").then((m) => ({ default: m.SitePicker })));
 
@@ -26,13 +27,7 @@ const MAX_LISTED = 6;
 const REGION_PREFIX = /^Artemis candidate region:\s*/i;
 
 function limitText(limit: Limit): string {
-  const unit = !limit.unit ? "" : limit.unit === "°" || limit.unit === "deg" ? "°" : ` ${limit.unit}`;
-  const has = (v: number | null | undefined): v is number => v !== null && v !== undefined;
-  const text = (v: number) => (limit.unit === "h" ? hoursOrDays(v) : `${v}${unit}`);
-  if (has(limit.min) && has(limit.max)) return `${text(limit.min)} to ${text(limit.max)}`;
-  if (has(limit.max)) return `≤ ${text(limit.max)}`;
-  if (has(limit.min)) return `≥ ${text(limit.min)}`;
-  return "";
+  return formatLimit(limit.min, limit.max, limit.unit);
 }
 
 export function PlanPanel() {

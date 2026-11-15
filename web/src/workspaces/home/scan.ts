@@ -1,3 +1,4 @@
+import { requirementName } from "../../lib/requirements";
 import type { ScanParams, ScanResult } from "../../api/planning";
 import { scanBody } from "../../api/planning";
 import type { Interval, Verdict } from "../../contract/types";
@@ -45,7 +46,7 @@ function verdictOf(states: ScanResult["states"], code: number | undefined): Verd
 export function requirementLabel(scan: ScanResult, key: string | null): string | null {
   if (!key) return null;
   const limit = (scan.scenario?.constraints as unknown as Record<string, Limit | null | undefined> | undefined)?.[key];
-  return limit?.label ?? key;
+  return requirementName(key, limit?.label);
 }
 
 export function adaptScan(scan: ScanResult): YearScan {
@@ -101,8 +102,13 @@ export function scanAt(s: YearScan, ms: number): { verdict: Verdict; limiting: s
   return v ? { verdict: v, limiting: requirementLabel(s.result, s.limiting[j] ?? null) } : null;
 }
 
-export function nextPass(s: YearScan, ms: number): number | null {
-  for (let i = lowerBound(s.times, ms + 1); i < s.times.length; i++) if (s.verdicts[i] === "pass") return s.times[i]!;
+function within(both: readonly Interval[], t: number): boolean {
+  return both.some((iv) => iv.start_ms <= t && t < iv.end_ms);
+}
+
+export function nextPass(s: YearScan, ms: number, both: readonly Interval[] | null): number | null {
+  if (!both) return null;
+  for (let i = lowerBound(s.times, ms + 1); i < s.times.length; i++) if (s.verdicts[i] === "pass" && within(both, s.times[i]!)) return s.times[i]!;
   return null;
 }
 
@@ -110,7 +116,7 @@ export function bestLandings(s: YearScan, rank: RankBy, window: LandingWindow | 
   const c = s.result.candidates;
   const tie = c.totals?.["sunlit_contact_h"];
   const column = rank === "margin" ? c.worst_margin : c.totals?.[rank as TotalKey];
-  const linked = (t: number) => (both ?? []).some((iv) => iv.start_ms <= t && t < iv.end_ms);
+  if (!both) return [];
   const out: BestLanding[] = [];
   for (const day of s.lunarDays) {
     const from = Math.max(day.start_ms, window?.first_ms ?? -Infinity);
@@ -119,11 +125,11 @@ export function bestLandings(s: YearScan, rank: RankBy, window: LandingWindow | 
     let best: BestLanding | null = null;
     for (let i = 0; i < c.t_ms.length; i++) {
       const t = c.t_ms[i];
-      if (t === null || t === undefined || t < from || t >= to) continue;
+      if (t === null || t === undefined || t < from || t >= to || !within(both, t)) continue;
       const v = verdictOf(s.result.states, c.state[i]);
       if (v === null || v === "fail") continue;
       const score = Math.max(-1e5, Math.min(1e5, column?.[i] ?? -1e5));
-      const key = (v === "pass" ? 2e13 : 0) + (linked(t) ? 1e13 : 0) + score * 1e4 + (tie?.[i] ?? 0);
+      const key = (v === "pass" ? 2e13 : 0) + score * 1e4 + (tie?.[i] ?? 0);
       if (!best || key > best.key) best = { t_ms: t, verdict: v, hours: tie?.[i] ?? null, key };
     }
     if (best) out.push(best);

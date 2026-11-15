@@ -27,9 +27,9 @@ export function learnPace(kind: JobKind, guessS: number, actualS: number): void 
 }
 
 export function aboutText(seconds: number): string {
-  if (seconds < 75) return "about 1 min";
-  if (seconds < 3600) return `about ${Math.round(seconds / 60)} min`;
-  return `about ${(seconds / 3600).toFixed(1).replace(/\.0$/, "")} h`;
+  if (seconds < 75) return "1 min";
+  if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
+  return `${(seconds / 3600).toFixed(1).replace(/\.0$/, "")} h`;
 }
 
 const runs = new Map<number, { min: number; sofar: boolean }>();

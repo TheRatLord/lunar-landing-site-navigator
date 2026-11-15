@@ -69,7 +69,7 @@
 .ws-req-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs); color: var(--text-3); }
 .ws-best { position: absolute; z-index: 3; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; padding: 0; background: var(--panel); border: 2px solid var(--text); border-radius: 2px; transform: rotate(45deg); cursor: pointer; }
 .ws-best[data-top] { width: 14px; height: 14px; margin: -7px 0 0 -7px; background: var(--text); border-color: var(--panel); box-shadow: 0 0 0 1px var(--text); }
-.ws-best[data-verdict="marginal"] { border-color: var(--c-marginal); }
+.ws-best[data-verdict="marginal"] { background: var(--c-marginal); border-color: var(--panel); box-shadow: 0 0 0 1px var(--text); }
 .ws-best-label { position: absolute; z-index: 3; top: 50%; margin-left: 11px; padding: 0 var(--sp-1); font-size: var(--fs-2xs); font-weight: var(--fw-semibold); line-height: 16px; white-space: nowrap; color: var(--text); background: var(--panel); border-radius: var(--r-xs); transform: translateY(-50%); pointer-events: none; }
 .ws-best-label[data-flip] { margin-left: -11px; transform: translate(-100%, -50%); }
 .ws-key-best { margin-left: auto; padding-right: var(--sp-1); font-style: normal; font-size: var(--fs-2xs); font-weight: var(--fw-medium); color: var(--text-2); }
@@ -108,3 +108,4 @@
   .ws-strip { --ws-gutter: 132px; }
 }
 .home-best-key { font-size: var(--fs-2xs); color: var(--text); }
+.home-best-key[data-verdict="marginal"] { color: var(--c-marginal); }

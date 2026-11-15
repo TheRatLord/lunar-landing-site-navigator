@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { create } from "zustand";
 import { buildSources, uniqueNames } from "../workspaces/compare/sources";
 import type { Candidate } from "../scenario/alternatives";
@@ -154,13 +153,3 @@ export const useReportSurveys = create<ReportSurveys>((set) => ({
   publishEllipse: (ellipse) => set({ ellipse }),
   publishSearch: (search) => set({ search }),
 }));
-
-export function usePublishEllipse(request: EllipseBody | null, stale: boolean): void {
-  const publish = useReportSurveys((s) => s.publishEllipse);
-  useEffect(() => publish(request ? { request, stale } : null), [publish, request, stale]);
-}
-
-export function usePublishSearch(request: SearchBody | null, stale: boolean): void {
-  const publish = useReportSurveys((s) => s.publishSearch);
-  useEffect(() => publish(request ? { request, stale } : null), [publish, request, stale]);
-}

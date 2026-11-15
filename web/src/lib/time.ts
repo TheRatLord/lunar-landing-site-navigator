@@ -17,13 +17,6 @@ export function formatUtc(ms: number, opts: { seconds?: boolean; date?: boolean 
 
 export const roundToSecond = (ms: number): number => Math.round(ms / 1000) * 1000;
 
-export function utcText(t: string | number | null | undefined, opts: { seconds?: boolean } = {}): string {
-  const ms = typeof t === "number" ? t : t ? parseUtc(t) : null;
-  if (ms === null || !Number.isFinite(ms)) return "—";
-  const r = roundToSecond(ms);
-  return formatUtc(r, { seconds: !!opts.seconds || r % MS_MIN !== 0 });
-}
-
 export function toIsoUtc(ms: number): string {
   return new Date(ms).toISOString().replace(".000Z", "Z");
 }
@@ -61,27 +54,6 @@ export function formatDuration(ms: number): string {
   if (h > 0) return `${sign}${h} h ${pad(m)} m`;
   return `${sign}${m} m`;
 }
-
-export function formatMet(ms: number, t0: number): string {
-  const dt = ms - t0;
-  const sign = dt < 0 ? "−" : "+";
-  let s = Math.floor(Math.abs(dt) / 1000);
-  const d = Math.floor(s / 86400);
-  s -= d * 86400;
-  const h = Math.floor(s / 3600);
-  s -= h * 3600;
-  const m = Math.floor(s / 60);
-  s -= m * 60;
-  return `T${sign}${pad(d, 2)}d ${pad(h)}:${pad(m)}:${pad(s)}`;
-}
-
-export type StepUnit = "hour" | "day" | "lunation";
-
-export const STEP_MS: Record<StepUnit, number> = {
-  hour: MS_HOUR,
-  day: MS_DAY,
-  lunation: MS_LUNATION,
-};
 
 export interface TimeTick {
   ms: number;

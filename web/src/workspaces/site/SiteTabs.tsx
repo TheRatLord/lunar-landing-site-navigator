@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Tabs, type TabItem } from "../../components/ui/Panel";
 
 const SITE_TABS = [
-  { id: "point", label: "Landing point" },
+  { id: "point", label: "Landing site" },
   { id: "ellipse", label: "Landing ellipse" },
 ] as const satisfies readonly TabItem[];
 

@@ -1,3 +1,4 @@
+import { outcomeFromJson, verdictSentence as sharedVerdict, type RequirementOutcome } from "../../lib/requirements";
 import { wrap360 } from "../../lib/scale";
 import type {
   ConstraintVerdict,
@@ -19,7 +20,7 @@ import type {
 import { formatNum, withUnit } from "../../lib/format";
 import { toIsoUtc, parseUtc } from "../../lib/time";
 import { KIND_LABEL } from "../../components/viz/Countdown";
-import { quantityText, whenText } from "../../components/viz/units";
+import { whenText } from "../../components/viz/units";
 import { whenLines, type WhenLine } from "../../lib/when";
 import { intervalsContain } from "../../lib/intervals";
 import { interpTrack } from "../../lib/track";
@@ -322,6 +323,7 @@ export interface VerdictSummary {
   counts: { pass: number; marginal: number; fail: number; unevaluated: number };
   batteryEveryHeading: boolean;
   batteryWorst: number | null;
+  outcomes: RequirementOutcome[];
 }
 
 function inArc(y: number, [from, to]: Arc): boolean {
@@ -353,6 +355,7 @@ export function summarize(r: EvaluateResult): VerdictSummary {
     counts,
     batteryEveryHeading: batteryFailsEveryHeading(r),
     batteryWorst: batteryWorst(r),
+    outcomes: r.verdict.constraints.filter((c) => c.state === "pass" || c.state === "marginal" || c.state === "fail").map(outcomeFromJson),
   };
 }
 
@@ -702,19 +705,8 @@ export function limitKey(note: Pick<LimitNoteJson, "id" | "parameters">): string
 }
 
 export function verdictSentence(summary: VerdictSummary): string | null {
-  const c = summary.limiting;
-  if (!c || summary.overall === "unknown") return null;
-  const lead = summary.overall === "fail" ? `Fails on ${c.label}` : `Limited by ${c.label}`;
-  const m = c.heading_dependent ? (c.margin_worst ?? null) : Number.isFinite(c.margin) ? c.margin : null;
-  if (m === null) return c.heading_dependent ? `${lead}, which depends on the heading` : lead;
-  const by = quantityText(Math.abs(m), c.unit);
-  const worst = c.heading_dependent ? (c.id === "min_state_of_charge" && summary.batteryEveryHeading ? " at every heading" : " at the worst heading") : "";
-  if (c.limit_range) {
-    return `${lead}: ${by} ${m >= 0 ? "inside" : "outside"} the ${quantityText(c.limit_range[0], c.unit, { exact: true })}–${quantityText(c.limit_range[1], c.unit, { exact: true })} range${worst}`;
-  }
-  if (c.limit === undefined || !c.sense) return lead;
-  const side = c.sense === "max" ? (m >= 0 ? "under" : "over") : m >= 0 ? "above" : "below";
-  return `${lead}: ${by} ${side} the ${quantityText(c.limit, c.unit, { exact: true })} limit${worst}`;
+  if (summary.overall === "unknown") return null;
+  return sharedVerdict(summary.overall, summary.outcomes, { batteryEveryHeading: summary.batteryEveryHeading, batteryWorst: summary.batteryWorst })?.detail ?? null;
 }
 
 export interface BatteryRisk {

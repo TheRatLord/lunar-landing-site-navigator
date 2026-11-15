@@ -1,5 +1,5 @@
+import { formatQuantity, outcomeFromJson, requirementName, verdictSentence } from "../../lib/requirements";
 import type { ServiceConstraintVerdict, SlipResult, SlipRow, SlipSite } from "../../api/planning";
-import { formatSigned } from "../../lib/format";
 import { MS_HOUR, parseUtc } from "../../lib/time";
 import { VERDICT_LABEL } from "../../lib/verdict";
 import { BASELINE_SITE, SEARCH_DAYS } from "./options";
@@ -56,31 +56,8 @@ export function servedByKey(result: SlipResult | null, requested: readonly SiteR
   return out;
 }
 
-const SHORT_NAME: Record<string, string> = {
-  landing_sun_elevation_deg: "Sun elevation",
-  landing_hours_after_sunrise: "Since sunrise",
-  dte_at_landing_deg: "Earth elevation",
-  min_sunlit_hours_after_landing: "Sunlight",
-  max_dark_span_h: "Longest dark span",
-  min_total_sunlit_h: "Sunlight total",
-  min_total_contact_h: "Earth link total",
-  min_total_sunlit_contact_h: "Sunlight with Earth link",
-  min_state_of_charge: "Battery",
-  min_contact_fraction: "Earth link share",
-  max_contact_gap_h: "Earth link gap",
-  min_link_margin_db: "Link margin",
-  max_slope_deg: "Slope",
-};
-
-const CELL_NAME: Record<string, string> = {
-  max_dark_span_h: "Dark span",
-  min_total_sunlit_contact_h: "Sun and Earth",
-  min_total_contact_h: "Earth link",
-  min_total_sunlit_h: "Sunlight",
-};
-
 export function limitingShort(row: SlipRow): string | null {
-  return (row.limiting ? CELL_NAME[row.limiting] : undefined) ?? limitingName(row);
+  return limitingName(row);
 }
 
 function limiting(row: SlipRow): ServiceConstraintVerdict | null {
@@ -89,14 +66,20 @@ function limiting(row: SlipRow): ServiceConstraintVerdict | null {
 
 export function limitingName(row: SlipRow): string | null {
   if (!row.limiting) return null;
-  return SHORT_NAME[row.limiting] ?? limiting(row)?.label ?? row.limiting;
+  return requirementName(row.limiting, limiting(row)?.label);
 }
 
 function quantity(v: number, unit: string): string {
-  if (unit === "deg" || unit === "°") return `${formatSigned(v, 1)}°`;
-  if (unit === "h" && Math.abs(v) >= 48) return `${formatSigned(v / 24, 1)} d`;
-  if (unit === "fraction") return `${formatSigned(v * 100, 1)} %`;
-  return unit ? `${formatSigned(v, 1)} ${unit}` : formatSigned(v, 1);
+  return formatQuantity(v, unit, { sign: true });
+}
+
+export function rowVerdict(row: SlipRow): string | null {
+  if (!row.verdict || (row.state !== "pass" && row.state !== "marginal" && row.state !== "fail")) return null;
+  const outcomes = row.verdict.constraints.filter((c) => c.state === "pass" || c.state === "marginal" || c.state === "fail").map(outcomeFromJson);
+  const soc = row.verdict.constraints.find((c) => c.key === "min_state_of_charge" && c.heading_dependent);
+  const best = soc?.heading_best?.value;
+  const everyHeading = !!soc && typeof best === "number" && soc.limit_min !== null && best < soc.limit_min;
+  return verdictSentence(row.state, outcomes, { batteryEveryHeading: everyHeading })?.detail ?? null;
 }
 
 const finite = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
