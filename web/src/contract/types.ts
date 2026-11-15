@@ -127,15 +127,6 @@ export interface CrossingEvent {
   cause?: string;
 }
 
-export interface OpportunitySlot {
-  utc_ms: number;
-  verdict: Verdict;
-  limiting?: string;
-  limiting_margin?: string;
-  margin_norm?: number;
-  open_fraction?: number;
-}
-
 export interface JobStatus {
   id: string;
   label: string;

@@ -157,30 +157,12 @@ export function windowAt(list: readonly Interval[], t: number): Interval | null 
   return list.find((iv) => iv.start_ms <= t && t < iv.end_ms) ?? null;
 }
 
-export function nextWindow(list: readonly Interval[], t: number): Interval | null {
-  return list.find((iv) => iv.start_ms > t) ?? null;
-}
-
-export function longestWindow(list: readonly Interval[]): Interval | null {
-  let best: Interval | null = null;
-  for (const iv of list) if (!best || iv.end_ms - iv.start_ms > best.end_ms - best.start_ms) best = iv;
-  return best;
-}
-
-export function coverage(list: readonly Interval[], s: Survey): number {
-  let sum = 0;
-  for (const iv of list) sum += iv.end_ms - iv.start_ms;
-  return sum / (s.end_ms - s.start_ms);
-}
-
 export function spanText(ms: number): string {
-  const m = Math.max(0, Math.round(ms / MS_MIN));
-  const d = Math.floor(m / 1440);
-  const h = Math.floor((m % 1440) / 60);
-  if (d >= 10) return `${Math.round(ms / MS_DAY)} days`;
-  if (d >= 1) return h > 0 ? `${d} d ${h} h` : `${d} d`;
-  const min = m % 60;
-  return h >= 1 ? (min > 0 ? `${h} h ${min} min` : `${h} h`) : `${min} min`;
+  const h = Math.max(0, ms) / MS_HOUR;
+  if (h < 1) return `${Math.round(h * 60)} min`;
+  if (h < 48) return `${Math.round(h)} h`;
+  const d = h / 24;
+  return `${d < 10 ? d.toFixed(1) : Math.round(d)} days`;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -188,6 +170,50 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 export function dayText(ms: number, year = false): string {
   const d = new Date(ms);
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ""}`;
+}
+
+function eventText(ms: number): string {
+  const d = new Date(ms);
+  return `${dayText(ms)} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+export interface SkyFacts {
+  text: string;
+  tone: "pass" | "marginal" | "fail";
+  warn: boolean;
+  events: string;
+}
+
+export function skyFacts(s: Survey, t: number): SkyFacts {
+  const sun = stateAt(s.sun, t, s);
+  const earth = stateAt(s.earth, t, s);
+  const sunNever = s.sun.length === 0;
+  const earthNever = s.earth.length === 0;
+  const after = dayText(s.end_ms, true);
+  const events: Array<[number, string]> = [];
+  const add = (st: BodyState, never: boolean, rise: string, set: string, always: string) => {
+    if (st.change_ms !== null) events.push([st.change_ms, `${st.up ? set : rise} ${eventText(st.change_ms)}`]);
+    else if (st.up) events.push([Infinity, st.since_ms === null ? always : `No ${set} before ${after}`]);
+    else if (!never) events.push([Infinity, `No ${rise} before ${after}`]);
+  };
+  add(sun, sunNever, "Sunrise", "Sunset", "Sun never sets");
+  add(earth, earthNever, "Earthrise", "Earthset", "Earth never sets");
+  events.sort((a, b) => a[0] - b[0]);
+  const timed = events.filter((e) => Number.isFinite(e[0])).map((e) => e[1]);
+  if (timed.length) timed[timed.length - 1] += " UTC";
+  const withUtc = [...timed, ...events.filter((e) => !Number.isFinite(e[0])).map((e) => e[1])].join(" · ");
+  const facts = (text: string, tone: SkyFacts["tone"], warn = false): SkyFacts => ({ text, tone, warn, events: withUtc });
+  if (sun.up && earth.up) {
+    const w = windowAt(s.both, t);
+    const span = !w ? "" : w.end_ms >= s.end_ms ? ` past ${after}` : ` for ${spanText(w.end_ms - t)}`;
+    return facts(`Sunlit and in view of Earth${span}`, "pass");
+  }
+  if (sun.up) return earthNever ? facts("Sunlit, but Earth never rises here", "fail", true) : facts("Sunlit, Earth below the horizon", "marginal");
+  if (earth.up) return sunNever ? facts("Never sunlit, Earth in view", "fail", true) : facts("Earth in view, site dark", "marginal");
+  if (sunNever && earthNever) return facts("Never sunlit, and Earth never rises here", "fail", true);
+  if (sunNever) return facts("Never sunlit, Earth below the horizon", "fail", true);
+  if (earthNever) return facts("Dark, and Earth never rises here", "fail", true);
+  return facts("Dark, Earth below the horizon", "fail");
 }
 
 export function dayTimeText(ms: number): string {

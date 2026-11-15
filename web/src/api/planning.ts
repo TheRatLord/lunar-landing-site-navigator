@@ -78,7 +78,7 @@ export const slipBody = (scenario: Scenario, p: SlipParams, terrain: TerrainMode
 });
 export const compareBody = (items: ScenarioItem[], names: string[], terrain: TerrainMode) => ({ items, names, terrain, wait_s: 3 });
 
-export type PlanningExport = "calendar-csv" | "opportunities-csv" | "slip-csv" | "comparison-csv";
+export type PlanningExport = "slip-csv" | "comparison-csv";
 
 export function requestPlanningExport(kind: PlanningExport, body: Record<string, unknown>): Promise<ExportedFile[]> {
   return exportFiles(`${PLANNING_ENDPOINTS.exports}/${kind}`, body, { fallback: kind });

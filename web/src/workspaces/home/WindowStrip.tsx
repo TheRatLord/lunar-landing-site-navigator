@@ -2,8 +2,10 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode
 import { IconButton } from "../../components/ui/Button";
 import { Spinner } from "../../components/ui/Progress";
 import type { Interval } from "../../contract/types";
+import type { LandingWindow } from "../../scenario/planSearch";
 import { clamp } from "../../lib/scale";
 import { MS_DAY, MS_HOUR, MS_LUNATION } from "../../lib/time";
+import type { BestLanding, VerdictSpan, YearScan } from "./scan";
 import { dayText, dayTimeText, monthTicks, roundToHour, type Survey } from "./survey";
 
 interface PinnedRowProps {
@@ -23,6 +25,11 @@ interface WindowStripProps {
   timeMs: number;
   survey: Survey | null;
   busy: boolean;
+  siteName: string;
+  scan: YearScan | null;
+  scanState: "off" | "busy" | "failed" | "ready";
+  best: BestLanding[];
+  landingWindow: LandingWindow | null;
   children?: ReactNode;
   tools?: ReactNode;
   onScrub(ms: number): void;
@@ -47,6 +54,42 @@ function Lane({ kind, list, start, end, lengths }: { kind: LaneKind; list: reado
   );
 }
 
+function RequirementLane({ spans, start, end, best, state, onPick }: { spans: readonly VerdictSpan[]; start: number; end: number; best: BestLanding[]; state: WindowStripProps["scanState"]; onPick(ms: number): void }) {
+  const span = end - start;
+  const top = best.reduce<BestLanding | null>((a, b) => (!a || b.key > a.key ? b : a), null);
+  const pos = (ms: number) => `${((ms - start) / span) * 100}%`;
+  return (
+    <div className="ws-req">
+      <div className="ws-lane ws-lane-req">
+        {spans.map((iv) => (
+          <i key={iv.start_ms} data-verdict={iv.verdict} style={{ left: pos(iv.start_ms), width: `${((iv.end_ms - iv.start_ms) / span) * 100}%` }} />
+        ))}
+        {state === "busy" && (
+          <span className="ws-req-wait">
+            <Spinner size={10} />
+          </span>
+        )}
+        {state === "failed" && <span className="ws-req-wait">Failed</span>}
+      </div>
+      {best.map((b) =>
+        b.t_ms < start || b.t_ms > end ? null : (
+          <button
+            key={b.t_ms}
+            type="button"
+            className="ws-best"
+            data-top={b === top || undefined}
+            data-verdict={b.verdict}
+            style={{ left: pos(b.t_ms) }}
+            aria-label={`${b === top ? "Best landing" : "Best in this lunar day"}: ${dayTimeText(b.t_ms)}`}
+            title={`${dayText(b.t_ms)}${b.hours !== null ? ` · Both ${Math.round(b.hours)} h` : ""}`}
+            onClick={() => onPick(b.t_ms)}
+          />
+        ),
+      )}
+    </div>
+  );
+}
+
 export function PinnedRow({ label, sub, survey, failed, start_ms, end_ms, onSelect, onRemove }: PinnedRowProps) {
   return (
     <div className="ws-row ws-block ws-pinned">
@@ -63,7 +106,7 @@ export function PinnedRow({ label, sub, survey, failed, start_ms, end_ms, onSele
         <Lane kind="both" list={survey?.both ?? []} start={start_ms} end={end_ms} lengths />
         {!survey && (
           <div className="ws-wait" role="status">
-            {failed ? "Could not compute this site" : <Spinner size={12} />}
+            {failed ? "Failed" : <Spinner size={12} />}
           </div>
         )}
       </div>
@@ -71,7 +114,7 @@ export function PinnedRow({ label, sub, survey, failed, start_ms, end_ms, onSele
   );
 }
 
-export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, children, tools, onScrub, onCommit }: WindowStripProps) {
+export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, siteName, scan, scanState, best, landingWindow, children, tools, onScrub, onCommit }: WindowStripProps) {
   const dragging = useRef(false);
   const [hover, setHover] = useState<number | null>(null);
   const span = end_ms - start_ms;
@@ -109,7 +152,12 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, children, 
   return (
     <div className="ws-strip" data-busy={busy}>
       <div className="ws-row ws-axis-row">
-        <div className="ws-gutter ws-gutter-tools">{tools}</div>
+        <div className="ws-gutter ws-gutter-tools">
+          <strong className="ws-site" title={siteName}>
+            {siteName}
+          </strong>
+          {tools}
+        </div>
         <div className="ws-axis" aria-hidden="true">
           {ticks.map((t) => (
             <span key={t.ms} style={{ left: `${((t.ms - start_ms) / span) * 100}%` }}>
@@ -124,14 +172,16 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, children, 
           <span className="ws-key ws-key-sun">Sunlight</span>
           <span className="ws-key ws-key-earth">Earth in view</span>
           <span className="ws-key ws-key-both">Both</span>
+          {scanState !== "off" && <span className="ws-key ws-key-req">Meets requirements</span>}
         </div>
         <div className="ws-lanes">
           <Lane kind="sun" list={survey?.sun ?? []} start={start_ms} end={end_ms} />
           <Lane kind="earth" list={survey?.earth ?? []} start={start_ms} end={end_ms} />
           <Lane kind="both" list={survey?.both ?? []} start={start_ms} end={end_ms} lengths />
+          {scanState !== "off" && <RequirementLane spans={scan?.spans ?? []} start={start_ms} end={end_ms} best={scan ? best : []} state={scanState} onPick={onCommit} />}
           {!survey && (
             <div className="ws-wait" role="status">
-              <Spinner size={12} /> Computing a year of Sun and Earth visibility
+              <Spinner size={12} /> Computing the year
             </div>
           )}
         </div>
@@ -159,6 +209,12 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, children, 
         {ticks.map((t) => (
           <i key={t.ms} className="ws-grid" style={{ left: `${((t.ms - start_ms) / span) * 100}%` }} />
         ))}
+        {landingWindow && landingWindow.last_ms > start_ms && landingWindow.first_ms < end_ms && (
+          <i
+            className="ws-window"
+            style={{ left: `${clamp((landingWindow.first_ms - start_ms) / span, 0, 1) * 100}%`, right: `${(1 - clamp((landingWindow.last_ms - start_ms) / span, 0, 1)) * 100}%` }}
+          />
+        )}
         {hover !== null && (
           <div className="ws-hover" style={{ left: `${((hover - start_ms) / span) * 100}%` }}>
             <span>{dayText(hover)}</span>

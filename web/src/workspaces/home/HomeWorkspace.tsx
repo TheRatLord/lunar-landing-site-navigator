@@ -1,7 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../api/client";
-import { SITE_ENDPOINTS, type EvaluateResult } from "../../api/site";
+import { PLANNING_ENDPOINTS, type ScanResult } from "../../api/planning";
+import { useReportPlanning } from "../../api/report";
+import { SITE_ENDPOINTS, evaluateBody, type EvaluateResult } from "../../api/site";
 import { useAnalysis } from "../../api/useAnalysis";
 import { useLoad } from "../../api/useLoad";
 import { usePublishScreenContext } from "../../ask/screenContext";
@@ -11,47 +12,27 @@ import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Progress";
 import { HorizonPanorama } from "../../components/viz/HorizonPanorama";
 import { formatLat, formatLon } from "../../lib/coords";
-import { formatNum } from "../../lib/format";
 import { clamp } from "../../lib/scale";
-import { interpTrack } from "../../lib/track";
-import { MS_DAY, parseUtc, toIsoUtc } from "../../lib/time";
+import { parseUtc, toIsoUtc } from "../../lib/time";
 import { catalogApi } from "../../scenario/api";
 import { useAlternatives, type Candidate } from "../../scenario/alternatives";
-import { movePlanSite, useScenario } from "../../scenario/store";
+import { activeRequirements, usePlanSearch, useRankBy } from "../../scenario/planSearch";
+import { movePlanSite, routeStackIssues, useScenario } from "../../scenario/store";
 import type { Scenario } from "../../scenario/types";
-import { evaluatedScenario } from "../site/adapt";
+import { pointName } from "../map/siteMove";
+import { evaluatedScenario, summarize } from "../site/adapt";
+import { Headline } from "./Headline";
 import { HomeMap, type MapFocus } from "./HomeMap";
-import {
-  SPAN_MS,
-  adaptSurvey,
-  coverage,
-  dayText,
-  dayTimeText,
-  inSpan,
-  longestWindow,
-  nextWindow,
-  roundToHour,
-  spanStartFor,
-  spanText,
-  stateAt,
-  surveyBody,
-  trackWindow,
-  windowAt,
-  type BodyState,
-  type Survey,
-  type SurveySite,
-} from "./survey";
+import { adaptScan, bestLandings, scanParams, yearScanBody } from "./scan";
+import { SPAN_MS, adaptSurvey, inSpan, roundToHour, spanStartFor, surveyBody, trackWindow, type Survey, type SurveySite } from "./survey";
 import { PinnedRow, WindowStrip } from "./WindowStrip";
 import "../../styles/home.css";
 
-// Three.js is large: the ground view loads only when someone goes down to the ground.
-const GroundView = lazy(() => import("./ground/GroundView").then((m) => ({ default: m.GroundView })));
-
 const loadSites = (signal: AbortSignal) => catalogApi.sites({ limit: 1000 }, { signal });
-const PLAY_MS_PER_S = 2 * MS_DAY;
 const MAX_PINS = 4;
 const FALLBACK_MS = Date.UTC(2027, 0, 12);
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
+const shortName = (n: string): string => n.replace(/^Artemis candidate region:\s*/i, "");
 
 function useSurvey(doc: Scenario, site: SurveySite, anchor: number) {
   const body = useMemo(() => surveyBody(doc, site, anchor), [doc, site, anchor]);
@@ -71,7 +52,7 @@ function PinnedSite({ pin, doc, anchor, start, end, onSelect, onRemove }: { pin:
   const { run, survey } = useSurvey(doc, site, anchor);
   return (
     <PinnedRow
-      label={pin.name}
+      label={shortName(pin.name)}
       sub={`${formatLat(pin.lat_deg, 2)} ${formatLon(pin.lon_deg, 2)}`}
       survey={survey && !run.stale ? survey : null}
       failed={run.phase === "error"}
@@ -83,44 +64,14 @@ function PinnedSite({ pin, doc, anchor, start, end, onSelect, onRemove }: { pin:
   );
 }
 
-function BodyCard({ body, state, timeMs, elevation }: { body: "sun" | "earth"; state: BodyState; timeMs: number; elevation: number | null }) {
-  const sun = body === "sun";
-  const title = sun ? (state.up ? "Sunlight" : "Dark") : state.up ? "Earth in view" : "Earth hidden";
-  const next = sun ? (state.up ? "until sunset" : "until sunrise") : state.up ? "until Earth sets" : "until Earth rises";
-  return (
-    <div className={`home-card home-card-${body}`} data-up={state.up}>
-      <div className="home-card-head">
-        <Icon name={sun ? "sun" : "earth"} size={14} />
-        {title}
-      </div>
-      {state.change_ms === null ? (
-        <>
-          <div className="home-card-value">All year</div>
-          <div className="home-card-sub">{state.up ? "no end within this year" : sun ? "no sunrise within this year" : "never rises within this year"}</div>
-        </>
-      ) : (
-        <>
-          <div className="home-card-value num">{spanText(state.change_ms - timeMs)}</div>
-          <div className="home-card-sub">
-            {next} · {dayTimeText(state.change_ms)}
-          </div>
-        </>
-      )}
-      {elevation !== null && (
-        <div className="home-card-foot num">
-          {sun ? "Sun" : "Earth"} centre {formatNum(elevation, 1)}° {elevation >= 0 ? "above" : "below"} the level horizon
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function HomeWorkspace() {
   const doc = useScenario((s) => s.doc)!;
   const edit = useScenario((s) => s.edit);
   const pins = useAlternatives((s) => s.items);
   const addPin = useAlternatives((s) => s.add);
   const removePin = useAlternatives((s) => s.remove);
+  const rank = useRankBy(doc);
+  const landingWindow = usePlanSearch((s) => s.window);
   const sitesLoad = useLoad(loadSites);
   const sites = useMemo(() => (sitesLoad.state.status === "ready" ? sitesLoad.state.data.items : []), [sitesLoad.state]);
 
@@ -134,7 +85,6 @@ export function HomeWorkspace() {
   const [anchor, setAnchor] = useState(() => spanStartFor(landingMs));
   if (!inSpan(landingMs, anchor)) setAnchor(spanStartFor(landingMs));
   const [live, setLive] = useState<number | null>(null);
-  const [playing, setPlaying] = useState(false);
   const [focus, setFocus] = useState<MapFocus>(() => ({ lat_deg: lat, lon_deg: lon, nonce: 0 }));
   const place = `${lat},${lon}`;
   const [shownPlace, setShownPlace] = useState(place);
@@ -143,12 +93,28 @@ export function HomeWorkspace() {
     setShownPlace(place);
     if (mapPlace !== place) setFocus((f) => ({ lat_deg: lat, lon_deg: lon, nonce: f.nonce + 1 }));
   }
-  const [ground, setGround] = useState(false);
 
   const { run, survey } = useSurvey(doc, site, anchor);
   const start = survey?.start_ms ?? anchor;
   const end = start + SPAN_MS;
   const timeMs = clamp(live ?? landingMs, start, end);
+
+  const evalBody = useMemo(() => evaluateBody(doc, "auto"), [doc]);
+  const evaluation = useAnalysis<EvaluateResult>(SITE_ENDPOINTS.evaluate, evalBody, { debounceMs: 350 });
+  const summary = useMemo(() => (evaluation.result && !evaluation.stale ? summarize(evaluation.result) : null), [evaluation.result, evaluation.stale]);
+
+  const requirements = activeRequirements(doc);
+  const showScan = requirements > 0;
+  const params = useMemo(() => scanParams(anchor), [anchor]);
+  const scanReq = useMemo(() => (showScan ? yearScanBody(doc, params) : null), [showScan, doc, params]);
+  const scanRun = useAnalysis<ScanResult>(PLANNING_ENDPOINTS.scan, scanReq, { debounceMs: 400 });
+  const scan = useMemo(() => (scanRun.result && !scanRun.stale ? adaptScan(scanRun.result) : null), [scanRun.result, scanRun.stale]);
+  const best = useMemo(() => (scan ? bestLandings(scan, rank, landingWindow) : []), [scan, rank, landingWindow]);
+  useEffect(() => routeStackIssues(scanRun.error), [scanRun.error]);
+  const setReportScan = useReportPlanning((s) => s.setScan);
+  useEffect(() => {
+    if (scan) setReportScan(params, "auto");
+  }, [scan, params, setReportScan]);
 
   const commit = useCallback(
     (ms: number) => {
@@ -157,32 +123,6 @@ export function HomeWorkspace() {
     },
     [edit],
   );
-
-  const liveRef = useRef(timeMs);
-  useEffect(() => {
-    liveRef.current = timeMs;
-  });
-  useEffect(() => {
-    if (!playing) return;
-    let raf = 0;
-    let last = performance.now();
-    const tick = (now: number) => {
-      const next = liveRef.current + Math.min(0.25, (now - last) / 1000) * PLAY_MS_PER_S;
-      last = now;
-      if (next >= end) {
-        setPlaying(false);
-        return;
-      }
-      liveRef.current = next;
-      setLive(next);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(raf);
-      commit(liveRef.current);
-    };
-  }, [playing, end, commit]);
 
   const moveOnMap = useCallback((next: SurveySite) => {
     setMapPlace(`${next.lat_deg},${next.lon_deg}`);
@@ -195,156 +135,76 @@ export function HomeWorkspace() {
     },
     [sites, moveOnMap],
   );
-  const setPoint = useCallback((la: number, lo: number) => moveOnMap({ lat_deg: round5(la), lon_deg: round5(lo), name: "Map point", catalog_id: null }), [moveOnMap]);
+  const setPoint = useCallback(
+    (la: number, lo: number) => moveOnMap({ lat_deg: round5(la), lon_deg: round5(lo), name: pointName(la, lo), catalog_id: null }),
+    [moveOnMap],
+  );
 
   const pinned = pins.some((p) => p.id === pinId(site));
   const pinMarks = useMemo(() => pins.filter((p) => p.id !== pinId(site)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, site]);
 
   const fresh = survey !== null && !run.stale;
-  const sun = survey ? stateAt(survey.sun, timeMs, survey) : null;
-  const earth = survey ? stateAt(survey.earth, timeMs, survey) : null;
-  const usable = survey ? windowAt(survey.both, timeMs) : null;
-  const upcoming = survey ? nextWindow(survey.both, timeMs) : null;
-  const longest = survey ? longestWindow(survey.both) : null;
-  const sunNow = survey?.sunTrack ? interpTrack(survey.sunTrack, timeMs) : null;
-  const earthNow = survey?.earthTrack ? interpTrack(survey.earthTrack, timeMs) : null;
   const sunWindow = useMemo(() => trackWindow(survey?.sunTrack ?? null, timeMs), [survey, timeMs]);
   const earthWindow = useMemo(() => trackWindow(survey?.earthTrack ?? null, timeMs), [survey, timeMs]);
 
-  const headline = !survey || !sun || !earth
-    ? null
-    : usable
-      ? { tone: "pass", text: `Power and a direct Earth link for the next ${spanText(usable.end_ms - timeMs)}` }
-      : sun.up
-        ? { tone: "marginal", text: "Sunlit, but Earth is below the horizon: no direct link" }
-        : earth.up
-          ? { tone: "marginal", text: "Earth is in view, but the site is dark: no solar power" }
-          : { tone: "fail", text: "Dark and out of Earth's view" };
-
   usePublishScreenContext({
     where: "Overview",
-    summary: headline?.text ?? "",
-    lines: survey
-      ? [
-          `The overview shows one year of Sun and Earth visibility from ${dayText(start, true)} for ${name} at ${lat} deg latitude, ${lon} deg longitude.`,
-          `Sunlit ${Math.round(coverage(survey.sun, survey) * 100)} percent of the year, Earth in view ${Math.round(coverage(survey.earth, survey) * 100)} percent, both ${Math.round(coverage(survey.both, survey) * 100)} percent.`,
-        ]
-      : [],
+    summary: summary ? `Requirement verdict ${summary.overall}${summary.limiting ? `, limited by ${summary.limiting.label}` : ""}` : "",
+    lines: scan ? [`The plan meets its requirements for ${Math.round(scan.passFraction * 100)} percent of landing times in the year from ${toIsoUtc(start)}.`] : [],
   });
 
   return (
     <div className="home" aria-label="Overview page">
       <h1 className="sr-only">Overview: {name}</h1>
-      {run.error && run.phase === "error" ? (
+      <Headline
+        survey={fresh ? survey : null}
+        surveyFailed={run.phase === "error"}
+        timeMs={timeMs}
+        dragging={live !== null}
+        requirements={requirements}
+        summary={live === null ? summary : null}
+        evaluation={evaluation}
+        scan={showScan ? scan : null}
+        best={best}
+        onJump={commit}
+      />
+      {run.error && run.phase === "error" && (
         <div className="home-pad">
           <ServiceNotice
-            error={run.error instanceof ApiError ? run.error : new ApiError({ status: 0, title: "Could not compute this site", detail: run.error.message })}
+            error={run.error instanceof ApiError ? run.error : new ApiError({ status: 0, title: "Failed", detail: run.error.message })}
             what="the year of Sun and Earth visibility"
             onRetry={run.rerun}
           />
         </div>
-      ) : (
-        <section className="home-verdict" data-stale={!fresh} aria-live="polite">
-          <div className="home-headline">
-            {headline ? (
-              <>
-                <p className="home-headline-text">
-                  <span className="home-tone" data-tone={headline.tone} aria-hidden="true" />
-                  {headline.text}
-                </p>
-                <p className="home-headline-sub">
-                  {usable ? (
-                    <>
-                      This window: {dayText(usable.start_ms)} to {dayText(usable.end_ms)}, {spanText(usable.end_ms - usable.start_ms)}
-                    </>
-                  ) : upcoming ? (
-                    <>
-                      Next window with both:{" "}
-                      <button type="button" className="home-jump" onClick={() => commit(upcoming.start_ms + 3_600_000)}>
-                        {dayText(upcoming.start_ms)}, {spanText(upcoming.end_ms - upcoming.start_ms)}
-                      </button>
-                    </>
-                  ) : (
-                    <>No later window with both in this year.</>
-                  )}
-                  {longest && longest !== usable && longest !== upcoming && (
-                    <>
-                      {" · "}
-                      Longest this year:{" "}
-                      <button type="button" className="home-jump" onClick={() => commit(longest.start_ms + 3_600_000)}>
-                        {dayText(longest.start_ms)}, {spanText(longest.end_ms - longest.start_ms)}
-                      </button>
-                    </>
-                  )}
-                </p>
-                <Link className="home-more" to="/site" title="Requirements, uncertainty, battery, ground stations and exports for this site and date">
-                  Check every requirement
-                  <Icon name="chevronRight" size={12} />
-                </Link>
-              </>
-            ) : (
-              <p className="home-headline-wait" role="status">
-                <Spinner size={14} /> {run.stage ?? "Computing"}
-              </p>
-            )}
-          </div>
-          {sun && <BodyCard body="sun" state={sun} timeMs={timeMs} elevation={sunNow ? sunNow.el_deg : null} />}
-          {earth && <BodyCard body="earth" state={earth} timeMs={timeMs} elevation={earthNow ? earthNow.el_deg : null} />}
-        </section>
       )}
 
-      {ground ? (
-        <div className="home-stage home-stage-ground" data-stale={!fresh}>
-          <Suspense
-            fallback={
-              <p className="home-sky-wait" role="status">
-                <Spinner size={14} />
-              </p>
-            }
-          >
-            <GroundView
-              key={`${lat},${lon}`}
-              siteName={name}
-              lat={lat}
-              lon={lon}
-              eyeM={doc.profile.array_height_m}
-              horizon={survey?.horizon ?? null}
-              sunTrack={survey?.sunTrack ?? null}
-              earthTrack={survey?.earthTrack ?? null}
+      <div className="home-stage">
+        <div className="home-pane home-pane-map">
+          <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} />
+        </div>
+        <div className="home-pane home-pane-sky" data-stale={!fresh}>
+          {survey?.horizon ? (
+            <HorizonPanorama
+              compact
+              horizon={survey.horizon}
+              sun={sunWindow}
+              earth={earthWindow}
               timeMs={timeMs}
-              onExit={() => setGround(false)}
+              elevationFit={survey.fit ?? undefined}
+              title="Sun and Earth paths over the terrain horizon"
             />
-          </Suspense>
+          ) : (
+            <div className="home-sky-wait" role="status">
+              {run.phase !== "error" && <Spinner size={14} />}
+            </div>
+          )}
+          {survey?.smooth && (
+            <p className="home-sky-note">
+              <Icon name="warn" size={12} /> No terrain data: smooth-sphere horizon
+            </p>
+          )}
         </div>
-      ) : (
-        <div className="home-stage">
-          <div className="home-pane home-pane-map">
-            <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} onStand={() => setGround(true)} />
-          </div>
-          <div className="home-pane home-pane-sky" data-stale={!fresh}>
-            {survey?.horizon ? (
-              <HorizonPanorama
-                horizon={survey.horizon}
-                sun={sunWindow}
-                earth={earthWindow}
-                timeMs={timeMs}
-                elevationFit={survey.fit ?? undefined}
-                discInset={false}
-                title="Sun and Earth against the horizon, seen from the site"
-              />
-            ) : (
-              <div className="home-sky-wait" role="status">
-                {run.phase !== "error" && <Spinner size={14} />}
-              </div>
-            )}
-            {survey?.smooth && (
-              <p className="home-sky-note">
-                <Icon name="warn" size={12} /> No terrain data here: the horizon is a smooth sphere.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      </div>
 
       <WindowStrip
         start_ms={start}
@@ -352,24 +212,26 @@ export function HomeWorkspace() {
         timeMs={timeMs}
         survey={survey}
         busy={!fresh}
+        siteName={shortName(name) || "Unnamed site"}
+        scan={showScan ? scan : null}
+        scanState={!showScan ? "off" : scan ? "ready" : scanRun.phase === "error" ? "failed" : "busy"}
+        best={best}
         onScrub={setLive}
         onCommit={commit}
+        landingWindow={landingWindow}
         tools={
-          <>
-            <Button size="sm" variant="ghost" icon={playing ? "pause" : "play"} aria-pressed={playing} title="Run the date forward through the year" onClick={() => setPlaying(!playing)}>
-              {playing ? "Pause" : "Play year"}
-            </Button>
+          pinned ? null : (
             <Button
               size="sm"
               variant="ghost"
-              icon={pinned ? "check" : "pin"}
-              disabled={pinned || pins.length >= MAX_PINS}
-              title={pinned ? "This site is pinned below" : pins.length >= MAX_PINS ? `Unpin a site first (${MAX_PINS} at most)` : "Keep this site's row on the timeline, then try another site"}
+              icon="pin"
+              disabled={pins.length >= MAX_PINS}
+              title={pins.length >= MAX_PINS ? `${MAX_PINS} pins at most` : "Keep this row to compare"}
               onClick={() => addPin({ id: pinId(site), name: name || "Unnamed site", lat_deg: lat, lon_deg: lon, catalog_id: catalogId })}
             >
-              {pinned ? "Pinned" : "Pin site"}
+              Pin
             </Button>
-          </>
+          )
         }
       >
         {pins.map((p) => (
@@ -385,10 +247,6 @@ export function HomeWorkspace() {
           />
         ))}
       </WindowStrip>
-      <p className="home-foot">
-        Nominal terrain horizon for a {doc.profile.array_height_m} m solar array and a {doc.profile.antenna_height_m} m antenna. Uncertainty ranges, battery, ground stations and slope are on the{" "}
-        <Link to="/site">Site</Link> page.
-      </p>
     </div>
   );
 }

@@ -155,10 +155,3 @@ export function timeTicks(t0: number, t1: number, target = 8): TimeTick[] {
   }
   return out;
 }
-
-export function lunationCell(utc_ms: number, epochMs: number, slotMs: number): { col: number; row: number } {
-  const dt = utc_ms - epochMs;
-  const col = Math.floor(dt / MS_LUNATION);
-  const row = Math.floor((dt - col * MS_LUNATION) / slotMs);
-  return { col, row };
-}
