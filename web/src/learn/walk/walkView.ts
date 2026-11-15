@@ -189,7 +189,6 @@ export class WalkView {
       this.onNear?.(null);
       this.astronaut.reset();
       this.rover.reset();
-      if (this.control.body === "rover") this.astronaut.kneeling = false;
       this.settle();
       this.updateRoverNear();
     }

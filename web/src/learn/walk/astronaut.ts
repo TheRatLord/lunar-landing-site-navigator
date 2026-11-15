@@ -40,7 +40,7 @@ export class Astronaut {
   readonly object = new Group();
   readonly position = new Vector3();
   heading = 340;
-  kneeling = true;
+  kneeling = false;
   atEdge = false;
   readonly lamp = new SpotLight(0xfff4e0, 0, 28, 0.5, 0.55, 0);
   private readonly body = new Group();
@@ -130,7 +130,7 @@ export class Astronaut {
   reset(): void {
     this.position.copy(HOME);
     this.heading = 340;
-    this.kneeling = true;
+    this.kneeling = false;
     this.vy = 0;
     this.lift = 0;
     this.phase = 0;
