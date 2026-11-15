@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { useLoad } from "../../api/useLoad";
 import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
@@ -108,8 +107,8 @@ function SiteSearch({ present }: { present: readonly SiteRef[] }) {
             autoFocus
             className="cmp-add-input"
             value={query}
-            placeholder="Search sites, or type lat, lon"
-            aria-label="Search sites, or type latitude, longitude"
+            placeholder="Site or lat, lon"
+            aria-label="Site, or latitude and longitude"
             spellCheck={false}
             autoComplete="off"
             onChange={(e) => setQuery(e.target.value)}
@@ -120,8 +119,7 @@ function SiteSearch({ present }: { present: readonly SiteRef[] }) {
         <button type="button" className="cmp-add-opt cmp-add-top" onClick={() => freshTop.forEach(add)}>
           <Icon name="plus" size={14} />
           <span className="cmp-add-text">
-            <strong>Add the top results</strong>
-            <span>{freshTop.length === 1 ? "1 site from Find sites" : `${freshTop.length} sites from Find sites`}</span>
+            <strong>{freshTop.length === 1 ? "Add the top site from Find sites" : `Add top ${freshTop.length} from Find sites`}</strong>
           </span>
         </button>
       )}
@@ -143,10 +141,6 @@ function SiteSearch({ present }: { present: readonly SiteRef[] }) {
         {query.trim() !== "" && options.length === 0 && <li className="cmp-add-none">No site matches</li>}
         {sitesLoad.state.status === "loading" && <li className="cmp-add-none">Loading sites</li>}
       </ul>
-      <Link className="cmp-add-map" to="/map">
-        <Icon name="map" size={14} />
-        Pick on the map
-      </Link>
     </div>
   );
 }

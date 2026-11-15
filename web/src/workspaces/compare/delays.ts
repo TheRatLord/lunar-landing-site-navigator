@@ -20,32 +20,52 @@ export function delayLabels(hours: readonly number[]): string[] {
 
 type DelayParse = { ok: true; hours: number[] } | { ok: false; error: string };
 
-const UNIT: Record<string, "d" | "h"> = { d: "d", day: "d", days: "d", h: "h", hr: "h", hrs: "h", hour: "h", hours: "h" };
+const UNIT: Record<string, "w" | "d" | "h"> = { w: "w", wk: "w", wks: "w", week: "w", weeks: "w", d: "d", day: "d", days: "d", h: "h", hr: "h", hrs: "h", hour: "h", hours: "h" };
+const HELP = "Type 10 d or 20 Mar 2027";
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const DAY_DATE = /^(\d{1,2})\s+([a-z]{3})[a-z]*\.?(?:\s+(\d{4}))?(?:\s+(\d{1,2}):(\d{2}))?(?:\s*utc)?$/i;
+
+function dayDate(text: string, plannedMs: number | null): number | null {
+  const m = DAY_DATE.exec(text.trim());
+  if (!m) return null;
+  const month = MONTHS.indexOf(m[2]!.toLowerCase());
+  if (month < 0) return null;
+  const year = m[3] ? Number(m[3]) : new Date(plannedMs ?? Date.now()).getUTCFullYear();
+  const day = Number(m[1]);
+  const ms = Date.UTC(year, month, day, m[4] ? Number(m[4]) : 0, m[5] ? Number(m[5]) : 0);
+  return new Date(ms).getUTCDate() === day ? ms : null;
+}
 const AMOUNT = /^([+-]?)(\d+(?:\.\d+)?|\.\d+)\s*([a-z]*)$/i;
 const RANGE = /^(.+?)\s*\.\.\s*(.+?)(?:\s+(?:by|step)\s+(.+))?$/i;
 const DATE = /^\d{4}-\d{1,2}-\d{1,2}/;
 
 interface Amount {
   value: number;
-  unit: "d" | "h" | null;
+  unit: "w" | "d" | "h" | null;
 }
 
 function amount(text: string): Amount | string {
   const m = AMOUNT.exec(text.trim());
-  if (!m) return `"${text.trim()}" is not a number of days or hours`;
+  if (!m) return HELP;
   const unitText = m[3]!.toLowerCase();
   const unit = unitText === "" ? null : UNIT[unitText];
-  if (unit === undefined) return `"${text.trim()}": the unit must be d (days) or h (hours)`;
+  if (unit === undefined) return HELP;
   return { value: (m[1] === "-" ? -1 : 1) * Number(m[2]), unit };
 }
 
-const toHours = (a: Amount, unit: "d" | "h") => Number(((a.unit ?? unit) === "d" ? a.value * 24 : a.value).toFixed(6));
+const PER: Record<"w" | "d" | "h", number> = { w: 168, d: 24, h: 1 };
+const toHours = (a: Amount, unit: "w" | "d" | "h") => Number((a.value * PER[a.unit ?? unit]).toFixed(6));
 
 function parsePart(part: string, plannedMs: number | null, noDate: string): number[] | string {
+  const named = dayDate(part, plannedMs);
+  if (named !== null) {
+    if (plannedMs === null) return noDate;
+    return [Number(((named - plannedMs) / MS_HOUR).toFixed(3))];
+  }
   if (DATE.test(part)) {
     const ms = parseUtc(part.replace(/z$/i, ""));
-    if (ms === null) return `"${part}" is not a date (write 2027-03-20 06:00)`;
-    if (plannedMs === null) return `"${part}": ${noDate}`;
+    if (ms === null) return HELP;
+    if (plannedMs === null) return noDate;
     return [Number(((ms - plannedMs) / MS_HOUR).toFixed(3))];
   }
   const r = RANGE.exec(part);
@@ -67,6 +87,10 @@ function parsePart(part: string, plannedMs: number | null, noDate: string): numb
   if (typeof whole !== "string") return [toHours(whole, "d")];
   const words = part.split(/\s+/);
   if (words.length === 1) return whole;
+  if (words.length === 2) {
+    const joined = amount(words.join(""));
+    if (typeof joined !== "string") return [toHours(joined, "d")];
+  }
   const out: number[] = [];
   for (const w of words) {
     const x = amount(w);
@@ -76,19 +100,20 @@ function parsePart(part: string, plannedMs: number | null, noDate: string): numb
   return out;
 }
 
-function parseDelays(text: string, plannedMs: number | null, noDate = "a date needs the plan's landing time to measure from; type a delay instead"): DelayParse {
+function parseDelays(text: string, plannedMs: number | null, noDate = "Type a delay, like 10 d"): DelayParse {
   const parts = text
     .replace(/\u2212/g, "-")
     .split(/[,;]+/)
     .map((p) => p.trim())
     .filter(Boolean);
-  if (parts.length === 0) return { ok: false, error: "Type a delay or a date." };
+  if (parts.length === 0) return { ok: false, error: HELP };
   const hours: number[] = [];
   for (const p of parts) {
     const got = parsePart(p, plannedMs, noDate);
     if (typeof got === "string") return { ok: false, error: got };
     const far = got.find((h) => Math.abs(h) > MAX_SLIP_H);
-    if (far !== undefined) return { ok: false, error: `"${p}" is more than a year from the planned landing` };
+    if (far !== undefined) return { ok: false, error: "Keep within a year of the landing" };
+    if (plannedMs !== null && plannedMs > Date.now() && got.some((h) => plannedMs + h * MS_HOUR < Date.now() - MS_HOUR)) return { ok: false, error: "That date has passed" };
     hours.push(...got);
   }
   return { ok: true, hours };
@@ -99,5 +124,6 @@ export function addDelays(existing: readonly number[], text: string, plannedMs: 
   if (!p.ok) return p;
   const unique = new Set([0, ...existing, ...p.hours]);
   if (unique.size > MAX_SLIPS) return { ok: false, error: `At most ${MAX_SLIPS} dates` };
+  if (unique.size === new Set([0, ...existing]).size) return { ok: false, error: "Already in the grid" };
   return { ok: true, hours: normalizeSlips([...unique]) };
 }

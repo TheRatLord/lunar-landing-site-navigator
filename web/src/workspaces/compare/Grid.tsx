@@ -1,10 +1,10 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { SlipRow } from "../../api/planning";
 import { IconButton } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { MS_HOUR } from "../../lib/time";
 import { delayLabels } from "./delays";
-import { STATE_WORD, dateText, dayText, limitingShort, nextText, works, type SiteRef } from "./gridModel";
+import { STATE_WORD, dateText, dayText, limitingName, limitingShort, nextText, works, type SiteRef } from "./gridModel";
 import { BASELINE_SITE } from "./options";
 
 export interface Cell {
@@ -21,6 +21,7 @@ export function Grid({
   onSelect,
   onRemoveSite,
   onRemoveSlip,
+  removable,
 }: {
   sites: readonly SiteRef[];
   slips: readonly number[];
@@ -30,9 +31,30 @@ export function Grid({
   onSelect: (cell: Cell | null) => void;
   onRemoveSite: (key: string) => void;
   onRemoveSlip: (h: number) => void;
+  removable: (h: number) => boolean;
 }) {
   const [active, setActive] = useState({ r: 0, c: 0 });
   const table = useRef<HTMLTableElement>(null);
+  const wrap = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState({ l: false, r: false });
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const update = () => {
+      const l = el.scrollLeft > 1;
+      const r = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setMore((m) => (m.l === l && m.r === r ? m : { l, r }));
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    if (table.current) ro.observe(table.current);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, []);
   const labels = delayLabels(slips);
   const at = (h: number) => (plannedMs === null ? null : plannedMs + h * MS_HOUR);
   const plannedYear = plannedMs === null ? null : new Date(plannedMs).getUTCFullYear();
@@ -53,7 +75,7 @@ export function Grid({
   };
 
   return (
-    <div className="cmp-grid-wrap">
+    <div className={`cmp-grid-wrap${more.l ? " cmp-more-l" : ""}${more.r ? " cmp-more-r" : ""}`} ref={wrap}>
       <table className="cmp-grid" ref={table}>
         <caption className="sr-only">Sites by landing date</caption>
         <thead>
@@ -64,10 +86,10 @@ export function Grid({
             {slips.map((h, i) => {
               const ms = at(h);
               return (
-                <th key={h} scope="col" className="cmp-col">
+                <th key={h} scope="col" className={`cmp-col${selected?.slip_h === h ? " cmp-on" : ""}`}>
                   <span className="cmp-col-head">
                     <span className="cmp-col-date num">{ms === null ? labels[i] : dayText(ms, new Date(ms).getUTCFullYear() !== plannedYear)}</span>
-                    {h !== 0 && <IconButton icon="close" size="sm" className="cmp-x" label={`Remove ${ms === null ? labels[i] : dayText(ms, true)}`} onClick={() => onRemoveSlip(h)} />}
+                    {h !== 0 && removable(h) && <IconButton icon="close" size="sm" className="cmp-x" label={`Remove ${ms === null ? labels[i] : dayText(ms, true)}`} onClick={() => onRemoveSlip(h)} />}
                   </span>
                   <span className="cmp-col-sub num">{h === 0 ? "Planned" : labels[i]}</span>
                 </th>
@@ -85,7 +107,7 @@ export function Grid({
             const plan = site.key === BASELINE_SITE;
             return (
               <tr key={site.key}>
-                <th scope="row" className="cmp-grid-site">
+                <th scope="row" className={`cmp-grid-site${selected?.site === site.key ? " cmp-on" : ""}`}>
                   <span className="cmp-site">
                     {plan && <Icon name="pin" size={12} className="cmp-pin" />}
                     <span className="ellipsis" title={site.name}>
@@ -110,7 +132,7 @@ export function Grid({
                         type="button"
                         className={`cmp-btn cmp-s-${row.state}`}
                         aria-pressed={on}
-                        aria-label={`${site.name}, ${dateText(ms)}: ${STATE_WORD[row.state]}${works(row.state) || !row.next_open_utc ? "" : `, ${nextText(row, ms)}`}`}
+                        aria-label={cellLabel(site.name, row, ms)}
                         tabIndex={active.r === r && active.c === c ? 0 : -1}
                         data-r={r}
                         data-c={c}
@@ -123,7 +145,7 @@ export function Grid({
                     </td>
                   );
                 })}
-                <td className="cmp-grid-end num">{known.length > 0 ? `${known.filter((x) => x.state === "pass").length}/${slips.length}` : ""}</td>
+                <td className="cmp-grid-end num">{known.length === slips.length ? `${known.filter((x) => works(x.state)).length}/${slips.length}` : ""}</td>
               </tr>
             );
           })}
@@ -133,8 +155,15 @@ export function Grid({
   );
 }
 
+function cellLabel(name: string, row: SlipRow, ms: number): string {
+  const head = `${name}, ${dateText(ms)}: ${STATE_WORD[row.state]}`;
+  if (row.state === "pass" || row.state === "unknown") return head;
+  const why = limitingName(row);
+  return `${head}${why ? `, ${why}` : ""}${row.state === "marginal" ? "" : `, ${nextText(row, ms)}`}`;
+}
+
 function CellBody({ row, landingMs }: { row: SlipRow; landingMs: number }) {
-  const sub = row.state === "pass" || row.state === "unknown" ? null : row.state !== "marginal" && row.next_open_utc ? nextText(row, landingMs) : limitingShort(row);
+  const sub = row.state === "pass" || row.state === "unknown" ? null : row.state === "marginal" ? limitingShort(row) : nextText(row, landingMs);
   return (
     <>
       <span className="cmp-cell-word" aria-hidden="true">

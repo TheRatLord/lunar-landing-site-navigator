@@ -2,7 +2,7 @@ import type { ServiceConstraintVerdict, SlipResult, SlipRow, SlipSite } from "..
 import { formatSigned } from "../../lib/format";
 import { MS_HOUR, parseUtc } from "../../lib/time";
 import { VERDICT_LABEL } from "../../lib/verdict";
-import { BASELINE_SITE } from "./options";
+import { BASELINE_SITE, SEARCH_DAYS } from "./options";
 
 export interface SiteRef {
   key: string;
@@ -24,7 +24,7 @@ export const STATE_WORD: Record<CellState, string> = {
 
 export const works = (s: CellState): boolean => s === "pass" || s === "marginal";
 
-const PREFIX = /^Artemis candidate region:\s*/i;
+const PREFIX = /^Artemis(?:\s+\d{4})?\s+candidate region:\s*/i;
 export const siteName = (name: string | null | undefined): string => (name ?? "").replace(PREFIX, "").trim() || "Unnamed site";
 
 const EPS_DEG = 1e-6;
@@ -99,11 +99,21 @@ function quantity(v: number, unit: string): string {
   return unit ? `${formatSigned(v, 1)} ${unit}` : formatSigned(v, 1);
 }
 
-export function marginText(row: SlipRow): string | null {
+const finite = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+export function marginValue(row: SlipRow): { value: number; unit: string; worst: boolean } | null {
   const c = limiting(row);
   if (!c) return null;
-  const v = typeof c.margin === "number" && Number.isFinite(c.margin) ? c.margin : typeof c.margin_worst === "number" && Number.isFinite(c.margin_worst) ? c.margin_worst : null;
-  return v === null ? null : quantity(v, c.unit);
+  const worst = finite(c.margin_worst);
+  const nominal = finite(c.margin);
+  if (row.state === "marginal" && worst !== null) return { value: worst, unit: c.unit, worst: true };
+  const v = nominal ?? worst;
+  return v === null ? null : { value: v, unit: c.unit, worst: nominal === null };
+}
+
+export function marginText(row: SlipRow): string | null {
+  const m = marginValue(row);
+  return m === null ? null : quantity(m.value, m.unit);
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -121,8 +131,8 @@ export function dateText(ms: number): string {
 
 export function nextText(row: SlipRow, landingMs: number): string {
   const next = parseUtc(row.next_open_utc ?? null);
-  if (next === null) return "";
+  if (next === null) return `none in ${SEARCH_DAYS} d`;
   const sameDay = Math.floor(next / (24 * MS_HOUR)) === Math.floor(landingMs / (24 * MS_HOUR));
   const d = new Date(next);
-  return `next ${sameDay ? `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` : dayText(next, new Date(landingMs).getUTCFullYear() !== d.getUTCFullYear())}`;
+  return `next ${dayText(next, new Date(landingMs).getUTCFullYear() !== d.getUTCFullYear())}${sameDay ? ` ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` : ""}`;
 }
