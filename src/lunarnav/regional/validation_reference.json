@@ -70,11 +70,11 @@
    },
    "measured_error": {
     "unit": "percentage points",
-    "mean_signed": 0.1105,
-    "mean_abs": 0.1105,
-    "p95_abs": 0.291,
-    "p99_abs": 0.5415,
-    "max_abs": 1.0316
+    "mean_signed": 0.0796,
+    "mean_abs": 0.0796,
+    "p95_abs": 0.2166,
+    "p99_abs": 0.2793,
+    "max_abs": 0.3705
    }
   },
   "sun_mean_flux": {
@@ -86,11 +86,11 @@
    },
    "measured_error": {
     "unit": "percentage points",
-    "mean_signed": 0.1099,
-    "mean_abs": 0.1099,
-    "p95_abs": 0.2805,
-    "p99_abs": 0.4726,
-    "max_abs": 1.1788
+    "mean_signed": 0.0803,
+    "mean_abs": 0.0803,
+    "p95_abs": 0.2128,
+    "p99_abs": 0.2541,
+    "max_abs": 0.3012
    }
   },
   "sunlit_fraction": {
@@ -102,14 +102,30 @@
    },
    "measured_error": {
     "unit": "percentage points",
-    "mean_signed": 0.1105,
-    "mean_abs": 0.1105,
-    "p95_abs": 0.291,
-    "p99_abs": 0.5415,
-    "max_abs": 1.0316
+    "mean_signed": 0.0796,
+    "mean_abs": 0.0796,
+    "p95_abs": 0.2166,
+    "p99_abs": 0.2793,
+    "max_abs": 0.3705
    }
   },
   "earth_fraction": {
+   "bracket_coverage": {
+    "coverage": 0.9979,
+    "misses": 2,
+    "cells": 960,
+    "calibration_target": 0.99
+   },
+   "measured_error": {
+    "unit": "percentage points",
+    "mean_signed": 0.0479,
+    "mean_abs": 0.0479,
+    "p95_abs": 0.1539,
+    "p99_abs": 0.2565,
+    "max_abs": 1.1798
+   }
+  },
+  "longest_sunlit_h": {
    "bracket_coverage": {
     "coverage": 0.999,
     "misses": 1,
@@ -117,42 +133,26 @@
     "calibration_target": 0.99
    },
    "measured_error": {
-    "unit": "percentage points",
-    "mean_signed": 0.132,
-    "mean_abs": 0.132,
-    "p95_abs": 0.4907,
-    "p99_abs": 2.0283,
-    "max_abs": 6.4748
-   }
-  },
-  "longest_sunlit_h": {
-   "bracket_coverage": {
-    "coverage": 1.0,
-    "misses": 0,
-    "cells": 960,
-    "calibration_target": 0.99
-   },
-   "measured_error": {
     "unit": "hours",
-    "mean_signed": 1.0063,
-    "mean_abs": 1.0125,
-    "p95_abs": 3.0,
-    "p99_abs": 11.87,
+    "mean_signed": 0.774,
+    "mean_abs": 0.7802,
+    "p95_abs": 1.0,
+    "p99_abs": 7.0,
     "max_abs": 80.0
    }
   },
   "longest_shadow_h": {
    "bracket_coverage": {
-    "coverage": 0.9969,
-    "misses": 3,
+    "coverage": 0.9958,
+    "misses": 4,
     "cells": 960,
     "calibration_target": 0.99
    },
    "measured_error": {
     "unit": "hours",
-    "mean_signed": -24.5917,
-    "mean_abs": 30.8062,
-    "p95_abs": 3.0,
+    "mean_signed": -23.75,
+    "mean_abs": 31.3729,
+    "p95_abs": 2.0,
     "p99_abs": 687.69,
     "max_abs": 8920.0
    }
@@ -166,11 +166,11 @@
    },
    "measured_error": {
     "unit": "hours",
-    "mean_signed": -28.4698,
-    "mean_abs": 28.4802,
-    "p95_abs": 4.0,
-    "p99_abs": 614.14,
-    "max_abs": 5788.0
+    "mean_signed": -2.3865,
+    "mean_abs": 2.399,
+    "p95_abs": 2.0,
+    "p99_abs": 3.41,
+    "max_abs": 647.0
    }
   }
  }

@@ -13,11 +13,12 @@ were produced in one clean pass after the addressing fix, and nothing was edited
 The regional layer (`python -m lunarnav.regional`, `compute_layers`) is a fast estimate over an area; the per-site exact engine is the reference. Accuracy **at the shipped defaults on the default
 terrain stack** (observer 0 m, Sun and Earth `any_part`, 360 azimuths, hourly 2024-2026, 32 calibration cells; 960 independent cells in five areas, section 7.2), regional minus exact:
 
-* average illumination, sun mean flux, sunlit fraction (`supported`): mean error 0.11 points, p95 0.29, maximum 1.03-1.18 points; the regional value is always on the optimistic side.
-* Earth fraction (`approximate`): mean 0.13, p95 0.49, p99 2.03, **maximum 6.47 points**.
-* longest sunlit (`approximate`): mean 1.0 h, p95 3 h, maximum 80 h.
-* longest shadow and longest Earth outage (`bracket_only`): median error 0, p95 3-4 h, but **maximum 8920 h and 5788 h**; show only the estimated bracket. A reliable point value comes from the site search (exact engine).
-* The `_lo`/`_hi` layers are **estimated brackets, not bounds**: they missed the exact value in 0-3 of 960 cells per layer (longest shadow 3, Earth outage 2, sun mean flux 1, Earth fraction 1, the others 0). Their width is 1.6 points (p95 3.2) for the Sun layers and 12 h (p95 1408 h) for the longest shadow.
+* average illumination, sun mean flux, sunlit fraction (`supported`): mean error 0.08 points, p95 0.22, maximum 0.30-0.37 points; the regional value is always on the optimistic side.
+* Earth fraction (`approximate`): mean 0.05, p95 0.15, p99 0.26, **maximum 1.18 points**.
+* longest sunlit (`approximate`): mean 0.8 h, p95 1 h, maximum 80 h.
+* longest shadow and longest Earth outage (`bracket_only`): p95 2 h, but **maximum 8920 h and 647 h**; show only the estimated bracket. A reliable point value comes from the site search (exact engine).
+* The `_lo`/`_hi` layers are **estimated brackets, not bounds**: they missed the exact value in 0-4 of 960 cells per layer (longest shadow 4, Earth outage 2, Earth fraction 2, sun mean flux 1, longest sunlit 1, the others 0). Their width is 1.6 points (p95 3.2) for the Sun layers and 12 h (p95 1408 h) for the longest shadow.
+* These figures were re-measured on 2026-11-15 with horizon engine `horizon-bnb/5` (the search starts one pixel of the ground store out, in both kernels; `docs/validation/horizon.md` 2.5). The sections below that quote the earlier measurement (mean 0.11, Earth maximum 6.47 and so on) describe engine `/4`; the bracket widths in the line above were not re-measured.
 * **Cells within 2 cells of a change of terrain product are not reliable** (0-2.6 % of cells; horizon error up to 19 deg; flag bit 8, verdict -128).
 * Every run measures its own error and bracket widths and prints them in `header.json` and the GeoTIFF tags; the validated figures above are printed beside them with the configuration they hold for (`applies_to_run`).
 * The engine itself against the published `AVGVISIB_85S_060M` (section 3): Sun mean 0.59 points, p95 2.72; **Earth p95 6.27 misses the 5-point target**; the published maximum pixel is 88.44 % against 84.38 % from the engine.
