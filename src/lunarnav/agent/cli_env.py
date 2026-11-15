@@ -23,7 +23,8 @@ Forwarded from the parent, with the reason:
 ========================  ==========================================================================
 
 Added from `AgentConfig.cli_env_keep` (default none) for site needs such as a proxy. ``ANTHROPIC_API_KEY``
-is deliberately not forwarded: the harness uses subscription authentication only.
+is deliberately not forwarded: the CLI uses its subscription login, or reads a key from `AgentConfig.api_key_file`
+through its ``apiKeyHelper`` setting, so no key is ever in an environment that Bash inherits.
 """
 
 from __future__ import annotations

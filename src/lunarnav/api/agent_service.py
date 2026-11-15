@@ -235,9 +235,25 @@ class AgentService:
             out["sandbox"] = _latest_sandbox(paths.transcript)
         return out
 
-    def list_runs(self) -> list[dict[str, Any]]:
-        """Metadata of every run on disk, newest first."""
-        return [self._decorate(m) for m in list_runs(self.runs_dir) if "run_id" in m]
+    def list_runs(self, owner: str | None = None) -> list[dict[str, Any]]:
+        """Metadata of every run on disk, newest first; with `owner`, only the runs started under that access code."""
+        return [self._decorate(m) for m in list_runs(self.runs_dir)
+                if "run_id" in m and (owner is None or self._owner_of(m["run_id"]) == owner)]
+
+    def _owner_file(self, run_id: str) -> Path:
+        return self.settings.service_dir / "agent-owners" / run_id
+
+    def _owner_of(self, run_id: str) -> str | None:
+        if not RUN_ID_RE.match(run_id):
+            return None
+        try:
+            return fsafe.read_text(self._owner_file(run_id)).strip() or None
+        except OSError:
+            return None
+
+    def check_owner(self, run_id: str, owner: str) -> None:
+        if self._owner_of(run_id) != owner:
+            raise ApiProblem(404, "Run not found", f"No run {run_id!r}.")
 
 
     def check_budget(self, budget_usd: float | None) -> None:
@@ -248,8 +264,8 @@ class AgentService:
             raise ApiProblem(422, "Budget above the ceiling", msg,
                              errors=[{"loc": ["body", "budget_usd"], "msg": msg, "type": "budget_ceiling"}], ceiling_usd=ceiling)
 
-    async def start_run(self, prompt: str, model: str | None, budget_usd: float | None = None) -> dict[str, Any]:
-        """Create a run, connect its session and start the first turn."""
+    async def start_run(self, prompt: str, model: str | None, budget_usd: float | None = None, owner: str | None = None) -> dict[str, Any]:
+        """Create a run, connect its session and start the first turn; `owner` records the access code it was started under."""
         self.check_budget(budget_usd)
         async with self._lock:
             await self._make_room()
@@ -257,6 +273,8 @@ class AgentService:
                 session = await self._start(self.config(model, budget_usd), self._scenarios)
             except RuntimeError as exc:
                 raise ApiProblem(503, "Agent session could not start", str(exc), kind="agent-unavailable") from exc
+            if owner is not None:
+                fsafe.replace(self._owner_file(session.paths.run_id), owner.encode(), mkdir=True)
             live = self._attach(session)
         self._begin_turn(live, prompt)
         return self.metadata(session.paths.run_id, with_sandbox=True)
@@ -615,6 +633,10 @@ class AgentService:
             "workspace": workspace,
             "max_budget_usd": cfg.max_budget_usd,
         }
+
+
+def owner_id(code: str) -> str:
+    return hashlib.sha256(code.encode()).hexdigest()
 
 
 def _latest_sandbox(transcript: Path) -> dict[str, Any] | None:

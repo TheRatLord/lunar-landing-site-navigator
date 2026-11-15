@@ -9,7 +9,7 @@ The app is live at https://lunar.cinne.dev and runs on Google Cloud (project `lu
 - **Results are recomputed after a deploy.** A deploy that changes the Python package empties the result cache. The service keeps the requests it has served, with how often, under `/mnt/data/service/replay`; once the workers are warm it recomputes the 96 most requested, one at a time and only while no visitor's job is running, so the example plan's pages answer from the cache again a few minutes after a deploy. Exports and regional layers are left out.
 - **Dependencies:** keep `uv.lock` and `web/bun.lock` committed and current.
 - **Terrain data** is rebuilt by the `data` workflow (Actions tab, run it on `main` with `all` or the store ids). It runs `scripts/data.sh build` in Cloud Build (`deploy/gcp/data-build.yaml`; about 20 minutes for everything, about 2 for one store), publishes the stores to `gs://lunarnav-1114-19887-data`, and writes `manifest.json` last. Every minute the VM's updater checks that manifest; when it changes, the VM syncs the stores and restarts the API. Only the Cloud Build service account can write to the bucket.
-- **The AI assistant is off** in the deployment.
+- **The AI assistant is open only to holders of an access code** (see [The assistant](#the-assistant)). It stays off until both of its secrets exist.
 
 ## How requests flow
 
@@ -29,3 +29,21 @@ The app is live at https://lunar.cinne.dev and runs on Google Cloud (project `lu
 | API log | `sudo docker logs -f lunarnav` |
 | Deploy now | `sudo systemctl start lunarnav-update` |
 | Re-run the startup script (after changing it) | `gcloud compute instances add-metadata lunarnav --zone us-central1-a --project lunarnav-1114-19887 --metadata-from-file startup-script=deploy/gcp/startup.sh`, then on the VM: `sudo google_metadata_script_runner startup` |
+
+## The assistant
+
+The assistant runs only when Secret Manager holds both of these:
+
+- `anthropic-api-key`: the API key the assistant bills to. Put the spending limit on the key itself, in the Anthropic Console.
+- `agent-codes`: the access codes, one per line (commas also work). Each code sees only the threads started with it.
+
+```sh
+printf '%s' 'sk-ant-...' | gcloud secrets create anthropic-api-key --data-file=- --project lunarnav-1114-19887
+openssl rand -hex 12 | gcloud secrets create agent-codes --data-file=- --project lunarnav-1114-19887
+```
+
+Change the codes with `gcloud secrets versions add agent-codes --data-file=codes.txt`. The VM's service account needs `roles/secretmanager.secretAccessor` on both secrets.
+
+The updater reads the secrets each time it starts the container. To apply a change without a new image, on the VM run `sudo docker rm -f lunarnav && sudo systemctl start lunarnav-update`. Removing either secret turns the assistant off again at the next start.
+
+When both secrets are present, the container runs with `seccomp`, `apparmor` and `systempaths` unconfined, so that bubblewrap can create the nested namespaces the Bash sandbox needs. The startup script also allows unprivileged user namespaces where the kernel has the AppArmor switch. The key is written to `/mnt/data/agent-key/key`, and the CLI reads it through its `apiKeyHelper` setting. It is never in an environment variable, and the Bash sandbox can't read that directory. After the first start, check the sandbox on the VM with `sudo docker exec lunarnav lunarnav agent sandbox-check`. Every probe must pass, including "API key hidden".

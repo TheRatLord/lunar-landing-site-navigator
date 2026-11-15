@@ -7,7 +7,7 @@ RUN bun run build
 
 FROM python:3.14-slim-trixie
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core \
+ && apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core bubblewrap socat curl \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:0.11.26 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 \

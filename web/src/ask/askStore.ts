@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { metaApi } from "../api/endpoints";
+import { agentApi, metaApi, type AgentAccess } from "../api/endpoints";
 import type { components } from "../api/generated/schema";
 
 export const ASK_BUTTON_ID = "ask-toggle";
@@ -24,6 +24,8 @@ interface AskStatus {
 
 interface AskStore extends Stored {
   enabled: boolean;
+  access: AgentAccess | null;
+  setAccess(access: AgentAccess): void;
   status: AskStatus;
   setOpen(open: boolean): void;
   toggle(): void;
@@ -65,6 +67,8 @@ function read(): Stored {
 export const useAsk = create<AskStore>((set) => ({
   ...read(),
   enabled: false,
+  access: null,
+  setAccess: (access) => set({ access }),
   status: { pending: null, running: false },
   setOpen: (open) => set((s) => ({ open: open && s.enabled })),
   toggle: () => set((s) => ({ open: s.enabled && !s.open })),
@@ -91,7 +95,11 @@ let availability: Promise<void> | null = null;
 
 export function loadAskAvailability(): Promise<void> {
   availability ??= metaApi.get().then(
-    (meta) => useAsk.setState({ enabled: (meta as Partial<components["schemas"]["MetaResponse"]>).agent_enabled === true }),
+    async (meta) => {
+      const enabled = (meta as Partial<components["schemas"]["MetaResponse"]>).agent_enabled === true;
+      useAsk.setState({ enabled });
+      if (enabled) useAsk.setState({ access: await agentApi.access().catch(() => null) });
+    },
     () => {
       availability = null;
     },

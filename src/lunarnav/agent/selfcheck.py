@@ -182,6 +182,15 @@ def build_probes(
             lambda o: "import-ok" in o,
         ),
     ]
+    if config.api_key_file is not None:
+        probes.append(
+            Probe(
+                "API key hidden",
+                f"cat {config.api_key_file.absolute()}; echo rc=$?; printenv | grep -c -E '^ANTHROPIC_|sk-ant-'; echo rc2=$?",
+                "the key file is unreadable and no key is in the environment",
+                lambda o: "sk-ant-" not in o and "rc=0" not in o and "rc2=1" in o,
+            )
+        )
     if config.allowed_domains is None:
         probes.append(
             Probe(
@@ -267,6 +276,7 @@ async def run_sandbox_check(config: AgentConfig) -> list[ProbeResult]:
             env=env,
             cli_path=cli_path,
             sandbox=settings,  # type: ignore[arg-type]
+            settings=config.cli_settings(),
             max_turns=len(probes) + 4,
         )
         prompt = "Run each command below as its own Bash call, in order:\n" + "\n".join(

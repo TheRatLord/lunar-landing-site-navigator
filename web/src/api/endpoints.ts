@@ -1,5 +1,6 @@
 import { stripBidi, stripBidiDeep } from "../agent/bidi";
-import { apiUrl, getJson, getText, sendJson } from "./client";
+import { apiUrl, getJson, getText, request, sendJson } from "./client";
+import type { components } from "./generated/schema";
 import type {
   ArtifactRecord,
   LedgerResult,
@@ -11,6 +12,7 @@ import type {
 } from "./types";
 
 type Opts = { signal?: AbortSignal };
+export type AgentAccess = components["schemas"]["AccessState"];
 
 export const agentApi = {
   async listRuns(o: Opts = {}): Promise<RunSummary[]> {
@@ -37,6 +39,9 @@ export const agentApi = {
   instructions: async (o: Opts = {}) => stripBidiDeep(await getJson<Instructions>("/agent/instructions", o)),
   eventSchema: (o: Opts = {}) => getJson<Record<string, unknown>>("/agent/event-schema", o),
   eventsPath: (id: string) => `/agent/runs/${encodeURIComponent(id)}/events`,
+  access: (o: Opts = {}) => getJson<AgentAccess>("/agent/access", o),
+  unlock: (code: string, o: Opts = {}) => sendJson<AgentAccess>("/agent/access", { code }, o),
+  lock: async (o: Opts = {}) => (await (await request("/agent/access", { method: "DELETE", ...o })).json()) as AgentAccess,
 };
 
 export const evidenceApi = {

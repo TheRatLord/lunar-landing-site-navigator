@@ -2440,6 +2440,221 @@
         }
       }
     },
+    "/api/v1/agent/access": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Whether this browser may use the agent",
+        "operationId": "access_api_v1_agent_access_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found.",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict.",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure in the service.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Unlock the agent with an access code",
+        "operationId": "unlock_api_v1_agent_access_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found.",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict.",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The code is not recognised.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure in the service.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the service accepts.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Forget this browser's access code",
+        "operationId": "lock_api_v1_agent_access_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found.",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict.",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused: the request looks like a cross-site browser request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure in the service.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than the service accepts.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agent/instructions": {
       "get": {
         "tags": [
@@ -2480,6 +2695,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "500": {
             "description": "Unexpected failure in the service.",
@@ -2537,6 +2755,9 @@
               }
             }
           },
+          "401": {
+            "description": "Access code missing or not recognised."
+          },
           "500": {
             "description": "Unexpected failure in the service.",
             "content": {
@@ -2593,6 +2814,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "500": {
             "description": "Unexpected failure in the service.",
@@ -2655,6 +2879,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "422": {
             "description": "Validation Error",
@@ -2751,6 +2978,9 @@
               }
             }
           },
+          "401": {
+            "description": "Access code missing or not recognised."
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2835,6 +3065,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "422": {
             "description": "Validation Error",
@@ -2950,6 +3183,9 @@
               }
             }
           },
+          "401": {
+            "description": "Access code missing or not recognised."
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3044,6 +3280,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "422": {
             "description": "Validation Error",
@@ -3200,6 +3439,9 @@
               }
             }
           },
+          "401": {
+            "description": "Access code missing or not recognised."
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3274,6 +3516,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "422": {
             "description": "Validation Error",
@@ -3378,6 +3623,9 @@
               }
             }
           },
+          "401": {
+            "description": "Access code missing or not recognised."
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3452,6 +3700,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "422": {
             "description": "Validation Error",
@@ -3547,6 +3798,9 @@
               }
             }
           },
+          "401": {
+            "description": "Access code missing or not recognised."
+          },
           "422": {
             "description": "Validation failed.",
             "content": {
@@ -3641,6 +3895,9 @@
               }
             }
           },
+          "401": {
+            "description": "Access code missing or not recognised."
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3726,6 +3983,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "413": {
             "description": "File larger than the inbox limit (1 GiB) or the run's inbox total.",
@@ -3842,6 +4102,9 @@
               }
             }
           },
+          "401": {
+            "description": "Access code missing or not recognised."
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3940,6 +4203,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Access code missing or not recognised."
           },
           "422": {
             "description": "Validation Error",
@@ -6857,6 +7123,40 @@
   },
   "components": {
     "schemas": {
+      "AccessCode": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "AccessCode"
+      },
+      "AccessState": {
+        "properties": {
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "granted": {
+            "type": "boolean",
+            "title": "Granted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "required",
+          "granted"
+        ],
+        "title": "AccessState"
+      },
       "AltSite": {
         "properties": {
           "name": {

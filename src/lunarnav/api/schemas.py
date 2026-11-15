@@ -220,6 +220,15 @@ class RevisionInfo(BaseModel):
 MODEL_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._:\-\[\]]{0,79}$"
 
 
+class AccessCode(Strict):
+    code: str = Field(min_length=1, max_length=200)
+
+
+class AccessState(BaseModel):
+    required: bool
+    granted: bool
+
+
 class RunCreate(Strict):
     prompt: str = Field(min_length=1, max_length=50_000, description="First user message of the run.")
     model: str | None = Field(default=None, pattern=MODEL_PATTERN, description="Model id; default from the harness config.")

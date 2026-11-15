@@ -254,6 +254,7 @@ class AgentSession:
             max_budget_usd=self._budget_left(),
             resume=self._resume_id,
             sandbox=sandbox,
+            settings=self.config.cli_settings(),
         )
 
 

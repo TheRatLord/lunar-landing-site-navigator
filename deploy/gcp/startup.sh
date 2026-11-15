@@ -21,6 +21,9 @@ if ! command -v docker >/dev/null; then
   DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker.io
 fi
 systemctl enable --now docker
+if [[ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]]; then
+  sysctl -q -w kernel.apparmor_restrict_unprivileged_userns=0
+fi
 gcloud auth configure-docker "${image%%/*}" --quiet
 
 gcloud storage rsync -r --no-user-output-enabled "gs://$bucket" "$mnt"
@@ -54,12 +57,35 @@ healthy() {
   return 1
 }
 
+secret() { gcloud secrets versions access latest --secret="$1" 2>/dev/null || true; }
+
 start() {
+  local agent=()
+  local key codes
+  key="$(secret anthropic-api-key)"
+  codes="$(secret agent-codes | tr -s ' \n' ',' | sed 's/^,//; s/,$//')"
+  rm -rf /mnt/data/agent-key
+  if [[ -n "$key" && -n "$codes" ]]; then
+    install -d -m 700 -o 1000 -g 1000 /mnt/data/agent-key /mnt/data/home
+    install -m 600 -o 1000 -g 1000 /dev/null /mnt/data/agent-key/key
+    printf '%s' "$key" > /mnt/data/agent-key/key
+    printf 'cli_env_keep: [LUNARNAV_DATA]\nruns_root: /data/runs\n' > /mnt/data/agent.yaml
+    chown 1000:1000 /mnt/data/agent.yaml
+    agent=(
+      --security-opt seccomp=unconfined --security-opt apparmor=unconfined --security-opt systempaths=unconfined
+      -e HOME=/data/home
+      -e LUNARNAV_API_AGENT_ENABLED=1
+      -e LUNARNAV_API_AGENT_CODES="$codes"
+      -e LUNARNAV_AGENT_API_KEY_FILE=/data/agent-key/key
+      -e LUNARNAV_AGENT_CONFIG=/data/agent.yaml
+    )
+  fi
   docker rm -f lunarnav >/dev/null 2>&1 || true
   docker run -d --name lunarnav --restart unless-stopped --network host \
     -v /mnt/data:/data \
     -e LUNARNAV_API_CORS_ORIGINS="$origin" \
     -e LUNARNAV_API_JOB_WORKERS="$workers" \
+    "${agent[@]}" \
     "$1" >/dev/null
 }
 

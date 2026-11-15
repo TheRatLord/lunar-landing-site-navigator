@@ -25,6 +25,7 @@ import { ArtefactsPanel, ProvenancePanel } from "../workspaces/analyst/LedgerPan
 import { RunList, RunMenu, RunStateChips, ThreadTitle } from "../workspaces/analyst/RunList";
 import { useLedger } from "../workspaces/analyst/useLedger";
 import { ASK_BUTTON_ID, useAsk, type DetailTab } from "./askStore";
+import { AccessGate } from "./AccessGate";
 import { FollowUp } from "./FollowUp";
 import { useAlternatives } from "../scenario/alternatives";
 import { useScenario } from "../scenario/store";
@@ -85,7 +86,7 @@ function SpendMeter({ cost, cap, turns, detail, reached }: { cost: number | null
   );
 }
 
-export function AskDock() {
+function AskDockBody() {
   const { open, mode, view, runId, tab } = useAsk();
   const full = mode === "full";
   const runs = useRuns();
@@ -310,4 +311,9 @@ export function AskDock() {
       </div>
     </section>
   );
+}
+
+export function AskDock() {
+  const access = useAsk((s) => s.access);
+  return access && !access.granted ? <AccessGate /> : <AskDockBody />;
 }

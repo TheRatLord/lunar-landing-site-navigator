@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+import shlex
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -34,6 +36,7 @@ def normalize_domains(value: Any) -> tuple[str, ...] | None:
 
 ENV_CONFIG_FILE = "LUNARNAV_AGENT_CONFIG"
 ENV_ALLOWED_DOMAINS = "LUNARNAV_AGENT_ALLOWED_DOMAINS"
+ENV_API_KEY_FILE = "LUNARNAV_AGENT_API_KEY_FILE"
 
 
 def find_repo_root(start: Path | None = None) -> Path:
@@ -100,6 +103,7 @@ class AgentConfig:
     engine_call_timeout_s: float = 900.0
     thread_cap: int = 4
     cli_env_keep: tuple[str, ...] = ()
+    api_key_file: Path | None = None
 
     @property
     def runs_dir(self) -> Path:
@@ -121,6 +125,11 @@ class AgentConfig:
         """Existing ``data/`` subdirectories that sandboxed code may read."""
         data = self.repo_root / "data"
         return tuple(p for p in ((data / name).resolve() for name in self.sandbox_data_dirs) if p.is_dir())
+
+    def cli_settings(self) -> str | None:
+        if self.api_key_file is None:
+            return None
+        return json.dumps({"apiKeyHelper": f"cat {shlex.quote(str(self.api_key_file.absolute()))}"})
 
     def with_overrides(self, **changes: Any) -> AgentConfig:
         """Return a copy with some fields replaced."""
@@ -144,12 +153,15 @@ class AgentConfig:
         env_domains = os.environ.get(ENV_ALLOWED_DOMAINS)
         if env_domains:
             values["allowed_domains"] = env_domains
+        env_key_file = os.environ.get(ENV_API_KEY_FILE)
+        if env_key_file:
+            values["api_key_file"] = env_key_file
         values.update(overrides)
         known = {f for f in cls.__dataclass_fields__}
         unknown = set(values) - known
         if unknown:
             raise ValueError(f"unknown agent config keys: {sorted(unknown)}")
-        for key in ("repo_root", "runs_root", "python"):
+        for key in ("repo_root", "runs_root", "python", "api_key_file"):
             if values.get(key) is not None:
                 values[key] = Path(values[key])
         if "sandbox_data_dirs" in values:

@@ -98,8 +98,8 @@ def interpreter_roots(python: Path) -> list[Path]:
 def filesystem_rules(config: AgentConfig, paths: RunPaths) -> dict[str, list[str]]:
     """Sandbox filesystem rules for Bash.
 
-    Reads: the home directory, the repository root and the runs directory are denied (they hold
-    credentials, other projects, other runs and this CLI's own login); then the listed directories are
+    Reads: the home directory, the repository root, the runs directory and the directory of the API key file
+    are denied (they hold credentials, other projects, other runs and this CLI's own login or key); then the listed directories are
     re-allowed: the project interpreter's environment, ``src/``, ``docs/``, the configured ``data/``
     subdirectories, this run's ``workspace/`` and this run's ``state/`` (read-only). System directories
     such as ``/usr`` and ``/etc`` stay readable. Writes: the workspace only; everything else, including
@@ -117,6 +117,8 @@ def filesystem_rules(config: AgentConfig, paths: RunPaths) -> dict[str, list[str
         paths.state,
     ]
     denied = {Path.home(), config.repo_root.resolve(), config.runs_dir}
+    if config.api_key_file is not None:
+        denied.add(config.api_key_file.absolute().parent)
     return {
         "denyRead": sorted(str(p) for p in denied),
         "allowRead": sorted({str(p) for p in readable}),
