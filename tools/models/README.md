@@ -37,3 +37,13 @@ cd web && bun scripts/models/solarPanel.ts
 
 It writes the GLB to `web/src/learn/walk/models/` and `tools/models/out/`. The node `Head` turns about +Y to face the
 Sun, `Array` tilts about X, and the cell material is named `Cells` so the site can light it while charging.
+
+## Cockpit detail (three.js)
+
+`web/scripts/models/cockpit.ts` reads `out/improved_cockpit.glb` (the Blender build above), adds screen graphics,
+switches, belts, footrests, grab handles and an overhead console, and writes the site copy
+`web/src/learn/walk/models/improved_cockpit.glb` plus `out/improved_cockpit_detailed.glb`:
+
+```sh
+cd web && bun scripts/models/cockpit.ts
+```
