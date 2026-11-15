@@ -46,6 +46,8 @@ export interface Chapter {
 
 const ch = (c: Omit<Chapter, "epochD">): Chapter => ({ ...c, epochD: dayOfIso(c.epoch) });
 
+const EXPLORE_EPOCH = "2026-01-01T00:00:00Z";
+
 const LANDING_HOUR = (8 + 34 / 60) / 24;
 
 export const CHAPTERS: Chapter[] = [
@@ -56,7 +58,7 @@ export const CHAPTERS: Chapter[] = [
     short: "Explore",
     copy: "",
     prompt: "",
-    epoch: "2026-01-01T00:00:00Z",
+    epoch: EXPLORE_EPOCH,
     spanDays: 365,
     defaultSite: "apollo11",
     view: "walk",
@@ -216,3 +218,9 @@ export function chapterBySlug(slug: string | undefined): Chapter | null {
 }
 
 export const landingT = (offset: number): number => 1 + LANDING_HOUR + offset;
+
+export function setExploreYear(year: number | null): void {
+  const c = CHAPTERS.find((x) => x.slug === "explore")!;
+  c.epoch = year === null ? EXPLORE_EPOCH : `${year}-01-01T00:00:00Z`;
+  c.epochD = dayOfIso(c.epoch);
+}

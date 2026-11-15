@@ -97,7 +97,7 @@ Commits on `main` since 2026-11-14 were checked against each other and against t
 - [x] Explorer and Planner linked: "Analyse in Planner" (Explorer, 1024 px and wider) moves the plan's site to
       the Explorer place; "Stand here in Explorer" (Site page) opens the plan's site in Explorer, with the
       engine's horizon and ground patch when they answer in time, flat made-up ground otherwise
-- [ ] Explorer does not take the plan's landing date; its year is still 2026
+- [x] Explorer takes the plan's landing date: its year becomes the landing's year and the time starts at the landing
 - [ ] Overview ground view (Alex): removed, see Increment 1 above
 - [ ] `AI_USAGE.md` has no entries for the redesign rounds, the oracle suite and the service performance work
       of 2026-11-15; their author should add them

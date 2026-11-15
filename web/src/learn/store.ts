@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { clamp } from "../lib/scale";
-import { CHAPTERS, chapterBySlug, landingT, type Chapter, type ChapterSlug, type Follow, type ViewKind } from "./chapters";
+import { CHAPTERS, chapterBySlug, landingT, type Chapter, type ChapterSlug, type Follow, type ViewKind, setExploreYear } from "./chapters";
 import type { CraterSource } from "./scene/craterView";
 import { termsIn, type TermId } from "./glossary";
 import { SITES, type SiteId } from "./sites";
@@ -138,6 +138,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
       } catch {}
     }
     const explore = slug === "explore";
+    if (explore) setExploreYear(null);
     set({
       chapter: slug,
       t: slug === "timing" ? landingT(0) - 0.5 : explore ? morning(c.defaultSite, 0, true) : 0,

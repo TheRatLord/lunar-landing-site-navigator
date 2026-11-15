@@ -1,5 +1,7 @@
+import { chapterOf, useLearn } from "./store";
+import { setExploreYear } from "./chapters";
+import { dayOfIso } from "./geometry";
 import { SITES, setPlanPlace, type Site, type SiteId } from "./sites";
-import { useLearn } from "./store";
 import { forgetTerrain } from "./terrain";
 
 export interface PlanPlace {
@@ -7,6 +9,7 @@ export interface PlanPlace {
   lon: number;
   name: string;
   catalogId: string;
+  utc: string | null;
 }
 
 const MOON_KM = 1737.4;
@@ -21,7 +24,17 @@ export function placeFromParams(p: URLSearchParams): PlanPlace | null {
   const lat = Number(p.get("lat"));
   const lon = Number(p.get("lon"));
   if (!p.has("lat") || !p.has("lon") || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90) return null;
-  return { lat, lon, name: (p.get("name") ?? "").slice(0, 80) || "Your plan site", catalogId: p.get("catalog") ?? "" };
+  const at = p.get("at");
+  const utc = at !== null && Number.isFinite(Date.parse(at)) ? at : null;
+  return { lat, lon, name: (p.get("name") ?? "").slice(0, 80) || "Your plan site", catalogId: p.get("catalog") ?? "", utc };
+}
+
+function landOn(utc: string | null): void {
+  if (utc === null) return;
+  setExploreYear(new Date(utc).getUTCFullYear());
+  const c = chapterOf("explore");
+  const t = Math.min(c.spanDays, Math.max(0, dayOfIso(utc) - c.epochD));
+  useLearn.setState((s) => ({ t, terrainRev: s.terrainRev + 1 }));
 }
 
 export function visitPlanPlace(p: PlanPlace): void {
@@ -30,17 +43,20 @@ export function visitPlanPlace(p: PlanPlace): void {
   );
   if (known) {
     useLearn.getState().setSite(known.id);
+    landOn(p.utc);
     return;
   }
   setPlanPlace(p);
   forgetTerrain("plan");
   useLearn.setState((s) => ({ planPlace: true, terrainRev: s.terrainRev + 1 }));
   useLearn.getState().setSite("plan");
+  landOn(p.utc);
 }
 
 export function explorerHref(p: PlanPlace): string {
   const q = new URLSearchParams({ lat: String(p.lat), lon: String(p.lon), name: p.name });
   if (p.catalogId) q.set("catalog", p.catalogId);
+  if (p.utc) q.set("at", p.utc);
   return `/learn?${q.toString()}`;
 }
 

@@ -70,7 +70,7 @@ export function SiteHeader({ doc, evaluated, result, summary, run }: SiteHeaderP
           <>
             {run.phase === "running" && !run.stale && <AnalysisStatus state={run} what="the site evaluation" />}
             {result && <Assumptions scenario={evaluated} result={result} />}
-            <Link className="btn btn-ghost btn-sm" to={explorerHref({ lat: doc.site.lat_deg, lon: doc.site.lon_deg, name: siteLabel(doc.site.name) || "Your plan site", catalogId: doc.site.catalog_id ?? "" })}>
+            <Link className="btn btn-ghost btn-sm" to={explorerHref({ lat: doc.site.lat_deg, lon: doc.site.lon_deg, name: siteLabel(doc.site.name) || "Your plan site", catalogId: doc.site.catalog_id ?? "", utc: doc.landing_utc ?? null })}>
               <Icon name="terrain" size={14} />
               Stand here in Explorer
             </Link>
