@@ -20,6 +20,7 @@ import numpy as np
 
 _PROT_READ_WRITE = 0x1 | 0x2
 _MAP_PRIVATE = 0x02
+_MADV_NORMAL = getattr(mmap, "MADV_NORMAL", None)
 _MADV_RANDOM = getattr(mmap, "MADV_RANDOM", None)
 READ_AROUND_REACH = 64 * 1024
 _libc: ctypes.CDLL | None = None
@@ -51,23 +52,19 @@ class _Mapping:
             self.address = 0
 
 
-def _map_libc(fd: int, size: int, random_access: bool) -> np.ndarray:
+def _map_libc(fd: int, size: int) -> np.ndarray:
     lib = _libc_mmap()
     address = lib.mmap(None, size, _PROT_READ_WRITE, _MAP_PRIVATE, fd, 0)
     if address in (None, ctypes.c_void_p(-1).value):
         err = ctypes.get_errno()
         raise OSError(err, os.strerror(err))
-    if random_access:
-        lib.madvise(address, size, _MADV_RANDOM)
     buf = (ctypes.c_ubyte * size).from_address(address)
     buf._mapping = _Mapping(address, size)  # type: ignore[attr-defined]
     return np.frombuffer(buf, dtype=np.uint8)
 
 
-def _map_trackfd(fd: int, size: int, random_access: bool) -> np.ndarray:
+def _map_trackfd(fd: int, size: int) -> np.ndarray:
     m = mmap.mmap(fd, size, flags=mmap.MAP_PRIVATE, prot=mmap.PROT_READ | mmap.PROT_WRITE, trackfd=False)
-    if random_access:
-        m.madvise(_MADV_RANDOM)
     return np.frombuffer(m, dtype=np.uint8)
 
 
@@ -83,11 +80,20 @@ def map_array(path: str | Path, dtype: np.dtype | str, shape: tuple[int, ...], *
     if size == 0:
         return np.empty(shape, dtype)
     libc = sys.version_info < (3, 13) if use_libc is None else use_libc
-    row_bytes = int(np.prod(shape[1:], dtype=np.int64)) * dtype.itemsize
-    random_access = _MADV_RANDOM is not None and len(shape) > 1 and row_bytes >= READ_AROUND_REACH
     fd = os.open(path, os.O_RDONLY)
     try:
-        raw = _map_libc(fd, size, random_access) if libc else _map_trackfd(fd, size, random_access)
+        raw = _map_libc(fd, size) if libc else _map_trackfd(fd, size)
     finally:
         os.close(fd)
     return raw.view(dtype).reshape(shape)
+
+
+def rows_outreach_read_around(array: np.ndarray) -> bool:
+    return array.ndim > 1 and array.nbytes > 0 and array.strides[0] >= READ_AROUND_REACH
+
+
+def advise_random_access(array: np.ndarray, random_access: bool) -> None:
+    if _MADV_RANDOM is None or _MADV_NORMAL is None or array.nbytes == 0:
+        return
+    _libc_mmap().madvise(array.ctypes.data, array.nbytes, _MADV_RANDOM if random_access else _MADV_NORMAL)
+

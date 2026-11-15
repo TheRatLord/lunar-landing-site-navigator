@@ -24,16 +24,18 @@ backed by valid samples.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
-from collections.abc import Callable
+import threading
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
 from lunarnav.constants import R_MOON_M
-from lunarnav.terrain.mapping import map_array
+from lunarnav.terrain.mapping import advise_random_access, map_array, rows_outreach_read_around
 from lunarnav.terrain.projection import GridGeometry
 
 FORMAT_VERSION = 1
@@ -104,6 +106,27 @@ class TerrainStore:
         self.err_layer: np.ndarray | None = map_array(err, "<f4", self.mean[0].shape) if err.exists() else None
         info = self.path / ERR_LAYER_INFO
         self.err_info: dict | None = json.loads(info.read_text()) if info.exists() else None
+        mapped = [*self.mean, *self.max, *self.min, *self.cov, self.err_layer]
+        self.wide_arrays: list[np.ndarray] = [a for a in mapped if a is not None and rows_outreach_read_around(a)]
+        self._random_readers = 0
+        self._advice_lock = threading.Lock()
+
+    @contextlib.contextmanager
+    def random_reads(self) -> Iterator[None]:
+        self._advise(1)
+        try:
+            yield
+        finally:
+            self._advise(-1)
+
+    def _advise(self, step: int) -> None:
+        with self._advice_lock:
+            was = self._random_readers > 0
+            self._random_readers += step
+            now = self._random_readers > 0
+            if was != now:
+                for array in self.wide_arrays:
+                    advise_random_access(array, now)
 
     @property
     def pixel_size_m(self) -> float:

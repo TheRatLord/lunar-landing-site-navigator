@@ -44,15 +44,12 @@ DEFAULT_LEAF_DIV = 256.0
 DEFAULT_N_SEED = 32
 CHUNK_SITES = 512
 NEAR_FIELD_START_M = 1.0
-READ_THREADS_MAX_SITES = 8
 
 
 @contextlib.contextmanager
-def _solver_threads(n_sites: int) -> Iterator[None]:
+def _solver_threads() -> Iterator[None]:
     current = numba.get_num_threads()
-    want = current
-    if n_sites <= READ_THREADS_MAX_SITES:
-        want = max(current, min(HORIZON_READ_THREADS, numba.config.NUMBA_NUM_THREADS))
+    want = max(current, min(HORIZON_READ_THREADS, numba.config.NUMBA_NUM_THREADS))
     if want == current:
         yield
         return
@@ -103,7 +100,7 @@ def _solve(
     lo, ray_hi, hi, blk = (np.empty(shape) for _ in range(4))
     nodes = np.empty(shape, np.int32)
     nodata = np.empty(shape, np.int32)
-    with _solver_threads(ns):
+    with stack.random_reads(pk.dem_ids), _solver_threads():
         _march.solve_batch(
             *pk.args(), up, north, east, ro, th_start, th_max, R_MOON_M, np.array(az_rad, dtype=np.float64, order="C"), hw_rad,
             math.radians(tol_deg), math.radians(ray_tol_deg), leaf_div, int(n_seed), lo, ray_hi, hi, blk, nodes, nodata,

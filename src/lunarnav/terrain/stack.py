@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import math
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -124,6 +125,13 @@ class TerrainStack:
         if key not in self._packed:
             self._packed[key] = self._pack([self.stores[i] for i in idx])
         return self._packed[key]
+
+    @contextlib.contextmanager
+    def random_reads(self, dem_ids: Sequence[str]) -> Iterator[None]:
+        with contextlib.ExitStack() as reads:
+            for i in dem_ids:
+                reads.enter_context(self.store(i).random_reads())
+            yield
 
     @staticmethod
     def _pack(stores: Sequence[TerrainStore]) -> PackedStack:
