@@ -24,6 +24,7 @@ shadow.
    site; the hardware on the ground is what was really left there. "How true is this picture?" says so.
 7. **Approach C**: a new walk view beside the existing ones; the lessons are not touched.
 8. **Two points of view** (added later the same day): the astronaut can be seen from behind (third person) or through its visor (first person), and the rover from behind or from the driver's seat. **V** or a button switches; in first person the astronaut is hidden from the camera but still casts its shadow.
+9. **Free exploration keeps every view** (added 2026-11-15): the dock under the scene has a view switch, **Walk & drive · On the ground · In space**, plus **Close-up** at the Shackleton sites; Walk & drive stays the default. On a phone the switch is a drop-down beside the place drop-down. Mockup: the private Claude Design canvas "Explorer view switcher".
 
 ## Goals
 

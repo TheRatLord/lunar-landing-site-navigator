@@ -77,4 +77,5 @@ Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/sup
 - [x] Hardware at the historical sites and fact cards
 - [x] First and third person views for the astronaut and the rover (V or a button)
 - [x] Touch controls, rover headlights and helmet lamp (L or a button in the dark), honesty notes for Walk
+- [x] View switch back in free exploration (Walk & drive, On the ground, In space, Close-up)
 - [ ] Reduced-motion and low-end performance checks

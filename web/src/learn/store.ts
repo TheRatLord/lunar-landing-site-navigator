@@ -58,6 +58,7 @@ export interface LearnState {
   setLat(v: number): void;
   setLanding(o: Landing): void;
   setFollow(f: Follow): void;
+  setView(v: ViewKind): void;
   answer(slug: ChapterSlug, i: number, correct: boolean): void;
 }
 
@@ -182,6 +183,16 @@ export const useLearn = create<LearnState>()((set, get) => ({
     set({ landingOffset: o, t, playing: get().playing });
   },
   setFollow: (follow) => set({ follow }),
+  setView: (view) => {
+    const s = get();
+    const explore = s.chapter === "explore";
+    set({
+      view,
+      follow: s.follow === "free" ? "sun" : s.follow,
+      speed: explore ? exploreSpeed(view, s.fast) : s.speed,
+      t: explore && view === "walk" ? morning(s.siteId, s.t, false) : s.t,
+    });
+  },
   answer: (slug, i, correct) => {
     const answers = { ...get().answers, [slug]: { picked: i, correct: get().answers[slug]?.correct || correct } };
     set({ answers });
