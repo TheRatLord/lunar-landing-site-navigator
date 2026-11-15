@@ -61,14 +61,15 @@ def init_worker(
     """Pool initializer: remember the shared channels and the data directory (also exported as
     ``LUNARNAV_DATA`` so terrain and horizon caches resolve to it) and (optionally) load the SPICE kernels."""
     from lunarnav.api.versions import source_sha256
+    from lunarnav.source import source_sha256 as engine_source_sha256
 
-    source = source_sha256()
+    kernel_source = engine_source_sha256("kernels")
     _state.update(queue=progress_queue, flags=cancel_flags, kinds=kinds, data_dir=data_dir, preload=preload,
-                  source_sha256=source)
+                  source_sha256=source_sha256(), kernel_source_sha256=kernel_source)
     if data_dir:
         os.environ["LUNARNAV_DATA"] = data_dir
     compiled_base = os.environ.get("NUMBA_CACHE_DIR")
-    compiled_dir = COMPILED_DIR_PREFIX + source[:16]
+    compiled_dir = COMPILED_DIR_PREFIX + kernel_source[:16]
     if compiled_base and Path(compiled_base).name != compiled_dir:
         os.environ["NUMBA_CACHE_DIR"] = str(Path(compiled_base) / compiled_dir)
     configured_threads = os.environ.get("NUMBA_NUM_THREADS")
@@ -147,7 +148,7 @@ def _compile_once() -> None:
 
     package = Path(__file__).resolve().parents[1]
     newest = max(f.stat().st_mtime_ns for f in package.rglob("*.py"))
-    version = (_state["source_sha256"], newest, numba.__version__, sys.version_info[:3], numba.config.CACHE_DIR)
+    version = (_state["kernel_source_sha256"], newest, numba.__version__, sys.version_info[:3], numba.config.CACHE_DIR)
     stamps = Path(data_dir) / "service" / "compiled"
     stamp = stamps / hashlib.sha256(repr(version).encode()).hexdigest()[:32]
     if stamp.exists():

@@ -12,7 +12,9 @@ DATA_SUFFIXES = (".yaml", ".yml", ".json", ".csv", ".toml")
 CLIENT_PACKAGES = ("api", "agent")
 """Subpackages that are clients of the engine and produce no numbers; the `results` scope leaves them out."""
 
-SourceScope = Literal["results", "package"]
+KERNEL_FREE_PACKAGES = (*CLIENT_PACKAGES, "report")
+
+SourceScope = Literal["results", "package", "kernels"]
 
 
 def _hash_tree(exclude: tuple[str, ...]) -> str:
@@ -28,15 +30,17 @@ def _hash_tree(exclude: tuple[str, ...]) -> str:
 
 @cache
 def _source_hashes() -> dict[str, str]:
-    return {"results": _hash_tree(CLIENT_PACKAGES), "package": _hash_tree(())}
+    return {"results": _hash_tree(CLIENT_PACKAGES), "package": _hash_tree(()), "kernels": _hash_tree(KERNEL_FREE_PACKAGES)}
 
 
 def source_sha256(scope: SourceScope = "results") -> str:
-    """SHA-256 over `lunarnav` code and packaged data (path-sorted), in one of two named scopes.
+    """SHA-256 over `lunarnav` code and packaged data (path-sorted), in one of three named scopes.
 
     * `"results"` (default): everything except the client packages `api/` and `agent/` (engine packages, catalogue data,
       `report/`). A change here can change a number or a printed sentence. Use it for **freshness of exported reports**
       (this is what `code_version()["source_sha256"]` and every result's provenance carry).
     * `"package"`: the whole package, clients included. Use it for the **service cache key**, so any code change in the
-      service also drops cached responses."""
+      service also drops cached responses.
+    * `"kernels"`: the engine packages alone, `report/` left out as well: the code the compiled numerical kernels are
+      built from. Use it for the **compiled-code cache**, which then survives a change to the service or the report."""
     return _source_hashes()[scope]
