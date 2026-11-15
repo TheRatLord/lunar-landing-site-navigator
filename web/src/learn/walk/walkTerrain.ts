@@ -82,7 +82,7 @@ export class WalkTerrain {
   }
 
   setSite(site: RealSite): void {
-    const key = `${site.id}|${site.terrain ? "dem" : "sim"}`;
+    const key = `${site.id}|${site.lat}|${site.lon}|${site.terrain ? "dem" : "sim"}`;
     if (key === this.key) return;
     this.key = key;
     const patch = site.terrain?.patch ?? null;

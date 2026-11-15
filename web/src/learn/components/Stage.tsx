@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { describe } from "../describe";
 import { frameFrom, timelineFor, useLive } from "../derive";
+import { plannerHref } from "../planPlace";
 import { LearnScene } from "../scene/LearnScene";
 import { WalkHud } from "./walk/WalkHud";
 import { chapterOf, useLearn } from "../store";
@@ -10,7 +12,7 @@ import { sampleAt } from "../timeline";
 import { isPhoneLayout, prefersReducedMotion } from "../../lib/media";
 import { Compass } from "./Compass";
 import { ShowPanel } from "./PanelBar";
-import { ArrowDownIcon, ArrowUpIcon, CrosshairIcon } from "./icons";
+import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon, CrosshairIcon } from "./icons";
 import { SunPath } from "./SunPath";
 import { TruthNote } from "./TruthNote";
 
@@ -292,6 +294,11 @@ export function Stage() {
         <div className="l-stage-top">
           {!panel && <ShowPanel />}
           <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} />
+          {chapter === "explore" && siteId !== "custom" && (
+            <Link className="l-pill l-to-planner" to={plannerHref(siteId)}>
+              Analyse in Planner <ArrowRightIcon size={16} />
+            </Link>
+          )}
         </div>
         {chapter === "pole" && (
           <div className="l-pole">

@@ -179,7 +179,7 @@ export class SpaceView {
     this.sunLabel.sprite.position.set(this.rays.position.x - 22 * k, this.rays.position.y + 0.6 * k, this.rays.position.z);
     this.moonLabel.sprite.position.copy(this.moonPos).add(new Vector3(0, -MOON_DRAWN_RADIUS - 0.2, 0));
 
-    const key = `${f.site.id}|${f.lat ?? ""}`;
+    const key = `${f.site.id}|${f.site.lat}|${f.site.lon}|${f.lat ?? ""}`;
     if (key !== this.pinSiteKey) {
       this.pinSiteKey = key;
       const lat = f.site.id === "custom" ? (f.lat ?? 0) : f.site.lat;

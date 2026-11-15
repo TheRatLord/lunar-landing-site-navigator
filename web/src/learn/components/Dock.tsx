@@ -18,13 +18,14 @@ const viewsAt = (id: SiteId): { value: ViewKind; label: string }[] => [
 export function Dock() {
   const siteId = useLearn((s) => s.siteId);
   const view = useLearn((s) => s.view);
+  const places: SiteId[] = useLearn((s) => s.planPlace) ? [...PLACES, "plan"] : PLACES;
   const { setSite, setView } = useLearn.getState();
   const views = viewsAt(siteId);
   return (
     <div className="l-dock" role="group" aria-label="Explore">
       <div className="l-dock-row">
         <div className="l-places" role="group" aria-label="Place">
-          {PLACES.map((id) => (
+          {places.map((id) => (
             <button key={id} type="button" className="l-place" aria-pressed={siteId === id} onClick={() => setSite(id)}>
               {SITES[id].name}
             </button>
@@ -39,7 +40,7 @@ export function Dock() {
             e.currentTarget.blur();
           }}
         >
-          {PLACES.map((id) => (
+          {places.map((id) => (
             <option key={id} value={id}>
               {SITES[id].name}
             </option>

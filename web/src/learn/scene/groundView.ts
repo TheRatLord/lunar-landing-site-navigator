@@ -538,7 +538,7 @@ export class GroundView {
     this.frame = f;
     const sky = f.sky;
     const site = f.site as RealSite;
-    const key = `${site.id}|${site.terrain ? "dem" : "sim"}`;
+    const key = `${site.id}|${site.lat}|${site.lon}|${site.terrain ? "dem" : "sim"}`;
     if (key !== this.horizonKey) {
       this.horizonKey = key;
       this.setTerrain(site);

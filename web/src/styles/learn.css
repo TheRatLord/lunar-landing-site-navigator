@@ -1940,3 +1940,11 @@ button.l-lessons-label {
     display: none;
   }
 }
+.l-stage-top .l-to-planner {
+  text-decoration: none;
+}
+@media (max-width: 1023px) {
+  .l-stage-top .l-to-planner {
+    display: none;
+  }
+}

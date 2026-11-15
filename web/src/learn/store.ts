@@ -48,6 +48,7 @@ export interface LearnState {
   walkLights: boolean;
   lookEarth: number;
   nearProp: PropId | null;
+  planPlace: boolean;
   setWalkBody(b: WalkBody): void;
   enterChapter(slug: ChapterKey, reducedMotion: boolean): void;
   setT(t: number): void;
@@ -118,6 +119,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
   walkLights: false,
   lookEarth: 0,
   nearProp: null,
+  planPlace: false,
   setWalkBody: (walkBody) => set({ walkBody }),
   craterTerrain: "real",
   fast: false,

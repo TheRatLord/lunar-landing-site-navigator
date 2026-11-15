@@ -94,6 +94,10 @@ Commits on `main` since 2026-11-14 were checked against each other and against t
 - [x] Planner tabs are now Overview, Site (with the landing ellipse), Map and Compare, plus Setup and
       Evidence; the calendar became the Overview year strip, area analysis and the Sites tab were removed
 - [x] Explorer: view switch, Walk solar panel and Battery tile restored; phone top bar no longer overlaps
+- [x] Explorer and Planner linked: "Analyse in Planner" (Explorer, 1024 px and wider) moves the plan's site to
+      the Explorer place; "Stand here in Explorer" (Site page) opens the plan's site in Explorer, with the
+      engine's horizon and ground patch when they answer in time, flat made-up ground otherwise
+- [ ] Explorer does not take the plan's landing date; its year is still 2026
 - [ ] Overview ground view (Alex): removed, see Increment 1 above
 - [ ] `AI_USAGE.md` has no entries for the redesign rounds, the oracle suite and the service performance work
       of 2026-11-15; their author should add them

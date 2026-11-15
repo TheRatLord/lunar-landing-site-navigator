@@ -53,7 +53,13 @@ export function siteById(id: SiteId): RealSite {
 }
 
 export function hasTerrainCoverage(id: SiteId): boolean {
-  return POLAR.includes(id);
+  return POLAR.includes(id) || id === "plan";
+}
+
+export function forgetTerrain(id: SiteId): void {
+  delete real[id];
+  failed.delete(id);
+  pending.delete(id);
 }
 
 /** Bilinear height at (east, north) metres, relative to the observer's ground; clamps at the patch edge. */
@@ -82,17 +88,19 @@ function horizonFn(prof: Float32Array): (az: number) => number {
 
 async function load(id: SiteId): Promise<void> {
   const base = SITES[id];
+  const { lat, lon } = base;
   const [hz, buf] = await Promise.all([
     sendJson<HorizonResponse>("/horizon", {
-      lat_deg: base.lat,
-      lon_deg: base.lon,
+      lat_deg: lat,
+      lon_deg: lon,
       height_m: OBSERVER_M,
       n_az: N_AZ,
       terrain: "on",
       wait_s: 30,
     }),
-    fetchTerrainPatch({ lat: base.lat, lon: base.lon, size_m: PATCH_SIZE_M, n: PATCH_N }),
+    fetchTerrainPatch({ lat, lon, size_m: PATCH_SIZE_M, n: PATCH_N }),
   ]);
+  if (SITES[id].lat !== lat || SITES[id].lon !== lon) return;
   if (hz.provider !== "terrain" || hz.elev_deg?.length !== N_AZ) throw new Error("no terrain horizon");
   const patch = decodePatch(buf);
   if (patch.nodata > 0) throw new Error("patch has gaps");
@@ -109,18 +117,21 @@ async function load(id: SiteId): Promise<void> {
     patchStores: sources.map((s) => s.id),
     pixelM: Math.min(...sources.map((s) => s.pixel_size_m), Infinity),
   };
-  real[id] = { ...base, horizon: horizonFn(horizon), terrain };
+  real[id] = { ...SITES[id], horizon: horizonFn(horizon), terrain };
   useLearn.setState((s) => ({ terrainRev: s.terrainRev + 1 }));
 }
 
 /** Fetch the real horizon and ground for a polar site once; on any failure the stylized site stays. */
 export function ensureTerrain(id: SiteId): void {
   if (!hasTerrainCoverage(id) || real[id] || failed.has(id) || pending.has(id)) return;
-  const p = load(id)
+  const { lat, lon } = SITES[id];
+  const p: Promise<void> = load(id)
     .catch((e: unknown) => {
-      failed.add(id);
+      if (SITES[id].lat === lat && SITES[id].lon === lon) failed.add(id);
       console.info(`learn: real terrain for ${id} unavailable, using the stylized ground`, e);
     })
-    .finally(() => pending.delete(id));
+    .finally(() => {
+      if (pending.get(id) === p) pending.delete(id);
+    });
   pending.set(id, p);
 }

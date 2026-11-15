@@ -14,6 +14,7 @@ import { ScenarioDialogs } from "../scenario/editor/ScenarioDialogs";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { PlanPanel } from "./PlanPanel";
 import { PlannerNav, PlannerTools, TopBar } from "./TopBar";
+import { useArrivingSite } from "../scenario/arrivingSite";
 import { useScenarioUrl } from "../scenario/scenarioUrl";
 import { useCommands } from "./useCommands";
 
@@ -81,6 +82,7 @@ function usePlayback(timeRoute: boolean): void {
 
 function Planner() {
   useScenarioUrl();
+  useArrivingSite();
   const paletteOpen = useApp((s) => s.paletteOpen);
   const setPaletteOpen = useApp((s) => s.setPaletteOpen);
   const route = useEditorUi((s) => s.route);

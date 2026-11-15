@@ -1,7 +1,7 @@
 import type { Place } from "./geometry";
 import horizons from "./horizons.json";
 
-export type SiteId = "apollo11" | "blueghost" | "rim" | "floor" | "change4" | "custom";
+export type SiteId = "apollo11" | "blueghost" | "rim" | "floor" | "change4" | "custom" | "plan";
 
 export interface Site extends Place {
   id: SiteId;
@@ -10,7 +10,7 @@ export interface Site extends Place {
   where: string;
 }
 
-type RealId = Exclude<SiteId, "custom">;
+type RealId = Exclude<SiteId, "custom" | "plan">;
 
 function realHorizon(id: RealId): (az: number) => number {
   const elev = horizons.sites[id];
@@ -69,6 +69,15 @@ export const SITES: Record<SiteId, Site> = {
     lon: 177.589,
     horizon: realHorizon("change4"),
   },
+  plan: {
+    id: "plan",
+    catalogId: "",
+    name: "Your plan site",
+    where: "at your plan's landing site",
+    lat: 0,
+    lon: 0,
+    horizon: () => 0,
+  },
   custom: {
     id: "custom",
     catalogId: "",
@@ -95,4 +104,8 @@ export function whereText(site: Site, lat: number): string {
   if (a < 5) return "on flat ground at the Moon's equator";
   if (a < 85) return `on flat ground, ${walkWords(lat).toLowerCase()}`;
   return "on flat ground at the Moon's south pole";
+}
+
+export function setPlanPlace(p: { lat: number; lon: number; name: string; catalogId: string }): void {
+  Object.assign(SITES.plan, p);
 }

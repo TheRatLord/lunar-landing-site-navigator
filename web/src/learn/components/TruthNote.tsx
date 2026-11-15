@@ -13,6 +13,8 @@ function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: Crater
   } else if (view === "ground" || view === "walk") {
     if (chapter === "earth") out.push("Earth is drawn 3 times bigger. Where it sits in the sky is real.");
     if (site === "custom") out.push("The ground is flat on purpose, so only the tilt matters.");
+    else if (site === "plan" && !siteById(site).terrain)
+      out.push("No laser map loaded for this spot, so the ground and the skyline are made up. The Planner uses the measured horizon.");
     else if (view === "walk")
       out.push(
         siteById(site).terrain

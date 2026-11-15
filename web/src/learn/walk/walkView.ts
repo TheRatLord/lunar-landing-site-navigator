@@ -137,8 +137,9 @@ export class WalkView {
     this.frame = f;
     this.terrain.setSite(f.site as RealSite);
     this.panel.place(this.terrain);
-    if (f.site.id !== this.siteId) {
-      this.siteId = f.site.id;
+    const placeKey = `${f.site.id}|${f.site.lat}|${f.site.lon}`;
+    if (placeKey !== this.siteId) {
+      this.siteId = placeKey;
       this.input.clear();
       this.fixed = [...this.props.build(f.site.id, this.terrain, [{ x: 0, z: 0, r: 4 }, this.panel.obstacle, ...lane()], ROVER_HOME), this.panel.obstacle];
       this.near = null;

@@ -1,5 +1,5 @@
 import "../styles/learn.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { CHAPTERS, chapterBySlug, learnPath } from "./chapters";
 import { Announcer } from "./components/Announcer";
@@ -10,15 +10,22 @@ import { Readouts } from "./components/Readouts";
 import { Stage } from "./components/Stage";
 import { StoryCard } from "./components/StoryCard";
 import { TimeBar } from "./components/TimeBar";
+import { placeFromParams, visitPlanPlace } from "./planPlace";
 import { useLearn, type ChapterKey } from "./store";
 import { prefersReducedMotion } from "../lib/media";
 import { TopBar } from "../shell/TopBar";
 
 function ExploreRoute() {
   const celebrate = useLearn((s) => s.celebrate);
+  const navigate = useNavigate();
+  const [place] = useState(() => placeFromParams(new URLSearchParams(window.location.search)));
   useEffect(() => {
     useLearn.getState().enterChapter("explore", prefersReducedMotion());
-  }, []);
+    if (place) {
+      visitPlanPlace(place);
+      navigate("/learn", { replace: true });
+    }
+  }, [navigate, place]);
   return (
     <>
       <Readouts />

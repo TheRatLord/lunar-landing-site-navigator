@@ -30,7 +30,8 @@ Evidence shows how each part was checked.
   Compare tabs show what those choices give: Overview has the year's landing dates, Site the full analysis and the
   landing ellipse, Map finds sites, Compare sets sites against dates. Setup holds every
   other setting, Evidence summarises how each part was validated, and Explorer is an interactive mode for students
-  and the public.
+  and the public. The two are linked: "Analyse in Planner" in Explorer makes the place you stand on the plan's
+  site, and "Stand here in Explorer" on Site lets you walk the plan's site on its laser-map ground.
 - **Analysis agent** (`lunarnav agent`): a Claude agent that answers planning questions through typed
   engine tools, with a ledger of every computation it cites, running in an OS sandbox.
 - **Validation** (`docs/validation`): how each part was checked against JPL Horizons, published
