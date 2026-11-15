@@ -43,7 +43,7 @@ from lunarnav.regional.tracks import RegionGeometry, build_geometry
 from lunarnav.terrain.stack import TerrainStack, unit_vector
 from lunarnav.visibility.disc import _gauss_unit
 
-VERSION = "regional/2"
+VERSION = "regional/3"
 STAT_LAYERS = (
     "average_illumination", "sun_mean_flux", "sunlit_fraction", "longest_sunlit_h", "longest_shadow_h",
     "earth_fraction", "longest_earth_outage_h",
