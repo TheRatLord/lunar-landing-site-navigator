@@ -7,6 +7,7 @@ import { STATES, ellipseOutline, ellipsePoint, indicesByState, plotHalfWidth, po
 import type { Backdrop } from "./useBackdrop";
 
 const SIZE = 640;
+const DRAW_ORDER = [...STATES].reverse();
 
 export type Marker = "centre" | "worst" | "best";
 
@@ -40,7 +41,7 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
 
   const outline = useMemo(() => polygonPath(ellipseOutline(ellipse).map(([e, n]) => at(e, n))), [ellipse, at]);
   const rings = useMemo(
-    () => sigmaRings(ellipse).map((r) => ({ ...r, d: polygonPath(ellipseOutline(ellipse, r.k).map(([e, n]) => at(e, n))), label: at(...ellipsePoint(ellipse, ellipse.semi_major_m * r.k, 0)) })),
+    () => sigmaRings(ellipse).map((r) => ({ ...r, d: polygonPath(ellipseOutline(ellipse, r.k).map(([e, n]) => at(e, n))), label: at(...ellipsePoint(ellipse, 0, -ellipse.semi_minor_m * r.k)) })),
     [ellipse, at],
   );
   const axis = useMemo(() => {
@@ -50,10 +51,11 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
   }, [ellipse, at]);
 
   const r = k * (!samples ? 3 : samples.state.length <= 600 ? 3.4 : samples.state.length <= 2500 ? 2.5 : 1.8);
+  const dense = (samples?.state.length ?? 0) > 600;
   const paths = useMemo(() => {
     if (!samples) return null;
     const groups = indicesByState(samples);
-    return STATES.map((s) => ({
+    return DRAW_ORDER.map((s) => ({
       state: s,
       d: samplePath(
         s,
@@ -76,7 +78,7 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
     : [];
 
   return (
-    <svg ref={svgRef} style={{ "--k": k } as CSSProperties} className="el-plot" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={description} data-testid="ellipse-plot">
+    <svg ref={svgRef} style={{ "--k": k } as CSSProperties} className={`el-plot${selected ? " has-sel" : ""}`} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={description} data-testid="ellipse-plot">
       <defs>
         <clipPath id={`${uid}-clip`}>
           <rect width={SIZE} height={SIZE} />
@@ -99,12 +101,7 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
         <path className="el-cross" d={`M${SIZE / 2} 0V${SIZE}M0 ${SIZE / 2}H${SIZE}`} />
 
         {rings.map((g) => (
-          <g key={g.sigma}>
-            <path className="el-ring" d={g.d} />
-            <text className="el-label" x={g.label[0] + 5 * k} y={g.label[1] - 5 * k}>
-              {g.sigma}σ
-            </text>
-          </g>
+          <path key={g.sigma} className="el-ring" d={g.d} />
         ))}
         <path className="el-outline" d={outline} />
         <path className="el-axis" d={axis} />
@@ -113,15 +110,22 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
           paths?.map((g) => (
             <g key={g.state} className={`el-pts el-pts-${g.state}`}>
               <path className="el-halo" d={g.d} strokeWidth={g.state === "pass" ? 2 * r + 2 * k : 4.2 * k} />
-              <path className="el-shape" d={g.d} strokeWidth={g.state === "pass" ? 2 * r : 1.8 * k} />
+              <path className="el-shape" d={g.d} strokeWidth={g.state === "pass" ? 2 * r : (dense ? 1.3 : 1.8) * k} />
             </g>
           ))}
+
+        {rings.map((g) => (
+          <text key={g.sigma} className="el-label" x={g.label[0] + 6 * k} y={g.label[1] + 4 * k}>
+            {g.sigma}σ
+          </text>
+        ))}
 
         {marks.map((m) => {
           const [x, y] = at(m.ref.east_m, m.ref.north_m);
           const on = selected === m.id;
           return (
             <g key={m.id} className={`el-mark el-mark-${m.id} ${on ? "is-on" : ""}`}>
+              <circle cx={x} cy={y} r={(on ? 12 : 9) * k} className="el-mark-halo" />
               <circle cx={x} cy={y} r={(on ? 12 : 9) * k} className="el-mark-ring" />
               {m.id === "centre" && <path className="el-mark-plus" d={`M${x - 5 * k} ${y}H${x + 5 * k}M${x} ${y - 5 * k}V${y + 5 * k}`} />}
               <text className="el-mark-text" x={x + 13 * k} y={y - 9 * k}>

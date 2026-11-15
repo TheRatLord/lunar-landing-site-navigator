@@ -20,7 +20,8 @@ export function ResultStats({ result }: { result: EllipseResult }) {
   const c = result.convergence;
   const shown = STATES.filter((s) => s !== "unknown" || (shares[s] ?? 0) > 0);
   return (
-    <section className="el-stats" aria-label="Verdict summary">
+    <section className="el-sec el-outcome" aria-label="Verdict summary">
+      <h3 className="el-sec-title">Outcome</h3>
       <div className="el-stack" role="img" aria-label={STATES.map((s) => `${STATE_LABEL[s]} ${percent(shares[s])}`).join(", ")}>
         {STATES.map((s) => ((shares[s] ?? 0) > 0 ? <span key={s} className={`el-seg el-seg-${s}`} style={{ width: `${(shares[s] ?? 0) * 100}%` }} /> : null))}
       </div>
@@ -32,7 +33,7 @@ export function ResultStats({ result }: { result: EllipseResult }) {
               {share(shares[s])}
               <span>%</span>
             </dd>
-            {s !== "unknown" && <span className="el-share-se num">{standardError(c, s)}</span>}
+            {s !== "unknown" && (shares[s] ?? 0) > 0 && (shares[s] ?? 0) < 1 && <span className="el-share-se num">{standardError(c, s)}</span>}
           </div>
         ))}
       </dl>
@@ -63,6 +64,7 @@ export function PointsPanel({ result, selected, onSelect }: { result: EllipseRes
     { key: "best", role: "Best", ref: result.best },
     { key: "centre", role: "Centre", ref: result.centre },
   ];
+  const sameLimit = rows.every((r) => r.ref.limiting === rows[0]!.ref.limiting);
   const cols: Column<PointRow>[] = [
     {
       key: "role",
@@ -70,7 +72,7 @@ export function PointsPanel({ result, selected, onSelect }: { result: EllipseRes
       render: (r) => (
         <span className="el-cellstack">
           <span>{r.role}</span>
-          {r.ref.limiting && <span className="faint">{requirementName(r.ref.limiting, limitInfo(result.scenario, r.ref.limiting).label)}</span>}
+          {!sameLimit && r.ref.limiting && <span className="faint">{requirementName(r.ref.limiting, limitInfo(result.scenario, r.ref.limiting).label)}</span>}
         </span>
       ),
     },
@@ -87,6 +89,10 @@ export function PointsPanel({ result, selected, onSelect }: { result: EllipseRes
   const sel = rows.find((r) => r.key === selected)?.ref ?? null;
   return (
     <section className="el-sec" aria-label="Points">
+      <h3 className="el-sec-title">
+        Landing points
+        {sameLimit && rows[0]!.ref.limiting && <span className="el-sec-note">limited by {requirementName(rows[0]!.ref.limiting, limitInfo(result.scenario, rows[0]!.ref.limiting).label).toLowerCase()}</span>}
+      </h3>
       <DataTable columns={cols} rows={rows} rowKey={(r) => r.key} caption="Worst, best and centre landing points of the sample" selectedKey={selected} onRowClick={(r) => onSelect(selected === r.key ? null : r.key)} />
       {sel && (
         <div className="el-detail" data-testid="ellipse-point">
@@ -138,6 +144,7 @@ export function ConstraintTable({ result }: { result: EllipseResult }) {
   ];
   return (
     <section className="el-sec" aria-label="Requirements">
+      <h3 className="el-sec-title">Requirements</h3>
       <DataTable columns={cols} rows={rows} rowKey={(r) => r.key} caption="Probability of meeting each requirement over the landing ellipse" />
     </section>
   );

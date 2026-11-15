@@ -12,13 +12,14 @@ import { Spinner } from "../../components/ui/Progress";
 import { downloadText, slug } from "../../lib/download";
 import { EllipseEditor } from "../../scenario/editor/EllipseEditor";
 import { addPlanEllipse, useScenario } from "../../scenario/store";
-import type { Ellipse, Scenario } from "../../scenario/types";
+import type { Ellipse, Limit, Scenario } from "../../scenario/types";
 import { useApp } from "../../state/store";
 import "../../styles/ellipse.css";
 import { SiteTabs } from "../site/SiteTabs";
-import { requirementName } from "../../lib/requirements";
+import { formatLimit, requirementName } from "../../lib/requirements";
+import { CONSTRAINT_META } from "../../scenario/editor/fieldSpecs";
 import { siteLabel } from "../../lib/siteName";
-import { countStates, limitInfo, marginText, percent, plotHalfWidth, samplesCsv, stateShares, STATES, STATE_LABEL } from "./adapt";
+import { countStates, limitInfo, marginText, plotHalfWidth, samplesCsv, stateShares, STATES, STATE_LABEL } from "./adapt";
 import { EllipsePlot, type Marker } from "./EllipsePlot";
 import { ConstraintTable, PointsPanel, ResultDetails, ResultStats, Warnings } from "./Results";
 import { useBackdrop } from "./useBackdrop";
@@ -162,23 +163,49 @@ function EllipseHeadline({ result }: { result: EllipseResult | null }) {
   const shares = stateShares(result);
   const pass = shares.pass ?? 0;
   const marginal = shares.marginal ?? 0;
-  const tone = pass >= 0.9995 ? "pass" : pass + marginal <= 0.0005 ? "fail" : "marginal";
+  const all = pass >= 0.9995;
+  const none = pass <= 0.0005;
+  const tone = all ? "pass" : pass < 0.5 ? "fail" : "marginal";
   const worst = result.worst;
   const limit = worst.limiting ? requirementName(worst.limiting, limitInfo(result.scenario, worst.limiting).label) : null;
   return (
     <>
       <h2 className="site-headline">
         <strong className="verdict-word" data-tone={tone}>
-          {tone === "pass" ? "Pass." : tone === "fail" ? "Fail." : `${percent(pass)}.`}
+          {all ? "Pass." : none ? "Fail." : `${pass < 0.1 ? (pass * 100).toFixed(1) : Math.round(pass * 100)}%`}
         </strong>{" "}
-        {tone === "pass" ? "Every sampled landing point passes." : tone === "fail" ? "No sampled landing point passes." : "of the ellipse passes."}
+        {all ? "Every sampled landing point passes." : none ? (marginal > 0.0005 ? "No sampled landing point passes outright." : "No sampled landing point passes.") : "of the ellipse passes."}
       </h2>
       <p className="site-headline-note">
         Worst point {marginText(worst)}
         {limit ? ` on ${limit.toLowerCase()}` : ""}
-        {marginal > 0.0005 ? ` · ${percent(marginal)} marginal` : ""}
+        {marginal > 0.0005 ? ` · ${Math.max(1, Math.round(marginal * 100))}% marginal` : ""}
       </p>
     </>
+  );
+}
+
+function ToCheck({ doc }: { doc: Scenario }) {
+  const active = CONSTRAINT_META.filter((m) => doc.constraints[m.key]);
+  return (
+    <section className="el-detailcol el-tocheck" aria-label="Requirements to check">
+      <h3 className="el-sec-title">Checked at every point</h3>
+      {active.length === 0 ? (
+        <p className="el-tocheck-none">This plan has no requirements yet.</p>
+      ) : (
+        <ul className="el-tocheck-list">
+          {active.map((m) => {
+            const limit = doc.constraints[m.key] as Limit;
+            return (
+              <li key={m.key}>
+                <span>{m.short}</span>
+                <span className="num">{formatLimit(limit.min, limit.max, limit.unit)}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -241,9 +268,10 @@ function ResultArea({ doc, result, stale, form }: { doc: Scenario; result: Ellip
       </div>
       <div className="el-rail">
         {form}
-        {result && <ResultStats result={result} />}
+        {!result && <ToCheck doc={doc} />}
         {result && (
           <div className="el-detailcol">
+            <ResultStats result={result} />
             <Warnings result={result} />
             <PointsPanel result={result} selected={selected} onSelect={setSelected} />
             <ConstraintTable result={result} />

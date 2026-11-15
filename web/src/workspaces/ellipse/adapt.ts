@@ -33,7 +33,7 @@ export function sigmaRings(e: Ellipse): Array<{ k: number; sigma: number }> {
 }
 
 export function plotHalfWidth(e: Ellipse): number {
-  return e.semi_major_m * 1.18;
+  return e.semi_major_m * 1.12;
 }
 
 export function toPx(east: number, north: number, halfM: number, size: number): [number, number] {
