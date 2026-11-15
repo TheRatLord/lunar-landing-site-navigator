@@ -130,7 +130,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
     let view = s.view;
     if (view === "crater" && id !== "rim" && id !== "floor") view = "ground";
     const follow: Follow = s.chapter === "earth" ? "earth" : s.follow === "free" ? chapterOf(s.chapter).follow : s.follow;
-    set({ siteId: SITES[id] ? id : "apollo11", view, follow, interacted: true, walkBody: "astronaut", walkEdge: false });
+    set({ siteId: SITES[id] ? id : "apollo11", view, follow, interacted: true, walkEdge: false });
   },
   setLat: (lat) => set({ lat, interacted: true }),
   setLanding: (o) => {

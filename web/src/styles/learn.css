@@ -1743,7 +1743,7 @@
   gap: 8px;
 }
 .learn.is-explore .l-walk-actions {
-  top: 66px;
+  top: 140px;
   right: 20px;
   bottom: auto;
   left: auto;
@@ -1833,7 +1833,13 @@
 .l-fact-source a {
   color: var(--text-2);
 }
+.learn.is-explore .l-fact-slot {
+  top: 262px;
+  right: 20px;
+  width: min(270px, calc(100% - 40px));
+}
 @media (max-width: 759px) {
+  .learn.is-explore .l-fact-slot,
   .l-fact-slot {
     top: 8px;
     right: 8px;
