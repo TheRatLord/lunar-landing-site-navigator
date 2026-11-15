@@ -12,7 +12,6 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -32,7 +31,7 @@ from lunarnav.api.compute.analyses import (
 )
 from lunarnav.api.compute.ephem import RequestError
 from lunarnav.api.compute.exports import export_digest, export_root
-from lunarnav.api.jobworker import JobContext
+from lunarnav.api.jobworker import JobContext, regional_threads
 from lunarnav.api.versions import code_version, source_sha256
 from lunarnav.report.limits import ellipse_limits, evaluate_search_sites, search_limits
 from lunarnav.scenario import evaluate_scenario
@@ -138,7 +137,7 @@ def regional_job(req: dict[str, Any], ctx: JobContext) -> dict[str, Any]:
     def progress(done: int, total: int) -> None:
         ctx.progress(0.02 + 0.9 * done / max(total, 1), f"tile {done}/{total}")
 
-    threads = max(1, int(os.environ.get("NUMBA_NUM_THREADS", "2")))
+    threads = regional_threads()
     ctx.progress(0.01, f"{spec.n_cells} cells x {spec.n_epochs} epochs")
     layers = _guard(lambda: compute_layers(
         spec, stack, out_dir=work, bounds=req["bounds"], calibrate=req["calibrate"], do_earth=req["do_earth"],

@@ -12,8 +12,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from .errors import ReportInputError
-from .fonts import check_coverage
-from .html import render_html
 
 __all__ = ["ReportInputError", "write_report"]
 
@@ -28,6 +26,9 @@ def write_report(
     unknown = set(formats) - {"html", "pdf"}
     if unknown:
         raise ValueError(f"unknown report format(s) {sorted(unknown)}; use 'html' and/or 'pdf'")
+    from .fonts import check_coverage
+    from .html import render_html
+
     html = render_html(evaluation, provider=provider, scan=scan, slip=slip, comparison=comparison, ellipse=ellipse,
                        search=search, generated_utc=generated_utc)
     if "pdf" in formats:

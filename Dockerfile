@@ -19,7 +19,8 @@ COPY pyproject.toml uv.lock README.md LICENSE ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 COPY docs ./docs
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev \
+ && .venv/bin/python -m compileall -q src
 COPY --from=web /web/dist ./web/dist
 ENV PATH=/app/.venv/bin:$PATH \
     HOME=/tmp \

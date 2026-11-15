@@ -6,7 +6,6 @@ from pathlib import PurePath
 from typing import Any
 
 import orjson
-from fastapi.responses import JSONResponse
 
 _OPTIONS = orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NON_STR_KEYS
 
@@ -28,11 +27,23 @@ def dumps(value: Any, *, canonical: bool = False) -> bytes:
 loads = orjson.loads
 
 
-class ORJSONResponse(JSONResponse):
-    """JSON response encoded with orjson (numpy arrays supported). A JSONResponse subclass so that FastAPI
-    publishes the declared response models in the OpenAPI document (a plain Response is documented as a string)."""
+def _response_class() -> type:
+    from fastapi.responses import JSONResponse
 
-    media_type = "application/json"
+    class ORJSONResponse(JSONResponse):
+        """JSON response encoded with orjson (numpy arrays supported). A JSONResponse subclass so that FastAPI
+        publishes the declared response models in the OpenAPI document (a plain Response is documented as a string)."""
 
-    def render(self, content: Any) -> bytes:
-        return dumps(content)
+        media_type = "application/json"
+
+        def render(self, content: Any) -> bytes:
+            return dumps(content)
+
+    return ORJSONResponse
+
+
+def __getattr__(name: str) -> Any:
+    if name == "ORJSONResponse":
+        globals()[name] = _response_class()
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

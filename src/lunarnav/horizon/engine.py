@@ -19,16 +19,18 @@ Per azimuth ``az_k = k * 360/n_az`` three numbers are produced:
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import math
 import os
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 
+import numba
 import numpy as np
 
-from lunarnav.constants import R_MOON_M
+from lunarnav.constants import HORIZON_READ_THREADS, R_MOON_M
 from lunarnav.horizon import _march
 from lunarnav.horizon.seams import seam_provenance
 from lunarnav.terrain.paths import horizon_cache_dir
@@ -42,6 +44,27 @@ DEFAULT_LEAF_DIV = 256.0
 DEFAULT_N_SEED = 32
 CHUNK_SITES = 512
 NEAR_FIELD_START_M = 1.0
+READ_THREADS_MAX_SITES = 8
+
+
+@contextlib.contextmanager
+def _solver_threads(n_sites: int) -> Iterator[None]:
+    current = numba.get_num_threads()
+    want = current
+    if n_sites <= READ_THREADS_MAX_SITES:
+        want = max(current, min(HORIZON_READ_THREADS, numba.config.NUMBA_NUM_THREADS))
+    if want == current:
+        yield
+        return
+    try:
+        numba.set_num_threads(want)
+    except ValueError:
+        yield
+        return
+    try:
+        yield
+    finally:
+        numba.set_num_threads(current)
 
 
 def observer_frames(lat_deg: np.ndarray, lon_deg: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -80,10 +103,11 @@ def _solve(
     lo, ray_hi, hi, blk = (np.empty(shape) for _ in range(4))
     nodes = np.empty(shape, np.int32)
     nodata = np.empty(shape, np.int32)
-    _march.solve_batch(
-        *pk.args(), up, north, east, ro, th_start, th_max, R_MOON_M, np.ascontiguousarray(az_rad), hw_rad,
-        math.radians(tol_deg), math.radians(ray_tol_deg), leaf_div, int(n_seed), lo, ray_hi, hi, blk, nodes, nodata,
-    )  # fmt: skip
+    with _solver_threads(ns):
+        _march.solve_batch(
+            *pk.args(), up, north, east, ro, th_start, th_max, R_MOON_M, np.array(az_rad, dtype=np.float64, order="C"), hw_rad,
+            math.radians(tol_deg), math.radians(ray_tol_deg), leaf_div, int(n_seed), lo, ray_hi, hi, blk, nodes, nodata,
+        )  # fmt: skip
     empty = lo <= -0.5 * math.pi + 1e-12
     est = np.degrees(0.5 * (lo + ray_hi))
     lo_d, hi_d = np.degrees(lo), np.degrees(hi)

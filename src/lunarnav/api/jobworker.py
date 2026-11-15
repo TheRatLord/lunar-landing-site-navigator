@@ -8,14 +8,25 @@ Each worker loads the kernels once (initializer), then runs jobs. A job function
 
 from __future__ import annotations
 
+import hashlib
 import importlib
+import multiprocessing
 import multiprocessing.sharedctypes as sharedctypes
 import os
+import shutil
+import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from lunarnav.api.json import dumps
+from lunarnav.constants import HORIZON_READ_THREADS
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 
 class JobCancelled(Exception):
@@ -39,6 +50,9 @@ class KindSpec:
 
 
 _state: dict[str, Any] = {}
+REGIONAL_THREADS = 2
+COMPILED_DIR_PREFIX = "lunarnav-"
+COMPILED_DIR_KEEP_S = 30 * 86400.0
 
 
 def init_worker(
@@ -48,14 +62,30 @@ def init_worker(
     ``LUNARNAV_DATA`` so terrain and horizon caches resolve to it) and (optionally) load the SPICE kernels."""
     from lunarnav.api.versions import source_sha256
 
-    _state.update(queue=progress_queue, flags=cancel_flags, kinds=kinds, data_dir=data_dir,
-                  source_sha256=source_sha256())
+    source = source_sha256()
+    _state.update(queue=progress_queue, flags=cancel_flags, kinds=kinds, data_dir=data_dir, preload=preload,
+                  source_sha256=source)
     if data_dir:
         os.environ["LUNARNAV_DATA"] = data_dir
-    os.environ.setdefault("NUMBA_NUM_THREADS", "2")
+    compiled_base = os.environ.get("NUMBA_CACHE_DIR")
+    compiled_dir = COMPILED_DIR_PREFIX + source[:16]
+    if compiled_base and Path(compiled_base).name != compiled_dir:
+        os.environ["NUMBA_CACHE_DIR"] = str(Path(compiled_base) / compiled_dir)
+    configured_threads = os.environ.get("NUMBA_NUM_THREADS")
+    cores = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else os.cpu_count() or 1
+    _state["threads"] = max(1, int(configured_threads)) if configured_threads else REGIONAL_THREADS
+    if configured_threads is None:
+        os.environ["NUMBA_NUM_THREADS"] = str(max(cores, HORIZON_READ_THREADS))
     from numba.core import config as numba_config
 
     numba_config.reload_config()
+    if configured_threads is None:
+        import numba
+
+        try:
+            numba.set_num_threads(cores)
+        except ValueError:
+            pass
     if preload:
         from lunarnav.ephem import load_kernels
 
@@ -92,10 +122,7 @@ def run_job(job_id: str, slot: int, kind: str, request: dict[str, Any]) -> tuple
     return dumps(result), _state["source_sha256"]
 
 
-def warm_worker() -> dict[str, Any]:
-    """Make this worker fast before the first real job: load the kernels, import every module that hosts a
-    job kind and call its optional ``warm_up()`` (which exercises the numerical code so it is compiled)."""
-    t0 = time.perf_counter()
+def _run_warm_hooks() -> None:
     from lunarnav.ephem import load_kernels
 
     load_kernels()
@@ -105,7 +132,61 @@ def warm_worker() -> dict[str, Any]:
         hook = getattr(module, "warm_up", None)
         if hook is not None:
             hook()
+
+
+def _compile_process(kinds: dict[str, KindSpec], preload: bool, data_dir: str) -> None:
+    init_worker(None, None, kinds, preload, data_dir)
+    _run_warm_hooks()
+
+
+def _compile_once() -> None:
+    data_dir = _state.get("data_dir")
+    if not data_dir or fcntl is None:
+        return
+    import numba
+
+    package = Path(__file__).resolve().parents[1]
+    newest = max(f.stat().st_mtime_ns for f in package.rglob("*.py"))
+    version = (_state["source_sha256"], newest, numba.__version__, sys.version_info[:3], numba.config.CACHE_DIR)
+    stamps = Path(data_dir) / "service" / "compiled"
+    stamp = stamps / hashlib.sha256(repr(version).encode()).hexdigest()[:32]
+    if stamp.exists():
+        return
+    stamps.mkdir(parents=True, exist_ok=True)
+    with open(stamps / "lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if stamp.exists():
+            return
+        process = multiprocessing.get_context("spawn").Process(
+            target=_compile_process, args=(_state["kinds"], _state["preload"], data_dir))
+        process.start()
+        process.join()
+        if process.exitcode != 0:
+            return
+        for other in stamps.iterdir():
+            if other.name != "lock":
+                other.unlink(missing_ok=True)
+        stamp.touch()
+        compiled = Path(numba.config.CACHE_DIR) if numba.config.CACHE_DIR else None
+        if compiled is not None and compiled.name.startswith(COMPILED_DIR_PREFIX):
+            for other in compiled.parent.glob(COMPILED_DIR_PREFIX + "*"):
+                if other != compiled and other.is_dir() and time.time() - other.stat().st_mtime > COMPILED_DIR_KEEP_S:
+                    shutil.rmtree(other, ignore_errors=True)
+
+
+def warm_worker() -> dict[str, Any]:
+    """Make this worker fast before the first real job: load the kernels, import every module that hosts a
+    job kind and call its optional ``warm_up()`` (which exercises the numerical code so it is compiled)."""
+    t0 = time.perf_counter()
+    _compile_once()
+    _run_warm_hooks()
     return {"pid": os.getpid(), "seconds": round(time.perf_counter() - t0, 3), "source_sha256": _state["source_sha256"]}
+
+
+def regional_threads() -> int:
+    if "threads" in _state:
+        return _state["threads"]
+    return max(1, int(os.environ.get("NUMBA_NUM_THREADS", REGIONAL_THREADS)))
 
 
 def worker_data_dir() -> str | None:

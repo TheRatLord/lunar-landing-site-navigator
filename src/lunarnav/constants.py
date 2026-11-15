@@ -12,3 +12,4 @@ SOLAR_CONSTANT_W_M2 = 1361.0
 """Total solar irradiance at 1 au."""
 
 DEFAULT_HORIZON_AZIMUTHS = 720
+HORIZON_READ_THREADS = 8

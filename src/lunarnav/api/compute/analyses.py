@@ -681,9 +681,14 @@ def horizon_job(req: dict[str, Any], ctx: JobContext) -> dict[str, Any]:
     }
 
 
+WARM_AZIMUTHS = 8
+WARM_RANGE_KM = 2.0
+
+
 def warm_up() -> None:
-    """Called once per pool worker at start: exercise the evaluation and scan code (compiles the numerical
-    kernels, touches the catalogue) so the first real request is not the slow one."""
+    """Called once per pool worker at start: exercise the evaluation and scan code and a short-range terrain horizon
+    (compiles the numerical kernels, touches the catalogue, opens the stores) so the first real request is not the
+    slow one."""
     from lunarnav.scenario import scenario_from_catalog
 
     scenario = scenario_from_catalog("apollo-17", "apollo-lm", mission_duration_h=24.0, network=_warm_network())
@@ -691,7 +696,14 @@ def warm_up() -> None:
     evaluate_scenario(scenario, provider)
     scan_opportunities(scenario, provider, start_utc="2024-03-01T00:00:00Z", end_utc="2024-03-03T00:00:00Z")
     if terrain_signature(data_dir()):
-        get_provider("on")
+        from lunarnav.horizon import compute_horizon
+
+        stack = get_provider("on").stack
+        site = Site(lat_deg=scenario.site.lat_deg, lon_deg=scenario.site.lon_deg)
+        try:
+            compute_horizon(site, stack, n_az=WARM_AZIMUTHS, max_range_km=WARM_RANGE_KM, use_cache=False)
+        except ValueError:
+            pass
 
 
 def _warm_network() -> Any:

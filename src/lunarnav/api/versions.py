@@ -7,6 +7,8 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any
 
+from lunarnav.source import source_sha256 as engine_source_sha256
+
 
 def code_version() -> str:
     """Installed ``lunarnav`` package version (``unknown`` when run from an uninstalled tree)."""
@@ -70,15 +72,11 @@ def terrain_signature(data_dir: Path) -> tuple:
 def source_sha256() -> str:
     """The engine's `source_sha256("package")`: SHA-256 over every `lunarnav` file, the service and agent included
     (not the narrower `results` scope), because a cached response depends on the service's own code too."""
-    from lunarnav.scenario.provenance import source_sha256 as engine_source_sha256
-
     return engine_source_sha256("package")
 
 
 def results_source_sha256() -> str:
     """The engine's `source_sha256("results")`: the hash every result's provenance carries, as this process computed it."""
-    from lunarnav.scenario.provenance import source_sha256 as engine_source_sha256
-
     return engine_source_sha256("results")
 
 

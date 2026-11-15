@@ -11,10 +11,18 @@ from typing import Annotated
 
 import typer
 
-from lunarnav.agent.cli import app as agent_app
-
 app = typer.Typer(add_completion=False, no_args_is_help=True, help="Lunar Landing Site Navigator.")
-app.add_typer(agent_app, name="agent", help="Claude analysis agent (run, resume, show, list, tools, sandbox-check).")
+
+
+@app.command(
+    "agent",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": []},
+    help="Claude analysis agent (run, resume, show, list, tools, sandbox-check).",
+)
+def agent(ctx: typer.Context) -> None:
+    from lunarnav.agent.cli import app as agent_app
+
+    agent_app(args=list(ctx.args), prog_name="lunarnav agent")
 
 
 @app.command()

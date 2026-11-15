@@ -21,7 +21,6 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 
-import httpx
 import spiceypy as spice
 
 NAIF_BASE_URL = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/"
@@ -162,6 +161,8 @@ def _candidate_urls(spec: KernelSpec) -> list[str]:
 
 def _download(spec: KernelSpec, dest: Path) -> str:
     """Fetch `spec` into `dest` atomically; return the URL that served the verified file."""
+    import httpx
+
     tmp = dest.with_suffix(dest.suffix + ".part")
     errors: list[str] = []
     for url in _candidate_urls(spec):
