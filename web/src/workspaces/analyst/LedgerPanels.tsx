@@ -159,7 +159,7 @@ function CitedRowBlock({ runId, ledgerId, row, output, resultText, resultFile, d
           </p>
         ) : (
           <p className="faint">
-            No rows declared; <code>{row}</code> names nothing
+            No rows declared, so <code>{row}</code> matches nothing
           </p>
         )
       ) : refused ? (
@@ -177,7 +177,7 @@ function CitedRowBlock({ runId, ledgerId, row, output, resultText, resultFile, d
         </p>
       ) : haveResult ? (
         <p className={tableLocal ? "ev-fail" : "faint"}>
-          {tableLocal ? <>No per-site row <code>{row}</code></> : <>No rows declared; <code>{row}</code> names nothing</>}
+          {tableLocal ? <>No per-site row <code>{row}</code></> : <>No rows declared, so <code>{row}</code> matches nothing</>}
         </p>
       ) : (
         <p className="faint">
@@ -331,7 +331,7 @@ function LedgerRow({ e, focused, nonce, actions, focusRow = null, resultText, ru
           {Object.keys(rest).length > 0 && <CodeBlock code={json(rest)} language="json" label="other fields" collapseAfter={10} />}
           {e.prev && (
             <p className="faint">
-              Prev <code title={e.prev}>{shortHash(e.prev)}</code>
+              Previous entry <code title={e.prev}>{shortHash(e.prev)}</code>
             </p>
           )}
         </div>
@@ -352,7 +352,7 @@ export function ProvenancePanel({ runId, revision, focusId, focusRow = null, res
             {focusId !== null && /^[LS]\d{3,6}$/.test(focusId) && !d.entries.some((e) => e.ledger_id === focusId) && (
               <p className="ev-chain" role="status">
                 <Chip tone="marginal" icon="alert">
-                  {focusId} not in ledger
+                  {focusId} is not in the ledger
                 </Chip>
               </p>
             )}

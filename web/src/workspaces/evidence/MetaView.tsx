@@ -142,7 +142,7 @@ function Versions({ meta }: { meta: Obj }) {
               <table className="evi-versions-table">
                 <thead>
                   <tr>
-                    <th scope="col">Models</th>
+                    <th scope="col">Height maps</th>
                     <th scope="col" className="num">
                       Count
                     </th>
@@ -168,11 +168,11 @@ function Versions({ meta }: { meta: Obj }) {
                   })}
                 </tbody>
               </table>
-              <Disclosure title="All terrain models" count={terrain.length}>
+              <Disclosure title="All height maps" count={terrain.length}>
                 <table className="evi-versions-table">
                   <thead>
                     <tr>
-                      <th scope="col">Model</th>
+                      <th scope="col">Height map</th>
                       <th scope="col" className="num">
                         Pixel
                       </th>

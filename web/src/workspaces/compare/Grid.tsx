@@ -96,7 +96,7 @@ export function Grid({
               );
             })}
             <th scope="col" className="cmp-grid-end">
-              Works
+              Pass
             </th>
           </tr>
         </thead>

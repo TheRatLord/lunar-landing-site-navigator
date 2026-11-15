@@ -369,7 +369,7 @@ export function addPlanEllipse(): void {
     ...schemaDefaults("Ellipse"),
     semi_major_m: 100,
     semi_minor_m: 100,
-    origin: { ...schemaDefaults("Origin"), basis: "user", label: "Placeholder starting values; replace with your navigation solution" },
+    origin: { ...schemaDefaults("Origin"), basis: "user", label: "Placeholder values. Replace them with your navigation solution." },
   } as Ellipse);
 }
 

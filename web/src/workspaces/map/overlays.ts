@@ -10,7 +10,7 @@ export interface PinMark {
   lines: string[];
 }
 
-export const STATE_WORD: Record<SiteState, string> = { pass: "Pass", marginal: "Marginal", fail: "Fail", unknown: "No verdict" };
+export const STATE_WORD: Record<SiteState, string> = { pass: "Pass", marginal: "Marginal", fail: "Fail", unknown: "Unknown" };
 
 export function marginText(r: SearchRow): string | null {
   if (r.margin === null) return null;

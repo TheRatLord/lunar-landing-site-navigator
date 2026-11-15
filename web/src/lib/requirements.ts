@@ -37,7 +37,7 @@ const METRIC_NAME: Record<string, string> = {
 };
 
 export function metricName(key: string, label: string): string {
-  return METRIC_NAME[key] ?? REQUIREMENT_NAME[key] ?? label.replace(/ \(from landing\)$/, "").replace(/\bloss of contact\b/g, "Earth link loss").replace(/\bcontact\b/g, "Earth link");
+  return METRIC_NAME[key] ?? REQUIREMENT_NAME[key] ?? label.replace(/ \(from landing\)$/, "").replace(/\bloss of contact\b/g, "Earth link gap").replace(/\bcontact\b/g, "Earth link");
 }
 
 const MINUS = "−";

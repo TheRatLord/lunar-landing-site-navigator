@@ -1,16 +1,16 @@
 # Oracle suite report
 
-Run 2026-11-15 11:43 UTC on commit `698cfce`, terrain stack `241d5855d6be`, kernels as pinned. Written by `lunarnav oracle run`; do not edit by hand.
+Run 2026-11-15 11:43 UTC on commit `698cfce`, terrain stack `241d5855d6be`, kernels as pinned. Written by `lunarnav oracle run`. Do not edit by hand.
 
 ## Score
 
-**Truth checks: 43 of 46 gates pass (93 %).** These compare the engine with sources outside it: independent computations and real observations.
+**Truth checks: 43 of 46 gates pass (93 %).** Each of these gates compares the engine with a source outside it: an independent computation or a real observation.
 
-All gates, including the implementation checks: 50 of 53 (94 %).
+All gates, including the implementation checks: 50 of 53 pass (94 %).
 
-A gate is one source and one quantity, held to a tolerance. A limit is written down before the engine is run on its case; a limit or rule changed afterwards is listed under "Changed after a first run" with the data the change rests on, which never comes from the engine. A miss against a sound reference stays in the score as a failure. Report-only rows have no pass or fail: their reference cannot carry a tolerance.
+A gate is one source and one quantity, held to a tolerance. Each limit is written down before the engine is run on its case. A limit or rule changed afterwards is listed under "Changed after a first run" with the data behind the change, and that data never comes from the engine. A miss against a sound reference stays in the score as a failure. Report-only rows have no pass or fail, because their reference cannot carry a tolerance.
 
-Strict count: 41 of 50 (82 %). It counts as failures the 4 truth cases that were gates when first run and are report-only now, and the 2 that pass only because their limit or rule was changed after a first run. Both groups are listed under "Changed after a first run".
+Strict count: 41 of 50 (82 %). This count also treats as failures the 4 truth cases that were gates at their first run and are report-only now, and the 2 that pass only because their limit or rule was changed after a first run. Both groups are listed under "Changed after a first run".
 
 | Class | Pass | Fail | Not run | Report only | Score |
 |---|---|---|---|---|---|
@@ -1042,7 +1042,7 @@ Heights are above the 1737.4 km sphere. The laser-ranging radii are good to deci
 
 ## Changed after a first run
 
-Everything that was altered after the engine had been run on a case. "Strict" marks the cases the strict count treats as failures.
+Every change made to a case after the engine had been run on it. "Strict" marks the cases that the strict count treats as failures.
 
 | Case | What changed | Why, and the data behind it | Strict |
 |---|---|---|---|

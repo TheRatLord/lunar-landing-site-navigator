@@ -7,7 +7,7 @@ import type { Constraints, Scenario } from "./types";
 export const FEATURED_SITES = [
   { id: "poi-glaser-c1", name: "Shackleton connecting ridge", note: "Near-permanent sunlight, 89.4°S" },
   { id: "artemis-region-mons-mouton", name: "Mons Mouton", note: "Artemis candidate region, 85.4°S" },
-  { id: "poi-derosa-mp1", name: "Malapert peak", note: "Long Earth visibility, 86.0°S" },
+  { id: "poi-derosa-mp1", name: "Malapert peak", note: "Long Earth link, 86.0°S" },
   { id: "artemis-region-de-gerlache-rim-2", name: "de Gerlache rim", note: "Artemis candidate region, 88.2°S" },
   { id: "griffin-1-nobile", name: "Nobile crater", note: "Griffin Mission One target, 85.3°S" },
   { id: "im-2-athena", name: "IM-2 Athena", note: "Landed March 2025, 84.8°S" },

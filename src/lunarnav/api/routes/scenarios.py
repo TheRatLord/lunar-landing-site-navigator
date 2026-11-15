@@ -58,9 +58,9 @@ def validate_document(document: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         scenario = model.model_validate(document)
     except ValidationError as exc:
         errors = [{"loc": [str(p) for p in e["loc"]], "msg": e["msg"], "type": e["type"]} for e in exc.errors()]
-        raise ApiProblem(422, "Scenario document is invalid", f"{len(errors)} invalid field(s)", errors=errors) from exc
+        raise ApiProblem(422, "Plan is invalid", f"{len(errors)} invalid field(s)", errors=errors) from exc
     body = scenario.model_dump(mode="json")
-    name = body.get("name") if isinstance(body.get("name"), str) and body.get("name") else "Untitled scenario"
+    name = body.get("name") if isinstance(body.get("name"), str) and body.get("name") else "Untitled plan"
     return name, body
 
 
@@ -82,14 +82,14 @@ def _record(r: Record) -> ScenarioRecord:
 
 
 def _not_found(exc: NotFound) -> ApiProblem:
-    return ApiProblem(404, "Scenario not found", f"No scenario {exc.args[0]!r}.")
+    return ApiProblem(404, "Plan not found", f"No saved plan {exc.args[0]!r}.")
 
 
 def _conflict(exc: VersionConflict) -> ApiProblem:
     return ApiProblem(
         409, "Version conflict",
-        f"Scenario {exc.doc_id} is at version {exc.current}; your edit was based on version {exc.expected}. "
-        "Fetch the current version, merge, and retry.",
+        f"Plan {exc.doc_id} is now at version {exc.current}, but your edit was based on version {exc.expected}. "
+        "Fetch the current version, merge your edit, and try again.",
         kind="version-conflict", current_version=exc.current, expected_version=exc.expected,
     )
 

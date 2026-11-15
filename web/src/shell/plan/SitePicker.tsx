@@ -147,7 +147,7 @@ export function SitePicker() {
             matches.length > 0 ? (
               list(matches)
             ) : (
-              <p className="plan-empty">No match. Click the map.</p>
+              <p className="plan-empty">No match. Click the map to place the site.</p>
             )
           ) : (
             <>

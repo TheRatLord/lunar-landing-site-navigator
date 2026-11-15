@@ -265,18 +265,18 @@ export function spendSummary({ costUsd, budgetUsd, turnsEnded, running }: { cost
   const turns = `${turnsEnded} turn${turnsEnded === 1 ? "" : "s"}`;
   const cap = typeof budgetUsd === "number" ? formatCost(budgetUsd) : null;
   const capReached = isBudgetSpent(costUsd, budgetUsd);
-  const capNote = cap ? ` The cap of this thread is ${cap}${capReached ? " and it has been reached" : ""}.` : budgetUsd === null ? " The engine reports no cap for this thread." : "";
+  const capNote = cap ? ` This thread's cap is ${cap}${capReached ? ", and it has been reached" : ""}.` : budgetUsd === null ? " The engine reports no cap for this thread." : "";
   const spent = formatCost(costUsd);
   if (turnsEnded === 0) {
     return running
       ? { text: cap ? `turn 1 running · cap ${cap}` : "turn 1 running", detail: `No turn has ended yet. The cost of a turn is reported when it ends, so no spend is on record yet.${capNote}`, capReached }
-      : { text: cap ? `${spent} of ${cap}` : spent, detail: `No turn has ended; no cost is on record.${capNote}`, capReached };
+      : { text: cap ? `${spent} of ${cap}` : spent, detail: `No turn has ended, so no cost is on record yet.${capNote}`, capReached };
   }
   const cost = cap ? `${spent} of ${cap}` : spent;
   if (running) {
     return {
       text: `${cost} · ${turns} ended · turn ${turnsEnded + 1} running`,
-      detail: `${spent} API-equivalent cost as of the end of turn ${turnsEnded}. Turn ${turnsEnded + 1} is running; its cost is reported when it ends and is not included yet.${capNote}`,
+      detail: `${spent} API-equivalent cost as of the end of turn ${turnsEnded}. Turn ${turnsEnded + 1} is still running. Its cost is added when it ends.${capNote}`,
       capReached,
     };
   }

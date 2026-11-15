@@ -27,7 +27,7 @@ export function ModelSection() {
         <Fields base="terrain_error" specs={TERRAIN_ERROR_FIELDS} />
       </div>
       <div className="sc-group">
-        <GroupHead title="Eclipse" />
+        <GroupHead title="Earth eclipse" />
         <ChoiceField
           path={["eclipse", "shadow"]}
           label="Shadow"

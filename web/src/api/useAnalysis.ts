@@ -145,7 +145,7 @@ export function useAnalysis<R>(path: string, body: unknown, opts: { debounceMs?:
           const reply = await cancelJob(inner.jobId, { force: true });
           dispatch({ type: "cancelReply", key, detail: reply.detail, effect: reply.effect });
         } catch (e) {
-          reportError(e, "Stopping the job for every request");
+          reportError(e, "Could not stop the job for everyone");
         }
       },
       rerun: bump,

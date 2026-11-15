@@ -35,7 +35,7 @@ from lunarnav.api.schemas import (
 
 def _require_enabled(ctx: Annotated[ServiceContext, Depends(get_ctx)]) -> None:
     if not ctx.settings.agent_enabled:
-        raise ApiProblem(404, "Agent disabled", "This service runs without the analysis agent (LUNARNAV_API_AGENT_ENABLED).")
+        raise ApiProblem(404, "Agent disabled", "The analysis agent is turned off on this server (LUNARNAV_API_AGENT_ENABLED).")
 
 
 router = APIRouter(

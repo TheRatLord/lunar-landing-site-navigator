@@ -37,7 +37,7 @@ export function queueSummary(info: QueueInfo | null, createdMs: number | null): 
     headline = `Queued: ${ordinal(info.position)} in line${info.jobClass ? ` for ${info.jobClass} jobs` : ""}`;
     reason =
       info.waitingFor === "long-limit"
-        ? "Long jobs may not take every worker: one stays free for short analyses."
+        ? "One worker is kept free for short analyses, so long jobs wait."
         : "All workers are busy.";
     const shown = info.ahead.slice(0, AHEAD_SHOWN);
     if (shown.length > 0) {
@@ -45,6 +45,6 @@ export function queueSummary(info: QueueInfo | null, createdMs: number | null): 
       ahead = shown.map((j) => `${j.label || j.kind} (${j.state})`).join(", ") + (more > 0 ? `, +${more} more` : "");
     }
   }
-  const waited = createdMs != null && Number.isFinite(createdMs) ? `queued since ${new Date(createdMs).toISOString().slice(11, 19)} UTC` : null;
+  const waited = createdMs != null && Number.isFinite(createdMs) ? `Queued since ${new Date(createdMs).toISOString().slice(11, 19)} UTC` : null;
   return { headline, reason, ahead, waited };
 }

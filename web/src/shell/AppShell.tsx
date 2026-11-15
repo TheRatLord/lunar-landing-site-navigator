@@ -41,7 +41,7 @@ function NarrowGate() {
   return (
     <div className="narrow-gate">
       <strong className="narrow-gate-app">Lunar Landing Site Navigator</strong>
-      <p>Planner needs a wider screen</p>
+      <p>The planner needs a wider screen.</p>
       <Link className="btn btn-primary" to="/learn">
         Open Explorer
       </Link>

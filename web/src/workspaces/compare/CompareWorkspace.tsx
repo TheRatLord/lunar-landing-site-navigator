@@ -127,15 +127,15 @@ function Compare() {
     tally.total < options || tally.total === 0
       ? "Comparing sites and dates"
       : tally.ok === 0
-        ? `None of ${options} option${options === 1 ? "" : "s"} works.`
+        ? `None of ${options} option${options === 1 ? "" : "s"} pass${options === 1 ? "es" : ""}.`
         : tally.ok === tally.marginal
           ? `${tally.marginal} of ${options} options ${tally.marginal === 1 ? "is" : "are"} marginal.`
-          : `${tally.ok - tally.marginal} of ${options} options work${tally.ok - tally.marginal === 1 ? "s" : ""}${tally.marginal ? `, ${tally.marginal} marginal` : ""}.`;
+          : `${tally.ok - tally.marginal} of ${options} options pass${tally.ok - tally.marginal === 1 ? "es" : ""}${tally.marginal ? `, ${tally.marginal} marginal` : ""}.`;
   const subtitle =
     tally.total < options || tally.total === 0
       ? null
       : tally.ok === 0
-        ? "Select a cell to see the next date that does, or add a site."
+        ? "Select a cell to see the next date that meets the requirements, or add a site."
         : `${tally.okSites} of ${sites.length} site${sites.length === 1 ? "" : "s"} ha${tally.okSites === 1 ? "s" : "ve"} a landing date that meets the requirements. Select a cell to use it.`;
 
   const csv = () => downloadText(`${slug(doc.name)}-compare.csv`, gridCsv(sites, slips, cellAt, plannedMs), "text/csv");

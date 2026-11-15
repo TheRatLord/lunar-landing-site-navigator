@@ -40,13 +40,13 @@ export const CHECKS: readonly Check[] = [
   {
     check: "Sunlight near the south pole",
     reference: "LOLA published 60 m map",
-    result: "Mean error 0.59 points, 95th percentile 2.72 (targets 1 to 2 and ≤ 4)",
+    result: "Mean error 0.59 percentage points, 95th percentile 2.72 (targets 1 to 2 and ≤ 4)",
     status: "Met",
     doc: "validation/illumination",
     section: "3.1",
   },
   {
-    check: "Earth in view near the south pole",
+    check: "Earth visibility near the south pole",
     reference: "LOLA published 60 m map",
     result: "95th percentile 6.27 points, 99th 14.5 (target 5); mean 0.85",
     status: "Missed",
@@ -86,9 +86,9 @@ export const CHECKS: readonly Check[] = [
     section: "What a planner can take from this",
   },
   {
-    check: "Area maps (API)",
-    reference: "Exact engine, 960 cells",
-    result: "Sunlight mean error 0.11 points; Earth up to 6.47 points; longest shadow up to 8,920 h",
+    check: "Regional layer (API)",
+    reference: "Per-site engine, 960 cells",
+    result: "Sunlight mean error 0.11 points; Earth visibility up to 6.47 points; longest dark span up to 8,920 h",
     status: "Mixed",
     doc: "validation/illumination",
     section: "Summary for planners: how far to trust the regional layer",
@@ -120,7 +120,7 @@ export const CHECKS: readonly Check[] = [
   {
     check: "Gläser 2014, Connecting Ridge",
     reference: "Published sunlight, 4 spots",
-    result: "10 m mast within 0.4 points; 2 m mast 2.9 to 3.2 points darker, dark span 2.3 to 2.4 times longer",
+    result: "At 10 m observer height within 0.4 points; at 2 m, 2.9 to 3.2 points darker and longest dark span 2.3 to 2.4 times longer",
     status: "Mixed",
     doc: "validation/scenario",
     section: "11.2",
@@ -153,7 +153,7 @@ export const CHECKS: readonly Check[] = [
 ];
 
 export const NOT_VALIDATED = {
-  text: "Battery and state of charge (lander profiles are estimates, no telemetry), event times on the terrain horizon (no ground truth at that resolution) and communication beyond geometric contact.",
+  text: "Battery and state of charge, because lander profiles are estimates and there is no telemetry. Event times on the terrain horizon, because there is no reference at that resolution. Communication beyond geometric contact.",
   doc: "validation/scenario",
   section: "5",
 };
@@ -164,7 +164,7 @@ export const DOC_TITLES: Record<string, string> = {
   "validation/illumination": "Sunlight and Earth maps",
   "validation/imagery": "Orbital images",
   "validation/scenario": "Missions and studies",
-  "validation/terrain": "Terrain models",
+  "validation/terrain": "Terrain data",
   "validation/visibility": "Visibility maths",
   "research/literature": "Literature",
   "research/terrain-error": "Terrain data error",

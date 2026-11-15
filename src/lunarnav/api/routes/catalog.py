@@ -38,9 +38,9 @@ def _parse_bbox(text: str) -> tuple[float, float, float, float]:
     try:
         lon0, lat0, lon1, lat1 = (float(p) for p in text.split(","))
     except ValueError:
-        raise ApiProblem(422, "Invalid bbox", f"expected {_BBOX}") from None
+        raise ApiProblem(422, "Invalid bounding box", f"Expected {_BBOX}") from None
     if not (-90 <= lat0 <= lat1 <= 90):
-        raise ApiProblem(422, "Invalid bbox", "need -90 <= lat_min <= lat_max <= 90")
+        raise ApiProblem(422, "Invalid bounding box", "Latitudes must satisfy -90 <= lat_min <= lat_max <= 90.")
     return lon0, lat0, lon1, lat1
 
 

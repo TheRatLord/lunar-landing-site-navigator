@@ -50,7 +50,7 @@ function Notes({ doc, result }: { doc: Scenario; result: EvaluateResult | null }
       )}
       {share !== null && (
         <Link to="/site/ellipse" className="vs-note vs-note-link">
-          {Math.round(share * 100)}% of the landing area passes
+          {Math.round(share * 100)}% of the landing ellipse passes
         </Link>
       )}
     </div>

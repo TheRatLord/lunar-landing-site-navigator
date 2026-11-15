@@ -237,7 +237,7 @@ export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DPr
           ref={canvasRef}
           className="t3-canvas"
           tabIndex={0}
-          aria-label={`3D terrain of the site. Drag to orbit, wheel to zoom, right-drag or arrow keys to pan. Vertical exaggeration ×${exag}.`}
+          aria-label={`3D terrain of the site. Drag to rotate, scroll to zoom, right-drag or use arrow keys to pan. Vertical exaggeration ×${exag}.`}
         />
         <div className="t3-controls" role="toolbar" aria-label="3D view controls">
           <Segmented label="Colour by" size="sm" value={mode} onChange={(v) => setMode(v === "slope" ? "slope" : "height")} options={modeOptions} />

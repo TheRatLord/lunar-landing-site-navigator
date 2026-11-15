@@ -95,7 +95,7 @@ def scenario_document(ref: ScenarioRef, ctx: ServiceContext) -> dict[str, Any]:
         try:
             base = ctx.docs.get(ref.scenario_id).body
         except NotFound as exc:
-            raise ApiProblem(404, "Scenario not found", f"No scenario {ref.scenario_id!r}.") from exc
+            raise ApiProblem(404, "Plan not found", f"No saved plan {ref.scenario_id!r}.") from exc
     else:
         assert ref.scenario is not None
         base = ref.scenario.model_dump(mode="json")
@@ -199,7 +199,7 @@ async def attribution(body: AttributionRequest, ctx: Ctx) -> Response:
 async def ellipse(body: EllipseRequest, ctx: Ctx) -> Response:
     req = scenario_request(body, ctx)
     if req["scenario"].get("ellipse") is None:
-        raise ApiProblem(422, "No landing ellipse", "The scenario has no `ellipse`; set one (semi-major/minor axes, azimuth).")
+        raise ApiProblem(422, "No landing ellipse", "The plan has no landing ellipse (`ellipse`). Set its semi-axes and azimuth first.")
     return await run_analysis(ctx, "analysis.ellipse", req, body.wait_s)
 
 
@@ -211,7 +211,7 @@ async def search(body: SearchRequest, ctx: Ctx) -> Response:
 @router.post("/analyses/regional", responses=ok(RegionalResult), summary="Gridded illumination and Earth-visibility layers")
 async def regional(body: RegionalRequest, ctx: Ctx) -> Response:
     if not terrain_signature(ctx.settings.data_dir):
-        raise ApiProblem(422, "No terrain stores", "Regional layers need the terrain stores; none are installed.")
+        raise ApiProblem(422, "No terrain stores", "Regional layers need terrain data, and none is installed.")
     ran = await run_with_files(ctx, "analysis.regional", body.model_dump(mode="json", exclude={"wait_s"}), body.wait_s,
                                ApiProblem(500, "Regional files missing", "The GeoTIFFs could not be produced."))
     if isinstance(ran, Response):
@@ -232,7 +232,7 @@ async def compare(body: CompareRequest, ctx: Ctx) -> Response:
             doc["name"] = name
     names = [d["name"] for d in docs]
     if len(set(names)) != len(names):
-        raise ApiProblem(422, "Duplicate scenario names", "Scenario names must be unique; pass `names` to rename.", names=names)
+        raise ApiProblem(422, "Duplicate plan names", "Plan names must be unique. Pass `names` to rename them.", names=names)
     return await run_analysis(ctx, "analysis.compare", {"scenarios": docs, "terrain": mode, "warnings": warnings}, body.wait_s)
 
 
@@ -301,11 +301,11 @@ async def report(body: ReportRequest, ctx: Ctx) -> Response:
     20 s), otherwise 202 with a job whose result is an `ExportManifest`. A report whose results cannot be shown
     (inconsistent or missing inputs) is `422`. The file counts against the export disk budget."""
     if body.slip is not None and (body.slip.alternative_sites or body.slip.alternative_coordinates):
-        raise ApiProblem(422, "Slip alternatives not allowed", "The report's slip section is for the scenario's own site; "
-                         "drop `alternative_sites` / `alternative_coordinates`.")
+        raise ApiProblem(422, "Alternative sites not allowed", "The report's delay section covers only the plan's own site. "
+                         "Remove `alternative_sites` and `alternative_coordinates`.")
     req = {**scenario_request(body, ctx), "kind": "report"}
     if body.ellipse is not None and req["scenario"].get("ellipse") is None:
-        raise ApiProblem(422, "No landing ellipse", "The scenario has no `ellipse`; set one or drop the report's `ellipse` section.")
+        raise ApiProblem(422, "No landing ellipse", "The plan has no landing ellipse (`ellipse`). Set one, or remove the report's `ellipse` section.")
     return await serve_export(ctx, req, body, f"Report ({body.format})")
 
 
@@ -344,16 +344,16 @@ async def delete_export_files(digest: str, ctx: Ctx) -> Response:
     409 while one of the files is being downloaded or a regional or export job is running."""
     directory = ctx.settings.service_dir / "exports" / digest
     if not re.fullmatch(r"[0-9a-f]{24}", digest) or not directory.is_dir() or directory.is_symlink():
-        raise ApiProblem(404, "Export files not found", "No files with that digest (already deleted or pruned).")
+        raise ApiProblem(404, "Export files not found", "No export files with that digest. They were deleted or pruned.")
     if ctx.jobs.unfinished({"analysis.regional", "analysis.export"}):
-        raise ApiProblem(409, "Export files in use", "A regional or export job is running and may be writing here; retry when it has finished.",
+        raise ApiProblem(409, "Export files in use", "A regional or export job is running and may be writing these files. Try again when it has finished.",
                          kind="export-in-use")
     for _ in range(DELETE_GRACE_TRIES):
         if await asyncio.to_thread(ctx.exports.discard, directory):
             break
         await asyncio.sleep(DELETE_GRACE_S)
     else:
-        raise ApiProblem(409, "Export files in use", "A file of this export is being downloaded; retry when it has finished.",
+        raise ApiProblem(409, "Export files in use", "A file of this export is being downloaded. Try again when the download has finished.",
                          kind="export-in-use")
     return Response(status_code=204)
 
@@ -367,7 +367,7 @@ async def export_file(digest: str, name: str, ctx: Ctx) -> FileResponse:
         raise ApiProblem(404, "Export file not found", "Unknown export file.")
     path = ctx.settings.service_dir / "exports" / digest / name
     if not path.is_file():
-        raise ApiProblem(404, "Export file not found", "The file does not exist (resubmit the export).")
+        raise ApiProblem(404, "Export file not found", "The file no longer exists. Run the export again.")
     media = MEDIA_TYPES.get(path.suffix, "application/octet-stream")
     ctx.exports.hold(path.parent)
     return FileResponse(path, media_type=media, filename=name, background=BackgroundTask(ctx.exports.release, path.parent))

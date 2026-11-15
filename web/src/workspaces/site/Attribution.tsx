@@ -46,7 +46,7 @@ const SUN_CAUSE: Record<string, string> = {
   "smooth-sphere horizon": "Set by the curve of the Moon, not terrain",
   "terrain horizon": "Set by the terrain horizon",
   "horizon at the sphere dip": "Set by the horizon",
-  "no horizon limb crossing found near the event": "The Sun grazes the horizon; no single crossing",
+  "no horizon limb crossing found near the event": "The Sun grazes the horizon with no single crossing",
 };
 
 const BASIS: Record<string, string> = {
@@ -68,7 +68,7 @@ function Details({ result }: { result: AttributionResult }) {
       <dd className="num">{whenText(Date.parse(ev.utc))}</dd>
       {ev.eclipse_fraction > 0 && (
         <>
-          <dt>Sun covered by Earth</dt>
+          <dt>Earth eclipse</dt>
           <dd className="num">{formatNum(100 * ev.eclipse_fraction, 0)} %</dd>
         </>
       )}

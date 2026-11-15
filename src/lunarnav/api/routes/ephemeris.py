@@ -57,7 +57,7 @@ async def _run_inline(ctx: ServiceContext, compute: Callable[[dict[str, Any]], d
 
 async def _submit(ctx: ServiceContext, kind: str, body: BaseModel) -> JobStatus:
     req = body.model_dump(mode="json")
-    await _engine(ctx, _plan, req, ctx.settings.job_max_points, "Too many samples", "; reduce the range or enlarge step_s.")
+    await _engine(ctx, _plan, req, ctx.settings.job_max_points, "Too many samples", ". Shorten the time range or increase step_s.")
     return JobStatus(**ctx.jobs.submit(kind, req).status())
 
 

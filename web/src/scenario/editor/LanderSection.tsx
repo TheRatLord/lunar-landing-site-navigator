@@ -77,7 +77,7 @@ export function LanderSection() {
       <Group title="Loads" specs={PROFILE_LOADS} />
       {profile.link && (
         <Group title="Link budget" specs={PROFILE_LINK}>
-          <IconButton icon="trash" label="Remove link model" size="sm" onClick={() => edit(["profile", "link"], null)} />
+          <IconButton icon="trash" label="Remove link budget" size="sm" onClick={() => edit(["profile", "link"], null)} />
         </Group>
       )}
     </div>

@@ -10,7 +10,7 @@ import { estimatesUsed, seamWarnings, terrainInfo } from "./adapt";
 const NAMES: Record<string, string> = {
   "profile.array_height_m": "Solar array height",
   "profile.antenna_height_m": "Antenna height",
-  "profile.antenna_height_max_m": "Antenna mast limit",
+  "profile.antenna_height_max_m": "Maximum antenna height",
 };
 
 function estimateName(path: string, label: string): string {
@@ -100,7 +100,7 @@ export function Assumptions({ scenario, result }: { scenario: Scenario | null; r
             <ul className="asm-list">
               {estimates.map((e) => (
                 <li key={e.path}>
-                  <span>{/disc flux/i.test(e.label) ? "Sunlit = half the Sun's disc visible" : estimateName(e.path, e.label)}</span>
+                  <span>{/disc flux/i.test(e.label) ? "Sunlit: at least half the Sun's disc visible" : estimateName(e.path, e.label)}</span>
                   <span className="num">{/disc flux/i.test(e.label) ? "" : (scenario && estimateValue(scenario, e.path)) || BASIS_LABEL[e.basis].toLowerCase()}</span>
                 </li>
               ))}
@@ -124,7 +124,7 @@ export function Assumptions({ scenario, result }: { scenario: Scenario | null; r
           <ul className="asm-list">
             <li>
               <span>Horizon</span>
-              <span className="faint">{terrain ? `terrain${t.pixelM !== null ? `, ${formatNum(t.pixelM, 0)} m grid at the site` : ""}` : "smooth sphere, no terrain here"}</span>
+              <span className="faint">{terrain ? `terrain${t.pixelM !== null ? `, ${formatNum(t.pixelM, 0)} m grid at the site` : ""}` : "smooth-sphere horizon, no terrain data here"}</span>
             </li>
             {terrain && t.vertical && (
               <li>
@@ -134,7 +134,7 @@ export function Assumptions({ scenario, result }: { scenario: Scenario | null; r
             )}
             {seam && (
               <li>
-                <span>Terrain sources meet near the site</span>
+                <span>Terrain data edge near the site</span>
                 <span className="faint">the horizon may jump there</span>
               </li>
             )}

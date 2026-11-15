@@ -38,7 +38,7 @@ export function TerrainStackControl() {
     <div className="sc-group">
       <GroupHead title="Terrain">
         <Segmented
-          label="Terrain stack"
+          label="Terrain data"
           size="sm"
           value={restricted ? "custom" : "default"}
           onChange={(v) => {
@@ -92,7 +92,7 @@ export function TerrainStackControl() {
       )}
       {chosen?.length === 0 && (
         <p className="sc-msg" role="alert">
-          No DEM chosen
+          No terrain data chosen
         </p>
       )}
       {issue && (

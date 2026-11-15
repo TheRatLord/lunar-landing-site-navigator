@@ -254,7 +254,7 @@ export function HomeWorkspace() {
               variant="ghost"
               icon="pin"
               disabled={pins.length >= MAX_PINS}
-              title={pins.length >= MAX_PINS ? `${MAX_PINS} pins at most` : "Compare this site"}
+              title={pins.length >= MAX_PINS ? `Up to ${MAX_PINS} pinned sites` : "Compare this site"}
               onClick={() => addPin({ id: pinId(site), name: name || "Unnamed site", lat_deg: lat, lon_deg: lon, catalog_id: catalogId })}
             >
               Pin

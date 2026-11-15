@@ -19,7 +19,7 @@ function Ring({ view, c, label }: { view: HeadingView; c: HeadingConstraintView;
     { deg: view.worst, cls: "hd-worst", text: "worst" },
     { deg: view.nominalYaw, cls: "hd-nominal", text: "nominal" },
   ];
-  const aria = `${label}: heading passes for ${c.allPass ? "every heading" : c.nonePass ? "no heading" : arcText(c.passing)}, clockwise from north`;
+  const aria = `${label}: passes for ${c.allPass ? "every heading" : c.nonePass ? "no heading" : arcText(c.passing)}, clockwise from north`;
   return (
     <svg className="hd-ring" viewBox="0 0 140 140" role="img" aria-label={aria}>
       <circle cx={C} cy={C} r={R} className="hd-base" />

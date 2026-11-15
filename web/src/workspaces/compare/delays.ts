@@ -80,7 +80,7 @@ function parsePart(part: string, plannedMs: number | null, noDate: string): numb
     if (step <= 0) return `"${part}": the step must be more than 0`;
     if (from > to) return `"${part}": the range must run from the earlier to the later delay`;
     const n = Math.floor((to - from) / step + 1e-9) + 1;
-    if (n > MAX_SLIPS) return `"${part}" gives ${n} dates; at most ${MAX_SLIPS} fit in one run`;
+    if (n > MAX_SLIPS) return `"${part}" gives ${n} dates. The limit is ${MAX_SLIPS}.`;
     return Array.from({ length: n }, (_, i) => Number((from + i * step).toFixed(6)));
   }
   const whole = amount(part);
@@ -112,7 +112,7 @@ function parseDelays(text: string, plannedMs: number | null, noDate = "Type a de
     const got = parsePart(p, plannedMs, noDate);
     if (typeof got === "string") return { ok: false, error: got };
     const far = got.find((h) => Math.abs(h) > MAX_SLIP_H);
-    if (far !== undefined) return { ok: false, error: "Keep within a year of the landing" };
+    if (far !== undefined) return { ok: false, error: "Keep within a year of the planned landing" };
     if (plannedMs !== null && plannedMs > Date.now() && got.some((h) => plannedMs + h * MS_HOUR < Date.now() - MS_HOUR)) return { ok: false, error: "That date has passed" };
     hours.push(...got);
   }

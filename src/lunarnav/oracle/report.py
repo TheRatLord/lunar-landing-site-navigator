@@ -45,23 +45,23 @@ def markdown(results: Sequence[Result], sc: dict, meta: dict) -> str:
     w("# Oracle suite report")
     w("")
     w(f"Run {meta['when_utc']} on commit `{meta['commit']}`, terrain stack `{meta['stack_hash'][:12]}`, "
-      f"kernels as pinned. Written by `lunarnav oracle run`; do not edit by hand.")
+      f"kernels as pinned. Written by `lunarnav oracle run`. Do not edit by hand.")
     w("")
     w("## Score")
     w("")
     w(f"**Truth checks: {t['passed']} of {t['ran']} gates pass ({pct(t)}).** "
-      f"These compare the engine with sources outside it: independent computations and real observations.")
+      f"Each of these gates compares the engine with a source outside it: an independent computation or a real observation.")
     w("")
-    w(f"All gates, including the implementation checks: {a['passed']} of {a['ran']} ({pct(a)}).")
+    w(f"All gates, including the implementation checks: {a['passed']} of {a['ran']} pass ({pct(a)}).")
     if a["not_run"] or a["errors"]:
         w("")
-        w(f"{a['not_run']} gates did not run (reference data missing) and {a['errors']} ended in an error; "
-          "they are not counted in the score and are listed below.")
+        w(f"{a['not_run']} gates did not run because their reference data is missing, and {a['errors']} ended in an error. "
+          "The score does not count them. They are listed below.")
     w("")
-    w("A gate is one source and one quantity, held to a tolerance. A limit is written down before the engine is run on "
-      "its case; a limit or rule changed afterwards is listed under \"Changed after a first run\" with the data the "
-      "change rests on, which never comes from the engine. A miss against a sound reference stays in the score as a "
-      "failure. Report-only rows have no pass or fail: their reference cannot carry a tolerance.")
+    w("A gate is one source and one quantity, held to a tolerance. Each limit is written down before the engine is run on "
+      "its case. A limit or rule changed afterwards is listed under \"Changed after a first run\" with the data behind the "
+      "change, and that data never comes from the engine. A miss against a sound reference stays in the score as a "
+      "failure. Report-only rows have no pass or fail, because their reference cannot carry a tolerance.")
     w("")
     changes = load_changes()
     demoted = [c for c in changes if c.get("was_gate")]
@@ -69,8 +69,8 @@ def markdown(results: Sequence[Result], sc: dict, meta: dict) -> str:
     lost = sum(1 for r in results if r.case.id in eased and r.status == "pass" and r.case.kind != "implementation")
     if demoted or lost:
         n = t["ran"] + len(demoted)
-        w(f"Strict count: {t['passed'] - lost} of {n} ({100.0 * (t['passed'] - lost) / n:.0f} %). It counts as failures the "
-          f"{len(demoted)} truth cases that were gates when first run and are report-only now, and the {lost} that pass only "
+        w(f"Strict count: {t['passed'] - lost} of {n} ({100.0 * (t['passed'] - lost) / n:.0f} %). This count also treats as failures the "
+          f"{len(demoted)} truth cases that were gates at their first run and are report-only now, and the {lost} that pass only "
           "because their limit or rule was changed after a first run. Both groups are listed under \"Changed after a first run\".")
         w("")
     w("| Class | Pass | Fail | Not run | Report only | Score |")
@@ -139,7 +139,7 @@ def markdown(results: Sequence[Result], sc: dict, meta: dict) -> str:
     if changes:
         w("## Changed after a first run")
         w("")
-        w("Everything that was altered after the engine had been run on a case. \"Strict\" marks the cases the strict "
+        w("Every change made to a case after the engine had been run on it. \"Strict\" marks the cases that the strict "
           "count treats as failures.")
         w("")
         w("| Case | What changed | Why, and the data behind it | Strict |")

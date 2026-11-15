@@ -1358,7 +1358,7 @@ export class MapEngine {
     ctx.lineWidth = 1.5;
     ctx.fillRect(x1 - 4.5, y1 - 4.5, 9, 9);
     ctx.strokeRect(x1 - 4.5, y1 - 4.5, 9, 9);
-    const text = [`Blocker · az ${formatBearing(b.azimuth_deg)} · ${formatDistance(b.distance_m)}`, b.label].filter(Boolean);
+    const text = [`Blocker · azimuth ${formatBearing(b.azimuth_deg)} · ${formatDistance(b.distance_m)}`, b.label].filter(Boolean);
     plateText(ctx, text, (x0 + x1) / 2, (y0 + y1) / 2 - 22, p, this.w, this.h, p.fail, [this.w - 80, 0, this.w, 80]);
   }
 

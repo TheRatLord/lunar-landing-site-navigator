@@ -17,7 +17,7 @@ export interface ConstraintPanelProps {
 
 const VERDICT_ICON: Record<Verdict, IconName> = { pass: "check", marginal: "warn", fail: "cross" };
 const VERDICT_WORD: Record<Verdict, string> = { pass: "Pass", marginal: "Marginal", fail: "Fail" };
-const CAUSE_LABEL: Record<string, string> = { heading: "Heading", terrain: "Terrain", both: "Heading and terrain" };
+const CAUSE_LABEL: Record<string, string> = { heading: "Lander heading", terrain: "Terrain", both: "Lander heading and terrain" };
 
 export function limitText(c: Pick<ConstraintVerdict, "limit" | "limit_range" | "sense" | "unit">): string {
   if (c.limit_range) return `${quantityText(c.limit_range[0], c.unit, { exact: true })}–${quantityText(c.limit_range[1], c.unit, { exact: true })}`;
@@ -28,7 +28,7 @@ export function limitText(c: Pick<ConstraintVerdict, "limit" | "limit_range" | "
 function valueText(c: ConstraintVerdict): string {
   if (c.heading_dependent) {
     const worst = c.value_worlds?.pessimistic;
-    return worst !== null && worst !== undefined && Number.isFinite(worst) ? quantityText(worst, c.unit) : "by heading";
+    return worst !== null && worst !== undefined && Number.isFinite(worst) ? quantityText(worst, c.unit) : "varies by heading";
   }
   return `${c.censored ? "≥ " : ""}${quantityText(c.value, c.unit)}`;
 }
@@ -55,7 +55,7 @@ function detailPairs(c: ConstraintVerdict, when: readonly WhenLine[] | undefined
   const at = (when ?? []).filter((l) => l.t_ms !== null);
   if (at.length > 0) out.push(["When", [...new Set(at.map((l) => whenText(l.t_ms!)))].join(", ")]);
   if (c.cause && CAUSE_LABEL[c.cause]) out.push(["Set by", CAUSE_LABEL[c.cause]!]);
-  if (c.heading_dependent && c.heading_note) out.push(["Heading", c.heading_note]);
+  if (c.heading_dependent && c.heading_note) out.push(["Lander heading", c.heading_note]);
   return out;
 }
 

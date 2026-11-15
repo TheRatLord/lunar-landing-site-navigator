@@ -28,7 +28,7 @@ function fromCatalogue(s: StationEntry): NetworkStation {
       basis: "published",
       label: s.min_elevation_source || "Catalogue elevation mask",
       source_url: s.sources[0]?.url ?? null,
-      note: `The catalogue lists one mask; it is used for both receive and transmit. Edit it if your stations distinguish them. Station altitude: ${s.alt_basis}.`,
+      note: `The catalogue lists one elevation mask. It is used for both receive and transmit. Edit the masks if your stations use different ones. Station altitude: ${s.alt_basis}.`,
     },
   };
 }

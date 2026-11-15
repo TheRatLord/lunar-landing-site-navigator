@@ -21,7 +21,7 @@ export function ResultStats({ result }: { result: EllipseResult }) {
   const shown = STATES.filter((s) => s !== "unknown" || (shares[s] ?? 0) > 0);
   return (
     <section className="el-sec el-outcome" aria-label="Verdict summary">
-      <h3 className="el-sec-title">Outcome</h3>
+      <h3 className="el-sec-title">Verdicts</h3>
       <div className="el-stack" role="img" aria-label={STATES.map((s) => `${STATE_LABEL[s]} ${percent(shares[s])}`).join(", ")}>
         {STATES.map((s) => ((shares[s] ?? 0) > 0 ? <span key={s} className={`el-seg el-seg-${s}`} style={{ width: `${(shares[s] ?? 0) * 100}%` }} /> : null))}
       </div>
@@ -99,7 +99,7 @@ export function PointsPanel({ result, selected, onSelect }: { result: EllipseRes
           <Pairs
             className="el-dl"
             rows={[
-              ["Limiting", sel.limiting ? requirementName(sel.limiting, limitInfo(result.scenario, sel.limiting).label) : "none"],
+              ["Limiting requirement", sel.limiting ? requirementName(sel.limiting, limitInfo(result.scenario, sel.limiting).label) : "none"],
               ["Offset", offsetText(sel.east_m, sel.north_m)],
               sel.slope_deg !== null && sel.slope_deg !== undefined ? ["Slope", withUnit(sel.slope_deg.toFixed(1), "°")] : null,
               sel.margin_note ? ["Note", <span key="n" data-testid="ellipse-margin-note">{sel.margin_note}</span>] : null,
@@ -165,9 +165,9 @@ export function ResultDetails({ result }: { result: EllipseResult }) {
   const hasClosing = Object.keys(result.closing_constraints ?? {}).length > 0;
   return (
     <div className="el-more">
-      {!result.convergence.converged && <p className="chip chip-marginal">Not settled: run more points</p>}
+      {!result.convergence.converged && <p className="chip chip-marginal">Result not yet stable: run more points</p>}
       {hasClosing && (
-        <Disclosure title="Failing points">
+        <Disclosure title="Why points fail">
           <ClosingPairs result={result} />
         </Disclosure>
       )}

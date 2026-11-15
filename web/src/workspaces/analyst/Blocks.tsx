@@ -56,9 +56,9 @@ function UserCard({ b }: { b: UserBlock }) {
 }
 
 const ANSWER_TAG: Record<AnswerMark["kind"], { tone: ChipTone; icon: IconName; label: string; sr: string }> = {
-  final: { tone: "pass", icon: "check", label: "Final", sr: "Final answer, passed the answer check" },
-  unverified: { tone: "marginal", icon: "warn", label: "Unverified", sr: "Answer not verified, the answer check found issues in it" },
-  withheld: { tone: "fail", icon: "cross", label: "Withheld", sr: "Withheld, the answer check could not run" },
+  final: { tone: "pass", icon: "check", label: "Final", sr: "Final answer. It passed the answer check" },
+  unverified: { tone: "marginal", icon: "warn", label: "Unverified", sr: "Not verified. The answer check found issues in it" },
+  withheld: { tone: "fail", icon: "cross", label: "Withheld", sr: "Withheld. The answer check could not run" },
 };
 
 function AssistantText({ b, mark, sources, outstanding, actions }: { b: TextBlock; mark: AnswerMark | undefined; sources: ReadonlyMap<string, TurnCitation> | undefined; outstanding: readonly TurnIssue[] | undefined; actions: BlockActions }) {
@@ -348,8 +348,8 @@ function Guard({ b }: { b: GuardBlock }) {
   const notes = e.notes ?? [];
   const what = {
     passed: "Answer check passed",
-    flagged: `Answer check flagged ${n} issue${n === 1 ? "" : "s"}: the answer was released as written, treat it as not verified`,
-    error: "The answer check could not run, so no answer was released and the turn ended as an error. This is not a finding about the answer",
+    flagged: `The answer check flagged ${n} issue${n === 1 ? "" : "s"}. The answer was released as written. Treat it as not verified`,
+    error: "The answer check could not run. No answer was released, and the turn ended as an error. This is not a finding about the answer",
   }[e.status];
   return (
     <article className={`ev ev-guard ev-guard-${e.status}`} aria-label="Answer check">
@@ -367,7 +367,7 @@ function Guard({ b }: { b: GuardBlock }) {
         <p className="ev-guard-scope" data-testid="guard-scope">
           {what}.
         </p>
-        <p className="ev-guard-scope faint">The answer check is a mechanical check against slips (number, sign, unit, time, row, attribution), not proof that a sentence is true.</p>
+        <p className="ev-guard-scope faint">The answer check looks for mechanical mistakes in numbers, signs, units, times, rows and attribution. It does not prove that a sentence is true.</p>
       </Disclosure>
       {notes.length > 0 && (
         <Disclosure title="Not used by the check" count={notes.length}>

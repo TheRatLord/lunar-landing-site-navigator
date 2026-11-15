@@ -475,7 +475,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
           <div className="toolstrip">
             <IconButton icon="plus" size="sm" label="Zoom in" onClick={() => zoom(1.5)} />
             <IconButton icon="minus" size="sm" label="Zoom out" onClick={() => zoom(1 / 1.5)} />
-            <IconButton icon="reset" size="sm" label="Show whole mission" onClick={() => setView([extent[0], extent[1]])} />
+            <IconButton icon="reset" size="sm" label="Show all" onClick={() => setView([extent[0], extent[1]])} />
           </div>
         </>
       }

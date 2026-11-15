@@ -1,38 +1,40 @@
 # Literature for validating lunar polar illumination and Earth-visibility models
 
-Scope: peer-reviewed and agency sources against which `lunarnav` (Sun/Earth/horizon geometry from a terrain model) can be checked.
-Every number was read in the source named; its location (table, figure, section) is given. Anything not opened is marked **UNVERIFIED**.
+Scope: peer-reviewed and agency sources against which `lunarnav` can be checked. The engine computes Sun, Earth and horizon geometry from a terrain model.
+Every number was read in the source named, and its location (table, figure, section) is given. Anything not opened is marked **UNVERIFIED**.
 
-Conventions that matter when comparing numbers (these are the traps):
+**Abbreviations.** DEM: digital elevation model, a grid of surface heights. LOLA: Lunar Orbiter Laser Altimeter, the instrument behind most height maps. LRO: Lunar Reconnaissance Orbiter. LROC NAC / WAC: the Narrow Angle and Wide Angle cameras of LRO. LDEM: the file-name prefix of LOLA DEMs. PGDA: NASA Goddard Planetary Geodesy Data Archive. PDS: NASA Planetary Data System. PSR: permanently shadowed region, an area that never receives direct sunlight. RoI: region of interest. SfS: shape-from-shading. SPICE: NASA software and data for planet and spacecraft positions. DTE: direct-to-Earth communication. GSSR: Goldstone Solar System Radar. MADb: the scaled median absolute deviation, which equals the standard deviation for normal data. LCIP, LCSP and LQCIP are the papers' terms for the longest continuous illuminated period, the longest continuous shadow period and the longest quasi-continuous illuminated period.
 
-- **Frame.** LOLA-team products (Mazarico, Barker, Smith) use the mean-Earth/polar-axis (ME/PA) frame of **DE421**, polar stereographic on a **1737.4 km sphere**. The engine uses MOON_ME of DE440. Barker 2023 (Sec. 5) states that the ME/PA-DE421 realisation has an uncertainty of a few metres relative to the principal-axis frame [Barker 2023, PSJ 4:183, Sec. 5]. The effect on a 5-20 m grid is below a pixel but not negligible at 5 m. Report it as a known systematic.
-- **Illumination definition.** "Average illumination" is the time-averaged visible fraction of the solar disc (extended Sun). "Sunlit %" counts any visible fraction. The two differ by about 4-5 points at the best south-pole sites (Gläser 2018 Table 1: 76.0 % vs 81.3 %). Always compare like with like.
-- **Height.** Values at "surface level" use the DEM pixel height; values "at 2 m" place the observer 2 m above it. Results at the surface are dominated by 5-20 m terrain noise (see section 4).
-- **Time scale.** Papers say "year" or give a date range and rarely state UTC vs TDB. The difference (about 69 s) is irrelevant for percentages and relevant only for event times of minutes.
-- **Longitude.** Gläser uses 0-360 °E; De Rosa and Bryant use -180..180 east-positive; Bussey prints E/W. LROC mission pages use 0-360 °E.
+Conventions that matter when comparing numbers. These are the traps:
+
+- **Frame.** LOLA-team products (Mazarico, Barker, Smith) use the mean-Earth/polar-axis (ME/PA) frame of **DE421**. Their maps are polar stereographic on a **1737.4 km sphere**. The engine uses MOON_ME of DE440. Barker 2023 (Sec. 5) states that the ME/PA-DE421 realisation has an uncertainty of a few metres relative to the principal-axis frame [Barker 2023, PSJ 4:183, Sec. 5]. The effect on a 5-20 m grid is below a pixel, but it is not negligible at 5 m. Report it as a known systematic.
+- **Illumination definition.** "Average illumination" and "Sunlit %" are different quantities. Always compare like with like. "Average illumination" is the time-averaged visible fraction of the solar disc (extended Sun). "Sunlit %" counts any visible fraction. At the best south-pole sites the two differ by about 4-5 percentage points (Gläser 2018 Table 1: 76.0 % vs 81.3 %).
+- **Height.** Values at "surface level" use the DEM pixel height. Values "at 2 m" place the observer 2 m above it. Results at the surface are dominated by 5-20 m terrain noise (see section 4).
+- **Time scale.** Papers say "year" or give a date range. They rarely state whether they use UTC or TDB. The difference (about 69 s) does not matter for percentages. It matters only for event times given to the minute.
+- **Longitude.** Conventions differ. Gläser uses 0-360 °E. De Rosa and Bryant use -180..180 with east positive. Bussey prints E/W. LROC mission pages use 0-360 °E.
 
 ---
 
 ## 1. Mazarico et al. 2011 (the reference method and the PDS rasters)
 
 - **Citation:** Mazarico, E., Neumann, G.A., Smith, D.E., Zuber, M.T., Torrence, M.H. (2011). *Illumination conditions of the lunar polar regions using LOLA topography.* Icarus 211(2), 1066-1081.
-- **DOI:** 10.1016/j.icarus.2010.10.030. Closed access (Elsevier; Unpaywall and OpenAlex report no open copy; NTRS 20120010094 has no PDF). Only the abstract, the first pages (docslib mirror) and the LOLA team's own LEAG 2013 slides were read.
+- **DOI:** 10.1016/j.icarus.2010.10.030. The paper is closed access (Elsevier). Unpaywall and OpenAlex report no open copy, and NTRS 20120010094 has no PDF. Only the abstract, the first pages (docslib mirror) and the LOLA team's own LEAG 2013 slides were read.
 - **Method (abstract and first pages; LEAG 2013 slides, "Horizon method" slide):**
-  - 240 m LOLA DEMs down to 75° latitude, built from 48,382,470 (north) and 91,698,177 (south) measurements in 2636 orbits, Jul 2009 - Jan 2010.
-  - Horizon method: for each pixel, horizon elevation at 0.5° azimuth steps (720 azimuths); the Sun is an extended disc without limb darkening. Earth treated the same way.
-  - Time steps of 6 h over several 18.6-yr cycles in the paper; 1 h steps over 18.6 yr, starting 2020, for the later PDS rasters (LEAG 2013 slides 9-11; PGDA page 69 captions "averaged over hourly timesteps spanning 18.6 years").
+  - 240 m LOLA DEMs down to 75° latitude. They were built from 48,382,470 (north) and 91,698,177 (south) measurements in 2636 orbits, Jul 2009 - Jan 2010.
+  - Horizon method: for each pixel, the horizon elevation at 0.5° azimuth steps (720 azimuths). The Sun is an extended disc without limb darkening. The Earth is treated the same way.
+  - Time steps: 6 h over several 18.6-yr cycles in the paper. The later PDS rasters use 1 h steps over 18.6 yr, starting 2020, according to LEAG 2013 slides 9-11 and the PGDA page 69 captions ("averaged over hourly timesteps spanning 18.6 years").
   - Orbit errors at the time: 10 m radial, below 200 m total.
   - Validated against LROC WAC images (abstract).
 - **Headline results (abstract):**
   - PSR area poleward of 80°: 12,866 km² (north), 16,055 km² (south), 240 m DEM.
-  - A site on the Shackleton rim is sunlit continuously for 240 days of the year; longest continuous darkness about 1.5 days.
+  - A site on the Shackleton rim is sunlit continuously for 240 days of the year. Its longest continuous darkness is about 1.5 days.
   - Heights of 10 m above ground can raise illumination dramatically.
-- **PSR area table (LEAG 2013 slide 13, 240 m, south, km²):** whole region 30,484 (65-90°S); > 80°: 19,119; > 82.5°: 13,372; > 85°: 7,406; > 87.5°: 3,762. The 80-90°S-only column gives 16,055 for > 80°; this is the paper's number.
-- **Site table (paper Table 3, site coordinates and percentages): UNVERIFIED.** It could not be opened. The two values below are read from other papers that quote Mazarico:
+- **PSR area table (LEAG 2013 slide 13, 240 m, south, km²):** whole region 30,484 (65-90°S); > 80°: 19,119; > 82.5°: 13,372; > 85°: 7,406; > 87.5°: 3,762. The column for 80-90°S only gives 16,055 for > 80°. This is the paper's number.
+- **Site table (paper Table 3, site coordinates and percentages): UNVERIFIED.** It could not be opened. The two values below come from other papers that quote Mazarico:
   - CR1 (Connecting Ridge), -89.45°, 222.69 °E, surface level: 89.01 % average illumination, longest darkness 141.12 h; at 10 m: 93.10 %. [Gläser thesis Table 7 rows 7 and 12; Gläser 2018 Table 1].
   - Shackleton rim ("S"), -89.78°, 204.27 °E: 86.7 % average, 90.5 % sunlit [Gläser 2018 Table 1].
-- **Earth visibility (LEAG 2013 slide 25):** longest period with any Earth visibility inside PSRs: 13.25 d (north), 11.75 d (south). No better-than-average Earth visibility in high-illumination or PSR areas (slide 23).
-- **Rasters released by the author** (https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/; GeoTIFF copies at https://pgda.gsfc.nasa.gov/data/MoonIllumination/). Our reading of the 85S_060M product: maximum solar visibility is **88.44 %** at lat -89.4749°, lon 222.557 °E (x = -10,770 m, y = -11,730 m; corrected pixel addressing, earlier versions of this file gave -89.4747°, 222.25 °E), consistent with Mazarico's 89.01 % at CR1 for the 240 m DEM (Gläser Table 7) given the different DEM resolution.
+- **Earth visibility (LEAG 2013 slide 25):** the longest period with any Earth visibility inside PSRs is 13.25 d (north) and 11.75 d (south). Earth visibility is no better than average in high-illumination or PSR areas (slide 23).
+- **Rasters released by the author** (https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/; GeoTIFF copies at https://pgda.gsfc.nasa.gov/data/MoonIllumination/). Our reading of the 85S_060M product: maximum solar visibility is **88.44 %** at lat -89.4749°, lon 222.557 °E (x = -10,770 m, y = -11,730 m). This uses corrected pixel addressing; earlier versions of this file gave -89.4747°, 222.25 °E. The maximum is consistent with Mazarico's 89.01 % at CR1 for the 240 m DEM (Gläser Table 7), given the different DEM resolution.
 - **Known criticisms from later papers (read):** Gläser 2018 §3: the 240 m DEM overestimates illumination (Table 1: 89.0 % vs 76.0 % at CR1 with a 20 m DEM). Speyerer & Robinson 2013 underestimates it (64.2 %).
 
 ---
@@ -41,8 +43,13 @@ Conventions that matter when comparing numbers (these are the traps):
 
 - **Citation:** Barker, M.K., Mazarico, E., Neumann, G.A., Smith, D.E., Zuber, M.T., Head, J.W. (2021). *Improved LOLA elevation maps for south pole landing sites: Error estimates and their impact on illumination conditions.* Planetary and Space Science 203, 105119.
 - **DOI:** 10.1016/j.pss.2020.105119. Open copy: https://ntrs.nasa.gov/api/citations/20205009660/downloads/Mike%20Barker_%20Paper_%20Improved%20Lola.pdf
-- **Method:** LOLA tracks re-adjusted by an iterative track-alignment (Sec. 3); 5 m LDEMs for 16 × 16 km regions; 100 Monte-Carlo clones per site from a measured error model; illumination by a horizon method with 720 azimuths at 0.5°, a nested 5 m (to 5 km) / 80 m (to 100 km) / 240 m DEM, 1 h steps, extended Sun with 550 nm limb darkening, the visible fraction approximated by cutting the disc at the horizon elevation at the disc-centre azimuth (illumination section; the number was not recorded). Period for Table 2: 2024-01-01 to 2026-01-01.
-- **Site correspondences (Sec. 2):** Sites 1, 4, 7, 11 = De Rosa 2012 CR1, SR1, SV1, GR1; Sites 1 and 4 = Gläser 2018 C1 and S; Site 4 contains Mazarico Site 8 (De Rosa SR2). Site numbers follow Mazarico 2011.
+- **Method:**
+  - LOLA tracks are re-adjusted by an iterative track alignment (Sec. 3).
+  - The paper builds 5 m LDEMs for 16 × 16 km regions.
+  - It makes 100 Monte-Carlo clones per site from a measured error model.
+  - Illumination uses a horizon method with 720 azimuths at 0.5°, a nested 5 m (to 5 km) / 80 m (to 100 km) / 240 m DEM, and 1 h steps. The Sun is extended, with 550 nm limb darkening. The visible fraction is approximated by cutting the disc at the horizon elevation at the disc-centre azimuth (illumination section; the number was not recorded).
+  - Period for Table 2: 2024-01-01 to 2026-01-01.
+- **Site correspondences (Sec. 2):** Sites 1, 4, 7, 11 = De Rosa 2012 CR1, SR1, SV1, GR1. Sites 1 and 4 = Gläser 2018 C1 and S. Site 4 contains Mazarico Site 8 (De Rosa SR2). Site numbers follow Mazarico 2011.
 
 **Error budget (all from this paper unless stated):**
 
@@ -58,12 +65,12 @@ Conventions that matter when comparing numbers (these are the traps):
 | Slope uncertainty, median | 1.90° (MADb 0.37°) | Fig. 12 |
 | Interpolation error model | ε = a·R + b·S + c (R roughness, S slope); Site 1: a 0.0210, b 0.0051, c 0.022; interpolation method itself adds about 30 % | Table 1 |
 
-(The README of the PGDA 5 m product quotes median RMS Z error about 0.30-0.50 m and slope error about 1.5-2.5° across sites, and about 90 % of 5 m pixels interpolated; page https://pgda.gsfc.nasa.gov/products/78.)
+The README of the PGDA 5 m product quotes a median RMS Z error of about 0.30-0.50 m and a slope error of about 1.5-2.5° across sites. It also states that about 90 % of 5 m pixels are interpolated. Page: https://pgda.gsfc.nasa.gov/products/78.
 
 **Table 2: Site 1 RoIs, illumination uncertainty (100 clones; 2024-01-01 to 2026-01-01).**
 
 RoI centroids (km, polar stereographic) as printed: RoI1 (11.5825, 12.4625), RoI2 (11.4875, 12.5575), RoI3 (11.3525, 12.5025), RoI4 (11.2875, 12.1675), RoI5 (11.1025, 11.9425), RoI6 (10.8025, 11.7375), RoI7 (10.2275, 11.5525).
-**Sign note [INFERENCE, checked numerically].** The extracted text carries no minus signs. Taking both coordinates as negative puts RoI1 at -89.4389° lat, 222.904 °E, which matches Gläser's CR1 (-89.44°, 222.8 °E). We checked that point on the downloaded 5 m Site01 DEM (height 1958.3 m, inside the DEM extent X -19..-3 km, Y -20..-4 km); the positive-sign point is outside that file. Use negative X and Y.
+**Sign note [INFERENCE, checked numerically].** Use negative X and Y. The extracted text carries no minus signs. Taking both coordinates as negative puts RoI1 at -89.4389° lat, 222.904 °E. This matches Gläser's CR1 (-89.44°, 222.8 °E). We checked that point on the downloaded 5 m Site01 DEM: its height is 1958.3 m, and it is inside the DEM extent (X -19..-3 km, Y -20..-4 km). The positive-sign point is outside that file.
 
 | RoI | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 |---|---|---|---|---|---|---|---|
@@ -75,11 +82,11 @@ RoI centroids (km, polar stereographic) as printed: RoI1 (11.5825, 12.4625), RoI
 | Δz = 5 m, A: LCIP-1 (d) | 215.79 | 216.28 | 216.89 | 231.20 | 218.98 | 220.98 | 119.07 |
 | Δz = 5 m, A: LCSP-99 (d) | 5.29 | 7.31 | 8.41 | 4.00 | 4.52 | 4.16 | 5.42 |
 
-Case A = percentiles after averaging each RoI per clone; cases B (per pixel) and C (best pixel each hour) are also in Table 2, e.g. Δz = 1 m RoI1: B 49.30 %, C 85.84 % (AvgIll); LCIP-1 B 25.55 d, C 205.38 d.
-LCIP = longest continuous illumination period (any part of the Sun visible); LCSP = longest continuous shadow period. Paper text: at 5 m height LCIP exceeds 200 d for RoIs 1-6, against about 150-175 d at the other sites; errors are almost negligible at 5 m (text near Table 2 and Conclusions).
-**Use:** a 1 m observer on the 5 m LDEM of Site01 is a test whose answer is a distribution; the engine's value should lie inside the clone spread, not equal its median.
+Case A = percentiles after averaging each RoI per clone. Case B (per pixel) and case C (best pixel each hour) are also in Table 2, for example at Δz = 1 m for RoI1: AvgIll B 49.30 %, C 85.84 %; LCIP-1 B 25.55 d, C 205.38 d.
+LCIP = longest continuous illumination period (any part of the Sun visible). LCSP = longest continuous shadow period. The paper's text says that at 5 m height LCIP exceeds 200 d for RoIs 1-6, against about 150-175 d at the other sites. It also says that errors are almost negligible at 5 m (text near Table 2 and Conclusions).
+**Use:** a 1 m observer on the 5 m LDEM of Site01 is a test whose answer is a distribution. The engine's value should lie inside the clone spread, not equal its median.
 
-**Image comparison (Fig. 8):** a simulated image is compared with NAC M139811097 L/R, qualitative.
+**Image comparison (Fig. 8):** a simulated image is compared with NAC M139811097 L/R. The comparison is qualitative.
 
 ---
 
@@ -88,18 +95,18 @@ LCIP = longest continuous illumination period (any part of the Sun visible); LCS
 - **Citation:** Barker, M.K., Mazarico, E., Neumann, G.A., Smith, D.E., Zuber, M.T., Head, J.W., Sun, X. (2023). *A new view of the lunar south pole from the Lunar Orbiter Laser Altimeter.* Planetary Science Journal 4, 183. Licence CC-BY 4.0.
 - **DOI:** 10.3847/PSJ/acf3e1. Data: doi:10.60903/gsfcpgda-lola-spole (PGDA page https://pgda.gsfc.nasa.gov/products/90).
 - **Method (Sec. 3-5):**
-  - Tiles of 64 × 80 km with 2 km overlap, aligned with an iterative track adjustment (translation, mean horizontal 0.76 ± 0.29 m, radial 0.32 ± 0.08 m; overlap differences 0.00 ± 0.70 m, median absolute 0.12 m).
+  - Tiles of 64 × 80 km with 2 km overlap, aligned with an iterative track adjustment. The adjustment is a translation: mean horizontal 0.76 ± 0.29 m, radial 0.32 ± 0.08 m. Overlap differences are 0.00 ± 0.70 m, median absolute 0.12 m.
   - Conservative final geolocation error (Sec. 3, Fig. 6): 1.00 m along, 1.00 m cross, 0.15 m radial.
-  - Fill factor at 20 m about 15-75 % depending on region.
-  - PSR map (Sec. 5): horizons from nested maps, 20 m out to 7 km, up to 480 m at 310 km; a fake SPICE kernel sets the Sun at its 18.6-yr minimum declination, 720 azimuth steps.
+  - The fill factor at 20 m is about 15-75 %, depending on region.
+  - PSR map (Sec. 5): horizons come from nested maps: 20 m out to 7 km, and coarser maps up to 480 m out to 310 km. A fake SPICE kernel sets the Sun at its 18.6-yr minimum declination. There are 720 azimuth steps.
 - **Results:**
   - 506,349 PSRs globally in the study region, 466,204 poleward of 80°S.
-  - Total PSR area poleward of 80°S: **20,800 km²** (20,600 km² for PSRs of at least 5 px), against 20,900 km² from O'Brien & Byrne 2022.
-  - PSRs under 1 km hold 15 ± 5 % of the area; size-frequency power-law exponent -0.77 ± 0.07.
-  - Completeness about 70 % at 1 px near the pole; false-positive fraction and area error reach about 50 % for the smallest PSRs.
+  - Total PSR area poleward of 80°S is **20,800 km²** (20,600 km² for PSRs of at least 5 px). O'Brien & Byrne 2022 give 20,900 km².
+  - PSRs under 1 km hold 15 ± 5 % of the area. The size-frequency power-law exponent is -0.77 ± 0.07.
+  - Completeness is about 70 % at 1 px near the pole. For the smallest PSRs, the false-positive fraction and the area error reach about 50 %.
   - "The Artemis zone (poleward of 84°S) effective resolution is about 20 m."
-- **Our independent check of the downloaded map (this work):** `LPSR_80S_20MPP_ADJ.TIF` (value 1 = PSR) integrates to **20,710 km²** poleward of 80°S using the true area of each 20 m stereographic pixel (paper: 20,800 km²; difference 0.4 %), and 8,195 km² poleward of 85°S.
-- **Image simulations (Figs. 3-4, A12-A18):** Lambertian rendering with albedo 0.1 on the 20 m LDEM against NAC I/F images M139729686 and M151364517 gives RMS error about 30 %. Three such pairs (M139729686, M1188426614, M184288222) are in `data/validation/reference/pgda_barker2023_nac_sim/`.
+- **Our independent check of the downloaded map (this work):** `LPSR_80S_20MPP_ADJ.TIF` (value 1 = PSR) integrates to **20,710 km²** poleward of 80°S. The paper gives 20,800 km², a difference of 0.4 %. The integration uses the true area of each 20 m stereographic pixel. Poleward of 85°S the map gives 8,195 km².
+- **Image simulations (Figs. 3-4, A12-A18):** a Lambertian rendering with albedo 0.1 on the 20 m LDEM is compared with NAC I/F images M139729686 and M151364517. The RMS error is about 30 %. Three such pairs (M139729686, M1188426614, M184288222) are in `data/validation/reference/pgda_barker2023_nac_sim/`.
 
 ---
 
@@ -109,9 +116,12 @@ LCIP = longest continuous illumination period (any part of the Sun visible); LCS
 
 - **Smith et al. 2017.** Smith, D.E., Zuber, M.T., Neumann, G.A., Mazarico, E., Lemoine, F.G., Head, J.W., Lucey, P.G., Aharonson, O., Robinson, M.S., Sun, X., Torrence, M.H., Barker, M.K., Oberst, J., Duxbury, T.C., Mao, D., Barnouin, O.S., Jha, K., Rowlands, D.D., Goossens, S., Baker, D., Bauer, S., Gläser, P., Lemelin, M., Rosenburg, M., Sori, M.M., Whitten, J., McClanahan, T. (2017). *Summary of the results from the Lunar Orbiter Laser Altimeter after seven years in lunar orbit.* Icarus 283, 70-91. DOI 10.1016/j.icarus.2016.06.006. Open: https://ntrs.nasa.gov/api/citations/20160008718/downloads/20160008718.pdf
   - About 7 billion measurements. Geolocation accurate to under 10 m globally. Range precision about 10 cm. Crossover RMS improved from 1.67 m to 0.48 m. Orbit accuracy about 10 m total, under 1 m radial (GRGM900C).
-  - Appendix table: SLDEM2015 about 3-4 m accuracy at about 60 m resolution; GLD100 about 10-20 m vertical with about 1 km effective resolution.
-- **Polar tracks (Barker 2021, 2023):** see the tables in sections 2 and 3. For polar illumination, horizontal registration of 12-14 cm (5 m product) to 1 m (20 m product) and vertical 2-15 cm are not the limiting error. The limit is **gaps**: 90 % of 5 m pixels and 25-85 % of 20 m pixels carry no direct measurement and are interpolated (fill factors in section 2). De Rosa 2012 Table 3 (LOLA shot density at the time): at 20 m pixel size only 33-73 % of pixels at CR1, SR1, SV1 and GR1 have a shot; at 10 m 10-28 %.
-- **Reproducing horizons:** because interpolation smooths terrain, high-resolution horizons are generally above lower-resolution ones (Gläser thesis Fig. 68) and a coarser DEM gives *higher* illumination (Gläser 2018 §3).
+  - Appendix table: SLDEM2015 has about 3-4 m accuracy at about 60 m resolution. GLD100 has about 10-20 m vertical accuracy with about 1 km effective resolution.
+- **Polar tracks (Barker 2021, 2023):** see the tables in sections 2 and 3. For polar illumination, the limiting error is **gaps**, not registration.
+  - Horizontal registration of 12-14 cm (5 m product) to 1 m (20 m product) and vertical 2-15 cm are not the limiting error.
+  - 90 % of 5 m pixels and 25-85 % of 20 m pixels carry no direct measurement and are interpolated (fill factors in section 2).
+  - De Rosa 2012 Table 3 gives the LOLA shot density at the time. At 20 m pixel size, only 33-73 % of pixels at CR1, SR1, SV1 and GR1 have a shot. At 10 m it is 10-28 %.
+- **Reproducing horizons:** interpolation smooths terrain. High-resolution horizons are therefore generally above lower-resolution ones (Gläser thesis Fig. 68), and a coarser DEM gives *higher* illumination (Gläser 2018 §3).
 
 ### 4.2 How illumination changes with height above ground
 
@@ -125,25 +135,25 @@ LCIP = longest continuous illumination period (any part of the Sun visible); LCS
 | B1 peak, radar DEM: Sun any part | not given | 97.08 % | 97.71 % at 32 m, 99.48 % at 1000 m | Bryant 2009 Table 5 |
 | B1 peak, Earth any part | not given | 63.47 % | 63.54 % at 32 m | Bryant 2009 Table 6 |
 
-- The Sun is strongly height-sensitive: +12 points from 0 to 2 m and +4.5 points more to 10 m at CR1.
-- **Earth visibility is nearly height-independent** (+0.07 points from 2 to 32 m) because Earth's ±6.68° monthly elevation swing crosses the horizon steeply (Bryant 2009 §IV; Gläser thesis §6.3).
-- DEM resolution matters at the surface and not at 10 m: going from 40 m to 20 m changes the maximum by more than 10 points and moves it by km; at 10 m height the 20 m and 240 m maxima differ by 0.55 points and sit 52 m apart (Gläser thesis §7.2.3, Table 7 rows 4-6 and 12-13).
-- Lit-area gaps caused by 60-120 m degraded craters disappear at 5 m height (De Rosa 2012 Fig. 11).
-- The Sun at height: Mazarico 2011 abstract, "small height gains (10 m) can dramatically improve" illumination.
+- The Sun is strongly height-sensitive. Average illumination at CR1 changes by +12 percentage points from 0 to 2 m and by +4.5 points more to 10 m.
+- **Earth visibility is nearly height-independent** (+0.07 points from 2 to 32 m). The reason is that Earth's ±6.68° monthly elevation swing crosses the horizon steeply (Bryant 2009 §IV; Gläser thesis §6.3).
+- DEM resolution matters at the surface but not at 10 m. At the surface, going from 40 m to 20 m changes the maximum by more than 10 points and moves it by km. At 10 m height, the 20 m and 240 m maxima differ by 0.55 points and sit 52 m apart (Gläser thesis §7.2.3, Table 7 rows 4-6 and 12-13).
+- Gaps in the lit area caused by 60-120 m degraded craters disappear at 5 m height (De Rosa 2012 Fig. 11).
+- The Sun at height: the Mazarico 2011 abstract says "small height gains (10 m) can dramatically improve" illumination.
 
 ---
 
 ## 5. Literature results by paper (full extraction)
 
-The sections below were extracted from the sources named in each header (De Rosa 2012, Bussey 2010, Gläser 2014 and thesis, Gläser 2018, Bryant 2009, supporting abstracts), with cross-study test assertions in the last two sections. Section numbering restarts inside the fragment.
+The sections below were extracted from the sources named in each header: De Rosa 2012, Bussey 2010, Gläser 2014 and thesis, Gläser 2018, Bryant 2009, and supporting abstracts. The last two sections hold cross-study test assertions. Section numbering restarts inside the fragment.
 
 ## Literature validation cases: south-pole illumination and Earth visibility (peer-reviewed / agency reports)
 
-Scope: quantitative values from published modelling studies that an illumination/Earth-visibility engine can be checked against. Mazarico et al. 2011 and Barker et al. 2021/2023 are covered elsewhere and left out here, except where another paper quotes them for comparison.
+Scope: quantitative values from published modelling studies that an illumination and Earth-visibility engine can be checked against. Mazarico et al. 2011 and Barker et al. 2021/2023 are covered in the sections above and left out here, except where another paper quotes them for comparison.
 Every value below was read in this session from the source named, and its location in that source is given. Anything not opened is marked **UNVERIFIED**.
 
 Conventions used in this fragment:
-- "lat/lon": as printed in the source. Longitude conventions differ between papers and are stated for each one.
+- "lat/lon": as printed in the source. Longitude conventions differ between papers, and each paper's convention is stated.
 - "avg illum %": time-averaged fraction of the solar disc visible. Papers that use an extended Sun weight partial visibility.
 - "sunlit %": fraction of time with any part of the Sun visible. Gläser calls this "solar visibility" or "accumulated percentage in light".
 - Height h is the observer height above the local DEM surface.
@@ -199,7 +209,7 @@ Conventions used in this fragment:
 | (−10.80, −12.00) [ASP: (−11.52, −12.24)] | 76.25 | 78.8136 |
 
 \*ASP lists X without the minus sign.
-§2.4 says the two tools differ by "always less than 4%". Point 5's location differs by 690 m between the tools.
+§2.4 says the two tools differ by "always less than 4%". The location of point 5 differs by 690 m between the tools.
 
 **§2.3 results (text):**
 - LQCIP is 4–9 months inside the best areas (2 m, 60 h filter) and drops below 1 month outside them.
@@ -231,7 +241,7 @@ These dates can be used to check the date of minimum Sun elevation in an engine.
 - LP1: 63.5 / 46.5 / NA / NA
 - LP2: 56.6 / 41.7 / NA / NA
 
-Meaning: below about 40 m in this DEM, most pixels are interpolated.
+Meaning: below about 40 m pixel size in this DEM, most pixels are interpolated.
 
 **§2.4 validation:**
 - ESA vs Astrium LQCIP: RMS error about 44.7 days (CR1 sub-area, 2 m, 60 h filter, 40 m grid).
@@ -348,15 +358,15 @@ Coordinates are lat/lon in ° (lon in °E as printed). "lpc" means the full 18.6
 
 Conclusions from §7.2.3:
 - At h = 0, near-field topography dominates. Going from 20 m to 40 m changes the maximum by more than 10 percentage points and moves it by km (rows 4–6).
-- At 10 m, the 20 m and 240 m maxima are only 52 m apart and within 0.55 pp (rows 12–13). DEM resolution is "of minor significance" there.
+- At 10 m, the 20 m and 240 m maxima are only 52 m apart and within 0.55 percentage points (rows 12–13). DEM resolution is "of minor significance" there.
 - Higher-resolution horizons generally sit above lower-resolution ones (Fig. 68), so they give less illumination.
 
 **Earth visibility to the ten ESA Estrack stations (§7.3).**
 - Station coordinates are in Table 8, WGS-84 heights.
 - Time step 1 h; lunar horizon included; Earth's topography ignored.
-- Theory (§6.3): Earth elevation seen from the south pole swings ±6.68° per month (latitude libration). A single Earth station can therefore be seen at most about 55 % of the time, or about 27.5 % once Earth's rotation is included.
+- Theory (§6.3): seen from the south pole, the Earth elevation swings ±6.68° per month (latitude libration). A single Earth station can therefore be seen at most about 55 % of the time. Once Earth's rotation is included, this drops to about 27.5 %.
 - 1-yr map for station Malargüe (spelled "Malagüe" in the source): maximum about 98 days, about 26.8 %, at CR1 (Fig. 71).
-- 19 yr, all 10 stations: spot 4 has visibility windows of about 14.45 d followed by about 12.8 d radio silence, i.e. 53 % visibility (Fig. 72).
+- 19 yr, all 10 stations: spot 4 has visibility windows of about 14.45 d, each followed by about 12.8 d of radio silence. This is 53 % visibility (Fig. 72).
 - Longest radio-silent periods over 19 yr: 15.42 d (spot 1), 13.92 d (spot 2), 13.95 d (spot 3), 13.04 d (spot 4).
 - At most 9 stations are visible at once.
 
@@ -467,7 +477,7 @@ Notes:
 | 1000 | 99.48 / 98.70 / 97.89 | 65.74 / 60.73 / 56.00 |
 | 3000 | 100.00 / 100.00 / 99.88 | 70.58 / 65.14 / 60.17 |
 
-Key behaviour: Earth visibility barely depends on height (+0.07 pp from 2 m to 32 m). The reason given is that Earth's ±6.68° monthly elevation swing crosses the horizon steeply. Solar illumination changes far more. Gläser's thesis §6.3 gives the same physical argument.
+Key behaviour: Earth visibility barely depends on height (+0.07 percentage points from 2 m to 32 m). Solar illumination changes far more. The reason given is that Earth's ±6.68° monthly elevation swing crosses the horizon steeply. Gläser's thesis §6.3 gives the same physical argument.
 
 ---
 
@@ -512,7 +522,7 @@ Key behaviour: Earth visibility barely depends on height (+0.07 pp from 2 m to 3
   - Horizon method, 0.25° azimuth.
   - Merged 1 m SfS + LOLA DEM.
   - 2 h steps, 4,128 maps covering southern summer.
-  - Extended Sun; DSN stations treated as point targets; communications constraint "station >2° above horizon".
+  - Extended Sun. NASA Deep Space Network (DSN) stations are treated as point targets. The communications requirement is "station >2° above horizon".
   - LOLA gridding note: 90 % of 5 m pixels are interpolated.
 - Gives no site percentages, so it is not usable as a numeric test case.
 
@@ -543,11 +553,11 @@ Key behaviour: Earth visibility barely depends on height (+0.07 pp from 2 m to 3
    - Maximum shadow drops from 268 h to 112 h between 0 and 2 m (Gläser 2018).
    - Lit-area gaps from 60–120 m craters vanish by 5 m (De Rosa Fig. 11).
 2. **Height sensitivity of the Earth** is very small: 63.47 % → 63.54 % from 2 m to 32 m at B1 (Bryant Table 6).
-3. **DEM resolution sensitivity** is large at h = 0 (more than 10 pp; the location of the maximum moves by km) and small at 10 m (less than 0.6 pp, 52 m apart). Source: thesis §7.2.3, Table 7.
+3. **DEM resolution sensitivity** is large at h = 0: more than 10 percentage points, and the location of the maximum moves by km. It is small at 10 m: less than 0.6 percentage points, with the maxima 52 m apart. Source: thesis §7.2.3, Table 7.
    - Coarser DEMs give higher illumination (Gläser 2018 §3; thesis Fig. 68).
 4. **Two independent horizon-method tools** on the same DEM agree within 4 % in average illumination (De Rosa Table 4).
 5. **Earth DTE**:
-   - About 14–14.5 d visible followed by about 12.8–13 d silent per month near Shackleton/CR1 (De Rosa §2.3; thesis Fig. 72).
+   - Near Shackleton/CR1 the Earth is visible for about 14–14.5 d and then silent for about 12.8–13 d each month (De Rosa §2.3; thesis Fig. 72).
    - Any-part Earth visibility is about 62–71 % for rim and ridge peaks, and 100 % on Malapert α and Leibnitz β (Bryant Table 4).
 6. **No point of eternal light** at the south pole in any study. The best values are about 92–97 % sunlit at 2 m.
 
@@ -563,5 +573,5 @@ Key behaviour: Earth visibility barely depends on height (+0.07 pp from 2 m to 3
   - Not given in the NASA releases.
   - The USGS ScienceBase item 671a6fa8d34efed5620f89f8 shapefile zip downloaded as HTML.
 - **Bertone 2026 RMSE values** (Fig. 14B): not captured. Only the SSIM values were extracted.
-- No 2020–2026 paper was found that quantifies agreement between modelled illumination and *landed* observations: Chandrayaan-3, IM-1, IM-2 and Chang'e-4 searches gave no usable hits.
+- No 2020–2026 paper was found that quantifies agreement between modelled illumination and *landed* observations. Searches for Chandrayaan-3, IM-1, IM-2 and Chang'e-4 gave no usable hits.
 - Kokhanov et al. (Malapert illumination) papers were not opened.

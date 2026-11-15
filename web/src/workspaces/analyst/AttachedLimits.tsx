@@ -81,7 +81,7 @@ const idLine = (note: LimitNoteJson): ReactNode => (
 );
 
 const CONDUCT = "Harness conduct";
-const UNSTORED = "Ids without a stored note";
+const UNSTORED = "IDs without a stored note";
 
 export function AnswerLimits({ limits, onOpenLedger }: { limits: AttachedLimits; onOpenLedger: (id: string) => void }) {
   const citedBy = new Map<string, string[]>();

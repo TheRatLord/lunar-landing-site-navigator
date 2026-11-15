@@ -159,7 +159,7 @@ export function samplesCsv(result: EllipseResult): string {
     `# scheme: ${result.scheme}`,
     `# n_samples: ${result.n_samples}; seed: ${result.seed}`,
     "# validation: see docs/validation/scenario.md section 9. Offsets are east/north metres from the site centre.",
-    "# worst_margin is normalised; worst_margin_physical is the same margin in margin_unit; margin_kind says which case it is, as the service served it.",
+    "# worst_margin is normalised. worst_margin_physical is the same margin in margin_unit. margin_kind is the kind of margin, as the service returned it.",
     "index,east_m,north_m,lat_deg,lon_deg,state,worst_margin,worst_margin_physical,margin_unit,margin_kind,limiting",
   ];
   const num = (v: number | null | undefined) => (v === null || v === undefined || !Number.isFinite(v) ? "" : String(v));

@@ -1,6 +1,7 @@
 import type { IntervalRow, LineRow } from "../../contract/types";
 import { formatNum, formatValue, glue } from "../../lib/format";
 import { intervalsContain } from "../../lib/intervals";
+import { caseName } from "../../lib/when";
 import { clamp, lowerBound } from "../../lib/scale";
 
 interface LineReading {
@@ -65,7 +66,7 @@ export function describeLine(r: LineRow, t: number): string {
   if (rd === null) return "—";
   const d = r.decimals ?? 2;
   const b = bandText(rd, d);
-  const also = rd.also.map((a) => ` · ${a.world} ${formatValue(a.value, r.unit, d)}`).join("");
+  const also = rd.also.map((a) => ` · ${caseName(a.world)} ${formatValue(a.value, r.unit, d)}`).join("");
   const from = rd.note === null ? "" : ` · ${rd.note}${also}`;
   if (rd.range) return b === null ? "—" : `${b}${from}`;
   if (!finite(rd.value)) return "—";

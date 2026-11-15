@@ -109,7 +109,7 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
         ) : null}
         {survey && (
           <p className="home-source">
-            {survey.smooth ? "Computed from NASA SPICE ephemerides" : "Computed from NASA SPICE ephemerides and LOLA terrain"} ·{" "}
+            {survey.smooth ? "Sun and Earth positions from NASA SPICE" : "Sun and Earth positions from NASA SPICE, terrain from LOLA"} ·{" "}
             <Link to="/evidence">checked against JPL Horizons</Link>
           </p>
         )}

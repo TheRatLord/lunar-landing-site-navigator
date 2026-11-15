@@ -24,7 +24,7 @@ export function LanderPicker() {
 
   const apply = (e: ProfileEntry) => {
     if (match === e && !customised) return openField(null);
-    void (customised ? confirm({ title: `Replace the lander with ${e.name}?`, consequence: `Your edits to “${profile.name}” will be replaced by the preset's values.`, action: "Replace" }) : Promise.resolve(true)).then((ok) => {
+    void (customised ? confirm({ title: `Replace the lander with ${e.name}?`, consequence: `Your edits to “${profile.name}” will be lost.`, action: "Replace" }) : Promise.resolve(true)).then((ok) => {
       if (!ok) return;
       edit(["profile"], e.profile);
       openField(null);

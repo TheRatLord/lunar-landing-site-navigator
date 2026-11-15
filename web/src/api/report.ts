@@ -59,7 +59,7 @@ export function alternativeRefs(doc: Scenario, alternatives: readonly Candidate[
 export type SurveyKind = "ellipse" | "search";
 
 export const SURVEYS: Record<SurveyKind, { label: string; where: string }> = {
-  ellipse: { label: "Landing ellipse statistics", where: "Site, Landing accuracy" },
+  ellipse: { label: "Landing ellipse statistics", where: "Site, Landing ellipse" },
   search: { label: "Site search", where: "Map, Find sites" },
 };
 

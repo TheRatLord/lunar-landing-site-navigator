@@ -45,8 +45,8 @@ function addToCompare(facts: readonly SiteFact[]): void {
 
   const parts: string[] = [];
   if (plan.sites.length > 0) parts.push(plan.sites.map((s) => s.name).join(", "));
-  if (plan.slips_h.length > 0) parts.push(`delay ${delayLabels(plan.slips_h).join(", ")} against the plan's landing time`);
-  if (plan.own > 0) parts.push(plan.own === 1 ? "the plan's own site is already in Compare" : `${plan.own} sites are the plan's own site, already in Compare`);
+  if (plan.slips_h.length > 0) parts.push(`delay ${delayLabels(plan.slips_h).join(", ")} from the plan's landing time`);
+  if (plan.own > 0) parts.push(plan.own === 1 ? "the plan's own site is already in Compare" : `${plan.own} sites match the plan's own site, which is already in Compare`);
   if (plan.present > 0) parts.push(plan.present === 1 ? "one site was already added" : `${plan.present} sites were already added`);
   const changed = plan.sites.length + plan.slips_h.length > 0;
   toast({ kind: changed ? "success" : "info", title: changed ? "Added to Compare" : "Nothing new for Compare", detail: parts.join("; ") });

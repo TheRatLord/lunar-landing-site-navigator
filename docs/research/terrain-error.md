@@ -1,13 +1,16 @@
 # Published error of the terrain products the engine uses
 
-Scope: every terrain file held under `data/dem/raw/` (manifest: `data/dem/raw/manifest.json`; products in `docs/validation/terrain.md` §1, §3.6).
-Purpose: replace the single global budget (sigma_z 4 m, sigma_xy 10 m, k = 2) by per-product figures wherever a primary source states one.
+Scope: every terrain file held under `data/dem/raw/`. The manifest is `data/dem/raw/manifest.json`. The products are described in `docs/validation/terrain.md` §1, §3.6.
 
-**Rules used.** A figure is *published* only if it was read in the primary document (opened 2026-11-12; sources and quotes in §12). Where no document states a figure for the product, the row says *not found*, the global budget stays and the basis is `assumed`. Ranges and statistics are given as printed; any conversion to a 1σ figure is marked **[my reading]**. Nothing here comes from memory.
+Purpose: replace the single global error budget (sigma_z 4 m, sigma_xy 10 m, k = 2) with a figure for each product, wherever a primary source states one. sigma_z is the vertical height error and sigma_xy the horizontal position error, each as one standard deviation. k is the number of standard deviations used for the worst and best cases.
+
+**Rules used.** A figure counts as *published* only if it was read in the primary document. The documents were opened on 2026-11-12. Sources and quotes are in §12. Where no document states a figure for the product, the row says *not found*. The global budget then stays, and the basis is `assumed`. Ranges and statistics are given as printed. Any conversion to a 1σ figure is marked **[my reading]**. Nothing here comes from memory.
+
+**Abbreviations.** DEM: digital elevation model, a grid of surface heights. LOLA: Lunar Orbiter Laser Altimeter. LRO: Lunar Reconnaissance Orbiter. PGDA: NASA Goddard Planetary Geodesy Data Archive. PDS: NASA Planetary Data System. GDR: gridded data record, a PDS height-map product. LDEM: the file-name prefix of LOLA DEMs. SLDEM: the LOLA height map merged with Kaguya Terrain Camera (TC) data. RoI: region of interest. MADb: the scaled median absolute deviation, which equals the standard deviation for normal data. A/C/R: along-track, cross-track and radial.
 
 ## 1. The table
 
-σ_z is the vertical 1σ in metres; σ_xy is the horizontal 1σ **per axis** in metres. "Global budget" means 4.0 m / 10.0 m (the current engine default, `assumed`).
+σ_z is the vertical 1σ error, in metres. σ_xy is the horizontal 1σ error **per axis**, in metres. "Global budget" means 4.0 m / 10.0 m. This is the current engine default, with basis `assumed`.
 
 | product id | files (our copy) | release | σ_z (1σ, m) | σ_xy (1σ per axis, m) | what the figure is exactly | source (section / table; URL) | status |
 |---|---|---|---|---|---|---|---|
@@ -20,17 +23,17 @@ Purpose: replace the single global budget (sigma_z 4 m, sigma_xy 10 m, k = 2) by
 | `ldem_512_*_r50km` | `ldem_512_{n18.562_e061.810, s13.316_e025.251, s69.373_e032.319}_r50km.f32`, cut from `LDEM_512_{00N_45N, 45S_00S, 90S_45S}_000_090` | PDS GDR V3.0, created 2017-09-15, through LRO_ES_52, GRGM900C | not found (assumed) | not found (assumed) | as `LDEM_64`; the global tiles are gridded in 45° bands with possible edge artifacts (label) | PDS labels | **not found** |
 | `sldem2015_512_*_r50km` | `sldem2015_512_{n18.562_e061.810, s13.316_e025.251, s41.639_e206.015, s45.456_e177.589}_r50km.f32`, cut from `SLDEM2015_512_{00N_30N_045_090, 30S_00S_000_045, 60S_30S_135_180, 60S_30S_180_225}_FLOAT` | SLDEM2015 V2.0, created 2015-09-15, LOLA through LRO_ES_09 (2013-07-18), GRGM900B, merged with Kaguya TC | **3–4 m** ("typical vertical accuracy ∼3 to 4 m"); **[my reading]** σ_z ≈ 3.5 m | **not found** as a product figure (global budget 10 m stays, `assumed`) | RMS vertical residual of the co-registered Kaguya Terrain Camera tiles against unbinned LOLA points; "typical" = the bulk of the tiles, not a bound. 50 % of 1° tiles < 3.4 m (median per-tile RMS after co-registration), 90th percentile 5 m (step 1) | Barker et al. 2016, Icarus 273, 346–355, doi:10.1016/j.icarus.2015.07.039: abstract, §4.1, §6 | vertical **published**; horizontal **not found** |
 
-Sources of the labels: `https://imbrium.mit.edu/DATA/LOLA_GDR/POLAR/IMG/*.LBL`, `…/CYLINDRICAL/IMG/*.LBL`, `https://imbrium.mit.edu/DATA/SLDEM2015/TILES/FLOAT_IMG/*.LBL` (copies in `data/dem/raw/lola_gdr/` and `data/dem/raw/regional/labels/`).
+Sources of the labels: `https://imbrium.mit.edu/DATA/LOLA_GDR/POLAR/IMG/*.LBL`, `…/CYLINDRICAL/IMG/*.LBL` and `https://imbrium.mit.edu/DATA/SLDEM2015/TILES/FLOAT_IMG/*.LBL`. Copies are in `data/dem/raw/lola_gdr/` and `data/dem/raw/regional/labels/`.
 
-**Not published for any GDR file:** neither the PDS labels, `GDR_DS.CAT`, `ERRATA.TXT`, the Archive SIS (`archsis.pdf`), the RDR SIS, `DSMAP_POLAR.CAT`, `REF.CAT`, `MISSION.CAT`, the LOLA page at the PDS Geosciences Node, nor Smith et al. 2017 gives a vertical or horizontal accuracy for any `LDEM_*` grid. The orbit-level statements are in §2.
+**Not published for any GDR file:** no source gives a vertical or horizontal accuracy for any `LDEM_*` grid. The sources checked are the PDS labels, `GDR_DS.CAT`, `ERRATA.TXT`, the Archive SIS (`archsis.pdf`), the RDR SIS, `DSMAP_POLAR.CAT`, `REF.CAT`, `MISSION.CAT`, the LOLA page at the PDS Geosciences Node and Smith et al. 2017. The orbit-level statements are in §2.
 
 ### 1.1 The Barker 2023 figures do **not** apply to our GDR files
 
-Barker et al. 2023 (PSJ 4, 183, doi:10.3847/PSJ/acf3e1) state: "Therefore, we consider 1.00/1.00/0.15 m as a conservative estimate of the final track geolocation errors" (along / cross / radial, Sec. 3). That figure describes the **new track-adjusted PGDA products** (`LDEM_80S_20MPP_ADJ.TIF` etc., PGDA product 90, <https://pgda.gsfc.nasa.gov/products/90>; the paper's Table 1 lists `LDEM_80S_20M` as the "old name"). The paper builds them from the RDR tracks by iterative track adjustment and natural-neighbour gridding, and compares them with "the old (PDS) version". Our `LDEM_80S_20M` is the old PDS product (V2.0, GMT `surface`). **Do not apply 1.00 / 1.00 / 0.15 m to it.** We do not hold product 90.
+Barker et al. 2023 (PSJ 4, 183, doi:10.3847/PSJ/acf3e1) give an accuracy figure for a newer product, not for the PDS files we hold. They state: "Therefore, we consider 1.00/1.00/0.15 m as a conservative estimate of the final track geolocation errors" (along / cross / radial, Sec. 3). That figure describes the **new track-adjusted PGDA products** (`LDEM_80S_20MPP_ADJ.TIF` etc., PGDA product 90, <https://pgda.gsfc.nasa.gov/products/90>). The paper's Table 1 lists `LDEM_80S_20M` as the "old name". The paper builds the new products from the RDR tracks. It adjusts the tracks iteratively and grids them by natural-neighbour interpolation. It then compares them with "the old (PDS) version". Our `LDEM_80S_20M` is the old PDS product (V2.0, GMT `surface`). **Do not apply 1.00 / 1.00 / 0.15 m to it.** We do not hold product 90.
 
 ## 2. What is published about the geolocation behind the GDR products
 
-All are general statements about GRGM900C-era orbits, not accuracies of a gridded map.
+All statements below are general statements about orbits of the GRGM900C era. None of them is an accuracy of a gridded map.
 
 | statement | value as printed | statistic | source |
 |---|---|---|---|
@@ -44,7 +47,13 @@ All are general statements about GRGM900C-era orbits, not accuracies of a gridde
 | Mission requirement for 5 m polar maps | "met the mission requirement of 30-m …" (sentence continues beyond what was read) | requirement, not an achieved accuracy | Smith et al. 2017 |
 | Independent interpolation test, 20 m GMT `surface` | standard deviation 0.10 m of removed-and-re-interpolated pixels, reaching ~1 m on steep crater walls | std of residuals, 50 × 50 km at each pole | Gläser et al. 2018, PSS 162, 170–178 (NTRS 20170007365) |
 
-**[my reading] How I would use these for `ProductError` of the GDR polar products, if the engine wants something better than the global budget:** the only horizontal statistic that bears on the south cap is the 68 % width of 7.4 / 7.6 m (σ per axis ≈ 7.5 m) for the original tracks, against RMS 8.7 / 9.5 m. That sits below the 10 m global σ_xy; the global figure therefore remains a defensible and slightly pessimistic choice. Vertically, the radial figure is 0.34 m (68 % width) to 0.64 m (RMS) before gridding; the published radial figures say nothing about the gridded product's pixel error, which is dominated by interpolation and by the horizontal error acting on slopes (σ_z ≈ σ_xy · tan(slope), e.g. 7.5 m × tan 10° = 1.3 m). The 4 m global σ_z is therefore a ceiling, not a published figure, for these products. It is not replaced here, because no document states a gridded-map accuracy. Whether the 2017 south V2.0 grids already contain the track adjustment of Barker 2023 is not stated; Barker 2023 treats the PDS grids as the "old" version, and ERRATA release 30 says only that the south maps were "improved and updated with the addition of new data". **[INFERENCE]** that the V2.0 grids carry roughly the original orbit-error level.
+**[my reading] How I would use these for `ProductError` of the GDR polar products, if the engine wants something better than the global budget.**
+
+Horizontally, the global σ_xy remains a defensible and slightly pessimistic choice. The only horizontal statistic that bears on the south cap is for the original tracks. Its 68 % width is 7.4 / 7.6 m (σ per axis ≈ 7.5 m), against an RMS of 8.7 / 9.5 m. This width sits below the 10 m global σ_xy.
+
+Vertically, the radial figure before gridding is 0.34 m (68 % width) to 0.64 m (RMS). The published radial figures say nothing about the pixel error of the gridded product. Interpolation dominates that error, together with the horizontal error acting on slopes (σ_z ≈ σ_xy · tan(slope), e.g. 7.5 m × tan 10° = 1.3 m). The 4 m global σ_z is therefore a ceiling for these products, not a published figure. It is not replaced here, because no document states a gridded-map accuracy.
+
+No document states whether the 2017 south V2.0 grids already contain the track adjustment of Barker 2023. Barker 2023 treats the PDS grids as the "old" version. ERRATA release 30 says only that the south maps were "improved and updated with the addition of new data". **[INFERENCE]**: the V2.0 grids carry roughly the original orbit-error level.
 
 ## 3. Release facts as printed in the labels
 
@@ -57,7 +66,7 @@ All are general statements about GRGM900C-era orbits, not accuracies of a gridde
 | SLDEM2015_512 tiles | V2.0 | 2015-09-15 | 2013-07-18T00:10:56 | LRO_ES_09 | "coregistered with Kaguya's SELENE terrain camera data"; GRGM900B |
 | PGDA 78 (Site01, Site04, Site07, Site11) | n/a | files 2020-06; clones 2020-10-15 | LOLA data to September 2013 | n/a | Barker 2021 §2 |
 
-Oddity worth knowing: the `LDEC_*` count-map labels (all six read) say V2.1 even for south products whose LDEM label says V2.0. No document explains it; it looks like a label inconsistency, not a different data cut.
+An oddity worth knowing: the `LDEC_*` count-map labels say V2.1, even for south products whose LDEM label says V2.0. All six of these labels were read. No document explains this. It looks like a label inconsistency, not a different data cut.
 
 ## 4. Per-pixel and companion uncertainty products that exist
 
@@ -68,11 +77,16 @@ Oddity worth knowing: the `LDEC_*` count-map labels (all six read) say V2.1 even
 | SLDEM2015 | one 1° map `SLDEM2015_DATA_QUALITY_FLOAT` = RMS vertical residual of each 1° TC tile against LOLA (step 1; Barker 2016 Fig. 5 bottom); no per-pixel σ, no slope uncertainty | the label says 120 × 360 but the file is 180 × 360 float32 with NaN poleward of ±60° (my inspection; trust the file size, not the label) | `https://imbrium.mit.edu/DATA/SLDEM2015/GLOBAL/FLOAT_IMG/SLDEM2015_DATA_QUALITY_FLOAT.IMG` |
 | Barker 2023 (not held) | `_ERR`, `_EFFRES`, `LDEC` companions | | <https://pgda.gsfc.nasa.gov/products/90> |
 
-Operational notes (observed): PGDA returns HTTP 200 with a 3789-byte HTML "404" page for missing files and for directory URLs (`…/Site01/`, `…/Site01/Clones/` have no listing), so a downloader must check size or content type. The `…/LOLA_5mpp/` index page and `README` are stale (they list only 10 sites); the product page is the complete list. **The "clone" files named `*_err.tif` are absolute-height clones (LDEM plus the error realisation), not error maps:** for `Site01 …_0001_err.tif` I measured clone minus `surf`: median −0.003 m, RMS 0.44 m, 1st / 99th percentile −1.10 / +1.18 m (and value range −523 … 1959 m, like `surf`). All 100 clones per tile are 41–142 MB each; 100 clones of Site01 alone are 4.1 GB.
+Operational notes (observed):
+
+- For missing files and for directory URLs, PGDA returns HTTP 200 with a 3789-byte HTML "404" page. The directories `…/Site01/` and `…/Site01/Clones/` have no listing. A downloader must therefore check the size or the content type.
+- The `…/LOLA_5mpp/` index page and `README` are stale: they list only 10 sites. The product page is the complete list.
+- **The "clone" files named `*_err.tif` are absolute-height clones, not error maps.** Each one is the LDEM plus one error realisation. For `Site01 …_0001_err.tif` I measured clone minus `surf`: median −0.003 m, RMS 0.44 m, 1st / 99th percentile −1.10 / +1.18 m. Its value range is −523 … 1959 m, like `surf`.
+- Each of the 100 clones per tile is 41–142 MB. The 100 clones of Site01 alone are 4.1 GB.
 
 ## 5. Interpolated fraction per product
 
-**Published.** All for polar products of other builds; none for our GDR files.
+**Published.** All published figures are for polar products of other builds. None is for our GDR files.
 
 | quantity | value as printed | product / region | source |
 |---|---|---|---|
@@ -82,7 +96,7 @@ Operational notes (observed): PGDA returns HTTP 200 with a 3789-byte HTML "404" 
 | Track geometry at 50 km altitude | cross-track spacing 12 m, along-track 57 m, spot 5 m | | Barker 2021 §2 |
 | SLDEM2015, TC share of pixels | **not published** (B16 states only that empty LOLA pixels are filled from the geodetically controlled TC tile, and that 443 tiles, ~1 %, with final RMS > 16 m were replaced by LOLA-only interpolation) | | Barker 2016 §5.1, §5.5 |
 
-**Computed by us (not published): share of pixels with zero LOLA count in the LDEC maps** (`/tmp/terr/fill.py`, by the Smith 2017 definition, count 0 = interpolated), over the circle of each product's latitude limit, V2.0 south (ES_54) and V2.1 north (ES_45):
+**Computed by us (not published): share of pixels with zero LOLA count in the LDEC maps.** By the Smith 2017 definition, a count of 0 means the pixel is interpolated. The script is `/tmp/terr/fill.py`. The share is taken over the circle of each product's latitude limit, for V2.0 south (ES_54) and V2.1 north (ES_45):
 
 | product | interpolated, whole product | by latitude band (interpolated) |
 |---|---|---|
@@ -100,14 +114,22 @@ Operational notes (observed): PGDA returns HTTP 200 with a 3789-byte HTML "404" 
 For the PGDA tiles the fraction computed from each tile's `ldec` is in §6.
 
 **What the publications say about error in interpolated pixels.**
-- PGDA 78: "Interpolation error dominates in empty pixels" (Barker 2021 §4). The model ε = a·R + b·S + c, R = effective resolution (m) = 1/√(LOLA point areal density), S = slope (°); Site01: a = 0.0210, b = 0.0051, c = −0.022 (Table 1; Site04 0.0137 / 0.0074 / −0.006; Site07 0.0209 / 0.0042 / −0.0400; Site11 0.0186 / 0.0054 / −0.036). "Fits the central 50 % of the data to within ~30 %". Filled pixels: error is dominated by sub-pixel sampling and is bounded by about 2.5·√2·tan(slope) m; 2 % of filled pixels exceed 1 m, maximum 3.31 m. Interpolation-method uncertainty: "We, therefore, take 30% as the uncertainty due to interpolation method". Rocks and boulders are not included; single-spot RMS height variation is "~0.4–0.6 m over highlands terrain".
+- PGDA 78: "Interpolation error dominates in empty pixels" (Barker 2021 §4).
+  - Error model: ε = a·R + b·S + c. R is the effective resolution in metres, R = 1/√(LOLA point areal density). S is the slope in degrees (°).
+  - Coefficients (Table 1): Site01 a = 0.0210, b = 0.0051, c = −0.022. Site04 0.0137 / 0.0074 / −0.006. Site07 0.0209 / 0.0042 / −0.0400. Site11 0.0186 / 0.0054 / −0.036.
+  - Fit quality: "Fits the central 50 % of the data to within ~30 %".
+  - Filled pixels: sub-pixel sampling dominates the error. The error is bounded by about 2.5·√2·tan(slope) m. 2 % of filled pixels exceed 1 m, and the maximum is 3.31 m.
+  - Interpolation-method uncertainty: "We, therefore, take 30% as the uncertainty due to interpolation method".
+  - Rocks and boulders are not included. The RMS height variation within a single spot is "~0.4–0.6 m over highlands terrain".
 - First estimate from leave-track-out residuals: MADb 0.42 m (Barker 2021 §3.1).
-- GDR polar files: no published error in interpolated pixels; Gläser 2018 gives 0.10 m std for re-interpolating every third pixel at 20 m (a different product).
-- SLDEM2015: LOLA-only gaps are "∼500 m wide near the equator and ∼50/100 m wide at −80°/+80°"; "LOLA interpolation has a typical error of <1 m over the maria … higher over the highlands" (Barker 2016 §5.2, Fig. 10; map only, not tabulated).
+- GDR polar files: no error in interpolated pixels is published. Gläser 2018 gives a standard deviation of 0.10 m for re-interpolating every third pixel at 20 m, but for a different product.
+- SLDEM2015: LOLA-only gaps are "∼500 m wide near the equator and ∼50/100 m wide at −80°/+80°". The paper also says "LOLA interpolation has a typical error of <1 m over the maria … higher over the highlands" (Barker 2016 §5.2, Fig. 10). This is shown on a map only, not tabulated.
 
 ## 6. Per-tile statistics of the published `toterr` and `ldec` rasters (computed by us)
 
-These are **our statistics of the rasters that PGDA publishes with each tile**, not figures printed in a paper. Method: each `<Site>_final_adj_5mpp_toterr.tif` and `<Site>_final_adj_5mpp_ldec.tif` was downloaded from `https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/<Site>/`, read with rasterio as float32, finite pixels only; `fill` = pixels with LDEC count > 0; `interpolated` = the rest. Script: throwaway, not in the repository. Site20 (the original, not held) was also read and is omitted. The `toterr` raster is "Total Z uncertainty in meters (formally, the RMS error)" (PGDA page; Barker 2021 §4: RMS over the 100 clones per pixel).
+These are **our statistics of the rasters that PGDA publishes with each tile**, not figures printed in a paper.
+
+Method: each `<Site>_final_adj_5mpp_toterr.tif` and `<Site>_final_adj_5mpp_ldec.tif` was downloaded from `https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/<Site>/`. Each was read with rasterio as float32, using finite pixels only. `fill` = pixels with LDEC count > 0. `interpolated` = the rest. The script was a throwaway and is not in the repository. Site20 (the original, not held) was also read and is left out of the table. The `toterr` raster is "Total Z uncertainty in meters (formally, the RMS error)" (PGDA page). Barker 2021 §4 defines it as the RMS over the 100 clones per pixel.
 
 | product id | pixels | toterr median (m) | p90 | p99 | max | % pixels > 1 m | % interpolated (LDEC = 0) |
 |---|---|---|---|---|---|---|---|
@@ -138,26 +160,61 @@ These are **our statistics of the rasters that PGDA publishes with each tile**, 
 | `pgda78_lm7_5m` | 16,000,000 | 0.46 | 0.77 | 1.20 | 8.3 | 2.9 | 94.9 |
 | `pgda78_lm8_5m` | 16,000,000 | 0.36 | 0.61 | 0.91 | 7.3 | 0.5 | 91.9 |
 
-Checks against the paper (Site01): median 0.372 m (paper 0.37 m), 0.95 % of pixels above 1 m (paper "~1 %"), maximum 5.58 m (paper 5.65 m; the 0.07 m difference is unexplained, possibly a later reprocessing of the file), 90.5 % interpolated (paper "~90 %"; fill factor 7–10 %). For Site04/07/11 the medians are 0.360 / 0.387 / 0.366 m, inside the paper's "~0.30–0.50 m" for RoIs.
+Checks against the paper (Site01):
 
-Across the 26 tiles the median `toterr` ranges from 0.34 m to 0.93 m (median of medians 0.40 m). The tiles with the largest errors are `pgda78_npb_5m` (median 0.93 m, 45.3 % of pixels above 1 m, 98.1 % interpolated), `pgda78_dm1_5m` (0.77 m, 32.7 % above 1 m, 97.7 % interpolated), `pgda78_site06_5m` (0.64 m, 15.5 % above 1 m) and `pgda78_site20v2_5m` (0.59 m). **These later tiles have no paper statistic; their error is only the raster.** The interpolated share is 89.4–98.1 % in all 26 tiles, so the paper's "~90 %" holds for the whole product, not just Site01 (sparsest: `pgda78_npb_5m` 98.1 %, `pgda78_dm1_5m` 97.7 %, `pgda78_dm2_5m` 97.4 %).
+- Median 0.372 m (paper 0.37 m).
+- 0.95 % of pixels above 1 m (paper "~1 %").
+- Maximum 5.58 m (paper 5.65 m). The 0.07 m difference is unexplained. A later reprocessing of the file is one possible cause.
+- 90.5 % interpolated (paper "~90 %"; fill factor 7–10 %).
+- For Site04/07/11 the medians are 0.360 / 0.387 / 0.366 m. These are inside the paper's "~0.30–0.50 m" for RoIs.
+
+Across the 26 tiles, the median `toterr` ranges from 0.34 m to 0.93 m (median of medians 0.40 m). The tiles with the largest errors are:
+
+- `pgda78_npb_5m`: median 0.93 m, 45.3 % of pixels above 1 m, 98.1 % interpolated.
+- `pgda78_dm1_5m`: 0.77 m, 32.7 % above 1 m, 97.7 % interpolated.
+- `pgda78_site06_5m`: 0.64 m, 15.5 % above 1 m.
+- `pgda78_site20v2_5m`: 0.59 m.
+
+**These later tiles have no paper statistic. The raster is their only error figure.**
+
+The interpolated share is 89.4–98.1 % in all 26 tiles. The paper's "~90 %" therefore holds for the whole product, not just Site01. The sparsest tiles are `pgda78_npb_5m` (98.1 %), `pgda78_dm1_5m` (97.7 %) and `pgda78_dm2_5m` (97.4 %).
 
 ## 7. Barker et al. 2021 Table 2 (Site 01), how the clones were made, and the check of `docs/validation/scenario.md` §11.6
 
-Source: Barker et al. 2021, §5 and Table 2 (p. 8), read in the NTRS corrected proof; all 21 numeric rows were compared programmatically with the PDF text. The final issue and the supplementary figures S1–S19 (other sites) were not opened (ScienceDirect returned HTTP 403).
+Source: Barker et al. 2021, §5 and Table 2 (p. 8), read in the NTRS corrected proof. All 21 numeric rows were compared programmatically with the PDF text. The final issue and the supplementary figures S1–S19 (other sites) were not opened, because ScienceDirect returned HTTP 403.
 
 ### 7.1 What Table 2 lists
 
-- **Statistics per region of interest: only pessimistic percentiles of the 100 clones.** "Avg ill-1" = 1st percentile of average illumination (%); "LCIP-1" = 1st percentile of the longest continuous illumination period (days); "LCSP-99" = 99th percentile of the longest continuous shadow period (days). **No nominal-DEM value, no mean, no σ, no 5th / 95th percentile.** (With 100 clones, 1st / 99th ≈ minimum / maximum; §5: "the min/max values of the box plots (x symbols in Fig. 19) correspond to the 1st/99th percentiles listed in Table 2, A rows".) The nominal LDEM, old LDEM, mean, median, quartiles and 9th / 91st percentiles are shown only graphically in Fig. 19, for Δz = 1 m; per-pixel 1st / 99th percentile and σ maps are Figs. 16–18.
-- **Heights: Δz = 1 m and 5 m above the surface.** The caption: "at Δz = 1 m and 5 m above the surface". No 0, 2 or 10 m. (`docs/validation/scenario.md` §11.6 says it "did not establish which mast height" — it is 1 m and 5 m, and §11.6 already evaluates both.)
-- **Regions of interest.** Seven RoIs at Site 1, unnamed, defined in §5 as "connected pixels (corners or sides touching) with average illumination > 70% at Δz = 1 m and with total area >2500 m²". **The RoI outlines are published**: `https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_ROIs.tgz` (2934 bytes; I extracted it: ESRI polygon shapefile `Site01_ROIs.shp/.dbf/.shx/.prj`, 7 polygons, south polar stereographic on the 1737.4 km sphere, coordinates in metres). Bounding boxes (m): RoI1 (−11657.5, −12517.5) to (−11522.5, −12407.5); RoI2 (−11537.5, −12637.5) to (−11447.5, −12477.5); RoI3 (−11392.5, −12542.5) to (−11297.5, −12467.5); RoI4 (−11372.5, −12267.5) to (−11212.5, −12052.5); RoI5 (−11177.5, −12052.5) to (−11002.5, −11857.5); RoI6 (−10887.5, −11787.5) to (−10727.5, −11682.5); RoI7 (−10277.5, −11607.5) to (−10167.5, −11492.5). The `.dbf` holds the centroids printed in Table 2. (`scenario.md` §11.6 says "the RoI outline is not published"; it is, for Site01, 04, 06, 07 and 11 on the product page.)
-- **Cases.** (A) "percentiles are computed after averaging the RoI for each clone"; (B) "percentiles are computed separately for each pixel and then averaged over the RoI" (pessimistic); (C) "same as (A) but considering only the most illuminated pixel at each hourly time step" (optimistic, a roving lander).
-- **Definitions** (§5, Fig. 14 caption). Average illumination: "the average visible fraction of the Sun's disk over the 2 years sampled at 1 h intervals". LCIP: "the longest uninterrupted period when any fraction of the Sun is visible". LCSP: "the longest uninterrupted period when none of the Sun is visible". Case C: "LCIP/LCSP includes time steps when any/no pixel in the RoI sees any part of the Sun".
-- **Time span and step.** 2024-01-01 to 2026-01-01; hourly ("The computations are performed in Cartesian coordinates at 1-h intervals").
-- **Sun.** A finite disc, "a 2-dimensional extended source with limb darkening at 550 nm"; the visible fraction "is approximated by horizontally dividing the disk at the horizon's elevation measured at the disk center's azimuth" (a different disc integration from a true per-azimuth one).
-- **Horizon method.** Mazarico et al. 2011: 720 sight lines 0.5° apart; nested grids: the new 5 m LDEM within 5 km, the original 80 m LDEM from 5 to 100 km, 240 m beyond. Only the 5 m near field is perturbed per clone; "the un-adjusted orbital errors in the lower-resolution far-field LDEMs do not significantly impact the results" (far-field horizon "~3 orders of magnitude farther"). The frame is MOON_ME of DE421 (§2). The Sun ephemeris is not separately named in the paper **[INFERENCE: DE421]**.
+- **Statistics per region of interest: only pessimistic percentiles of the 100 clones.**
+  - "Avg ill-1" = 1st percentile of average illumination (%).
+  - "LCIP-1" = 1st percentile of the longest continuous illumination period (days).
+  - "LCSP-99" = 99th percentile of the longest continuous shadow period (days).
+  - **No nominal-DEM value, no mean, no σ, no 5th / 95th percentile.**
+  - With 100 clones, 1st / 99th ≈ minimum / maximum. §5 says: "the min/max values of the box plots (x symbols in Fig. 19) correspond to the 1st/99th percentiles listed in Table 2, A rows".
+  - The nominal LDEM, old LDEM, mean, median, quartiles and 9th / 91st percentiles appear only graphically in Fig. 19, for Δz = 1 m. Figs. 16–18 are per-pixel maps of the 1st / 99th percentile and of σ.
+- **Heights: Δz = 1 m and 5 m above the surface.** The caption says "at Δz = 1 m and 5 m above the surface". There is no 0, 2 or 10 m case. `docs/validation/scenario.md` §11.6 says it "did not establish which mast height". The answer is 1 m and 5 m, and §11.6 already evaluates both.
+- **Regions of interest.** There are seven RoIs at Site 1, unnamed. §5 defines them as "connected pixels (corners or sides touching) with average illumination > 70% at Δz = 1 m and with total area >2500 m²".
+  - **The RoI outlines are published**: `https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_ROIs.tgz` (2934 bytes). I extracted it. It is an ESRI polygon shapefile, `Site01_ROIs.shp/.dbf/.shx/.prj`, with 7 polygons. The projection is south polar stereographic on the 1737.4 km sphere, with coordinates in metres.
+  - Bounding boxes (m): RoI1 (−11657.5, −12517.5) to (−11522.5, −12407.5); RoI2 (−11537.5, −12637.5) to (−11447.5, −12477.5); RoI3 (−11392.5, −12542.5) to (−11297.5, −12467.5); RoI4 (−11372.5, −12267.5) to (−11212.5, −12052.5); RoI5 (−11177.5, −12052.5) to (−11002.5, −11857.5); RoI6 (−10887.5, −11787.5) to (−10727.5, −11682.5); RoI7 (−10277.5, −11607.5) to (−10167.5, −11492.5).
+  - The `.dbf` holds the centroids printed in Table 2.
+  - `scenario.md` §11.6 says "the RoI outline is not published". In fact it is published on the product page, for Site01, 04, 06, 07 and 11.
+- **Cases.**
+  - (A) "percentiles are computed after averaging the RoI for each clone".
+  - (B) "percentiles are computed separately for each pixel and then averaged over the RoI" (pessimistic).
+  - (C) "same as (A) but considering only the most illuminated pixel at each hourly time step" (optimistic, a roving lander).
+- **Definitions** (§5, Fig. 14 caption).
+  - Average illumination: "the average visible fraction of the Sun's disk over the 2 years sampled at 1 h intervals".
+  - LCIP: "the longest uninterrupted period when any fraction of the Sun is visible".
+  - LCSP: "the longest uninterrupted period when none of the Sun is visible".
+  - Case C: "LCIP/LCSP includes time steps when any/no pixel in the RoI sees any part of the Sun".
+- **Time span and step.** 2024-01-01 to 2026-01-01. The step is hourly ("The computations are performed in Cartesian coordinates at 1-h intervals").
+- **Sun.** The Sun is a finite disc, "a 2-dimensional extended source with limb darkening at 550 nm". The visible fraction "is approximated by horizontally dividing the disk at the horizon's elevation measured at the disk center's azimuth". This disc integration differs from a true per-azimuth one.
+- **Horizon method.** The method is that of Mazarico et al. 2011. It uses 720 sight lines 0.5° apart.
+  - Nested grids: the new 5 m LDEM within 5 km, the original 80 m LDEM from 5 to 100 km, and 240 m beyond.
+  - Only the 5 m near field is perturbed per clone. The paper says "the un-adjusted orbital errors in the lower-resolution far-field LDEMs do not significantly impact the results", because the far-field horizon is "~3 orders of magnitude farther".
+  - The frame is MOON_ME of DE421 (§2). The paper does not name the Sun ephemeris separately **[INFERENCE: DE421]**.
 
-Table 2 as printed (Site 1; X, Y = centroids in km, minus signs restored from the PDF glyph, consistent with the Fig. 11 text "(−11, −12) km" and with the shapefile above):
+Table 2 as printed (Site 1). X, Y are the centroids in km. The minus signs are restored from the PDF glyph. This is consistent with the Fig. 11 text "(−11, −12) km" and with the shapefile above.
 
 | | | | RoI1 | RoI2 | RoI3 | RoI4 | RoI5 | RoI6 | RoI7 |
 |---|---|---|---|---|---|---|---|---|---|
@@ -183,50 +240,76 @@ Table 2 as printed (Site 1; X, Y = centroids in km, minus signs restored from th
 | | | B | 6.14 | 7.95 | 9.56 | 4.30 | 4.90 | 4.41 | 5.52 |
 | | | C | 3.67 | 5.29 | 5.54 | 3.71 | 3.79 | 3.12 | 4.58 |
 
-Paper's own reading (§5): "the illumination conditions predicted for the new (non-clone) LDEM … tend to be better than the mean/median of the clones … because the perturbations in the clones are more likely to raise than lower the horizon elevation"; "The LDEM uncertainties have an almost negligible effect on the illumination conditions at Δz = 5 m at all sites". Only 1 m and 5 m were studied; **Earth visibility is not studied at all.**
+The paper's own reading (§5): "the illumination conditions predicted for the new (non-clone) LDEM … tend to be better than the mean/median of the clones … because the perturbations in the clones are more likely to raise than lower the horizon elevation". It also says: "The LDEM uncertainties have an almost negligible effect on the illumination conditions at Δz = 5 m at all sites". Only 1 m and 5 m were studied. **Earth visibility is not studied at all.**
 
 ### 7.2 How the clones were made (§4, Fig. 11)
 
-1. Smooth the LDEM: remove every LOLA point and its 3 × 3 pixel neighbourhood and re-interpolate ("similar to smoothing with a Gaussian with σ ~15 m"; features larger than ~200 m unchanged).
-2. Merge it with a high-pass artificial random fractal terrain, Hurst exponent H = 1, at baselines ≲ 200 m (the scale at which a pure fractal loses ~10 % of its power after interpolation).
-3. Sample this terrain at the real LOLA point locations, "randomly perturbed by the track geolocation errors, σx/σy/σz, (according to each track's error-covariance matrix) and 10 cm range (Z) precision", then re-interpolate with the same method (GMT `surface`, tension 0.75).
-4. The difference between the re-interpolated and the simulated surface is "a random realization of the errors", added back to the LDEM to give the clone. 100 clones per site.
+1. Smooth the LDEM. Remove every LOLA point and its 3 × 3 pixel neighbourhood, then re-interpolate. This is "similar to smoothing with a Gaussian with σ ~15 m". Features larger than ~200 m stay unchanged.
+2. Merge it with a high-pass artificial random fractal terrain (Hurst exponent H = 1, baselines ≲ 200 m). That baseline limit is the scale at which a pure fractal loses ~10 % of its power after interpolation.
+3. Sample this terrain at the real LOLA point locations, "randomly perturbed by the track geolocation errors, σx/σy/σz, (according to each track's error-covariance matrix) and 10 cm range (Z) precision". Then re-interpolate with the same method (GMT `surface`, tension 0.75).
+4. The difference between the re-interpolated and the simulated surface is "a random realization of the errors". Add it back to the LDEM to give the clone. There are 100 clones per site.
 
-Per-track offset distribution: drawn from each track's formal error covariance (X/Y/Z correlated); typical σ ~10–20 cm horizontal, ~2–4 cm vertical (§4); per-track σ values are not tabulated, and the word "Gaussian" is not printed for this draw (**[INFERENCE]** normal). Noise in gaps: no separate additive noise; the gap error is the difference between the fractal "truth" and its re-interpolation, so it is a property of the fractal surface (H = 1) and the gap geometry. Interpolation is repeated per clone. The ±30 % interpolation-method uncertainty is not in the clones (a separate T = 0 vs T = 0.75 experiment raised the Z and slope errors by a median factor ~1.1, MADb 0.2).
+Per-track offset distribution: each offset is drawn from the track's formal error covariance, with X/Y/Z correlated. Typical σ is ~10–20 cm horizontal and ~2–4 cm vertical (§4). The per-track σ values are not tabulated. The word "Gaussian" is not printed for this draw (**[INFERENCE]** normal).
+
+Noise in gaps: there is no separate additive noise. The gap error is the difference between the fractal "truth" and its re-interpolation. It is therefore a property of the fractal surface (H = 1) and of the gap geometry. Interpolation is repeated for each clone.
+
+The ±30 % interpolation-method uncertainty is not in the clones. A separate experiment compared T = 0 with T = 0.75. It raised the Z and slope errors by a median factor ~1.1 (MADb 0.2).
 
 ### 7.3 Check of `ScenarioCore`'s assumption (`scenario.md` §11.6)
 
 - "1st percentile of average illumination and of LCIP, 99th percentile of LCSP": **correct** (caption).
-- Mast heights: **1 m and 5 m** (above the local surface).
-- Case: the table has three cases; §11.6 compares against case **A** (RoI averaged per clone). Case A is the right comparison for an average over the RoI; case B is Barker's pessimistic per-pixel average; case C is the roving optimistic case.
-- The comparison is **one-sided**: a published 1st or 99th percentile is a pessimistic bound of a distribution, not its centre. Barker's nominal DEM is better than the clone median, which is better than the 1st percentile. A model run on the nominal DEM should sit **above** the 1st percentile of average illumination and of LCIP and **below** the 99th percentile of LCSP. Any "residual" of the wrong sign (our value below the 1st percentile, or our LCSP above the 99th) is a failure; a residual of the right sign measures only how far the nominal DEM sits from the worst clone.
-- §11.6 averages over a disc around each centroid because the RoI outline was thought unpublished; the outlines are published (above), so a like-for-like pixel mask can be built from `Site01_ROIs.shp`.
-- Differences of method that Barker's numbers carry: finite-disc approximation by one horizon elevation at the disc-centre azimuth; hourly step; 720 azimuths; horizon only within the nested 5 / 80 / 240 m grids; DE421 frame; LOLA data through September 2013 (our tile is the same file).
+- Mast heights: **1 m and 5 m**, above the local surface.
+- Case: the table has three cases. §11.6 compares against case **A** (RoI averaged per clone). Case A is the right comparison for an average over the RoI. Case B is Barker's pessimistic per-pixel average. Case C is the roving optimistic case.
+- The comparison is **one-sided**. A published 1st or 99th percentile is a pessimistic bound of a distribution, not its centre. Barker's nominal DEM is better than the clone median, and the clone median is better than the 1st percentile. A model run on the nominal DEM should therefore sit **above** the 1st percentile of average illumination and of LCIP. It should sit **below** the 99th percentile of LCSP. Any "residual" of the wrong sign is a failure: our value below the 1st percentile, or our LCSP above the 99th. A residual of the right sign measures only how far the nominal DEM sits from the worst clone.
+- §11.6 averages over a disc around each centroid, because the RoI outline was thought unpublished. The outlines are published (above), so a like-for-like pixel mask can be built from `Site01_ROIs.shp`.
+- Barker's numbers carry these differences of method:
+  - the finite disc is approximated by one horizon elevation at the disc-centre azimuth;
+  - hourly step;
+  - 720 azimuths;
+  - horizon only within the nested 5 / 80 / 240 m grids;
+  - DE421 frame;
+  - LOLA data through September 2013 (our tile is the same file).
 
 ## 8. Spatial correlation of height errors and horizon uncertainty
 
-**No numeric correlation length and no horizon-elevation uncertainty in degrees is published in any document I opened** (Barker 2021, 2023, 2016; Smith 2017; Mazarico 2018; Gläser 2018; PDS documents).
-What exists, all qualitative or graphical:
-- Barker 2021 Fig. 15 plots the near-field horizons of the nominal LDEM and of all 100 clones seen from Δz = 1 m at the seven RoI centroids (graphical only; no degrees are quoted). The near-field horizon is "roughly 100 m away (though sometimes as low as 10s of m, or as high as ~1 km)", the far-field one "roughly 50–200 km away" (§5).
-- The full error covariance of an LDEM ("a ~10 million by 10 million non-sparse matrix") was judged "prohibitive" and replaced by the clone ensemble (§4). Errors are injected only at baselines ≲ 200 m. Track errors are correlated along a track through the shared per-track offset (covariance of X/Y/Z per track).
-- Barker 2021 §5 on case B: "the chances of all pixels within a RoI having the same percentile error is likely smaller than a single pixel even considering their correlations" — correlation acknowledged, not quantified.
-- Barker 2021 Fig. 13 / Table 1: interpolation error scales with the effective resolution (gap size, ~ the distance to the nearest data); in filled pixels it is bounded by pixel size times slope. This implies an error correlation length of the order of the gap size (tens to a few hundred metres at 5–20 m posting), **[INFERENCE]**, not a published length.
-- Barker 2016 §5.1: ripples of "characteristic wavelength of ∼1.2° and amplitude ∼1.5 m" in SLDEM2015 over flat terrain (a systematic, long-wavelength error; ∼36 km at the equator).
-- Barker 2016 §4: SLDEM2015 TC tile shifts of σ 12.1 / 16.8 / 1.9 m (X / Y / Z), tilts σ 2.4 / 1.9 m per degree; recovery precision of the co-registration in simulation "∼0 ± 2 m horizontally and 0.0 ± 0.2 m vertically" per tile and "∼0 ± 8 m horizontally, 0.0 ± 0.6 m vertically" per profile — the nearest published proxy for SLDEM2015 horizontal registration (not a product accuracy).
-- The only way to obtain a horizon-elevation spread from published material is the clone ensemble: for the PGDA tiles, `LDEM + clone` is public (100 files per tile). That is an input for a Monte-Carlo, not a published horizon σ.
+**No document I opened publishes a numeric correlation length or a horizon-elevation uncertainty in degrees.** The documents opened are Barker 2021, 2023, 2016; Smith 2017; Mazarico 2018; Gläser 2018; and the PDS documents.
+What exists is qualitative or graphical:
+- Barker 2021 Fig. 15 plots near-field horizons. It shows those of the nominal LDEM and of all 100 clones, seen from Δz = 1 m at the seven RoI centroids. It is graphical only, and no degrees are quoted. The near-field horizon is "roughly 100 m away (though sometimes as low as 10s of m, or as high as ~1 km)". The far-field one is "roughly 50–200 km away" (§5).
+- The paper judged the full error covariance of an LDEM ("a ~10 million by 10 million non-sparse matrix") "prohibitive". It used the clone ensemble instead (§4). Errors are injected only at baselines ≲ 200 m. Track errors are correlated along a track through the shared per-track offset (X/Y/Z covariance per track).
+- Barker 2021 §5 on case B: "the chances of all pixels within a RoI having the same percentile error is likely smaller than a single pixel even considering their correlations". The paper acknowledges the correlation but does not quantify it.
+- Barker 2021 Fig. 13 / Table 1: interpolation error scales with the effective resolution, that is, the gap size (~ the distance to the nearest data). In filled pixels it is bounded by pixel size times slope. **[INFERENCE]**: this implies an error correlation length of the order of the gap size, tens to a few hundred metres at 5–20 m posting. It is not a published length.
+- Barker 2016 §5.1: SLDEM2015 has ripples of "characteristic wavelength of ∼1.2° and amplitude ∼1.5 m" over flat terrain. This is a systematic, long-wavelength error (∼36 km at the equator).
+- Barker 2016 §4: SLDEM2015 TC tile shifts have σ 12.1 / 16.8 / 1.9 m (X / Y / Z) and tilts σ 2.4 / 1.9 m per degree. In simulation, the recovery precision of the co-registration is "∼0 ± 2 m horizontally and 0.0 ± 0.2 m vertically" per tile. Per profile it is "∼0 ± 8 m horizontally, 0.0 ± 0.6 m vertically". This is the nearest published proxy for SLDEM2015 horizontal registration. It is not a product accuracy.
+- The clone ensemble is the only way to obtain a horizon-elevation spread from published material. For the PGDA tiles, `LDEM + clone` is public (100 files per tile). That is an input for a Monte-Carlo run, not a published horizon σ.
 
 ## 9. Other statements an engineer should know
 
-- SLDEM2015 vertical figure: "typical vertical accuracy ∼3 to 4 m" is "not an independently measured absolute error" — it is the RMS residual of the co-registered TC tiles against LOLA, combined by the authors with the "∼1 m" LOLA absolute vertical accuracy (Barker 2016 §6, citing Mazarico et al. 2013; not opened). Retroreflector check (§5.1, Table 1, five near-side points): RMS 2.44 m (SLDEM2015), 3.97 m (SLDEM2013), 10.90 m (GLD100), 0.65 m (LOLA-only 512 ppd of that era). Per site (SLDEM2015, m): Apollo 11 −2.81, Apollo 14 −0.13, Apollo 15 −0.59, Lunokhod 1 −4.39, Lunokhod 2 +1.48. The paper: "there is some noise of amplitude ∼2 to 3 m remaining in SLDEM2015".
-- SLDEM2015 location dependence: no latitude dependence inside ±60° is published; "areas of high slopes … tend to have larger absolute residuals" (not quantified). My own statistics of the 1° data-quality raster (not published): median 3.44 m, mean 4.07 m, p90 4.95 m, p99 16.2 m; 10° latitude-band medians 3.32–3.62 m, no increase toward ±60°; 9.8 % of 1° cells exceed 5 m. The poorest regions named by the paper: South Pole–Aitken (45–60°S, 140–210°E; "lower-resolution MI DEMs") and the western edge of Orientale (45°S–15°N, 230–260°E; Kaguya orbit problems). **Our tile sldem2015_512_s45.456_e177.589 (45.5°S, 177.6°E) lies inside that SPA box (45–60°S, 140–210°E); tile sldem2015_512_s41.639_e206.015 (41.6°S, 206.0°E) has the longitude of SPA but sits 3.4° north of the stated latitude range.** Barker 2016 gives no pixel mask of MI-filled areas. **[my reading]** Treat the tail of the distribution (p90 5 m, p99 16 m of the data-quality raster) as the relevant figure there rather than 3–4 m.
-- Barker 2016 co-registration shifts: tile-averaged TC offsets median absolute 8.3 / 18.2 / 1.6 m (X / Y / Z), σ 12.1 / 16.8 / 1.9 m; "about 3 m eastward, 16 m northward, and 1 m outward" global median shift of the TC frame; LOLA profile corrections median absolute 9.3 / 7.0 / 0.6 m, σ 14.2 / 10.5 / 1.0 m; pseudo-crossover residual σ 6.8 / 6.4 / 0.6 m ("an upper limit on the random error of the individual 3D profile offsets"). SLDEM2015 effective resolution ≈ 512 ppd ("we adopt 512 ppd as the effective resolution"): spectra show a cut-off at ~100–200 m. Mean radius 1737.1512 km ("10 cm smaller than the mean radius derived from the LOLA-only DEM").
-- Frame: LOLA-team products are in ME/PA of DE421; "The orientation of this frame in this ephemeris has an overall uncertainty of a few meters with respect to the principal axis frame" (Barker 2021 §2). This is a common-mode shift of the whole DEM relative to the principal-axis frame, not part of the track σ.
+- SLDEM2015 vertical figure: "typical vertical accuracy ∼3 to 4 m" is "not an independently measured absolute error".
+  - It is the RMS residual of the co-registered TC tiles against LOLA. The authors combine it with the "∼1 m" LOLA absolute vertical accuracy (Barker 2016 §6, citing Mazarico et al. 2013; not opened).
+  - Retroreflector check (§5.1, Table 1, five near-side points): RMS 2.44 m (SLDEM2015), 3.97 m (SLDEM2013), 10.90 m (GLD100), 0.65 m (LOLA-only 512 ppd of that era).
+  - Per site (SLDEM2015, m): Apollo 11 −2.81, Apollo 14 −0.13, Apollo 15 −0.59, Lunokhod 1 −4.39, Lunokhod 2 +1.48.
+  - The paper: "there is some noise of amplitude ∼2 to 3 m remaining in SLDEM2015".
+- SLDEM2015 location dependence: no latitude dependence inside ±60° is published.
+  - The paper says "areas of high slopes … tend to have larger absolute residuals", without a figure.
+  - My own statistics of the 1° data-quality raster (not published): median 3.44 m, mean 4.07 m, p90 4.95 m, p99 16.2 m. The 10° latitude-band medians are 3.32–3.62 m, with no increase toward ±60°. 9.8 % of 1° cells exceed 5 m.
+  - The paper names the poorest regions: South Pole–Aitken (45–60°S, 140–210°E; "lower-resolution MI DEMs") and the western edge of Orientale (45°S–15°N, 230–260°E; Kaguya orbit problems).
+  - **Our tile sldem2015_512_s45.456_e177.589 (45.5°S, 177.6°E) lies inside that SPA box (45–60°S, 140–210°E). Tile sldem2015_512_s41.639_e206.015 (41.6°S, 206.0°E) has the longitude of SPA but sits 3.4° north of the stated latitude range.**
+  - Barker 2016 gives no pixel mask of MI-filled areas.
+  - **[my reading]** In those regions, treat the tail of the distribution (p90 5 m, p99 16 m of the data-quality raster) as the relevant figure, rather than 3–4 m.
+- Barker 2016 co-registration shifts:
+  - Tile-averaged TC offsets: median absolute 8.3 / 18.2 / 1.6 m (X / Y / Z), σ 12.1 / 16.8 / 1.9 m.
+  - Global median shift of the TC frame: "about 3 m eastward, 16 m northward, and 1 m outward".
+  - LOLA profile corrections: median absolute 9.3 / 7.0 / 0.6 m, σ 14.2 / 10.5 / 1.0 m.
+  - Pseudo-crossover residual: σ 6.8 / 6.4 / 0.6 m ("an upper limit on the random error of the individual 3D profile offsets").
+  - SLDEM2015 effective resolution ≈ 512 ppd ("we adopt 512 ppd as the effective resolution"). Spectra show a cut-off at ~100–200 m.
+  - Mean radius 1737.1512 km ("10 cm smaller than the mean radius derived from the LOLA-only DEM").
+- Frame: LOLA-team products are in ME/PA of DE421. Barker 2021 §2: "The orientation of this frame in this ephemeris has an overall uncertainty of a few meters with respect to the principal axis frame". This is a common-mode shift of the whole DEM relative to the principal-axis frame. It is not part of the track σ.
 
 ## 10. What I recommend the engine reads from this (my reading, for the owners of `terrain/sources.py`)
 
-1. **PGDA 78, Site01/04/07/11:** per-pixel σ_z from `toterr` (median 0.37 m; `published`); σ_xy 0.14 m per axis (`published`, track geolocation). Add the ±30 % interpolation-method uncertainty (Barker 2021 §4) as a factor 1.3 on σ_z if a conservative bound is wanted. The paper's clones are 1st / 99th percentile cases of exactly this error model.
-2. **PGDA 78, the other 22 tiles:** the `toterr` raster is the product's own per-pixel RMS, published with the tile; the scalar statistics of the paper do not cover these tiles. §6 shows that some of them are markedly worse than Site01 (e.g. Site06 median 0.64 m, 15.5 % of pixels > 1 m). Use `toterr`; mark the basis `published (product raster, no paper)`.
-3. **GDR polar, LDEM_64/512:** no published figure; keep 4 m / 10 m `assumed`. The south polar horizontal evidence (§2) supports 10 m as slightly pessimistic.
+1. **PGDA 78, Site01/04/07/11:** take the per-pixel σ_z from `toterr` (median 0.37 m; `published`). Take σ_xy as 0.14 m per axis (`published`, track geolocation). If a conservative bound is wanted, add the ±30 % interpolation-method uncertainty (Barker 2021 §4) as a factor 1.3 on σ_z. The paper's clones are 1st / 99th percentile cases of exactly this error model.
+2. **PGDA 78, the other 22 tiles:** use `toterr`, and mark the basis `published (product raster, no paper)`. The `toterr` raster is the product's own per-pixel RMS, published with the tile. The scalar statistics of the paper do not cover these tiles. §6 shows that some of them are markedly worse than Site01 (e.g. Site06 median 0.64 m, 15.5 % of pixels > 1 m).
+3. **GDR polar, LDEM_64/512:** keep 4 m / 10 m `assumed`, because no figure is published. The south polar horizontal evidence (§2) supports 10 m as slightly pessimistic.
 4. **SLDEM2015:** σ_z 3.5 m `published (range 3–4 m, "typical")`; σ_xy keep 10 m `assumed`.
 5. **Do not use** Barker 2023's 1.00 / 1.00 / 0.15 m on any file we hold.
 

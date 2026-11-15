@@ -155,15 +155,15 @@ def timeline(ev) -> str:
     handles = [Line2D([], [], color=INK, lw=1.1, label="Sun elevation"),
                Line2D([], [], color=INK, lw=1.1, ls="--", label="Earth elevation"),
                Patch(facecolor=GREY_DARK, edgecolor=INK, label="Interval (nominal horizon)"),
-               Patch(facecolor="white", edgecolor=INK, hatch="/////", label="Edge range, optimistic to pessimistic"),
-               *([] if no_nominal else [Line2D([], [], color=INK, lw=1.2, label="Battery nominal")]),
-               Line2D([], [], color=INK, lw=0.8, ls=":", label="Battery pessimistic"),
-               Line2D([], [], color=INK, lw=0.8, ls="-.", label="Battery optimistic")]
+               Patch(facecolor="white", edgecolor=INK, hatch="/////", label="Edge range, best to worst case"),
+               *([] if no_nominal else [Line2D([], [], color=INK, lw=1.2, label="Battery, nominal")]),
+               Line2D([], [], color=INK, lw=0.8, ls=":", label="Battery, worst case"),
+               Line2D([], [], color=INK, lw=0.8, ls="-.", label="Battery, best case")]
     if no_nominal:
         handles.append(Patch(facecolor=GREY_LIGHT, edgecolor="none", label="Battery range over headings (no nominal)"))
     if when:
         handles.append(Line2D([], [], marker="v", ms=5.5, mfc="white", mec=INK, mew=0.9, ls="none",
-                              label="Lowest battery" + (" (optimistic, pessimistic)" if no_nominal else " (nominal)")))
+                              label="Lowest battery" + (" (best and worst case)" if no_nominal else " (nominal)")))
     fig.legend(handles=handles, loc="outside lower center", ncol=4, fontsize=6.5, frameon=False)
     return _svg(fig)
 
@@ -241,14 +241,14 @@ def calendar(scan) -> str:
     step = max(1, n_rows // 14)
     ax.set_yticks(np.arange(0, n_rows, step) + 0.5)
     ax.set_yticklabels([when_text(lunas[i].start_et).rsplit(" ", 2)[0] for i in range(0, n_rows, step)], fontsize=6.5)
-    ax.set_xlabel("Days after new moon (landing candidate), bins of "
+    ax.set_xlabel("Days after new moon (landing time), bins of "
                   f"{cal.bin_h:g} h")
     ax.set_ylabel("Lunar day\n(new moon, UTC)", fontsize=7)
     ax.set_title("Landing dates")
     handles = [Patch(facecolor="white", edgecolor=INK, label="Pass"),
-               Patch(facecolor=GREY_MID, edgecolor=INK, hatch="/////", label="Marginal (best candidate in cell)"),
+               Patch(facecolor=GREY_MID, edgecolor=INK, hatch="/////", label="Marginal (best landing time in cell)"),
                Patch(facecolor=GREY_DARK, edgecolor=INK, label="Fail"),
-               Patch(facecolor="#ececec", edgecolor=INK, label="No candidate")]
+               Patch(facecolor="#ececec", edgecolor=INK, label="No landing time")]
     fig.legend(handles=handles, loc="outside lower center", ncol=4, fontsize=6.5, frameon=False)
     return _svg(fig)
 
@@ -372,7 +372,7 @@ def ellipse_map(res) -> str:
     ax.set_ylabel("North of the site (m)")
     ax.set_title(f"Landing ellipse: verdict at {mp.state.shape[1]} x {mp.state.shape[0]} map nodes")
     handles = [Patch(facecolor=f, edgecolor=INK, hatch=h, label=n) for n, f, h in STATE_LEGEND]
-    handles += [Patch(facecolor="#ececec", edgecolor=INK, label="Not evaluated"),
+    handles += [Patch(facecolor="#ececec", edgecolor=INK, label="Unknown"),
                 Line2D([], [], color=INK, lw=0.9, label="Ellipse"),
                 Line2D([], [], ls="none", marker=".", ms=3, color=INK, label="Samples"),
                 Line2D([], [], ls="none", marker="+", ms=8, color=INK, label="Site")]

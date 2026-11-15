@@ -229,12 +229,12 @@ export function skyFacts(s: Survey, t: number): SkyFacts {
     const span = !both ? "" : until === null ? ` past ${after}` : ` until ${eventText(until)}${timed.length ? "" : " UTC"}`;
     return facts(`Sunlit with Earth link${span}`, "pass");
   }
-  if (sun.up) return earthNever ? facts("Sunlit, but no Earth link here", "fail", true) : facts("Sunlit, no Earth link", "marginal");
-  if (earth.up) return sunNever ? facts("Never sunlit, Earth link", "fail", true) : facts("Earth link, site dark", "marginal");
-  if (sunNever && earthNever) return facts("Never sunlit, and no Earth link here", "fail", true);
-  if (sunNever) return facts("Never sunlit, no Earth link", "fail", true);
-  if (earthNever) return facts("Dark, and no Earth link here", "fail", true);
-  return facts("Dark, no Earth link", "fail");
+  if (sun.up) return earthNever ? facts("Sunlit, no Earth link all year", "fail", true) : facts("Sunlit, no Earth link", "marginal");
+  if (earth.up) return sunNever ? facts("Earth link, no sunlight all year", "fail", true) : facts("Earth link, no sunlight", "marginal");
+  if (sunNever && earthNever) return facts("No sunlight or Earth link all year", "fail", true);
+  if (sunNever) return facts("No sunlight all year, no Earth link now", "fail", true);
+  if (earthNever) return facts("No sunlight now, no Earth link all year", "fail", true);
+  return facts("No sunlight, no Earth link", "fail");
 }
 
 export interface NextChange {

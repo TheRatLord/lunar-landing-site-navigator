@@ -116,7 +116,7 @@ async def regional_validation(ctx: Annotated[ServiceContext, Depends(get_ctx)]) 
         ctx.cache["regional_validation"] = await asyncio.to_thread(regional_validation_record)
     record = ctx.cache["regional_validation"]
     if record is None:
-        raise ApiProblem(404, "No validation record", "This installation ships no regional validation record.")
+        raise ApiProblem(404, "No validation record", "This installation has no regional validation record.")
     return RegionalValidationRecord(**record)
 
 

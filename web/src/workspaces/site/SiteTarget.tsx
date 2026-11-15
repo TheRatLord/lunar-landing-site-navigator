@@ -141,7 +141,7 @@ export function SiteTarget() {
                 <Tabs tabs={VIEW_TABS} value={view} onChange={(v) => setView(v as View)} label="Site view" />
                 {view === "panorama" && (
                   <Segmented
-                    label="Seen from"
+                    label="Observer height"
                     size="sm"
                     value={observer}
                     onChange={(v) => setObserver(v as Observer)}

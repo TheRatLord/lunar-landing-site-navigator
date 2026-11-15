@@ -17,7 +17,7 @@ export interface CountdownProps {
 export const KIND_LABEL: Record<CountdownKind, string> = { sunset: "Sunset", sunrise: "Sunrise", earthset: "Earth link ends", earthrise: "Earth link begins" };
 
 const KINDS: readonly CountdownKind[] = ["sunset", "sunrise", "earthset", "earthrise"];
-const NONE_LABEL: Record<CountdownKind, string> = { sunset: "sunset", sunrise: "sunrise", earthset: "end of Earth link", earthrise: "new Earth link" };
+const NONE_LABEL: Record<CountdownKind, string> = { sunset: "sunset", sunrise: "sunrise", earthset: "end of Earth link", earthrise: "start of Earth link" };
 const BODY: Record<CountdownKind, "sun" | "earth"> = { sunset: "sun", sunrise: "sun", earthset: "earth", earthrise: "earth" };
 
 function next(events: readonly CrossingEvent[], kind: CountdownKind, now: number, start: number): CrossingEvent | null {
@@ -79,7 +79,7 @@ export function Countdown({ events, timeMs, title = "Next events", onTrace, trac
       </ul>
       {missing.length > 0 && (
         <p className="cd-none">
-          No {list} {endMs !== undefined ? `before ${whenText(endMs, { year: false }).replace(/ \d\d:\d\d\u00a0UTC$/, "")}` : "later in the mission"}
+          No {list} {endMs !== undefined ? `before ${whenText(endMs, { year: false }).replace(/ \d\d:\d\d\u00a0UTC$/, "")}` : "later in the stay"}
         </p>
       )}
     </Panel>

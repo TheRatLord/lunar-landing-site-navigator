@@ -75,9 +75,9 @@ async def get_tile(tileset: str, layer: str, z: int, x: int, y: int, request: Re
     """256x256 PNG tile (XYZ, origin top-left). Fully empty tiles are a small transparent PNG, not an error."""
     ts = TILESETS.get(tileset)
     if ts is None:
-        raise ApiProblem(404, "Unknown tileset", f"{tileset!r}; known: {', '.join(TILESETS)}")
+        raise ApiProblem(404, "Unknown tileset", f"No tileset {tileset!r}. Known tilesets: {', '.join(TILESETS)}.")
     if layer not in LAYERS:
-        raise ApiProblem(404, "Unknown layer", f"{layer!r}; known: {', '.join(LAYERS)}")
+        raise ApiProblem(404, "Unknown layer", f"No layer {layer!r}. Known layers: {', '.join(LAYERS)}.")
     if not 0 <= z <= ts.zoom_max:
         raise ApiProblem(404, "Zoom out of range", f"z must be 0..{ts.zoom_max} for {tileset}")
     w, h = ts.matrix(z)
@@ -96,7 +96,7 @@ async def get_tile(tileset: str, layer: str, z: int, x: int, y: int, request: Re
 
 def _check_latlon(lat: float, lon: float) -> None:
     if not (math.isfinite(lat) and math.isfinite(lon)):
-        raise ApiProblem(422, "Invalid coordinates", "lat and lon must be finite")
+        raise ApiProblem(422, "Invalid coordinates", "lat and lon must be finite numbers.")
 
 
 @router.get("/point", response_model=PointResult, summary="Height and slope at a point")

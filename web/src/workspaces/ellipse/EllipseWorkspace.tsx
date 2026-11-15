@@ -60,7 +60,7 @@ export function EllipseWorkspace() {
     summary: ell ? "" : "no landing ellipse set",
     lines: [
       ell
-        ? `The landing ellipse is ${ell.semi_major_m} by ${ell.semi_minor_m} m, major axis azimuth ${ell.azimuth_deg}° clockwise from north, ${ell.dispersion === "gaussian" ? `Gaussian with axes at ${ell.sigma_level} sigma` : "uniform"}.`
+        ? `The landing ellipse is ${ell.semi_major_m} by ${ell.semi_minor_m} m, major axis azimuth ${ell.azimuth_deg}° clockwise from north, ${ell.dispersion === "gaussian" ? `Gaussian, with the axes at ${ell.sigma_level}σ` : "uniform"}.`
         : "The plan has no landing ellipse.",
       `Sampling ${run.points || "no"} points.`,
     ],
@@ -155,8 +155,8 @@ function EllipseHeadline({ result }: { result: EllipseResult | null }) {
   if (!result) {
     return (
       <>
-        <h2 className="site-headline">Where in the ellipse can it land?</h2>
-        <p className="site-headline-note">Run the sample to see what share of the possible landing points meets the requirements.</p>
+        <h2 className="site-headline">Where in the landing ellipse can it land?</h2>
+        <p className="site-headline-note">Run to get the pass share: the fraction of sampled landing points that meet the requirements.</p>
       </>
     );
   }
@@ -174,7 +174,7 @@ function EllipseHeadline({ result }: { result: EllipseResult | null }) {
         <strong className="verdict-word" data-tone={tone}>
           {all ? "Pass." : none ? "Fail." : `${pass < 0.1 ? (pass * 100).toFixed(1) : Math.round(pass * 100)}%`}
         </strong>{" "}
-        {all ? "Every sampled landing point passes." : none ? (marginal > 0.0005 ? "No sampled landing point passes outright." : "No sampled landing point passes.") : "of the ellipse passes."}
+        {all ? "Every sampled landing point passes." : none ? (marginal > 0.0005 ? "No sampled landing point passes. Some are marginal." : "No sampled landing point passes.") : "of the landing ellipse passes."}
       </h2>
       <p className="site-headline-note">
         Worst point {marginText(worst)}
@@ -261,7 +261,7 @@ function ResultArea({ doc, result, stale, form }: { doc: Scenario; result: Ellip
         )}
         {backdrop.status === "error" && (
           <span className="el-relief el-relief-error">
-            <Icon name="warn" size={12} /> No relief
+            <Icon name="warn" size={12} /> No relief map
           </span>
         )}
       </div>

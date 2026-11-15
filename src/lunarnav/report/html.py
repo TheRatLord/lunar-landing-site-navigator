@@ -34,7 +34,7 @@ from .limits import evaluate_search_sites, report_limits
 from .style import CSS
 
 REPORT_TITLE = "Mission report"
-STATE_LABEL = {"pass": "PASS", "marginal": "MARGINAL", "fail": "FAIL", "unknown": "NOT EVALUATED"}
+STATE_LABEL = {"pass": "PASS", "marginal": "MARGINAL", "fail": "FAIL", "unknown": "UNKNOWN"}
 
 
 def display_name(sc) -> str:
@@ -95,7 +95,7 @@ def _figure(svg: str, caption: str, n: int) -> str:
 def comparison_table(cmp, labels: dict[str, str]) -> str:
     names = need(cmp, "names", "comparison")
     rows = [td("Verdict") + "".join(f"<td>{state_chip(st, f'compare:state:{j}')}</td>" for j, st in enumerate(cmp.states)),
-            td("Limited by") + "".join(td(labels.get(lim, lim) if lim else DASH, f"compare:limiting:{j}", lim) for j, lim in enumerate(cmp.limiting))]
+            td("Limiting requirement") + "".join(td(labels.get(lim, lim) if lim else DASH, f"compare:limiting:{j}", lim) for j, lim in enumerate(cmp.limiting))]
     for key, label in FACTS:
         if key not in cmp.metric_keys:
             continue
@@ -124,7 +124,7 @@ def _reason(c) -> str:
         return f"{head}: holds nominally, worst-case margin {esc(amount(c.margin_worst, c.unit, plus=True))}"
     if c.state == "fail":
         return f"{head}, margin {esc(amount(c.margin if c.margin is not None else c.margin_worst, c.unit, plus=True))}"
-    return f"{head}: not evaluated"
+    return f"{head}: unknown"
 
 
 def _first(rows, attr: str, t0: float, t1: float):
@@ -259,13 +259,13 @@ def windows_table(scan) -> str:
 def section_figures(ev, scan, cmp) -> str:
     out = ['<section id="figures"><h2>Sun, Earth and power</h2>']
     out.append(_figure(figures.timeline(ev), "Sun and Earth elevation, sunlight, Earth link and battery from landing. "
-                       "Hatching is the range over the cases.", 1))
+                       "Hatching shows the range from worst to best case.", 1))
     out.append(_figure(figures.panorama(ev), "Horizon from the lander with the Sun and Earth paths over the stay.", 2))
     if scan is not None:
         c = scan.counts()
         out.append(_figure(figures.calendar(scan), f"Landing dates by lunar day: {c.get('pass', 0)} pass, {c.get('marginal', 0)} marginal, "
                            f"{c.get('fail', 0)} fail.", 3))
-        out.append("<h3>Landing windows</h3>" + (windows_table(scan) if scan.windows else "<p>No window in the scanned dates.</p>"))
+        out.append("<h3>Landing windows</h3>" + (windows_table(scan) if scan.windows else "<p>No landing window in the scanned dates.</p>"))
     if cmp is not None:
         out.append("<h3>Comparison</h3>" + comparison_table(cmp, {k: c.label for k, c in ev.scenario.constraints.active().items()}))
     out.append("</section>")
@@ -352,10 +352,10 @@ def _check_matching(ev, name: str, other_prov: dict) -> None:
     """Refuse a scan or slip that was not computed for this evaluation's scenario and horizon provider."""
     doc = other_prov.get("scenario")
     if doc is None:
-        raise ReportInputError(f"the {name} result carries no scenario document in its provenance")
+        raise ReportInputError(f"the {name} result carries no plan in its provenance")
     field = _same_analysis(ev.provenance["scenario"], doc)
     if field is not None:
-        raise ReportInputError(f"the {name} result was not computed for this scenario ({field} differs)")
+        raise ReportInputError(f"the {name} result was not computed for this plan ({field} differs)")
     if other_prov.get("horizon_provider") != ev.provenance.get("horizon_provider"):
         raise ReportInputError(f"the {name} result was computed with a different horizon provider than the evaluation")
 
@@ -363,7 +363,7 @@ def _check_matching(ev, name: str, other_prov: dict) -> None:
 def _check_comparison(ev, cmp) -> None:
     evals = need(cmp, "evaluations", "comparison")
     if not evals or evals[0].provenance.get("scenario_sha256") != ev.provenance["scenario_sha256"]:
-        raise ReportInputError("the comparison does not start with this evaluation's scenario (its first member must be the evaluated scenario)")
+        raise ReportInputError("the comparison must start with the evaluated plan")
     for e in evals:
         if e.provenance.get("horizon_provider") != ev.provenance.get("horizon_provider"):
             raise ReportInputError("the comparison members were computed with a different horizon provider than the evaluation")
@@ -386,9 +386,9 @@ def render_html(
     for attr in ("scenario", "verdict", "signals", "intervals", "metrics", "provenance", "soc"):
         need(evaluation, attr, "evaluation")
     if scan is not None:
-        _check_matching(evaluation, "opportunity scan", scan.provenance)
+        _check_matching(evaluation, "year survey", scan.provenance)
     if slip is not None:
-        _check_matching(evaluation, "slip", slip.provenance)
+        _check_matching(evaluation, "delay", slip.provenance)
     if comparison is not None:
         _check_comparison(evaluation, comparison)
     from . import surveys

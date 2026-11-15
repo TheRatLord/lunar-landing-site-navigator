@@ -36,9 +36,9 @@ export function sunInsetPairs(served: { sunlight: ServedValue; eclipse: number |
   const hi = s.hi !== null ? formatVisiblePct(s.hi, { unit: false }) : null;
   const range: InsetPair[] = lo !== null && hi !== null && lo !== hi ? [["Range", `${lo}–${formatVisiblePct(s.hi!)}`]] : [];
   return e !== null && e >= 1
-    ? [["Eclipse", "Earth"], ["Sunlight", formatVisiblePct(s.value)]]
+    ? [["Earth eclipse", "Total"], ["Sunlight", formatVisiblePct(s.value)]]
     : e !== null && e > 0
-      ? [["Sunlight", formatVisiblePct(s.value)], ["Earth covers", formatVisiblePct(e)]]
+      ? [["Sunlight", formatVisiblePct(s.value)], ["Earth eclipse", formatVisiblePct(e)]]
       : [["Visible", formatVisiblePct(s.value)], ...range];
 }
 

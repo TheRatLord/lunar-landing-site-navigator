@@ -18,7 +18,7 @@ DOCS = "docs/validation"
 
 ASSUMED = "Assumed"
 NOT_MODELLED = "Not modelled"
-MODEL_LIMIT = "Model limit at this scenario"
+MODEL_LIMIT = "Model limit for this plan"
 MISS_IMAGES = "Known miss against orbital images"
 MISS_PUBLISHED = "Known miss against published values"
 MISS_LANDED = "Known miss against landed missions"
@@ -73,15 +73,15 @@ class NoteSpec:
 
 REGISTRY: dict[str, NoteSpec] = {
     "events.half_flux": NoteSpec("Sunrise and sunset are half-flux crossings", "always"),
-    "terrain.error_budget": NoteSpec("Terrain-error widening of the horizon bracket", "provenance.horizons.{array,antenna}.widened (k_sigma = scenario.terrain_error.k_sigma)"),
+    "terrain.error_budget": NoteSpec("Horizon widened by the terrain error", "provenance.horizons.{array,antenna}.widened (k_sigma = scenario.terrain_error.k_sigma)"),
     "terrain.error_basis": NoteSpec("Basis of the terrain-error figures", "provenance.horizons.{array,antenna}.widened"),
     "terrain.error_budget_scope": NoteSpec("What the terrain-error budget does not cover", "provenance.site_terrain is not None"),
     "terrain.height_outliers": NoteSpec("Isolated height outliers in the polar terrain stores", "provenance.site_terrain.pixel_m <= 10"),
     "terrain.barker_low_tail": NoteSpec("Open miss against the published Barker 1st percentile near the ground", "site latitude <= -80 and provenance.site_terrain.pixel_m <= 10"),
     "terrain.bracket_resolution": NoteSpec("Horizon bracket is numerical resolution only", "provenance.site_terrain is not None"),
-    "terrain.global_coarse": NoteSpec("Coarse terrain store at the site", "provenance.site_terrain.pixel_m >= 100"),
+    "terrain.global_coarse": NoteSpec("Coarse terrain data at the site", "provenance.site_terrain.pixel_m >= 100"),
     "terrain.polar_footprint": NoteSpec("Terrain at the lander footprint sets the polar horizon", "provenance.site_terrain is not None and abs(scenario.site.lat_deg) >= 80"),
-    "terrain.mazarico_cr1": NoteSpec("Open miss against the published Mazarico CR1 figure", "provenance.site_terrain is not None"),
+    "terrain.mazarico_cr1": NoteSpec("Open miss against Mazarico's published connecting-ridge figure", "provenance.site_terrain is not None"),
     "terrain.landed_missions": NoteSpec("Landed missions do not test the terrain horizon", "provenance.site_terrain is not None"),
     "terrain.polar_observed_coverage": NoteSpec("Terrain range contained 68 % of observed polar shadow edges", "provenance.site_terrain is not None and scenario.site.lat_deg <= -80"),
     "terrain.polar_small_shadows": NoteSpec("Cell-scale shadows are not predicted", "provenance.site_terrain is not None and scenario.site.lat_deg <= -80"),
@@ -89,7 +89,7 @@ REGISTRY: dict[str, NoteSpec] = {
     "terrain.avgvisib_comparison": NoteSpec("Average illumination against the published 60 m raster", "provenance.site_terrain is not None and scenario.site.lat_deg <= -80"),
     "terrain.bright_ridge_low": NoteSpec("Brightest ridge pixels read low", "provenance.site_terrain is not None and scenario.site.lat_deg <= -80"),
     "terrain.crest_observer_height": NoteSpec("Crest illumination depends on observer height", "provenance.site_terrain is not None and scenario.site.lat_deg <= -80 (scenario.profile.array_height_m, antenna_height_m)"),
-    "terrain.near_field_seam": NoteSpec("Terrain-store seam within 1 000 m of the observer", "provenance.horizons.*.provenance.near_field_seam present and warning"),
+    "terrain.near_field_seam": NoteSpec("Terrain data edge within 1 000 m of the observer", "provenance.horizons.*.provenance.near_field_seam present and warning"),
     "terrain.pit_height": NoteSpec("Pit heights are below the terrain vertical accuracy", "an ellipse or a search result is reported"),
     "sphere.no_terrain": NoteSpec("Smooth-sphere horizon, no terrain", "provenance.site_terrain is None"),
     "sphere.blue_ghost_sunset": NoteSpec("Blue Ghost sunset is 1.9 h late on the smooth sphere", "provenance.site_terrain is None"),
@@ -106,13 +106,13 @@ REGISTRY: dict[str, NoteSpec] = {
     "power.estimated_profile": NoteSpec("Lander power profile contains estimates", "scenario.profile.estimates() is not empty"),
     "power.model_scope": NoteSpec("Power model omits albedo, diffuse light, thermal and incidence losses", "always"),
     "power.battery_lumped": NoteSpec("Battery is a lumped model", "always"),
-    "contact.geometric": NoteSpec("Contact is geometric", "scenario.network.stations, an active constraint in (dte_at_landing_deg, min_contact_fraction, max_contact_gap_h, min_total_contact_h, min_total_sunlit_contact_h, min_link_margin_db), or a metric key starting contact, longest_outage, link_margin, dte or earth"),
+    "contact.geometric": NoteSpec("Earth link is geometric only", "scenario.network.stations, an active constraint in (dte_at_landing_deg, min_contact_fraction, max_contact_gap_h, min_total_contact_h, min_total_sunlit_contact_h, min_link_margin_db), or a metric key starting contact, longest_outage, link_margin, dte or earth"),
     "link.budget": NoteSpec("Link margin uses user-supplied figures", "scenario.profile.link is not None"),
     "landed.slim_recovery": NoteSpec("SLIM recovery days are not predicted", "always"),
     "ellipse.binomial_error": NoteSpec("Ellipse probabilities are sample fractions", "an ellipse result is reported"),
     "ellipse.conditional": NoteSpec("Ellipse probabilities are conditional on landing inside it", "ellipse.truncated"),
     "search.pruning_heuristic": NoteSpec("Coarse search levels are a heuristic", "search.settings.exhaustive is false"),
-    "search.recall_one_area": NoteSpec("Search recall was measured for one scenario and area", "search.settings.exhaustive is false"),
+    "search.recall_one_area": NoteSpec("Search recall was measured for one plan and area", "search.settings.exhaustive is false"),
 }
 
 
@@ -272,20 +272,20 @@ def _select(f: dict, eclipse_in_span: bool, beyond_eop: bool, eop_end: str) -> l
     add = out.append
 
     add(LimitNote("events.half_flux", 
-        ASSUMED, "Sunlit means a limb-darkened solar flux fraction above the scenario's threshold (default one half); "
-        "event times are crossings of that threshold, not first or last limb.",
+        ASSUMED, "Sunlit means that the visible fraction of the Sun's limb-darkened flux is above the plan's threshold (default one half), "
+        "and event times are the crossings of that threshold, not the first or last limb.",
         "scenario.md section 1", "Sunlight = terrain flux"))
     h, widened = f["heading"], f["terrain_widened"]
     if widened:
         add(LimitNote("terrain.error_budget", 
-            ASSUMED, f"Where the terrain-error bound applies, the optimistic and pessimistic cases widen the horizon by k = {f['k_sigma']:g} "
-            "sigma of the terrain product's error with a first-order marginal model per azimuth; correlated DEM error is not modelled.",
-            "visibility.md section 6", "Horizon widening is a first-order per-azimuth marginal model",
+            ASSUMED, f"Where the terrain error applies, the best and worst cases widen the horizon by k = {f['k_sigma']:g} "
+            "standard deviations of the terrain data's error, with a first-order model applied to each azimuth separately, and correlated DEM error is not modelled.",
+            "visibility.md section 6", "Horizon widening is a first-order marginal model per azimuth",
             parameters={"k_sigma": f["k_sigma"]}))
         add(LimitNote(
-            "terrain.error_basis", ASSUMED, "The terrain-error range is only as good as the sigma behind it: each terrain product's vertical and "
-            "horizontal sigma is published, published-method, measured here, or assumed (the global budget of 4 m and 10 m); the basis of each "
-            "figure is listed in section 2.",
+            "terrain.error_basis", ASSUMED, "The terrain error range is only as good as the standard deviations behind it: for each terrain data set the vertical and "
+            "horizontal values are published, follow a published method, are measured here, or are assumed (the global budget of 4 m and 10 m), and "
+            "section 2 lists the basis of each figure.",
             "terrain.md section 5", "(global 4 m / 10 m: all north LDEMs"))
     if (h is not None and h.depends) or f["heading_rows"]:
         is_stated = h is not None and h.known
@@ -293,47 +293,47 @@ def _select(f: dict, eclipse_in_span: bool, beyond_eop: bool, eop_end: str) -> l
                   if is_stated else "The lander heading is unknown, so all evaluated headings are in the bound and there is no nominal "
                   "state of charge")
         add(LimitNote("heading.stated" if is_stated else "heading.unknown", 
-            ASSUMED, f"{stated}: the optimistic and pessimistic cases are the upper and the lower bound over headings, so the state-of-charge "
-            "bounds measure the heading, not terrain, wherever the engine's attribution says so.",
+            ASSUMED, f"{stated}: the best and worst cases are the upper and lower bounds over headings, so wherever the engine's attribution says so, "
+            "the state-of-charge bounds show the effect of the heading, not of the terrain.",
             "scenario.md section 6", "Power and state-of-charge bounds come from the best and worst lander heading",
             parameters={"nominal_yaw_deg": h.nominal_yaw_deg, "uncertainty_deg": h.uncertainty_deg} if is_stated else {}))
     seam = f["seam"]
     if seam is not None:
         add(LimitNote(
-            "terrain.near_field_seam", MODEL_LIMIT, f"Within {seam['near_field_m']:g} m of the {seam['observer']} observer the {seam['other_store']} store "
-            f"supplies the ground instead of the {seam['ground_store']} store, {seam['distance_m']:g} m away: the height step across it "
+            "terrain.near_field_seam", MODEL_LIMIT, f"A terrain data edge lies {seam['distance_m']:g} m from the {seam['observer']} observer: within {seam['near_field_m']:g} m the {seam['other_store']} store "
+            f"supplies the ground instead of the {seam['ground_store']} store, and the height step across the edge "
             f"(median {seam['step_median_m']:g} m, 95th percentile {seam['step_p95_m']:g} m over {seam['n_crossings']} crossings) can move the "
-            f"horizon by {seam['horizon_shift_deg']:g} deg, more than the horizon's own bracket, so the near-field horizon may carry an artefact of that size.",
+            f"horizon by {seam['horizon_shift_deg']:g} deg, more than the horizon's own bracket, so the near-field horizon may be wrong by that much.",
             "terrain.md section 3.9", "a seam with 95th-percentile step `s` at distance `d` can move the horizon by `shift = atan(s / d)`",
             parameters={k: seam[k] for k in ("observer", "ground_store", "other_store", "distance_m", "step_median_m", "step_p95_m",
                                              "n_crossings", "horizon_shift_deg", "near_field_m")}))
     if ter is None:
         coincide = not widened and not f["antenna_range"] and (h is None or not h.depends or (h.known and h.uncertainty_deg == 0.0))
         add(LimitNote("sphere.no_terrain", 
-            MODEL_LIMIT, "No terrain was used: the horizon is the smooth sphere at each observer height, the same in all three "
-            "cases; sunrise and sunset ignore topography. "
+            MODEL_LIMIT, "No terrain data was used, so the horizon is the smooth-sphere horizon at each observer height, the same in all three "
+            "cases, and sunrise and sunset ignore topography. "
             + ("Every bound therefore equals the nominal value." if coincide else
                "The bounds that remain come from the lander heading or the antenna height range, not from the horizon."),
             "scenario.md section 6", "the three cases coincide only when"))
         add(LimitNote("sphere.blue_ghost_sunset", 
-            MISS_LANDED, "On the smooth sphere the modelled Blue Ghost Mission 1 sunset is 1.9 h later than Firefly's window.",
+            MISS_LANDED, "With the smooth-sphere horizon the modelled Blue Ghost Mission 1 sunset is 1.9 h later than Firefly's window.",
             "scenario.md section 5", "Blue Ghost sunset (+1.9 h, target 1 h)"))
     else:
         px = ter["pixel_m"]
         if px >= 100.0:
             add(LimitNote("terrain.global_coarse", 
-                MODEL_LIMIT, f"The terrain store serving this site ({ter['dem_id']}) has {px:g} m pixels, which is coarse "
-                "for a near-field horizon; the horizon bracket does not include that representation error.",
-                "horizon.md section 5", "near-field horizon there is pixel-scale smooth",
+                MODEL_LIMIT, f"The terrain data at this site ({ter['dem_id']}) has {px:g} m pixels, which is coarse "
+                "for a near-field horizon, and the horizon bracket does not include the error this causes.",
+                "horizon.md section 5", "the near-field horizon is smooth at pixel scale",
                 parameters={"dem_id": ter["dem_id"], "pixel_m": px}))
         add(LimitNote("terrain.bracket_resolution", 
-            MODEL_LIMIT, "The horizon engine's bracket is numerical resolution only; DEM error enters through the terrain-error "
-            "widening, whose sigma per terrain store is listed in section 2.",
+            MODEL_LIMIT, "The horizon engine's bracket covers numerical resolution only: DEM error enters through the terrain-error "
+            "widening, whose standard deviation for each terrain store is listed in section 2.",
             "horizon.md section 5", "DEM error is not included in the bracket"))
         if abs(lat) >= 80.0:
             add(LimitNote("terrain.polar_footprint", 
                 MODEL_LIMIT, "At a polar site the terrain within a few metres of the lander can set the horizon at many "
-                "azimuths; the engine has no minimum-distance option to exclude the footprint.",
+                "azimuths, and the engine has no minimum-distance option to exclude the lander footprint.",
                 "horizon.md section 5", "Terrain within a few metres of the observer on a slope"))
         add(LimitNote("terrain.error_budget_scope", 
             MODEL_LIMIT, "The terrain-error budget does not cover interpolated pixels (most 5 m pixels carry no direct measurement), "
@@ -345,22 +345,22 @@ def _select(f: dict, eclipse_in_span: bool, beyond_eop: bool, eop_end: str) -> l
                 "terrain.height_outliers", MODEL_LIMIT,
                 "The terrain-error budget also does not cover isolated pixels whose height is wrong by tens of metres: about 8 in a million "
                 "pixels of the 5 m polar store differ from the 10 m store by more than 20 m, and in a comparison of 57,155 points four 5 m "
-                "polar pixels differed from the PGDA tile by 29 to 47 m (none within 2 km of a catalogue site); a horizon limited by such a "
+                "polar pixels differed from the PGDA tile by 29 to 47 m (none within 2 km of a catalogue site). A horizon set by such a "
                 "pixel falls outside the stated range.",
                 "terrain.md section 3.3", "found **4 points of 57 155 compared with a difference above 25 m**",
                 more=("8.4e-6",),
                 parameters={"fraction_over_20m_5m_vs_10m": 8.4e-6, "points_compared": 57155, "points_differing": 4,
                             "difference_min_m": 29.04, "difference_max_m": 46.70}))
         add(LimitNote("terrain.mazarico_cr1", 
-            MISS_PUBLISHED, "Against the published Mazarico CR1 figure the 240 m store's best post within 3 km is 74.90 % against 89.01 % "
-            "(-14.1 points); the cause is not established.",
+            MISS_PUBLISHED, "At Mazarico's connecting-ridge point (CR1), the best post of the 240 m terrain data within 3 km reads 74.90 % against the published 89.01 % "
+            "(-14.1 percentage points), and the cause is not established.",
             "scenario.md section 6", "Open miss, Mazarico CR1 (section 11.4)"))
         if lat <= -80.0 and px <= 10.0:
             add(LimitNote(
                 "terrain.barker_low_tail", MISS_PUBLISHED,
                 "Near the ground at a south-polar site the pessimistic case is not as pessimistic as a published terrain-uncertainty study's "
                 "1st percentile (Barker et al. 2021, 5 m tiles). At a 1 m observer height the pessimistic case's average illumination is 0.16 "
-                "to 2.39 points above that percentile in seven of seven regions, and its longest continuous illumination period is 14.6 to "
+                "to 2.39 percentage points above that percentile in seven of seven regions, and its longest continuous illumination period is 14.6 to "
                 "36.5 days above it in six of seven; at 5 m it reaches the percentile (0.1 to 0.9 points below it in all seven regions). "
                 "Treat a Pass with a small worst-case margin on sunlight, or on a long illuminated span, as less certain than the range suggests.",
                 "scenario.md section 11.6",
@@ -371,7 +371,7 @@ def _select(f: dict, eclipse_in_span: bool, beyond_eop: bool, eop_end: str) -> l
                             "avg_below_p1_5m_pp": [0.1, 0.9]}))
         south = lat <= -80.0
         add(LimitNote("terrain.landed_missions", 
-            MISS_LANDED, "Surface event times from landed missions do not test the terrain horizon at this resolution (no ground truth "
+            MISS_LANDED, "Surface event times from landed missions do not test the terrain horizon at this resolution (no reference exists "
             "at the required resolution), so the terrain bounds are not validated against an observed local horizon from the surface."
             + (" Orbital images do test it at the south pole; see the notes on orbital images." if south else
                " The orbital-image and published-illumination comparisons in this report's validation were made near the south pole "
@@ -379,9 +379,9 @@ def _select(f: dict, eclipse_in_span: bool, beyond_eop: bool, eop_end: str) -> l
             "scenario.md section 5", "terrain-horizon events (no ground truth at the required resolution)"))
         if south:
             add(LimitNote("terrain.polar_observed_coverage", 
-                MISS_IMAGES, "Against ten orbital images of south-polar terrain (Sun elevation -2.0 to +6.3 deg) the stated optimistic-to-"
-                "pessimistic range at k = 2 sigma contained 68.2 % of the 9,565 observed shadow-boundary cells (62.9 % at k = 1, 70.6 % at "
-                "k = 3), and 39-40 % at Shackleton. A two-sigma interval would be expected to contain about 95 %; the stated range has "
+                MISS_IMAGES, "In ten orbital images of south-polar terrain (Sun elevation -2.0 to +6.3 deg), the stated best-to-worst-case "
+                "range at k = 2 standard deviations contained 68.2 % of the 9,565 observed shadow-boundary cells (62.9 % at k = 1, 70.6 % at "
+                "k = 3), and 39-40 % at Shackleton. A range of two standard deviations would be expected to contain about 95 %. The stated range has "
                 "contained about two thirds of observed shadow edges, so treat a Marginal verdict, or a narrow Pass, on sunlight timing "
                 "at a polar site as less certain than the range suggests.",
                 "imagery.md section 'What a planner can take from this', item 1",
@@ -390,7 +390,7 @@ def _select(f: dict, eclipse_in_span: bool, beyond_eop: bool, eop_end: str) -> l
                 ("Sun elevation -2.0 to +6.3 deg", "k = 2 covers 39-40 % of boundary cells at Shackleton")))
             add(LimitNote("terrain.polar_small_shadows", 
                 MISS_IMAGES, "Shadows one to three terrain cells across, seen from ground level with the Sun below 6.5 deg, are not "
-                "predicted reliably: on 9 of 10 images the overlap (IoU) of predicted and observed shadow was below 0.2, and at Shackleton "
+                "predicted reliably: on 9 of 10 images the overlap of predicted and observed shadow (intersection over union, IoU) was below 0.2, and at Shackleton "
                 "(Sun 1.2 deg) only 37 of 295 and 34 of 245 observed shadow cells were predicted shadow. No scene has the Sun higher than "
                 "6.3 deg.",
                 "imagery.md section 'What a planner can take from this', item 3",
@@ -402,102 +402,102 @@ def _select(f: dict, eclipse_in_span: bool, beyond_eop: bool, eop_end: str) -> l
                  "A \"higher Sun\" than about 6.5 deg is not reachable at 5-10 m store resolution")))
             add(LimitNote("terrain.polar_large_shadows", 
                 MODEL_LIMIT, "Large shadows are placed well: shadows of at least 64 cells (about 4,000 m2 at 8 m cells) have a median "
-                "boundary error of 5.7 to 8.0 m at Sun 5.6 to 6.3 deg. At the shadow-edge speeds measured (5-25 m/h) a displaced boundary "
-                "is 26-41 minutes of sunrise and sunset timing at the Malapert scenes with a measurable speed, and 62 to 314 minutes at "
-                "the four other scenes with one.",
+                "boundary error of 5.7 to 8.0 m at Sun elevation 5.6 to 6.3 deg. At the measured shadow-edge speeds (5-25 m/h) that boundary error "
+                "equals 26-41 minutes of sunrise and sunset timing at the Malapert scenes with a measurable speed, and 62 to 314 minutes at "
+                "the four other scenes with a measurable speed.",
                 "imagery.md section 'What a planner can take from this', item 2",
                 "Shadows of at least 64 cells (about 4,000 m2 at 8 m cells) are placed with a median boundary error of 5.7 to 8.0 m",
                 ("26-41 min for the Malapert scenes with a measurable speed", "measured 5-25 m/h",
                  "62 min for pgda_m184288222", "136 min for Malapert03", "157 min for pgda_m139729686", "314 min for pgda_m1188426614")))
             add(LimitNote("terrain.avgvisib_comparison", 
                 MODEL_LIMIT, "Against the published 60 m average-illumination raster AVGVISIB_85S_060M (1500 random pixels within 150 km "
-                "of the south pole) the exact engine's average sunlight has a mean error of 0.59 points (95th percentile 2.72), and its "
-                "Earth visibility a 95th percentile of 6.27 points, which misses the 5-point target.",
+                "of the south pole) the exact engine's average illumination has a mean error of 0.59 percentage points (95th percentile 2.72), and its "
+                "Earth visibility has a 95th percentile error of 6.27 percentage points, which misses the 5-point target.",
                 "illumination.md section 'Summary for planners'",
-                "Sun mean 0.59 points, p95 2.72; Earth p95 6.27 misses the 5-point target",
-                ("n = 1500 pixels, rho < 150 km",)))
+                "Earth p95 6.27 misses the 5-point target",
+                ("Sun mean 0.59 points, p95 2.72", "n = 1500 pixels, rho < 150 km")))
             add(LimitNote("terrain.bright_ridge_low", 
                 MISS_PUBLISHED, "The brightest ridge pixels read low: at the published-maximum pixel (88.44 %) the engine on the 60 m terrain "
-                "gives 84.38 %, and over the 50 brightest published pixels it is 4.0 points low on average. Crest values depend strongly "
+                "gives 84.38 %, and over the 50 brightest published pixels it is 4.0 percentage points low on average. Crest values depend strongly "
                 "on terrain resolution: the same 50 pixels read 53.7 % on the 20 m store and 38.9 % on the 10 m store. A site on a crest "
                 "has the least certain sunlit fraction.",
                 "illumination.md section 3.4",
-                "So crest illumination is strongly resolution-dependent",
-                ("Top-50 published pixels: mean published 79.97 %, engine 75.96 %, bias -4.01",
-                 "Engine at that pixel (60 m store, exact): 84.38 %", "20 m store 53.7 %, 10 m store 38.9 %",
-                 "published 88.444 %")))
+                "So crest illumination depends strongly on resolution",
+                ("Top-50 published pixels: the mean published value is 79.97 % and the engine gives 75.96 %. Bias -4.01",
+                 "the engine gives 84.38 %", "53.7 % on the 20 m store and 38.9 % on the 10 m store",
+                 "published maximum 88.444 %")))
             add(LimitNote("terrain.crest_observer_height", 
                 MODEL_LIMIT, "Crest values depend on observer height: at the published-maximum pixel the exact engine reads 55.8 % with the "
-                "default 0 m mast and 90.4 % with a 2 m mast (the regional layer's 8 output cells there average 47.7 % at 0 m). This "
-                f"scenario's observers are {f['array_height_m']:g} m (array) and {f['antenna_height_m']:g} m (antenna) above local ground, "
+                "default observer height of 0 m and 90.4 % at 2 m (the regional layer's 8 output cells there average 47.7 % at 0 m). This "
+                f"plan's observers are {f['array_height_m']:g} m (array) and {f['antenna_height_m']:g} m (antenna) above local ground, "
                 "so its sunlight depends on those heights.",
                 "illumination.md section 'Summary for planners'",
-                "observer height decides it",
-                ("cell row 466, col 536: exact 55.8 %", "With a 2 m mast the same cell is 90.4 % exact",
-                 "The 8 output cells inside that pixel average 47.7 % at the default mast of 0 m"),
+                "Observer height decides it",
+                ("(row 466, col 536), the exact engine gives 55.8 %", "90.4 % at 2 m",
+                 "At the default observer height of 0 m, the 8 output cells inside that pixel average 47.7 %"),
                 parameters={"array_height_m": f["array_height_m"], "antenna_height_m": f["antenna_height_m"]}))
     if abs(lat) >= 60.0:
         add(LimitNote("events.shallow_sun", 
             MODEL_LIMIT, f"At {lat:.1f} deg latitude the Sun meets the horizon at a shallow angle: half-flux and last-limb "
-            "times can differ by hours, and event times are dominated by the horizon.",
+            "times can differ by hours, and the terrain horizon dominates event times.",
             "scenario.md section 6", "Half-flux events differ from the last/first limb time, hours at high latitude",
             parameters={"latitude_deg": lat}))
         add(LimitNote("events.chandrayaan3_sunset", 
-            MISS_LANDED, "The published Chandrayaan-3 sunset (69.4 S) is 5.2 h from the modelled horizon crossing; the published "
-            "instant matches a local-solar-time label.",
+            MISS_LANDED, "The published Chandrayaan-3 sunset (69.4 S) is 5.2 h from the modelled horizon crossing, and the published "
+            "time matches a local-solar-time label.",
             "scenario.md section 5", "Chandrayaan-3 sunset (-5.2 h, target 1-3 h)"))
     add(LimitNote("scan.step", 
-        MODEL_LIMIT, f"Edges are linear interpolation at the {step_s_text(step)} signal step; the interpolation error is "
-        "1.4 s at 600 s and 43 s at 1800 s.",
+        MODEL_LIMIT, f"Event times are linearly interpolated between samples {step_s_text(step)} apart, with an interpolation error of "
+        "1.4 s at a 600 s step and 43 s at an 1800 s step.",
         "scenario.md section 6", "Linear interpolation at the signal step: up to 43 s at 1800 s, 1.4 s at 600 s",
         parameters={"step_s": step}))
     if eclipse_in_span and f["shadow"] == "danjon":
         add(LimitNote("eclipse.danjon", 
-            ASSUMED, "Earth shadow uses the Danjon-enlarged Earth (radius x 1.01): the conservative direction for power; "
-            "contact times differ from the bare-Earth model by up to about 2 min.",
+            ASSUMED, "The Earth eclipse uses the Danjon-enlarged Earth (radius x 1.01), the conservative direction for power, "
+            "and eclipse contact times differ from the bare-Earth model by up to about 2 min.",
             "scenario.md section 6", "The Danjon shadow is a proxy; differences from the geometric model are up to about 2 min",
             parameters={"shadow": f["shadow"], "earth_radius_km": f["earth_radius_km"]}))
     elif eclipse_in_span:
         add(LimitNote("eclipse.geometric", 
             ASSUMED, "Earth shadow uses the geometric (bare Earth) convention, which gives shorter eclipses than the Danjon default.",
-            "ephemeris.md section 8", "lengthens eclipses relative to a bare Earth, the conservative direction for power",
+            "ephemeris.md section 8", "lengthens eclipses relative to a bare Earth, which is the conservative direction for power",
             parameters={"shadow": f["shadow"], "earth_radius_km": f["earth_radius_km"]}))
     if eclipse_in_span:
         add(LimitNote("eclipse.no_atmosphere", 
-            NOT_MODELLED, "No atmospheric refraction or extinction, no gravitational light deflection; the eclipse fraction is an "
-        "obscuration proxy, not irradiance.",
-        "ephemeris.md section 8", "no atmospheric refraction or extinction"))
+            NOT_MODELLED, "The Earth eclipse model has no atmospheric refraction or extinction and no gravitational light deflection, so the eclipse fraction "
+        "measures how much of the Sun is covered, not the irradiance.",
+        "ephemeris.md section 8", "atmospheric refraction or extinction"))
     if beyond_eop:
         add(LimitNote("ephemeris.eop", 
-            MODEL_LIMIT, f"Earth orientation after {eop_end[:10]} comes from a predicted kernel; ephemeris uncertainty grows with epoch.",
+            MODEL_LIMIT, f"Earth orientation after {eop_end[:10]} comes from a predicted kernel, and ephemeris uncertainty grows with time.",
             "scenario.md section 6", "Earth orientation beyond 2026 uses the predicted EOP kernel",
             parameters={"coverage_end_utc": eop_end}))
     if f["estimates"]:
         add(LimitNote("power.estimated_profile", 
-            ASSUMED, f"{len(f['estimates'])} lander profile parameter group(s) are estimates, or values set by an automated assistant and not stated by the user, not published values "
-            f"({', '.join(f['estimates'])}); all battery and state-of-charge results depend on them and none is validated against telemetry.",
+            ASSUMED, f"{len(f['estimates'])} lander profile parameter group(s) ({', '.join(f['estimates'])}) are estimates, or values that an automated assistant set and "
+            "the user did not state, not published values: all battery and state-of-charge results depend on them, and none is validated against telemetry.",
             "scenario.md section 5", "all battery and SOC results (lander",
             parameters={"groups": list(f["estimates"])}))
     add(LimitNote("power.model_scope", 
-        NOT_MODELLED, "Power: no albedo, diffuse light, thermal derating or incidence-angle losses.",
+        NOT_MODELLED, "The power model has no albedo, diffuse light, thermal derating or incidence-angle losses.",
         "visibility.md section 6", "Power: no albedo, diffuse light, thermal derating or incidence-angle losses"))
     add(LimitNote("power.battery_lumped", 
-        NOT_MODELLED, "Battery: lumped efficiencies only; no temperature, ageing, voltage or converter effects.",
-        "visibility.md section 6", "Battery: lumped efficiencies; no temperature, ageing, voltage or constant-power-converter effects"))
+        NOT_MODELLED, "The battery model uses lumped efficiencies only, with no temperature, ageing, voltage or converter effects.",
+        "visibility.md section 6", "Battery: lumped efficiencies. No temperature, ageing, voltage or constant-power-converter effects"))
     if (f["network"] or any(k in f["constraints"] for k in CONTACT_CONSTRAINTS)
             or any(k.startswith(CONTACT_METRIC_PREFIXES) for k in f["metrics"])):
         add(LimitNote("contact.geometric", 
-            NOT_MODELLED, "Contact is geometric: station mask and lander-side clearance only. No antenna pattern, pointing limit, "
-            "station outage or scheduling conflict.",
+            NOT_MODELLED, "The Earth link is geometric only: it checks the ground station's elevation mask and the lander-side clearance, with no antenna pattern, "
+            "pointing limit, station outage or scheduling conflict.",
             "scenario.md section 6", "a station outage or scheduling is not modelled"))
     if f["link"]:
         add(LimitNote("link.budget", 
-            NOT_MODELLED, "Link margin uses the user-supplied G/T, losses and requirement; weather and atmospheric statistics are "
-            "not modelled and only a published deep-space example was reproduced, not a lunar one.",
-            "visibility.md section 6", "Link budget: the user supplies G/T, losses and requirement"))
+            NOT_MODELLED, "Link margin uses the user-supplied G/T (ground station receive sensitivity), losses and requirement, does not model weather or "
+            "atmospheric statistics, and was checked only by reproducing a published deep-space example, not a lunar one.",
+            "visibility.md section 6", "Link budget: the user supplies G/T, losses and the requirement"))
     add(LimitNote("scan.feature_missed", 
         ASSUMED, "A rise, set or notch shorter than the signal step can be missed between two samples.",
-        "visibility.md section 6", "Inputs are assumed sampled finely enough that a feature (rise, set, notch) is not missed"))
+        "visibility.md section 6", "The inputs are assumed to be sampled finely enough that no feature (rise, set, notch) falls between two samples"))
     add(LimitNote("landed.slim_recovery", 
         MISS_LANDED, "SLIM's recovery days are not predicted because its wake threshold is unpublished.",
         "scenario.md section 5", "SLIM recovery days"))
@@ -553,13 +553,13 @@ def survey_limits(ellipse=None, search=None) -> list[LimitNote]:
     out: list[LimitNote] = []
     if ellipse is not None:
         out.append(LimitNote("ellipse.binomial_error", 
-            ASSUMED, "Ellipse probabilities are sample fractions with a binomial standard error that is conservative for the "
-            "low-discrepancy sample" + ("; with the truncated dispersion they are conditional on landing inside the ellipse." if ellipse.truncated else "."),
+            ASSUMED, "Landing ellipse probabilities are sample fractions with a binomial standard error, which is conservative for the "
+            "low-discrepancy sample" + (", and because the error distribution is cut at the landing ellipse they assume a landing inside it." if ellipse.truncated else "."),
             "scenario.md section 9", "conservative for a low-discrepancy sequence",
             parameters={"n_samples": ellipse.n_samples, "truncated": bool(ellipse.truncated)}))
         if ellipse.truncated:
             out.append(LimitNote("ellipse.conditional", 
-                ASSUMED, "The truncated dispersion makes every ellipse probability conditional on landing inside the ellipse.",
+                ASSUMED, "The error distribution is cut at the landing ellipse, so every landing ellipse probability assumes a landing inside it.",
                 "scenario.md section 9", "probabilities are conditional on landing inside the ellipse",
                 parameters={"n_samples": ellipse.n_samples}))
     if search is not None and not search.settings["exhaustive"]:
@@ -569,12 +569,12 @@ def survey_limits(ellipse=None, search=None) -> list[LimitNote]:
             "scenario.md section 10", "The coarse promotion is a heuristic",
             parameters={"final_spacing_m": search.settings["final_spacing_m"], "coarse_factor": search.settings["coarse_factor"]}))
         out.append(LimitNote("search.recall_one_area", 
-            MISS_SEARCH, "Recall of the pruned search was measured for one scenario and one area only; with other constraints it may lose sites.",
+            MISS_SEARCH, "The share of good sites the pruned search finds (its recall) was measured for one plan and one area only, and with other requirements it may miss sites.",
             "scenario.md section 10", "The recall result is for one scenario and one area",
             parameters={"final_spacing_m": search.settings["final_spacing_m"], "coarse_factor": search.settings["coarse_factor"]}))
     if ellipse is not None or search is not None:
         out.append(LimitNote("terrain.pit_height", 
-            MODEL_LIMIT, "Heights of a few metres, which matter at a pit, are below the terrain store's vertical accuracy.",
+            MODEL_LIMIT, "Heights of a few metres, which matter at a pit, are below the terrain data's vertical accuracy.",
             "scenario.md section 6", "are below the store's vertical accuracy"))
     return _in_reading_order(out)
 

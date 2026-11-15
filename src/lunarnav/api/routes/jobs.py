@@ -80,7 +80,7 @@ async def cancel_job(
     cancels it for all of them."""
     job, effect = ctx.jobs.cancel(job_id, force=force)
     wanted = job.holders if effect == "detached" else 0
-    detail = (f"Not cancelled: still wanted by {wanted} other request{'s' if wanted != 1 else ''}; cancel again to stop it, or use force=true."
+    detail = (f"Not cancelled: {wanted} other request{'s' if wanted != 1 else ''} still need{'' if wanted != 1 else 's'} this job. Cancel again to stop it, or use force=true."
               if effect == "detached" else CANCEL_DETAIL[effect])
     return CancelReply(**job.status(), effect=effect, still_wanted_by=wanted, detail=detail)
 

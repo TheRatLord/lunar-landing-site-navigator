@@ -21,7 +21,7 @@ export function areaText(radius_km: number | null): string | null {
 }
 
 export function windowText(w: LandingWindow | null): string | null {
-  return w === null ? null : `Any time ${spanText(w.first_ms, w.last_ms)}`;
+  return w === null ? null : `Landing window ${spanText(w.first_ms, w.last_ms)}`;
 }
 
 export function AreaControl() {

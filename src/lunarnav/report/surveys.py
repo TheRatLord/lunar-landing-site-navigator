@@ -33,7 +33,7 @@ PERCENTILE_HEADS = ("5 %", "25 %", "Median", "75 %", "95 %", "Mean", "Min", "Max
 def _same_run(ev, name: str, prov: dict) -> None:
     """Refuse an ellipse or search result that was not computed for this evaluation's scenario and horizon provider."""
     if prov.get("scenario_hash") != ev.provenance["scenario_sha256"]:
-        raise ReportInputError(f"the {name} result was not computed for this evaluation's scenario (scenario hashes differ)")
+        raise ReportInputError(f"the {name} result was not computed for this plan (plan hashes differ)")
     if prov.get("provider") != ev.provenance.get("horizon_provider"):
         raise ReportInputError(f"the {name} result was computed with a different horizon provider than the evaluation")
 
@@ -69,8 +69,8 @@ class Constraints:
 
 
 def _heading_note(cons: Constraints) -> str:
-    text = ("The lander heading is unknown, so the minimum state of charge has no nominal value at any point (its cells are blank); "
-            "its verdict follows the heading rule.")
+    text = ("The lander heading is unknown, so the minimum state of charge has no nominal value at any point and its cells are blank. "
+            "Its verdict follows the heading rule.")
     notes = " ".join(esc(n) for n in cons.heading_notes)
     return f"<p><b>Heading.</b> {esc(text)}{(' ' + notes) if notes else ''}</p>"
 
@@ -84,12 +84,12 @@ def _ellipse_sampling(res, ev) -> str:
     conv = res.convergence
     sizes = [r["n"] for r in conv["rows"]]
     shape = res.map.state.shape if res.map is not None else None
-    disp = ell["dispersion"] + (f", {num(ell['sigma_level'])} sigma at the semi-axes" if ell["dispersion"] == "gaussian" else "")
+    disp = ell["dispersion"] + (f", semi-axes at {num(ell['sigma_level'])} standard deviations" if ell["dispersion"] == "gaussian" else "")
     parts = [
-        f"<p><b>Sampling.</b> {esc(str(res.n_samples))} samples, seed {esc(str(res.seed))}; scheme: {esc(res.scheme)}. "
+        f"<p><b>Sampling.</b> {esc(str(res.n_samples))} samples, seed {esc(str(res.seed))}, scheme {esc(res.scheme)}. "
         f"Ellipse: semi-major {esc(num(ell['semi_major_m']))} m, semi-minor {esc(num(ell['semi_minor_m']))} m, major axis at azimuth "
         f"{esc(num(ell['azimuth_deg']))}\u00b0 clockwise from north, {esc(disp)}. "
-        f"Every sample is evaluated at the landing {esc(when_utc(res.provenance['landing_utc']))} in the nominal, optimistic and pessimistic cases. "
+        f"Every sample is evaluated at the landing time {esc(when_utc(res.provenance['landing_utc']))} in the worst, nominal and best cases. "
         + (f"The verdict map has {esc(str(shape[1]))} x {esc(str(shape[0]))} nodes spaced {esc(num(res.map.spacing_m))} m. " if shape else "")
         + f"Convergence is checked at {esc(', '.join(str(n) for n in sizes))} samples.</p>"]
     return "".join(parts)
@@ -97,16 +97,16 @@ def _ellipse_sampling(res, ev) -> str:
 
 def _ellipse_not_covered(res) -> str:
     items = [
-        "Probabilities are sample fractions, not exact: the standard error in the first table is the binomial value "
-        "sqrt(p(1 - p) / n), a conservative figure for a low-discrepancy sample.",
-        "The ellipse is the planner's input (its origin is recorded in the plan table); the engine does not derive the dispersion.",
-        "Only the landing epoch above is evaluated; another landing time needs another run.",
+        "Probabilities are sample fractions, not exact values. The standard error in the first table is the binomial value "
+        "sqrt(p(1 - p) / n), which is conservative for a low-discrepancy sample.",
+        "The landing ellipse and its error distribution are inputs to the plan, and the engine does not derive them. Their origin is recorded in the plan table.",
+        "Only the landing time above is evaluated. Another landing time needs another run.",
     ]
     if res.truncated:
-        items.append("The sample is the dispersion conditioned on landing inside the ellipse, so every probability is conditional on that: "
-                     "the chance of landing outside it is not in these figures.")
+        items.append("The samples come from the error distribution cut at the landing ellipse, so every probability assumes a landing inside it. "
+                     "The chance of landing outside it is not in these figures.")
     else:
-        items.append("The full dispersion is sampled, including points outside the ellipse.")
+        items.append("The full error distribution is sampled, including points outside the landing ellipse.")
     hz = res.hazard_limits
     if hz["slope_deg"] is None and hz["roughness_m"] is None:
         items.append("No slope or roughness limit was set for the hazard flag, so no sample is marked hazardous.")
@@ -120,7 +120,7 @@ def _state_table(res) -> str:
         p, q = res.state_probability[s.upper()], res.state_probability_non_hazardous[s.upper()]
         rows.append(f"<td>{state_chip(s)}</td>" + td(_pct(p), f"ellipse:p:{s}", p, "num") + td(_pct(q), f"ellipse:p_nonhazardous:{s}", q, "num")
                     + (td(qty(se[s], "fraction", digits=2), f"ellipse:se:{s}", se[s], "num") if s in se else td(NA, cls="num")))
-    return table([th("Verdict"), th("All samples (%)", "num"), th("Non-hazardous samples (%)", "num"), th("Binomial std. error (percentage points)", "num")],
+    return table([th("Verdict"), th("All samples (%)", "num"), th("Non-hazardous samples (%)", "num"), th("Binomial standard error (percentage points)", "num")],
                  rows, caption="Probability of each overall verdict")
 
 
@@ -153,7 +153,7 @@ def _constraint_table(res, cons: Constraints) -> str:
         rows.append(td(cons.label(k)) + td(_pct(cp["pass"]), f"ellipse:cp:{k}:pass", cp["pass"], "num")
                     + td(_pct(cp["not_fail"]), f"ellipse:cp:{k}:not_fail", cp["not_fail"], "num")
                     + td(_pct(cp["unknown"]), f"ellipse:cp:{k}:unknown", cp["unknown"], "num"))
-    return table([th("Requirement"), th("Passes in all three cases (%)", "num"), th("Passes or marginal, nominal (%)", "num"), th("Not evaluated (%)", "num")],
+    return table([th("Requirement"), th("Passes in all three cases (%)", "num"), th("Passes or marginal, nominal (%)", "num"), th("Unknown (%)", "num")],
                  rows, caption="Probability per requirement")
 
 
@@ -184,7 +184,7 @@ def _reference_table(res, cons: Constraints) -> str:
         places.append(td(name) + td(num(ref.lat_deg, 6), f"ellipse:{k}:lat", ref.lat_deg, "num") + td(num(ref.lon_deg, 6), f"ellipse:{k}:lon", ref.lon_deg, "num")
                       + td(num(ref.east_m), f"ellipse:{k}:east", ref.east_m, "num") + td(num(ref.north_m), f"ellipse:{k}:north", ref.north_m, "num")
                       + td(num(ref.slope_deg), f"ellipse:{k}:slope", ref.slope_deg, "num") + td(num(ref.roughness_m), f"ellipse:{k}:roughness", ref.roughness_m, "num"))
-    return (table([th("Sample"), th("Verdict"), th("Limiting requirement"), th("Norm. margin", "num"), th("Margin in the requirement's unit", "num")], verdicts,
+    return (table([th("Sample"), th("Verdict"), th("Limiting requirement"), th("Normalised margin", "num"), th("Margin in the requirement's unit", "num")], verdicts,
                   caption="Best, worst and central points (margin of the limiting requirement). " + MARGIN_KIND_NOTE)
             + "".join(f"<p class='small'>Margin note (engine): {esc(n)}.</p>"
                       for n in kind_notes((r.margin_kind, r.margin_note) for r in (res.best, res.worst, res.centre)))
@@ -197,7 +197,7 @@ def _convergence(res) -> str:
     rows = [td(str(r["n"]), f"ellipse:conv:{i}:n", r["n"], "num") + "".join(td(_pct(r[s]), f"ellipse:conv:{i}:{s}", r[s], "num") for s in STATES)
             for i, r in enumerate(c["rows"])]
     verdict = "converged" if c["converged"] else "not converged"
-    return ("<h3>Convergence</h3>" + table([th("Samples", "num"), *(th(f"{s.capitalize() if s != 'unknown' else 'Not evaluated'} (%)", "num") for s in STATES)], rows)
+    return ("<h3>Convergence</h3>" + table([th("Samples", "num"), *(th(f"{s.capitalize()} (%)", "num") for s in STATES)], rows)
             + f"<p class='small'>The largest change in a pass, marginal or fail probability over the last halving of the sample is "
               f"<span data-key=\"ellipse:conv:change\" data-raw=\"{c['max_change_last_halving']!r}\">{esc(_pct(c['max_change_last_halving']))} %</span> against a tolerance of "
               f"{esc(_pct(c['tolerance']))} %: {esc(verdict)}.</p>")
@@ -212,8 +212,8 @@ def section_ellipse(ev, res, number: int, fig_n: int, cons: Constraints) -> str:
         out.append(_heading_note(cons))
     out += [_constraint_table(res, cons), _percentile_table(res, cons), _reference_table(res, cons)]
     if res.map is not None:
-        out.append(_figure(figures.ellipse_map(res), "Verdict at the nodes of a regular east and north grid inside the ellipse; dots are the "
-                           "samples, the plus is the site.", fig_n))
+        out.append(_figure(figures.ellipse_map(res), "Verdict at the nodes of a regular east-north grid inside the landing ellipse. Dots are the "
+                           "samples and the plus is the site.", fig_n))
     out += [_convergence(res), _ellipse_not_covered(res), "</section>"]
     return "".join(out)
 
@@ -227,8 +227,8 @@ def _region_text(reg: dict) -> str:
 
 def _search_sampling(res) -> str:
     s, prov = res.settings, res.provenance
-    epochs = (f"{esc(str(s['n_epochs']))} landing epochs from {esc(when_utc(prov['first_landing_utc']))} to {esc(when_utc(prov['last_landing_utc']))}, each site scored at its best epoch"
-              if s["n_epochs"] > 1 else f"one landing epoch, {esc(when_utc(prov['first_landing_utc']))}")
+    epochs = (f"{esc(str(s['n_epochs']))} landing times from {esc(when_utc(prov['first_landing_utc']))} to {esc(when_utc(prov['last_landing_utc']))}, each site scored at its best landing time"
+              if s["n_epochs"] > 1 else f"one landing time, {esc(when_utc(prov['first_landing_utc']))}")
     method = ("exhaustive: every lattice point inside the region is evaluated with the full horizon"
               if s["exhaustive"] else
               f"coarse to fine, coarse factor {s['coarse_factor']}: coarse levels use a cheap horizon ({s['cheap_n_az']} azimuths"
@@ -271,14 +271,14 @@ def _sites_table(res, cons: Constraints) -> str:
             v = s.values.get("min_state_of_charge")
             cells += td("no nominal value" if v is None else qty(v, "fraction"), f"{k}:soc", v, "small" if v is None else "num")
         detail.append(cells)
-    head = [th("Rank", "num"), th("Verdict"), th("Limiting requirement"), th("Norm. margin", "num"), th("Margin in the requirement's unit", "num")]
+    head = [th("Rank", "num"), th("Verdict"), th("Limiting requirement"), th("Normalised margin", "num"), th("Margin in the requirement's unit", "num")]
     dhead = [th("Rank", "num"), th("Latitude (\u00b0)", "num"), th("Longitude (\u00b0)", "num"), th("East (m)", "num"), th("North (m)", "num"), th("Slope (\u00b0)", "num")]
     if multi:
-        dhead += [th("Epochs passing", "num"), th("Best landing (UTC)")]
+        dhead += [th("Landing times passing", "num"), th("Best landing (UTC)")]
     if soc:
         dhead.append(th("Min. state of charge (%)", "num"))
     notes = "".join(f"<p class='small'>Margin note (engine): {esc(n)}.</p>" for n in kind_notes((s.margin_kind, s.margin_note) for s in res.sites))
-    return (table(head, rows, caption="Ranked sites (margin of the limiting requirement" + (", at the site's best landing epoch). " if multi else "). ") + MARGIN_KIND_NOTE)
+    return (table(head, rows, caption="Ranked sites (margin of the limiting requirement" + (", at the site's best landing time). " if multi else "). ") + MARGIN_KIND_NOTE)
             + notes + table(dhead, detail, caption="Ranked sites: position and terrain", cls="dense"))
 
 
@@ -286,10 +286,10 @@ def _search_not_covered(res) -> str:
     s = res.settings
     items = []
     if s["exhaustive"]:
-        items.append("The search was exhaustive over the lattice, so no point of the lattice was skipped; sites between lattice points are not examined.")
+        items.append("The search was exhaustive, so no lattice point was skipped. Sites between lattice points are not examined.")
     else:
         items.append("The coarse levels are a heuristic, not a bound: a good site can be missed if its neighbourhood scores poorly at a coarse level. "
-                     "Every returned verdict is exact; the list of sites is not guaranteed complete. An exhaustive search is the reference.")
+                     "Every returned verdict is exact, but the list of sites may be incomplete. An exhaustive search is the reference.")
     items.append("Features smaller than the lattice spacing are not examined.")
     capped = [lv for lv in res.levels if lv.capped]
     if capped:

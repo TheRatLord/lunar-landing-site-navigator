@@ -425,7 +425,7 @@ export function timelineRows(r: EvaluateResult, scenario: Scenario | null): Time
   const noNominal = noNominalSeries(r.provenance);
   const rows: Array<TimelineRow | null> = [
     intervalRow("sunlit", "Sunlight", "c-sun", r.intervals["sunlit"], span),
-    intervalRow("eclipse", "Eclipse", "c-uncertainty", r.intervals["eclipse"], span),
+    intervalRow("eclipse", "Earth eclipse", "c-uncertainty", r.intervals["eclipse"], span),
     intervalRow("contact", "Earth link", "c-earth", r.intervals["contact"], span),
     percentRow(
       lineRow(r.series, "soc", "soc", "Battery", "%", "c-power", {
@@ -436,7 +436,7 @@ export function timelineRows(r: EvaluateResult, scenario: Scenario | null): Time
         marks: socMarks(r.metrics),
       }),
     ),
-    lineRow(r.series, "contact_clearance_deg", "clearance", "Earth link margin", "°", "c-earth", { decimals: 1, threshold: { value: 0, label: "" } }),
+    lineRow(r.series, "contact_clearance_deg", "clearance", "Earth link clearance", "°", "c-earth", { decimals: 1, threshold: { value: 0, label: "" } }),
   ];
   return rows.filter((x): x is TimelineRow => x !== null && (x.kind !== "intervals" || x.best.length > 0 || (x.optimistic?.length ?? 0) > 0 || (x.pessimistic?.length ?? 0) > 0));
 }

@@ -60,9 +60,9 @@ export function splitCitations(text: string): CitationPart[] {
 
 export const SOURCE_LABEL: Record<SourceKind, string> = {
   engine_result: "engine result",
-  input: "a value you passed to a tool",
+  input: "tool input",
   script_value: "script-reported value",
   assumption: "assumption",
-  document: "from your document",
+  document: "your document",
   user_request: "your request",
 };
