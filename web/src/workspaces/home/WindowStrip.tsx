@@ -19,8 +19,11 @@ interface PinnedRowProps {
   failed: boolean;
   start_ms: number;
   end_ms: number;
+  tone?: string;
+  mark_ms?: number | null;
+  tools?: ReactNode;
   onSelect(): void;
-  onRemove(): void;
+  onRemove?(): void;
 }
 
 interface WindowStripProps {
@@ -117,13 +120,15 @@ function Share({ scan }: { scan: YearScan | null }) {
   );
 }
 
-export function PinnedRow({ label, sub, survey, scan, requirements, failed, start_ms, end_ms, onSelect, onRemove }: PinnedRowProps) {
+export function PinnedRow({ label, sub, survey, scan, requirements, failed, start_ms, end_ms, tone, mark_ms, tools, onSelect, onRemove }: PinnedRowProps) {
   const ready = requirements ? scan !== null : survey !== null;
+  const markFrac = mark_ms == null ? null : (mark_ms - start_ms) / (end_ms - start_ms);
   return (
     <div className="ws-row ws-pinned">
       <div className="ws-gutter ws-key ws-pin-head">
-        <IconButton icon="close" size="sm" className="ws-unpin" label={`Unpin ${label}`} onClick={onRemove} />
+        {onRemove ? <IconButton icon="close" size="sm" className="ws-unpin" label={`Unpin ${label}`} onClick={onRemove} /> : (tools ?? <span />)}
         <button type="button" className="ws-pin-name" title={`Switch to ${label}, ${sub}`} onClick={onSelect}>
+          {tone && <i className="ws-tone" data-tone={tone} />}
           {label}
         </button>
         {requirements && <Share scan={scan} />}
@@ -138,6 +143,7 @@ export function PinnedRow({ label, sub, survey, scan, requirements, failed, star
         ) : (
           <Lane kind="both" list={survey?.both ?? []} start={start_ms} end={end_ms} lengths />
         )}
+        {markFrac !== null && markFrac >= 0 && markFrac <= 1 && <i className="ws-mark" style={{ left: `${markFrac * 100}%` }} title={`Best landing in the search · ${dayText(mark_ms!)}`} />}
         {!ready && (
           <div className="ws-wait" role="status">
             {failed ? null : <Spinner size={12} />}

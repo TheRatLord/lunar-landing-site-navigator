@@ -1,15 +1,14 @@
 import { siteLabel } from "../../lib/siteName";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { PLANNING_ENDPOINTS, type ScanResult } from "../../api/planning";
 import { useReportPlanning } from "../../api/report";
 import { SITE_ENDPOINTS, evaluateBody, type EvaluateResult } from "../../api/site";
 import { useAnalysis } from "../../api/useAnalysis";
 import { useLoad } from "../../api/useLoad";
 import { usePublishScreenContext } from "../../ask/screenContext";
-import { Button } from "../../components/ui/Button";
+import { Button, IconButton } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
-import { Spinner } from "../../components/ui/Progress";
-import { HorizonPanorama } from "../../components/viz/HorizonPanorama";
 import { formatLat, formatLon } from "../../lib/coords";
 import { clamp } from "../../lib/scale";
 import { parseUtc, toIsoUtc } from "../../lib/time";
@@ -18,20 +17,27 @@ import { useAlternatives, type Candidate } from "../../scenario/alternatives";
 import { activeRequirements, usePlanSearch, useRankBy } from "../../scenario/planSearch";
 import { movePlanSite, routeStackIssues, useScenario } from "../../scenario/store";
 import type { Scenario } from "../../scenario/types";
-import { pointName } from "../map/siteMove";
+import { announceSiteMove, pointName, siteSnapshot } from "../map/siteMove";
+import { useFindOutOfDate, useFindPlan } from "../search/findSites";
+import { useSearchResults } from "../search/results";
+import { GlobeSearch } from "./globe/GlobeSearch";
+import { adaptLattice, type Cell } from "./globe/lattice";
+import { MoonGlobe, type GlobeFocus } from "./globe/MoonGlobe";
+import { useSubpoints } from "./globe/subpoints";
 import { evaluatedScenario, summarize } from "../site/adapt";
 import { Headline } from "./Headline";
-import { HomeMap, type MapFocus } from "./HomeMap";
 import { adaptScan, bestLandings, scanParams, yearScanBody } from "./scan";
-import { useApp } from "../../state/store";
-import { SPAN_MS, adaptSurvey, roundToHour, spanStartFor, surveyBody, trackWindow, withExact, type Survey, type SurveySite } from "./survey";
+import { SPAN_MS, adaptSurvey, roundToHour, spanStartFor, surveyBody, withExact, type Survey, type SurveySite } from "./survey";
 import { PinnedRow, WindowStrip } from "./WindowStrip";
+import { AskSwitch } from "./AskSwitch";
+import { distanceText, useSearchAnswer, type Spot } from "./answer";
+import { useQuestion } from "./question";
+import { WhereAnswer } from "./WhereAnswer";
+import { STATE_WORD } from "../map/overlays";
 import "../../styles/home.css";
 
 const loadSites = (signal: AbortSignal) => catalogApi.sites({ limit: 1000 }, { signal });
 const MAX_PINS = 4;
-const GROUND_PAD = 132;
-const SKY_GAP = 28;
 const FALLBACK_MS = Date.UTC(2027, 0, 12);
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
 
@@ -49,8 +55,25 @@ function useSurvey(doc: Scenario, site: SurveySite, anchor: number | null) {
 const pinId = (s: SurveySite): string => s.catalog_id ?? `point:${s.lat_deg},${s.lon_deg}`;
 const samePlace = (p: Candidate, s: SurveySite): boolean => p.id === pinId(s) || (Math.abs(p.lat_deg - s.lat_deg) < 1e-4 && Math.abs(p.lon_deg - s.lon_deg) < 1e-4);
 
-function PinnedSite({ pin, doc, anchor, start, end, requirements, onSelect, onRemove }: { pin: Candidate; doc: Scenario; anchor: number; start: number; end: number; requirements: boolean; onSelect(): void; onRemove(): void }) {
-  const site = useMemo<SurveySite>(() => ({ lat_deg: pin.lat_deg, lon_deg: pin.lon_deg, name: pin.name, catalog_id: pin.catalog_id }), [pin]);
+interface StripSiteProps {
+  site: SurveySite;
+  label: string;
+  sub: string;
+  tone?: string;
+  mark_ms?: number | null;
+  tools?: ReactNode;
+  doc: Scenario;
+  anchor: number;
+  start: number;
+  end: number;
+  requirements: boolean;
+  onSelect(): void;
+  onRemove?(): void;
+}
+
+function StripSite({ site: given, label, sub, tone, mark_ms, tools, doc, anchor, start, end, requirements, onSelect, onRemove }: StripSiteProps) {
+  const { lat_deg, lon_deg, name, catalog_id } = given;
+  const site = useMemo<SurveySite>(() => ({ lat_deg, lon_deg, name, catalog_id }), [lat_deg, lon_deg, name, catalog_id]);
   const { run, survey } = useSurvey(doc, site, requirements ? null : anchor);
   const params = useMemo(() => scanParams(anchor), [anchor]);
   const scanReq = useMemo(
@@ -61,8 +84,11 @@ function PinnedSite({ pin, doc, anchor, start, end, requirements, onSelect, onRe
   const scan = useMemo(() => (scanRun.result && !scanRun.stale ? adaptScan(scanRun.result) : null), [scanRun.result, scanRun.stale]);
   return (
     <PinnedRow
-      label={siteLabel(pin.name)}
-      sub={`${formatLat(pin.lat_deg, 2)} ${formatLon(pin.lon_deg, 2)}`}
+      label={label}
+      sub={sub}
+      tone={tone}
+      mark_ms={mark_ms}
+      tools={tools}
       survey={survey && !run.stale ? survey : null}
       scan={scan}
       requirements={requirements}
@@ -95,13 +121,13 @@ export function HomeWorkspace() {
 
   const anchor = spanStartFor(landingMs);
   const [live, setLive] = useState<number | null>(null);
-  const [focus, setFocus] = useState<MapFocus>(() => ({ lat_deg: lat, lon_deg: lon, nonce: 0 }));
+  const [focus, setFocus] = useState<GlobeFocus>(() => ({ lat_deg: lat, lon_deg: lon, radius_m: 0, nonce: 0 }));
   const place = `${lat},${lon}`;
   const [shownPlace, setShownPlace] = useState(place);
   const [mapPlace, setMapPlace] = useState<string | null>(null);
   if (shownPlace !== place) {
     setShownPlace(place);
-    if (mapPlace !== place) setFocus((f) => ({ lat_deg: lat, lon_deg: lon, nonce: f.nonce + 1 }));
+    if (mapPlace !== place) setFocus((f) => ({ lat_deg: lat, lon_deg: lon, radius_m: 0, nonce: f.nonce + 1 }));
   }
 
   const { run, survey: yearSurvey } = useSurvey(doc, site, anchor);
@@ -135,18 +161,37 @@ export function HomeWorkspace() {
     if (scan) setReportScan(params, "auto");
   }, [scan, params, setReportScan]);
 
+  const ask = useQuestion((st) => st.ask);
+  const setAsk = useQuestion((st) => st.setAsk);
+  useEffect(() => useQuestion.getState().seePlace(place), [place]);
+  const answer = useSearchAnswer(site);
+  const scrub = useCallback(
+    (ms: number) => {
+      setAsk("when");
+      setLive(ms);
+    },
+    [setAsk],
+  );
   const commit = useCallback(
     (ms: number) => {
+      setAsk("when");
       setLive(null);
       edit(["landing_utc"], toIsoUtc(roundToHour(ms)));
     },
-    [edit],
+    [edit, setAsk],
   );
 
-  const moveOnMap = useCallback((next: SurveySite) => {
-    setMapPlace(`${next.lat_deg},${next.lon_deg}`);
-    movePlanSite({ lat_deg: next.lat_deg, lon_deg: next.lon_deg, name: next.name, catalog_id: next.catalog_id ?? null });
-  }, []);
+  const navigate = useNavigate();
+  const moveOnMap = useCallback(
+    (next: SurveySite, landing_ms?: number) => {
+      const prev = siteSnapshot();
+      setMapPlace(`${next.lat_deg},${next.lon_deg}`);
+      movePlanSite({ lat_deg: next.lat_deg, lon_deg: next.lon_deg, name: next.name, catalog_id: next.catalog_id ?? null });
+      if (landing_ms !== undefined) edit(["landing_utc"], toIsoUtc(roundToHour(landing_ms)));
+      announceSiteMove(prev, () => navigate("/site"));
+    },
+    [edit, navigate],
+  );
   const pickCatalogSite = useCallback(
     (id: string) => {
       const s = sites.find((x) => x.id === id);
@@ -159,62 +204,98 @@ export function HomeWorkspace() {
     [moveOnMap],
   );
 
+  const takeCell = useCallback(
+    (c: Cell, withDate: boolean) =>
+      moveOnMap({ lat_deg: round5(c.lat_deg), lon_deg: round5(c.lon_deg), name: pointName(c.lat_deg, c.lon_deg), catalog_id: null }, withDate && c.best_ms !== null ? c.best_ms : undefined),
+    [moveOnMap],
+  );
+
+  const sub = useSubpoints(start, end);
+  const findPlan = useFindPlan();
+  const searchStale = useFindOutOfDate(findPlan);
+  const searchResult = useSearchResults((st) => st.result);
+  const searchBodyDone = useSearchResults((st) => st.resultBody);
+  const searchShown = useSearchResults((st) => st.shown);
+  const ranked = useSearchResults((st) => st.candidates);
+  const lattice = useMemo(() => (searchShown && searchResult && searchBodyDone ? adaptLattice(searchResult, searchBodyDone) : null), [searchShown, searchResult, searchBodyDone]);
+  useEffect(() => {
+    if (searchResult) useQuestion.getState().seeResult(searchResult);
+  }, [searchResult]);
+  const takeSpot = useCallback(
+    (sp: Spot) =>
+      moveOnMap(
+        { lat_deg: round5(sp.row.lat_deg), lon_deg: round5(sp.row.lon_deg), name: pointName(sp.row.lat_deg, sp.row.lon_deg), catalog_id: null },
+        answer.windowed && sp.landing_ms !== null ? sp.landing_ms : undefined,
+      ),
+    [moveOnMap, answer.windowed],
+  );
+  const where = ask === "where";
+  const stripSpots = where && answer.fresh ? answer.spots.filter((sp) => !sp.here).slice(0, 3) : [];
+  const [seenResult, setSeenResult] = useState(searchResult);
+  if (seenResult !== searchResult) {
+    setSeenResult(searchResult);
+    const r = searchBodyDone?.region;
+    if (searchResult && r) setFocus((f) => ({ lat_deg: r.lat_deg, lon_deg: r.lon_deg, radius_m: r.radius_m ?? 20_000, nonce: f.nonce + 1 }));
+  }
+
   const pinned = pins.some((p) => samePlace(p, site));
   const pinMarks = useMemo(() => pins.filter((p) => !samePlace(p, site)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, site]);
 
   const fresh = survey !== null;
-  const theme = useApp((st) => st.theme);
   const verdictRef = useRef<HTMLElement>(null);
-  const locatorRef = useRef<HTMLDivElement>(null);
-  const [skyPad, setSkyPad] = useState(190);
-  const [scalePad, setScalePad] = useState(190);
-  useEffect(() => {
-    const el = verdictRef.current;
-    if (!el) return;
-    const locator = locatorRef.current;
-    const measure = () => {
-      const below = locator && locator.offsetHeight > 0 ? locator.offsetTop + locator.offsetHeight : el.offsetTop + el.offsetHeight;
-      setSkyPad(Math.round(Math.max(el.offsetTop + el.offsetHeight, below) + SKY_GAP));
-      setScalePad(Math.round(below + SKY_GAP));
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    if (locator) ro.observe(locator);
-    return () => ro.disconnect();
-  }, []);
-  const sunWindow = useMemo(() => trackWindow(survey?.sunTrack ?? null, timeMs), [survey, timeMs]);
-  const earthWindow = useMemo(() => trackWindow(survey?.earthTrack ?? null, timeMs), [survey, timeMs]);
 
+  const topSpot = answer.fresh ? (answer.spots[0] ?? null) : null;
   usePublishScreenContext({
     where: "Overview",
-    summary: summary ? `Requirement verdict ${summary.overall}${summary.limiting ? `, limited by ${summary.limiting.label}` : ""}` : "",
-    lines: scan ? [`The plan meets its requirements for ${Math.round(scan.passFraction * 100)} percent of landing times in the year from ${toIsoUtc(start)}.`] : [],
+    summary:
+      where && topSpot
+        ? `Site search within ${distanceText(answer.radius_m)}: ${answer.counts.pass} pass, ${answer.counts.marginal} marginal; best spot ${topSpot.here ? "is the plan site" : `${distanceText(topSpot.dist_m)} ${topSpot.dir} of the plan site`} (${topSpot.row.state})`
+        : summary
+          ? `Requirement verdict ${summary.overall}${summary.limiting ? `, limited by ${summary.limiting.label}` : ""}`
+          : "",
+    lines:
+      where && topSpot
+        ? [`Best spot ${topSpot.row.lat_deg.toFixed(4)}, ${topSpot.row.lon_deg.toFixed(4)} landing ${topSpot.row.landing_utc}${answer.windowed ? `, passes at ${topSpot.row.n_epochs_pass} of ${topSpot.row.n_epochs} landing times` : ""}.`]
+        : scan
+          ? [`The plan meets its requirements for ${Math.round(scan.passFraction * 100)} percent of landing times in the year from ${toIsoUtc(start)}.`]
+          : [],
   });
 
   return (
     <div className="home" aria-label="Overview page">
       <h1 className="sr-only">Overview: {name}</h1>
       <section className="home-hero" data-theme="dark" data-stale={!fresh}>
-        {survey?.horizon ? (
-          <HorizonPanorama
-            compact
-            skyPad={skyPad}
-            scalePad={scalePad}
-            groundPad={GROUND_PAD}
-            horizon={survey.horizon}
-            sun={sunWindow}
-            earth={earthWindow}
-            timeMs={timeMs}
-            elevationFit={survey.fit ?? undefined}
-            title="Sun and Earth paths over the terrain horizon"
+        <MoonGlobe
+          site={site}
+          focus={focus}
+          sites={sites}
+          pins={pinMarks}
+          timeMs={timeMs}
+          sub={sub}
+          areaRadius_m={(radiusKm ?? findPlan.radiusKm) * 1000}
+          lattice={lattice}
+          latticeStale={searchStale}
+          ranked={ranked}
+          onPickSite={pickCatalogSite}
+          onSetPoint={setPoint}
+          onUseCell={takeCell}
+          onPickPin={(p) => moveOnMap({ lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: pins.find((x) => x.id === p.id)?.catalog_id ?? null })}
+        />
+        {where ? (
+          <WhereAnswer
+            ask={<AskSwitch doc={doc} />}
+            blockRef={verdictRef}
+            answer={answer}
+            siteName={siteLabel(name) || "the site"}
+            landingMs={landingMs}
+            requirements={requirements}
+            rank={rank}
+            onUse={takeSpot}
+            onJump={commit}
           />
         ) : (
-          <div className="home-sky-wait" role="status">
-            {!failed && <Spinner size={16} />}
-          </div>
-        )}
         <Headline
+          ask={<AskSwitch doc={doc} />}
           blockRef={verdictRef}
           survey={survey}
           failed={failed}
@@ -228,9 +309,12 @@ export function HomeWorkspace() {
           best={best}
           onJump={commit}
         />
-        <div ref={locatorRef} className="home-locator" data-theme={theme}>
-          <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} radiusKm={radiusKm} />
-        </div>
+        )}
+        {(where || (lattice && !searchStale)) && (
+          <div className="home-finder" data-theme="dark">
+            <GlobeSearch lattice={lattice} tools={where} />
+          </div>
+        )}
         {survey?.smooth && (
           <p className="home-sky-note">
             <Icon name="warn" size={12} /> No terrain data: smooth-sphere horizon
@@ -249,7 +333,7 @@ export function HomeWorkspace() {
         scan={showScan ? scan : null}
         scanState={!showScan ? "off" : scan ? "ready" : scanRun.phase === "error" ? "failed" : "busy"}
         best={best}
-        onScrub={setLive}
+        onScrub={scrub}
         onCommit={commit}
         landingWindow={landingWindow}
         tools={
@@ -267,11 +351,39 @@ export function HomeWorkspace() {
           )
         }
       >
+        {stripSpots.map((sp) => (
+          <StripSite
+            key={`spot:${sp.row.lat_deg},${sp.row.lon_deg}`}
+            site={{ lat_deg: sp.row.lat_deg, lon_deg: sp.row.lon_deg, name: pointName(sp.row.lat_deg, sp.row.lon_deg), catalog_id: null }}
+            label={`#${sp.row.rank} · ${distanceText(sp.dist_m)} ${sp.dir}`}
+            sub={`${STATE_WORD[sp.row.state]} in the search${answer.windowed && sp.row.n_epochs > 1 ? `, at ${sp.row.n_epochs_pass} of ${sp.row.n_epochs} landing times` : ""}`}
+            tone={sp.row.state}
+            mark_ms={answer.windowed ? sp.landing_ms : null}
+            tools={
+              pins.some((p) => samePlace(p, { lat_deg: sp.row.lat_deg, lon_deg: sp.row.lon_deg, name: "", catalog_id: null })) || pins.length >= MAX_PINS ? null : (
+                <IconButton
+                  icon="pin"
+                  size="sm"
+                  label="Pin this spot"
+                  onClick={() => addPin({ id: `point:${sp.row.lat_deg},${sp.row.lon_deg}`, name: pointName(sp.row.lat_deg, sp.row.lon_deg), lat_deg: sp.row.lat_deg, lon_deg: sp.row.lon_deg, catalog_id: null })}
+                />
+              )
+            }
+            requirements={showScan}
+            doc={doc}
+            anchor={anchor}
+            start={start}
+            end={end}
+            onSelect={() => takeSpot(sp)}
+          />
+        ))}
         {pins.filter((p) => !samePlace(p, site)).map((p) => (
-          <PinnedSite
+          <StripSite
             key={p.id}
             requirements={showScan}
-            pin={p}
+            site={{ lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id }}
+            label={siteLabel(p.name)}
+            sub={`${formatLat(p.lat_deg, 2)} ${formatLon(p.lon_deg, 2)}`}
             doc={doc}
             anchor={anchor}
             start={start}

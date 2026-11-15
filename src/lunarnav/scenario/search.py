@@ -193,6 +193,9 @@ class SearchGrid:
     coarse_score: np.ndarray
     slope_deg: np.ndarray
     rank_value: np.ndarray | None = None
+    best_epoch: np.ndarray | None = None
+    n_epochs_pass: np.ndarray | None = None
+    epochs_utc: tuple[str, ...] = ()
 
     def to_dict(self) -> dict:
         def clean(a):
@@ -200,7 +203,10 @@ class SearchGrid:
         return {"east_m": self.east_m.tolist(), "north_m": self.north_m.tolist(), "score": clean(self.score),
                 "state": self.state.tolist(), "status": self.status.tolist(), "coarse_score": clean(self.coarse_score),
                 "slope_deg": clean(self.slope_deg), "status_text": STATUS_TEXT,
-                "rank_value": None if self.rank_value is None else clean(self.rank_value)}
+                "rank_value": None if self.rank_value is None else clean(self.rank_value),
+                "best_epoch": None if self.best_epoch is None else self.best_epoch.tolist(),
+                "n_epochs_pass": None if self.n_epochs_pass is None else self.n_epochs_pass.tolist(),
+                "epochs_utc": list(self.epochs_utc)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -324,7 +330,8 @@ def search_sites(
     state = np.full((n, n), NO_DATA, dtype=np.int16)
     coarse_score = np.full((n, n), np.nan)
     slope_g = np.full((n, n), np.nan)
-    best_epoch = np.zeros((n, n), dtype=np.int64)
+    best_epoch = np.full((n, n), -1, dtype=np.int32)
+    n_pass = np.full((n, n), -1, dtype=np.int32)
     rough_g = np.full((n, n), np.nan)
     rank_g = np.full((n, n), np.nan)
     by_total = rank_by != "margin"
@@ -382,6 +389,7 @@ def search_sites(
                     rank_g[kr, kc] = pr.totals[rank_by][ar, be]
                 state[kr, kc] = pr.state[ar, be]
                 best_epoch[kr, kc] = be
+                n_pass[kr, kc] = (pr.state == PASS).sum(axis=1)
                 n_full += int(kr.size)
                 for a in range(kr.size):
                     full[(int(kr[a]), int(kc[a]))] = (pr, a, int(be[a]))
@@ -467,7 +475,7 @@ def search_sites(
             "heading_unknown_soc": any(p[0].heading_unknown for p in full.values()),
             "first_landing_utc": et_to_utc(float(q[0])), "last_landing_utc": et_to_utc(float(q[-1]))}
     grid = SearchGrid(east[0].copy(), north[:, 0].copy(), lat_g, lon_g, score, state, status, coarse_score, slope_g,
-                      rank_g if by_total else None)
+                      rank_g if by_total else None, best_epoch, n_pass, tuple(et_to_utc(float(t)) for t in q))
     if progress is not None:
         progress(1.0, "done")
     return SearchResult(tuple(sites), grid, tuple(reports), counts, settings, time.perf_counter() - t_start, n_full,

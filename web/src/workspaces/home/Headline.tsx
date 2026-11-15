@@ -11,6 +11,7 @@ import type { VerdictSummary } from "../site/adapt";
 import { nextPass, scanAt, type BestLanding, type YearScan } from "./scan";
 import { spanText } from "../../components/viz/units";
 import { formatDeg } from "../../lib/format";
+import { sentence } from "./answer";
 import { dayText, elevationAt, nextChange, skyFacts, type Survey } from "./survey";
 
 interface HeadlineProps {
@@ -26,6 +27,7 @@ interface HeadlineProps {
   scan: YearScan | null;
   best: BestLanding[];
   onJump(ms: number): void;
+  ask?: ReactNode;
 }
 
 type Tone = Verdict | "unknown";
@@ -43,7 +45,7 @@ function exactLine(s: VerdictSummary): VerdictLine {
   return { tone: s.overall, word: VERDICT_LABEL[s.overall], lead: v?.lead ?? null, notes: v?.notes ?? [] };
 }
 
-export function Headline({ blockRef, survey, failed, onRetry, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump }: HeadlineProps) {
+export function Headline({ blockRef, survey, failed, onRetry, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump, ask }: HeadlineProps) {
   const sky = survey ? skyFacts(survey, timeMs) : null;
   const preview = scan && (dragging || (!summary && evaluation.phase === "running")) ? scanAt(scan, timeMs) : null;
   const line: VerdictLine | null =
@@ -66,6 +68,7 @@ export function Headline({ blockRef, survey, failed, onRetry, timeMs, dragging, 
   return (
     <>
       <section ref={blockRef} className="home-verdict" aria-live="polite">
+        {ask}
         {requirements === 0 ? (
           sky ? (
             <p className="home-headline-text">{sentence(sky.text)}</p>
@@ -143,7 +146,7 @@ export function Headline({ blockRef, survey, failed, onRetry, timeMs, dragging, 
   );
 }
 
-function Figure({ label, value, onClick, extra }: { label: string; value: ReactNode; onClick?: () => void; extra?: boolean }) {
+export function Figure({ label, value, onClick, extra }: { label: string; value: ReactNode; onClick?: () => void; extra?: boolean }) {
   return (
     <div className={extra ? "home-figure home-figure-extra" : "home-figure"}>
       <dd>
@@ -160,14 +163,8 @@ function Figure({ label, value, onClick, extra }: { label: string; value: ReactN
   );
 }
 
-function sentence(text: string): string {
-  const t = text.trim();
-  if (!t) return t;
-  const first = t.charAt(0).toUpperCase() + t.slice(1);
-  return /[.!?]$/.test(first) ? first : `${first}.`;
-}
 
-function Failed({ onRetry, small }: { onRetry(): void; small?: boolean }) {
+export function Failed({ onRetry, small }: { onRetry(): void; small?: boolean }) {
   return (
     <p className={small ? "home-headline-sub home-headline-fail" : "home-headline-text home-headline-fail"} role="alert">
       Couldn't compute.
@@ -178,7 +175,7 @@ function Failed({ onRetry, small }: { onRetry(): void; small?: boolean }) {
   );
 }
 
-function Wait({ text }: { text: string }) {
+export function Wait({ text }: { text: string }) {
   return (
     <p className="home-headline-wait" role="status">
       <Spinner size={16} /> {text}
