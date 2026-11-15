@@ -3,6 +3,7 @@ import type { SearchRow } from "../../api/search";
 import { Button, IconButton } from "../../components/ui/Button";
 import { ProgressBar } from "../../components/ui/Progress";
 import { leftText } from "../map/eta";
+import { pointName } from "../map/siteMove";
 import { STATE_WORD, marginText } from "../map/overlays";
 import "../../styles/search.css";
 import { useFindOutOfDate, type FindPlan } from "./findSites";
@@ -39,6 +40,8 @@ export function ResultsPanel({ plan, selected, onRun, onPick }: ResultsPanelProp
   const resultBody = useSearchResults((s) => s.resultBody);
   const current = resultBody !== null && plan.body !== null && JSON.stringify(resultBody) === JSON.stringify(plan.body);
   const running = phase === "running";
+  const region = resultBody?.region;
+  const around = region ? pointName(region.lat_deg, region.lon_deg) : null;
   useTick(running);
 
   return (
@@ -59,23 +62,25 @@ export function ResultsPanel({ plan, selected, onRun, onPick }: ResultsPanelProp
           Search failed: {error}
         </p>
       )}
-      {!running && !current && (
-        <div className="se-start">
-          <Button size="sm" variant={hasResult ? "default" : "primary"} icon="search" disabled={plan.body === null} onClick={onRun}>
-            Find sites
+      {!running && hasResult && !current && (
+        <div className="se-start se-stale">
+          <span className="se-hint">Out of date</span>
+          <Button size="sm" variant="primary" icon="search" disabled={plan.body === null} onClick={onRun}>
+            Rerun
           </Button>
-          <span className="se-hint">{plan.reason ?? `${outOfDate ? "Out of date · " : ""}Within ${plan.radiusKm} km of the plan site · ${plan.about}`}</span>
         </div>
       )}
+      {!running && plan.reason && <p className="se-hint">{plan.reason}</p>}
       {hasResult && (
         <>
           <div className="se-head">
             <h2 className="se-count num">
               {rows.length} {rows.length === 1 ? "site" : "sites"}
+              {!current && !outOfDate && around && <span className="se-around"> around {around}</span>}
             </h2>
             <IconButton icon={shown ? "eye" : "eyeOff"} label={shown ? "Hide on map" : "Show on map"} size="sm" pressed={shown} onClick={() => setShown(!shown)} />
           </div>
-          <ol className="se-rows" aria-label="Sites found">
+          <ol className="se-rows" aria-label="Sites found" data-stale={!current || undefined}>
             {rows.map((r) => (
               <li key={r.rank}>
                 <button type="button" className="se-row" aria-current={selected === r.rank} onClick={() => onPick(r)}>

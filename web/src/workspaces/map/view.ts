@@ -42,7 +42,7 @@ export function viewBounds(f: Frame): [number, number, number, number] {
 }
 
 export function maxZoomOf(g: ViewGrid): number {
-  return g.maxZ + (g.contain ? 0 : 3);
+  return g.maxZ;
 }
 
 function clampZoom(g: TileGridDef, vp: Viewport, zoom: number): number {

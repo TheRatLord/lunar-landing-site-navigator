@@ -1,4 +1,4 @@
-export type JobKind = "search" | "regional";
+export type JobKind = "search";
 
 const KEY = "lunarnav.job-pace";
 
@@ -32,12 +32,22 @@ export function aboutText(seconds: number): string {
   return `about ${(seconds / 3600).toFixed(1).replace(/\.0$/, "")} h`;
 }
 
+const runs = new Map<number, { min: number; sofar: boolean }>();
+
 export function leftText(startedMs: number, progress: number | null, guessS: number, now = Date.now()): string {
   const elapsed = (now - startedMs) / 1000;
-  const p = progress !== null && progress > 0.05 && progress < 1 ? progress : 0;
-  if (p === 0 && elapsed > guessS) return `${aboutText(elapsed)} so far`;
+  if (progress !== null && progress >= 0.99) return "almost done";
+  const run = runs.get(startedMs) ?? { min: Infinity, sofar: false };
+  runs.set(startedMs, run);
+  const p = progress !== null && progress > 0.05 ? progress : 0;
+  if (run.sofar || (p === 0 && elapsed > guessS)) return `${aboutText(elapsed)} so far`;
   const w = Math.min(1, p / 0.3);
   const total = p > 0 ? (1 - w) * Math.max(guessS, elapsed) + w * (elapsed / p) : guessS;
-  const left = total - elapsed;
-  return left < 45 ? "almost done" : `${aboutText(left)} left`;
+  const left = Math.round((total - elapsed) / 60);
+  if (left > run.min + 1) {
+    run.sofar = true;
+    return `${aboutText(elapsed)} so far`;
+  }
+  run.min = Math.min(run.min, left);
+  return run.min < 1 ? "almost done" : `${aboutText(run.min * 60)} left`;
 }

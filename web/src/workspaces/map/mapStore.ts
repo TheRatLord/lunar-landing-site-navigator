@@ -7,7 +7,6 @@ import type { ViewKind } from "./urlState";
 import type { MapView } from "./view";
 
 export type BaseLayer = "relief" | "elevation" | "slope";
-export type DockTab = "layers" | "sites" | "results";
 export type Popup = { kind: "site"; id: string } | { kind: "pin"; rank: number } | { kind: "probe" };
 
 export interface MapStore {
@@ -22,7 +21,6 @@ export interface MapStore {
   measure: LatLon[];
   undo: SiteSnapshot[];
   dockOpen: boolean;
-  tab: DockTab;
   saved: { kind: ViewKind; view: MapView; siteKey: string } | null;
 
   set(patch: Partial<Omit<MapStore, "set" | "toggleKind" | "addMeasure" | "popMeasure" | "pushUndo" | "popUndo">>): void;
@@ -45,7 +43,6 @@ export const useMapStore = create<MapStore>((set, get) => ({
   measure: [],
   undo: [],
   dockOpen: true,
-  tab: "layers",
   saved: null,
 
   set: (patch) => set(patch),

@@ -37,7 +37,7 @@ export function MapSearch({ sites, inputRef, onSite, onPoint }: MapSearchProps) 
     const scored = (exact.length > 0 ? exact : sites.map((s) => ({ s, score: fuzzyScore(q, s.name) })).filter((x) => x.score > 0))
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX);
-    for (const { s } of scored) out.push({ key: s.id, title: s.name.replace(/^Artemis candidate region: /, ""), site: s, lat: s.lat_deg, lon: s.lon_deg });
+    for (const { s } of scored) out.push({ key: s.id, title: s.name.replace(/^Artemis( \d{4})? candidate region: /, ""), site: s, lat: s.lat_deg, lon: s.lon_deg });
     return out;
   }, [query, sites]);
 

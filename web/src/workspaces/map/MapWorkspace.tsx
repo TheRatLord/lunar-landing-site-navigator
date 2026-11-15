@@ -5,15 +5,11 @@ import type { SearchRow } from "../../api/search";
 import { useLoad } from "../../api/useLoad";
 import { ServiceNotice } from "../../components/ServiceNotice";
 import { IconButton } from "../../components/ui/Button";
-import { Tabs } from "../../components/ui/Panel";
-import { useColors } from "../../components/viz/useColors";
 import { parseUtc } from "../../lib/time";
 import { catalogApi, type SiteEntry } from "../../scenario/api";
 import { useAlternatives, useOverlays } from "../../scenario/alternatives";
 import { movePlanSite, useScenario } from "../../scenario/store";
 import { whenText } from "../../scenario/when";
-import { regionalView } from "../regional/RegionalRow";
-import { useRegionalLayer } from "../regional/regionalLayerStore";
 import { useFindPlan } from "../search/findSites";
 import { ResultsPanel } from "../search/ResultsPanel";
 import { useSearchResults } from "../search/results";
@@ -26,12 +22,11 @@ import { KindGlyph } from "./KindGlyph";
 import { LayersPanel } from "./LayersPanel";
 import { MapCanvas, type TileProblem } from "./MapCanvas";
 import { MapPopup, PlaceActions, SiteSources, SiteTitleIcon, siteFacts } from "./MapPopup";
-import { useMapStore, type DockTab } from "./mapStore";
-import { STATE_WORD, marginText, pinMarks, regionalMark } from "./overlays";
+import { useMapStore } from "./mapStore";
+import { STATE_WORD, marginText, pinMarks } from "./overlays";
 import { Readout } from "./Readout";
 import { announceSiteMove, pointName, restoreSite, siteSnapshot } from "./siteMove";
 import { KIND_ORDER, KIND_STYLE } from "./sites";
-import { SitesPanel } from "./SitesPanel";
 import { Toolbar } from "./Toolbar";
 import { pointFromUrl, viewKindFor, type ViewKind } from "./urlState";
 import type { MapView } from "./view";
@@ -39,24 +34,19 @@ import type { MapView } from "./view";
 const loadTilesets = (signal: AbortSignal) => terrainApi.tilesets({ signal });
 const loadSites = (signal: AbortSignal) => catalogApi.sites({ limit: 1000 }, { signal });
 
-const DOCK_TABS = [
-  { id: "layers", label: "Layers" },
-  { id: "sites", label: "Sites" },
-  { id: "results", label: "Results" },
-];
 const SITE_RADIUS_M = 45_000;
 const POINT_RADIUS_M = 15_000;
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
 const isTyping = (t: EventTarget | null): boolean => t instanceof HTMLElement && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName));
 const siteKeyOf = (site: { lat_deg: number; lon_deg: number } | undefined): string => (site ? `${site.lat_deg},${site.lon_deg}` : "");
 
-let framedRegional: unknown = null;
 let framedBlocker: unknown = null;
 
 interface Start {
   kind: ViewKind;
   view: MapView | null;
   point: { lat_deg: number; lon_deg: number } | null;
+  blocker?: boolean;
 }
 
 export function MapWorkspace() {
@@ -71,7 +61,6 @@ export function MapWorkspace() {
   const blocker = useOverlays((st) => st.blocker);
   const tilesets = useLoad(loadTilesets);
   const sitesLoad = useLoad(loadSites);
-  const colors = useColors();
   const bus = useMemo(() => new CursorBus(), []);
   const searchRef = useRef<HTMLInputElement>(null);
   const [engine, setEngine] = useState<MapEngine | null>(null);
@@ -79,7 +68,7 @@ export function MapWorkspace() {
 
   const [start] = useState<Start>(() => {
     const point = pointFromUrl(params);
-    if (point) return { kind: viewKindFor(point.lat_deg), view: null, point };
+    if (point) return { kind: viewKindFor(point.lat_deg), view: null, point, blocker: params.get("mark") === "blocker" };
     if (blocker && blocker !== framedBlocker) return { kind: viewKindFor(blocker.from.lat_deg), view: null, point: null };
     const saved = useMapStore.getState().saved;
     if (saved && saved.siteKey === siteKeyOf(site)) return { kind: saved.kind, view: saved.view, point: null };
@@ -90,7 +79,6 @@ export function MapWorkspace() {
 
   const plan = useFindPlan();
   const search = useSearchResults();
-  const regional = useRegionalLayer();
 
   const tilesetList = tilesets.state.status === "ready" ? tilesets.state.data.tilesets : null;
   const renderVersion = tilesets.state.status === "ready" ? tilesets.state.data.render_version : "";
@@ -103,17 +91,22 @@ export function MapWorkspace() {
   const layers = useMemo<ActiveLayer[]>(() => (s.base === "relief" ? [{ id: "relief", opacity: 1 }] : [{ id: "relief", opacity: 1 }, { id: s.base, opacity: s.baseOpacity }]), [s.base, s.baseOpacity]);
   const options = useMemo<MapOptions>(() => ({ graticule: s.graticule, sites: s.sites, compass: true }), [s.graticule, s.sites]);
   const pins = useMemo(() => (search.shown ? pinMarks(search.candidates) : []), [search.shown, search.candidates]);
-  const areaBody = search.phase === "running" ? search.body : search.resultBody;
-  const area = useMemo<SearchArea | null>(() => {
-    const r = areaBody?.region;
-    if (r && typeof r.radius_m === "number") return search.shown ? { lat_deg: r.lat_deg, lon_deg: r.lon_deg, radius_m: r.radius_m } : null;
-    return site && plan.radiusKm ? { lat_deg: site.lat_deg, lon_deg: site.lon_deg, radius_m: plan.radiusKm * 1000 } : null;
-  }, [areaBody, search.shown, site, plan.radiusKm]);
-  const regionalLayerView = useMemo(
-    () => (regional.result && regional.resultBody && regional.resultMetric ? regionalView(regional.result, regional.resultBody, regional.resultMetric) : null),
-    [regional.result, regional.resultBody, regional.resultMetric],
-  );
-  const regionalCells = useMemo(() => (regional.shown && regionalLayerView ? regionalMark(regionalLayerView, colors.get) : null), [regional.shown, regionalLayerView, colors]);
+  const running = search.phase === "running";
+  const current = search.resultBody !== null && plan.body !== null && JSON.stringify(search.resultBody) === JSON.stringify(plan.body);
+  const stale = !running && search.result !== null && !current;
+  const areas = useMemo<SearchArea[]>(() => {
+    const out: SearchArea[] = [];
+    const circle = (body: typeof search.body, faded: boolean) => {
+      const r = body?.region;
+      if (r && typeof r.radius_m === "number") out.push({ lat_deg: r.lat_deg, lon_deg: r.lon_deg, radius_m: r.radius_m, faded });
+    };
+    if (running) circle(search.body, false);
+    else {
+      if (search.shown && search.result) circle(search.resultBody, stale);
+      if (!current) circle(plan.body, false);
+    }
+    return out;
+  }, [running, search.body, search.resultBody, search.result, search.shown, plan.body, stale, current]);
 
   const popup = s.popup;
   const popupSite = popup?.kind === "site" ? (allSites?.find((x) => x.id === popup.id) ?? null) : null;
@@ -143,18 +136,18 @@ export function MapWorkspace() {
     if (sc) goTo(sc.site.lat_deg, sc.site.lon_deg, SITE_RADIUS_M);
   }, [goTo]);
 
-  const showRegional = useCallback(() => {
-    const { resultBody } = useRegionalLayer.getState();
-    if (resultBody) goTo(resultBody.lat_deg, resultBody.lon_deg, (resultBody.size_m / 2) * 1.2);
-  }, [goTo]);
-
   const framed = useRef(false);
   useEffect(() => {
     if (framed.current || !engine || !tilesetList) return;
     framed.current = true;
     const id = window.setTimeout(() => {
       const p = start.point;
-      if (p) {
+      const sc = useScenario.getState().doc?.site;
+      if (p && start.blocker && sc) {
+        useMapStore.getState().set({ probe: p, popup: { kind: "probe" } });
+        showKind(viewKindFor(p.lat_deg));
+        engine.fitPoints([p, sc], 1500);
+      } else if (p) {
         useMapStore.getState().set({ probe: p, popup: { kind: "probe" } });
         goTo(p.lat_deg, p.lon_deg, POINT_RADIUS_M);
       } else if (blocker && blocker !== framedBlocker) {
@@ -163,7 +156,7 @@ export function MapWorkspace() {
       } else if (!start.view) fitSite();
     }, 0);
     return () => window.clearTimeout(id);
-  }, [engine, tilesetList, start, blocker, goTo, fitSite]);
+  }, [engine, tilesetList, start, blocker, goTo, fitSite, showKind]);
 
   useEffect(() => {
     if (!engine || !blocker || blocker === framedBlocker || !framed.current) return;
@@ -171,12 +164,6 @@ export function MapWorkspace() {
     showKind(viewKindFor(blocker.from.lat_deg));
     engine.fitBlocker();
   }, [engine, blocker, showKind]);
-
-  useEffect(() => {
-    if (!engine || !regional.result || regional.result === framedRegional) return;
-    framedRegional = regional.result;
-    showRegional();
-  }, [engine, regional.result, showRegional]);
 
   useEffect(() => {
     if (useOverlays.getState().picking) useOverlays.getState().setPicking(false);
@@ -194,11 +181,12 @@ export function MapWorkspace() {
 
   const openSite = useCallback(() => navigate("/site"), [navigate]);
   const adoptSite = useCallback(
-    (next: { lat_deg: number; lon_deg: number; name: string; catalog_id: string | null }) => {
+    (next: { lat_deg: number; lon_deg: number; name: string; catalog_id: string | null }, landing_utc?: string) => {
       const prev = siteSnapshot();
       if (!prev) return;
       useMapStore.getState().pushUndo(prev);
       movePlanSite(next);
+      if (landing_utc && landing_utc !== prev.landing_utc) useScenario.getState().edit(["landing_utc"], landing_utc);
       announceSiteMove(prev, openSite);
     },
     [openSite],
@@ -243,7 +231,7 @@ export function MapWorkspace() {
 
   const runFind = useCallback(() => {
     const st = useSearchResults.getState();
-    useMapStore.getState().set({ dockOpen: true, tab: "results" });
+    useMapStore.getState().set({ dockOpen: true });
     if (!plan.body || st.phase === "running") return;
     if (st.resultBody && JSON.stringify(st.resultBody) === JSON.stringify(plan.body)) return;
     if (useMapStore.getState().popup?.kind === "pin") useMapStore.getState().set({ popup: null });
@@ -296,17 +284,25 @@ export function MapWorkspace() {
   const tsError = tilesets.state.status === "error" ? tilesets.state.error : null;
   const inCompare = (id: string) => alternatives.some((a) => a.id === id);
   const isPlanAt = (la: number, lo: number) => site !== undefined && Math.abs(site.lat_deg - la) < 1e-6 && Math.abs(site.lon_deg - lo) < 1e-6;
-  const current = search.resultBody !== null && plan.body !== null && JSON.stringify(search.resultBody) === JSON.stringify(plan.body);
+  const startedMs = search.startedMs;
   const findLabel =
-    search.phase === "running" && search.startedMs !== null
-      ? { label: "Searching", note: leftText(search.startedMs, search.progress, search.guessS).replace("about ", "~"), busy: true }
-      : { label: "Find sites", note: current ? `${search.candidates.length} found` : plan.body ? plan.about.replace("about ", "~") : null, busy: false };
-  const pinName = (r: SearchRow) => `Find sites #${r.rank}`;
+    running && startedMs !== null
+      ? { label: "Searching", note: () => leftText(startedMs, useSearchResults.getState().progress, search.guessS).replace("about ", "~"), busy: true, stale: false }
+      : {
+          label: "Find sites",
+          note: () => (current ? `${search.candidates.length} found` : stale ? `${search.candidates.length} found · out of date` : plan.body ? `${plan.radiusKm} km · ${plan.about.replace("about ", "~")}` : null),
+          busy: false,
+          stale,
+        };
+  const pinName = (r: SearchRow) => pointName(r.lat_deg, r.lon_deg);
+  const hasSearch = running || search.phase === "error" || search.result !== null;
+  const dockShown = s.dockOpen && hasSearch;
   const pinId = (r: SearchRow) => `search-${r.lat_deg.toFixed(5)}_${r.lon_deg.toFixed(5)}`;
   const probe = s.probe;
+  const probeIsBlocker = !!(start.blocker && probe && start.point && probe.lat_deg === start.point.lat_deg && probe.lon_deg === start.point.lon_deg);
 
   return (
-    <div className="map-ws" data-dock={s.dockOpen ? "open" : "closed"}>
+    <div className="map-ws" data-dock={dockShown ? "open" : "closed"}>
       <h1 className="sr-only">Map</h1>
       <div className="map-body">
         <div className="map-main">
@@ -325,10 +321,9 @@ export function MapWorkspace() {
               blocker={blocker}
               pins={pins}
               selectedPin={popupPin?.rank ?? null}
-              area={area}
+              area={areas}
+              pinsFaded={stale}
               probe={probe}
-              regional={regionalCells}
-              regionalOpacity={regional.opacity}
               measure={s.measure}
               mode={s.mode}
               bus={bus}
@@ -351,14 +346,19 @@ export function MapWorkspace() {
               sites={allSites ?? []}
               searchRef={searchRef}
               find={findLabel}
-              onKind={showKind}
+              onKind={(k) => {
+                showKind(k);
+                if (k === "global") engine?.fitRegion();
+              }}
               onZoom={(dz) => engine?.zoomBy(dz)}
               onFitSite={fitSite}
               onMeasure={() => s.set({ mode: s.mode === "measure" ? "choose" : "measure", measure: [] })}
               onSite={focusSite}
               onPoint={focusPoint}
               onFind={runFind}
-              dockOpen={s.dockOpen}
+              layers={<LayersPanel tileset={tileset} />}
+              dockOpen={dockShown}
+              canDock={hasSearch}
               onDock={() => s.set({ dockOpen: true })}
             />
             {tsError && (
@@ -397,16 +397,22 @@ export function MapWorkspace() {
             {popupPin && (
               <MapPopup engine={engine} lat={popupPin.lat_deg} lon={popupPin.lon_deg} title={`#${popupPin.rank} · ${STATE_WORD[popupPin.state]}`} onClose={closePopup}>
                 {marginText(popupPin) && <p className="map-popup-facts">{marginText(popupPin)}</p>}
-                {pinLanding !== null && <p className="map-popup-facts">Best landing {whenText(pinLanding)} · the plan keeps its own landing time</p>}
+                {pinLanding !== null && <p className="map-popup-facts">Best landing {whenText(pinLanding)}</p>}
                 <PlaceActions
-                  isPlan={isPlanAt(popupPin.lat_deg, popupPin.lon_deg)}
+                  isPlan={isPlanAt(popupPin.lat_deg, popupPin.lon_deg) && (pinLanding === null || pinLanding === parseUtc(doc?.landing_utc ?? ""))}
                   inCompare={inCompare(pinId(popupPin))}
+                  onUseWithLanding={pinLanding !== null && pinLanding !== parseUtc(doc?.landing_utc ?? "") ? () => adoptSite({ lat_deg: popupPin.lat_deg, lon_deg: popupPin.lon_deg, name: pinName(popupPin), catalog_id: null }, popupPin.landing_utc) : undefined}
                   onUse={() => adoptSite({ lat_deg: popupPin.lat_deg, lon_deg: popupPin.lon_deg, name: pinName(popupPin), catalog_id: null })}
                   onCompare={() => addAlternative({ id: pinId(popupPin), name: pinName(popupPin), lat_deg: popupPin.lat_deg, lon_deg: popupPin.lon_deg, catalog_id: null })}
                 />
               </MapPopup>
             )}
-            {popup?.kind === "probe" && probe && (
+            {popup?.kind === "probe" && probe && probeIsBlocker && (
+              <MapPopup engine={engine} lat={probe.lat_deg} lon={probe.lon_deg} title="Blocker" onClose={closePopup}>
+                <p className="map-popup-facts">{pointName(probe.lat_deg, probe.lon_deg)}</p>
+              </MapPopup>
+            )}
+            {popup?.kind === "probe" && probe && !probeIsBlocker && (
               <MapPopup engine={engine} lat={probe.lat_deg} lon={probe.lon_deg} title={pointName(probe.lat_deg, probe.lon_deg)} onClose={closePopup}>
                 <PlaceActions
                   isPlan={isPlanAt(round5(probe.lat_deg), round5(probe.lon_deg))}
@@ -418,18 +424,14 @@ export function MapWorkspace() {
             )}
           </div>
         </div>
-        {s.dockOpen && (
-          <aside className="map-dock" aria-label="Map panels">
+        {dockShown && (
+          <aside className="map-dock" aria-label="Results">
             <div className="map-dock-head">
-              <Tabs tabs={DOCK_TABS} value={s.tab} onChange={(id) => s.set({ tab: id as DockTab })} label="Map panels" panels />
+              <h2 className="map-dock-title">Results</h2>
               <IconButton icon="panelRight" label="Hide panel" shortcut="L" size="sm" onClick={() => s.set({ dockOpen: false })} />
             </div>
-            <div role="tabpanel" id={`tabpanel-${s.tab}`} aria-labelledby={`tab-${s.tab}`} className="map-tabpanel">
-              {s.tab === "layers" && <LayersPanel tileset={tileset} regional={regionalLayerView} onShowRegional={showRegional} />}
-              {s.tab === "sites" && (
-                <SitesPanel sites={allSites ? shownSites : null} selectedId={popupSite?.id ?? null} error={sitesLoad.state.status === "error" ? sitesLoad.state.error : null} onRetry={sitesLoad.reload} onSelect={focusSite} />
-              )}
-              {s.tab === "results" && <ResultsPanel plan={plan} selected={popupPin?.rank ?? null} onRun={runFind} onPick={focusPin} />}
+            <div className="map-tabpanel">
+              <ResultsPanel plan={plan} selected={popupPin?.rank ?? null} onRun={runFind} onPick={focusPin} />
             </div>
           </aside>
         )}

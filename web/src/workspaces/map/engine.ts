@@ -13,7 +13,7 @@ import { clamp } from "../../lib/scale";
 import type { BlockerMark } from "../../scenario/alternatives";
 import type { SiteEntry } from "../../scenario/api";
 import { basisFor, type MapBasis } from "./basis";
-import type { PinMark, RegionalMark } from "./overlays";
+import type { PinMark } from "./overlays";
 import { badgeSpot, clusterPoints, placeLabels, type LabelBox, type LabelSpot } from "./declutter";
 import type { Rect } from "./rect";
 import { buildGraticule, dropOverlaps, type GraticuleLabel } from "./graticule";
@@ -113,6 +113,7 @@ export interface SearchArea {
   lat_deg: number;
   lon_deg: number;
   radius_m: number;
+  faded?: boolean;
 }
 
 export interface MapOptions {
@@ -141,9 +142,6 @@ const TILE_CAPACITY = 480;
 const MAX_LABELS = 70;
 const CLUSTER_PX = 28;
 const DRAG_PX = 4;
-type HatchKind = "cut" | "unreliable";
-const HATCH_KINDS: readonly HatchKind[] = ["cut", "unreliable"];
-const HATCH_CELL: Record<HatchKind, (c: RegionalMark["cells"][number]) => boolean> = { cut: (c) => c.censored && !c.unreliable, unreliable: (c) => c.unreliable };
 
 export class MapEngine {
   private ctx: CanvasRenderingContext2D;
@@ -165,7 +163,7 @@ export class MapEngine {
   private showGraticule = true;
   private showSitesLayer = true;
   private showCompass = true;
-  private area: SearchArea | null = null;
+  private area: readonly SearchArea[] = [];
   private probe: { lat: number; lon: number } | null = null;
   private frameListeners = new Set<() => void>();
   private labelSpots = new Map<string, LabelSpot>();
@@ -178,11 +176,8 @@ export class MapEngine {
   private alts: AltMark[] = [];
   private blocker: BlockerMark | null = null;
   private pins: PinMark[] = [];
+  private pinsFaded = false;
   private selectedPin: number | null = null;
-  private regional: RegionalMark | null = null;
-  private regionalOpacity = 0.7;
-  private regionalBake: HTMLCanvasElement | null = null;
-  private hatches: Partial<Record<HatchKind, { colour: string; pattern: CanvasPattern }>> = {};
   private measure: LatLon[] = [];
   private mode: MapMode = "choose";
   private pal: Palette | null = null;
@@ -201,6 +196,9 @@ export class MapEngine {
   private pointers = new Map<number, { x: number; y: number }>();
   private drag: null | { kind: "pan" | "pinch"; startX: number; startY: number; lastX: number; lastY: number; moved: boolean; pinch?: number } = null;
   private anim: null | { from: MapView; to: MapView; t0: number; ms: number } = null;
+  private downBlocked = false;
+  private pendingClick: { x: number; y: number; t: number; timer: number } | null = null;
+  private hudRects: Array<[number, number, number, number]> = [];
   private statusDirty = true;
   private lastStatusAt = 0;
 
@@ -245,6 +243,7 @@ export class MapEngine {
   destroy(): void {
     this.destroyed = true;
     cancelAnimationFrame(this.raf);
+    this.cancelPendingClick();
     const c = this.canvas;
     c.removeEventListener("pointerdown", this.onPointerDown);
     c.removeEventListener("pointermove", this.onPointerMove);
@@ -272,6 +271,8 @@ export class MapEngine {
   }
 
   resize(w: number, h: number, dpr: number): void {
+    const dw = w - this.w;
+    if (this.w > 0 && dw !== 0 && !this.needFit) this.view = panBy(this.basis.grid, { w, h }, this.view, -dw / 2, 0);
     this.w = w;
     this.h = h;
     this.dpr = dpr;
@@ -358,8 +359,8 @@ export class MapEngine {
     this.invalidate();
   }
 
-  setSearchArea(a: SearchArea | null): void {
-    this.area = a;
+  setSearchArea(a: SearchArea | readonly SearchArea[] | null): void {
+    this.area = a === null ? [] : Array.isArray(a) ? a : [a as SearchArea];
     this.invalidate();
   }
 
@@ -395,34 +396,14 @@ export class MapEngine {
     this.invalidate();
   }
 
-  setPins(pins: PinMark[], selected: number | null): void {
+  setPins(pins: PinMark[], selected: number | null, faded = false): void {
     this.pins = pins;
+    this.pinsFaded = faded;
     this.selectedPin = selected;
     this.invalidate();
   }
 
-  setRegional(mark: RegionalMark | null, opacity: number): void {
-    this.regional = mark;
-    this.regionalOpacity = opacity;
-    this.regionalBake = null;
-    if (mark && mark.n_cols > 0 && mark.n_rows > 0) {
-      const c = document.createElement("canvas");
-      c.width = mark.n_cols;
-      c.height = mark.n_rows;
-      const g = c.getContext("2d");
-      if (g) {
-        for (const cell of mark.cells) {
-          g.fillStyle = cell.colour;
-          g.fillRect(cell.col, cell.row, 1, 1);
-        }
-        this.regionalBake = c;
-      }
-    }
-    this.canvas.dataset["regionalCells"] = String(mark?.cells.length ?? 0);
-    this.canvas.dataset["regionalCensored"] = String(mark?.cells.filter((c) => c.censored && !c.unreliable).length ?? 0);
-    this.canvas.dataset["regionalUnreliable"] = String(mark?.cells.filter((c) => c.unreliable).length ?? 0);
-    this.invalidate();
-  }
+
 
   setMeasure(points: LatLon[]): void {
     this.measure = points;
@@ -491,7 +472,14 @@ export class MapEngine {
   }
 
   fitAround(lat: number, lon: number, radius_m: number): void {
-    const pts = [0, 90, 180, 270].map((az) => destination(lat, lon, az, radius_m)).concat([[lat, lon]]);
+    this.fitPoints([{ lat_deg: lat, lon_deg: lon }], radius_m);
+  }
+
+  fitPoints(points: ReadonlyArray<{ lat_deg: number; lon_deg: number }>, radius_m: number): void {
+    const first = points[0];
+    if (!first) return;
+    const lon = first.lon_deg;
+    const pts = points.flatMap((q) => [0, 90, 180, 270].map((az) => destination(q.lat_deg, q.lon_deg, az, radius_m)).concat([[q.lat_deg, q.lon_deg]]));
     const xy = pts.map(([la, lo]) => this.basis.proj.forward(la, lo));
     if (this.basis.proj.kind === "equirectangular") for (const p of xy) p[0] = lon + ((((p[0] - lon) % 360) + 540) % 360) - 180;
     const xs = xy.map((p) => p[0]);
@@ -605,6 +593,7 @@ export class MapEngine {
 
   private onPointerDown = (e: PointerEvent): void => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
+    this.downBlocked = this.overlayOpen() || this.onHud(this.local(e));
     this.canvas.focus({ preventScroll: true });
     const p = this.local(e);
     this.pointers.set(e.pointerId, p);
@@ -640,7 +629,10 @@ export class MapEngine {
       return;
     }
     if (d) {
-      if (!d.moved && Math.hypot(p.x - d.startX, p.y - d.startY) > DRAG_PX) d.moved = true;
+      if (!d.moved && Math.hypot(p.x - d.startX, p.y - d.startY) > DRAG_PX) {
+        d.moved = true;
+        this.cancelPendingClick();
+      }
       if (d.moved) {
         this.view = panBy(this.basis.grid, { w: this.w, h: this.h }, this.view, p.x - d.lastX, p.y - d.lastY);
         this.updateCursorStyle();
@@ -695,7 +687,46 @@ export class MapEngine {
     }
   };
 
+  private overlayOpen(): boolean {
+    const open = document.querySelectorAll(".popover, [role='listbox'], [role='menu'], [role='dialog']");
+    for (const el of open) if (!el.contains(this.canvas) && el.getClientRects().length > 0) return true;
+    return false;
+  }
+
+  private onHud(p: { x: number; y: number }): boolean {
+    if (this.hudRects.some(([x0, y0, x1, y1]) => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)) return true;
+    const r = this.canvas.getBoundingClientRect();
+    const parent = this.canvas.parentElement?.parentElement;
+    if (!parent) return false;
+    for (const el of parent.querySelectorAll(".map-readout:not([hidden])")) {
+      const b = el.getBoundingClientRect();
+      const cx = p.x + r.left;
+      const cy = p.y + r.top;
+      if (cx >= b.left && cx <= b.right && cy >= b.top && cy <= b.bottom) return true;
+    }
+    return false;
+  }
+
+  private cancelPendingClick(): void {
+    if (this.pendingClick) window.clearTimeout(this.pendingClick.timer);
+    this.pendingClick = null;
+  }
+
   private click(x: number, y: number): void {
+    if (this.downBlocked) {
+      this.downBlocked = false;
+      return;
+    }
+    const pend = this.pendingClick;
+    if (pend && performance.now() - pend.t < 300 && Math.hypot(pend.x - x, pend.y - y) < 10) {
+      this.cancelPendingClick();
+      this.anim = null;
+      this.view = zoomAbout(this.basis.grid, { w: this.w, h: this.h }, this.view, x, y, this.view.zoom + 1);
+      this.hooks.onView({ ...this.view, kind: this.basis.kind });
+      this.invalidate();
+      return;
+    }
+    this.cancelPendingClick();
     const [lat, lon] = this.screenToLatLon(x, y);
     if (this.mode === "measure") {
       this.hooks.onMeasure({ lat_deg: lat, lon_deg: lon });
@@ -706,7 +737,13 @@ export class MapEngine {
     else if (hit?.type === "cluster") this.openCluster(hit.ids ?? []);
     else if (hit?.type === "pin") this.hooks.onPickPin(Number(hit.id));
     else if (hit?.type === "probe") this.hooks.onPickProbe?.();
-    else if (!hit) this.hooks.onSetSite(lat, lon);
+    else if (!hit) {
+      const timer = window.setTimeout(() => {
+        this.pendingClick = null;
+        if (!this.destroyed) this.hooks.onSetSite(lat, lon);
+      }, 250);
+      this.pendingClick = { x, y, t: performance.now(), timer };
+    }
   }
 
   private openCluster(ids: readonly string[]): void {
@@ -854,7 +891,6 @@ export class MapEngine {
 
     this.paintBase(ctx, f, p);
     this.paintTiles(ctx, f);
-    this.paintRegional(ctx, f, p);
     const gridLabels = this.showGraticule ? this.paintGraticule(ctx, f, p) : [];
     this.paintScenarioEllipse(ctx, f, p);
     const taken = this.paintSites(ctx, f, p);
@@ -1080,7 +1116,7 @@ export class MapEngine {
       markerBoxes.push([x - 8, y - 8, x + 8, y + 8]);
       if (site.kind === "poi" && f.zoom < this.basis.grid.minZ + 5 && !sel) return;
       if (scPt && Math.abs(x - scPt.x) < 3 && Math.abs(y - scPt.y) < 3) return;
-      const text = clipName(site.name.replace(/^Artemis candidate region: /, ""), 28);
+      const text = clipName(site.name.replace(/^Artemis( \d{4})? candidate region: /, ""), 28);
       ctx.font = sel ? NAME_FONT_STRONG : NAME_FONT;
       const box: LabelBox = { id: site.id, x, y, r: 8, w: ctx.measureText(text).width, must: sel };
       if (sel) labels.unshift(box);
@@ -1088,8 +1124,10 @@ export class MapEngine {
       texts.set(site.id, text);
     };
     const seeds: Rect[] = picked ? [...fixed.boxes, [picked.x - 11, picked.y - 11, picked.x + 11, picked.y + 11]] : fixed.boxes;
+    const circles = this.pins.length > 0 ? this.areaCircles(f) : [];
     for (const c of clusterPoints(pts, CLUSTER_PX)) {
       const lead = c.members[0]!;
+      if (c.members.length > 1 && circles.some((a) => Math.hypot(c.x - a.x, c.y - a.y) < a.r)) continue;
       if (c.members.length === 1) {
         single(lead.x, lead.y, lead.m.site, false);
         continue;
@@ -1131,9 +1169,22 @@ export class MapEngine {
     return taken;
   }
 
+  private areaCircles(f: Frame): Array<{ x: number; y: number; r: number }> {
+    const out: Array<{ x: number; y: number; r: number }> = [];
+    for (const a of this.area) {
+      const c = this.onScreen(f, a.lat_deg, a.lon_deg, 1e6);
+      const [la, lo] = destination(a.lat_deg, a.lon_deg, 0, a.radius_m);
+      const e = this.onScreen(f, la, lo, 1e6);
+      if (c && e) out.push({ x: c.x, y: c.y, r: Math.hypot(e.x - c.x, e.y - c.y) });
+    }
+    return out;
+  }
+
   private paintArea(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
-    const a = this.area;
-    if (!a) return;
+    for (const a of this.area) this.paintCircle(ctx, f, p, a);
+  }
+
+  private paintCircle(ctx: CanvasRenderingContext2D, f: Frame, p: Palette, a: SearchArea): void {
     const proj = this.basis.proj;
     ctx.beginPath();
     let prevX = NaN;
@@ -1150,9 +1201,9 @@ export class MapEngine {
     ctx.strokeStyle = p.bg;
     ctx.lineWidth = 4;
     ctx.stroke();
-    ctx.strokeStyle = p.text;
+    ctx.strokeStyle = a.faded ? p.text3 : p.text;
     ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 4]);
+    ctx.setLineDash(a.faded ? [2, 4] : [6, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
   }
@@ -1211,6 +1262,8 @@ export class MapEngine {
     ctx.font = PIN_FONT;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.save();
+    if (this.pinsFaded) ctx.globalAlpha = 0.4;
     const order = [...this.pins].sort((a, b) => Number(a.rank === this.selectedPin) - Number(b.rank === this.selectedPin) || b.rank - a.rank);
     for (const pin of order) {
       const pt = this.onScreen(f, pin.lat_deg, pin.lon_deg, 20);
@@ -1238,82 +1291,6 @@ export class MapEngine {
       ctx.fillStyle = p.bg;
       ctx.fillText(String(pin.rank), x, y + 0.5);
       this.hits.push({ type: "pin", id: String(pin.rank), x, y, r: r + 3 });
-    }
-  }
-
-  private paintRegional(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
-    const m = this.regional;
-    const bake = this.regionalBake;
-    const drawn = m !== null && bake !== null && m.hemisphere === this.basis.kind;
-    if (this.canvas.dataset["regionalDrawn"] !== String(drawn)) this.canvas.dataset["regionalDrawn"] = String(drawn);
-    if (!m || !bake || !drawn) return;
-    const s = m.spacing_m;
-    const x = toScreenX(f, m.x0_m - s / 2);
-    const y = toScreenY(f, m.y0_m + s / 2);
-    const w = (m.n_cols * s) / f.upp;
-    const h = (m.n_rows * s) / f.upp;
-    ctx.save();
-    ctx.globalAlpha = this.regionalOpacity;
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(bake, x, y, w, h);
-    ctx.restore();
-    const cell = s / f.upp;
-    if (cell >= 3) for (const kind of HATCH_KINDS) this.paintHatch(ctx, m, kind, x, y, cell, p);
-    ctx.save();
-    ctx.setLineDash([4, 3]);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = p.text2;
-    ctx.strokeRect(x, y, w, h);
-    ctx.restore();
-  }
-
-  private paintHatch(ctx: CanvasRenderingContext2D, m: RegionalMark, kind: HatchKind, x: number, y: number, cell: number, p: Palette): void {
-    let hatch = this.hatches[kind];
-    if (!hatch || hatch.colour !== p.text) {
-      const t = document.createElement("canvas");
-      t.width = 6;
-      t.height = 6;
-      const g = t.getContext("2d");
-      if (!g) return;
-      g.strokeStyle = p.text;
-      g.lineWidth = 1.2;
-      g.beginPath();
-      g.moveTo(0, 6);
-      g.lineTo(6, 0);
-      g.moveTo(-1, 1);
-      g.lineTo(1, -1);
-      g.moveTo(5, 7);
-      g.lineTo(7, 5);
-      if (kind === "unreliable") {
-        g.moveTo(0, 0);
-        g.lineTo(6, 6);
-        g.moveTo(-1, 5);
-        g.lineTo(1, 7);
-        g.moveTo(5, -1);
-        g.lineTo(7, 1);
-      }
-      g.stroke();
-      const pattern = ctx.createPattern(t, "repeat");
-      if (!pattern) return;
-      hatch = { colour: p.text, pattern };
-      this.hatches[kind] = hatch;
-    }
-    ctx.save();
-    ctx.beginPath();
-    let any = false;
-    for (const c of m.cells) {
-      if (!HATCH_CELL[kind](c)) continue;
-      const cx = x + c.col * cell;
-      const cy = y + c.row * cell;
-      if (cx + cell < 0 || cx > this.w || cy + cell < 0 || cy > this.h) continue;
-      ctx.rect(cx, cy, cell, cell);
-      any = true;
-    }
-    if (any) {
-      ctx.clip();
-      ctx.globalAlpha = Math.min(0.9, this.regionalOpacity + 0.2);
-      ctx.fillStyle = hatch.pattern;
-      ctx.fillRect(0, 0, this.w, this.h);
     }
     ctx.restore();
   }
@@ -1430,8 +1407,13 @@ export class MapEngine {
     const [lat, lon] = proj.inverse(this.view.cx, this.view.cy);
     const g = proj.groundPerUnit(lat);
     const bar = niceScaleBar(f.upp * g.x);
-    if (bar) drawScaleBar(ctx, bar, 18, this.h - 14, "", p);
+    this.hudRects = [];
+    if (bar) {
+      drawScaleBar(ctx, bar, 18, this.h - 14, "", p);
+      this.hudRects.push([12, this.h - 48, 18 + bar.px + 20, this.h]);
+    }
     if (this.showCompass && proj.kind === "polar-stereographic") {
+      this.hudRects.push([this.w - 70, 18, this.w - 18, 70]);
       const north = this.northDirection(f, lat, lon);
       drawNorthArrow(ctx, this.w - 44, 44, north[0], north[1], p);
     }

@@ -1,7 +1,5 @@
 import type { TilesetDef } from "../../api/terrain";
 import { Segmented } from "../../components/ui/Segmented";
-import { RegionalRow } from "../regional/RegionalRow";
-import type { RegionalLayerView } from "../regional/regionalLayer";
 import { LayerRow, Opacity, Ramp } from "./LayerRow";
 import { legendModel } from "./legend";
 import { useMapStore, type BaseLayer } from "./mapStore";
@@ -12,13 +10,7 @@ const BASES: Array<{ value: BaseLayer; label: string }> = [
   { value: "slope", label: "Slope" },
 ];
 
-interface LayersPanelProps {
-  tileset: TilesetDef | null;
-  regional: RegionalLayerView | null;
-  onShowRegional(): void;
-}
-
-export function LayersPanel({ tileset, regional, onShowRegional }: LayersPanelProps) {
+export function LayersPanel({ tileset }: { tileset: TilesetDef | null }) {
   const s = useMapStore();
   const def = s.base === "relief" ? null : (tileset?.layers.find((l) => l.id === s.base) ?? null);
   const m = def ? legendModel(def.legend) : null;
@@ -36,7 +28,6 @@ export function LayersPanel({ tileset, regional, onShowRegional }: LayersPanelPr
       </section>
       <section className="map-group" aria-label="Overlays">
         <ul className="map-rows">
-          <RegionalRow view={regional} onShow={onShowRegional} />
           <LayerRow on={s.graticule} label="Graticule" onChange={(graticule) => s.set({ graticule })} />
           <LayerRow on={s.sites} label="Catalogue sites" onChange={(sites) => s.set({ sites })} />
         </ul>

@@ -95,8 +95,11 @@ export function drawMarker(
 }
 
 export function drawCluster(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, count: number, ring: string, p: Palette): void {
+  const text = `+${count}`;
+  ctx.font = `600 ${r > 8 ? 10 : 9}px ${SANS}`;
+  const half = Math.max(r, ctx.measureText(text).width / 2 + 5);
   ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.roundRect(x - half, y - r * 0.8, half * 2, r * 1.6, r * 0.8);
   ctx.strokeStyle = p.bg;
   ctx.lineWidth = 4.6;
   ctx.globalAlpha = 0.85;
@@ -108,11 +111,10 @@ export function drawCluster(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.strokeStyle = ring;
   ctx.lineWidth = 1.6;
   ctx.stroke();
-  ctx.font = `600 ${r > 8 ? 10 : 9}px ${SANS}`;
   ctx.fillStyle = p.text;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(String(count), x, y + 0.5);
+  ctx.fillText(text, x, y + 0.5);
 }
 
 export function clipName(name: string, max: number): string {
@@ -120,6 +122,16 @@ export function clipName(name: string, max: number): string {
   const cut = name.slice(0, max - 1);
   const space = cut.search(/\s\S*$/);
   return `${space > max / 2 ? cut.slice(0, space) : cut}…`;
+}
+
+function lightness(c: string): number {
+  const hex = /^#([0-9a-f]{6})/i.exec(c.trim());
+  if (hex) {
+    const n = parseInt(hex[1]!, 16);
+    return ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114;
+  }
+  const rgb = /rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(c);
+  return rgb ? Number(rgb[1]) * 0.299 + Number(rgb[2]) * 0.587 + Number(rgb[3]) * 0.114 : 0;
 }
 
 export function haloText(
@@ -132,6 +144,7 @@ export function haloText(
   align: CanvasTextAlign = "left",
   baseline: CanvasTextBaseline = "alphabetic",
 ): void {
+  if (lightness(fill) > lightness(halo)) [fill, halo] = [halo, fill];
   ctx.textAlign = align;
   ctx.textBaseline = baseline;
   ctx.lineJoin = "round";

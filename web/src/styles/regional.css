@@ -1,8 +1,0 @@
-.rg-row { display: flex; flex-direction: column; gap: var(--sp-1-5); width: 100%; }
-.rg-controls { display: flex; gap: var(--sp-2); }
-.rg-controls .select { flex: 1; min-width: 0; }
-.rg-hint { font-size: var(--fs-xs); color: var(--text-3); overflow-wrap: anywhere; }
-.rg-hint:empty { display: none; }
-.rg-run { display: flex; flex-direction: column; gap: var(--sp-1); }
-.rg-run-line { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); font-size: var(--fs-xs); color: var(--text-2); }
-.rg-row .map-legend-rows, .rg-row .map-ramp, .rg-row .map-opacity { padding-left: 0; }

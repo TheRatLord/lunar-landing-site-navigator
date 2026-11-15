@@ -5,7 +5,7 @@ import { formatLat, formatLon } from "../../lib/coords";
 import type { SiteEntry } from "../../scenario/api";
 import type { BlockerMark } from "../../scenario/alternatives";
 import type { CursorBus } from "./cursorBus";
-import type { PinMark, RegionalMark } from "./overlays";
+import type { PinMark } from "./overlays";
 import { MapEngine, type ActiveLayer, type AltMark, type HoverTarget, type MapMode, type MapOptions, type ScenarioMark, type SearchArea } from "./engine";
 import type { LatLon } from "./measure";
 import { clipName } from "./paint";
@@ -32,10 +32,9 @@ export interface MapCanvasProps {
   blocker: BlockerMark | null;
   pins: PinMark[];
   selectedPin: number | null;
-  area: SearchArea | null;
+  area: SearchArea | readonly SearchArea[] | null;
+  pinsFaded?: boolean;
   probe: { lat_deg: number; lon_deg: number } | null;
-  regional: RegionalMark | null;
-  regionalOpacity: number;
   measure: LatLon[];
   mode: MapMode;
   bus: CursorBus;
@@ -132,8 +131,7 @@ export function MapCanvas(props: MapCanvasProps) {
   useEffect(() => engineRef.current?.setScenario(props.scenario), [props.scenario]);
   useEffect(() => engineRef.current?.setAlternatives(props.alternatives), [props.alternatives]);
   useEffect(() => engineRef.current?.setBlocker(props.blocker), [props.blocker]);
-  useEffect(() => engineRef.current?.setPins(props.pins, props.selectedPin), [props.pins, props.selectedPin]);
-  useEffect(() => engineRef.current?.setRegional(props.regional, props.regionalOpacity), [props.regional, props.regionalOpacity]);
+  useEffect(() => engineRef.current?.setPins(props.pins, props.selectedPin, props.pinsFaded), [props.pins, props.selectedPin, props.pinsFaded]);
   useEffect(() => engineRef.current?.setMeasure(props.measure), [props.measure]);
   useEffect(() => engineRef.current?.setMode(props.mode), [props.mode]);
 

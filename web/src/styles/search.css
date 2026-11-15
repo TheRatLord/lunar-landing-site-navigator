@@ -19,3 +19,8 @@
 .se-badge-fail { background: var(--c-fail); }
 .se-verdict { color: var(--text-2); }
 .se-margin { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.se-stale { flex-direction: row; align-items: center; justify-content: space-between; }
+.se-stale .se-hint { font-size: var(--fs-sm); color: var(--c-marginal); }
+.se-rows[data-stale] .se-badge { opacity: 0.4; }
+.se-rows[data-stale] .se-verdict, .se-rows[data-stale] .se-margin { color: var(--text-3); }
+.se-around { font-weight: var(--fw-regular); color: var(--text-2); }

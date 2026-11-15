@@ -77,15 +77,36 @@ interface PlaceActionsProps {
   isPlan: boolean;
   inCompare: boolean;
   onUse(): void;
+  onUseWithLanding?: () => void;
   onCompare(): void;
 }
 
-export function PlaceActions({ isPlan, inCompare, onUse, onCompare }: PlaceActionsProps) {
+export function PlaceActions({ isPlan, inCompare, onUse, onUseWithLanding, onCompare }: PlaceActionsProps) {
+  if (onUseWithLanding && !isPlan)
+    return (
+      <div className="map-popup-actions map-popup-actions-col">
+        <Button size="sm" variant="primary" icon="site" onClick={onUseWithLanding}>
+          Use site and landing
+        </Button>
+        <div className="map-popup-actions-row">
+          <Button size="sm" onClick={onUse}>
+            Use site only
+          </Button>
+          <Button size="sm" icon={inCompare ? "check" : "plus"} disabled={inCompare} onClick={onCompare}>
+            {inCompare ? "In Compare" : "Add to Compare"}
+          </Button>
+        </div>
+      </div>
+    );
   return (
     <div className="map-popup-actions">
-      <Button size="sm" variant="primary" icon="site" disabled={isPlan} onClick={onUse}>
-        {isPlan ? "Plan site" : "Use as plan site"}
-      </Button>
+      {isPlan ? (
+        <span className="map-popup-plan">Plan site ✓</span>
+      ) : (
+        <Button size="sm" variant="primary" icon="site" onClick={onUse}>
+          Use as plan site
+        </Button>
+      )}
       <Button size="sm" icon={inCompare ? "check" : "plus"} disabled={inCompare} onClick={onCompare}>
         {inCompare ? "In Compare" : "Add to Compare"}
       </Button>

@@ -48,9 +48,9 @@ export function HomeMap({ site, focus, sites, pinned, onPickSite, onSetPoint, ra
 
   useEffect(() => {
     if (!engine || !tilesetList) return;
-    const id = window.setTimeout(() => engine.fitAround(focus.lat_deg, focus.lon_deg, kind === "global" ? 600_000 : fitRadius), 0);
+    const id = window.setTimeout(() => engine.fitAround(focus.lat_deg, focus.lon_deg, fitRadius), 0);
     return () => window.clearTimeout(id);
-  }, [engine, tilesetList, focus, kind, fitRadius]);
+  }, [engine, tilesetList, focus, fitRadius]);
 
   const moved = (change: () => void) => {
     const prev = siteSnapshot();
@@ -76,8 +76,6 @@ export function HomeMap({ site, focus, sites, pinned, onPickSite, onSetPoint, ra
         selectedPin={null}
         area={area}
         probe={null}
-        regional={null}
-        regionalOpacity={0}
         measure={[]}
         mode="choose"
         bus={bus}
