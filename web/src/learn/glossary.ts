@@ -28,3 +28,5 @@ export function termsIn(text: string): TermId[] {
   }
   return out;
 }
+
+export const plainText = (text: string): string => text.replace(TERM_RE, (_m, id: string, label?: string) => label ?? TERMS[id as TermId]?.word ?? id);

@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { CHAPTERS, chapterBySlug, learnPath, type Chapter } from "./chapters";
 import { Fold } from "./components/Fold";
+import { LessonsPop } from "./components/LessonsPop";
 import { Pop } from "./components/Pop";
+import { plainText } from "./glossary";
 import { PauseIcon, PlayIcon } from "./components/icons";
 import { dateOfDay } from "./geometry";
-import { TERM_RE, TERMS, type TermId } from "./glossary";
 import { Announcer } from "./components/Announcer";
 import { Dock } from "./components/Dock";
 import { Finale } from "./components/Finale";
@@ -41,15 +42,14 @@ function ExploreRoute() {
   );
 }
 
-const plain = (text: string): string => text.replace(TERM_RE, (_m, id: string, label?: string) => label ?? TERMS[id as TermId]?.word ?? id);
-
 function LessonTime({ c }: { c: Chapter }) {
   const t = useLearn((s) => s.t);
   const playing = useLearn((s) => s.playing);
   const date = dateOfDay(c.epochD + t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   const day = Math.floor(t + 1e-6) + 1;
   return (
-    <div className="l-popbar" role="group" aria-label="Time">
+    <div className="l-popbar" role="group" aria-label="Lessons and time">
+      <LessonsPop />
       <Pop
         className="l-pop-time"
         label={`Time: day ${day}, ${date}, ${playing ? "playing" : "paused"}`}
@@ -79,7 +79,7 @@ function ChapterRoute() {
             <span className="l-title-n">{c.n}</span>
             <span className="l-lesson-sum-text">
               <strong>{c.short}</strong>
-              {c.prompt && <span>{plain(c.prompt)}</span>}
+              {c.prompt && <span>{plainText(c.prompt)}</span>}
             </span>
           </>
         }

@@ -3,6 +3,7 @@ import { dateOfDay } from "../geometry";
 import { SITES, type SiteId } from "../sites";
 import { chapterOf, useLearn } from "../store";
 import { LanderIcon, PauseIcon, PlayIcon } from "./icons";
+import { LessonsPop } from "./LessonsPop";
 import { Pop } from "./Pop";
 import { TimeBar } from "./TimeBar";
 
@@ -97,6 +98,7 @@ export function Dock() {
           <span className="l-pop-text">{SITES.plan.name}</span>
         </button>
       )}
+      <LessonsPop />
       <Pop
         className="l-pop-time"
         label={`Time: ${date}, ${playing ? "playing" : "paused"}`}

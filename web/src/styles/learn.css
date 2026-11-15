@@ -2690,4 +2690,9 @@ button.l-lessons-label {
 .l-stage-ui:has(.l-stage-top:is(:hover, :focus-within, .is-open)) .l-walk-hint {
   visibility: hidden;
 }
+.l-pop-lesson strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
