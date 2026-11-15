@@ -1,5 +1,6 @@
 import type { Verdict } from "../../contract/types";
 import { Button, IconButton } from "../../components/ui/Button";
+import { Icon } from "../../components/ui/Icon";
 import { Popover } from "../../components/ui/Popover";
 import { VERDICT_LABEL } from "../../lib/verdict";
 import { UtcField } from "../../scenario/editor/controls";
@@ -24,19 +25,23 @@ interface SelectionProps {
 export function Selection({ name, t_ms, verdict, limiting, n, pinned, canPin, away, onShift, onPin, onUnpin, onSearchHere, onOpen }: SelectionProps) {
   return (
     <section className="sel" aria-label="Selected landing">
+      <span className="sel-mark" aria-hidden="true">
+        <Icon name="target" size={16} />
+      </span>
       <div className="sel-main">
-        <span className="sel-tag">Selected</span>
         <strong className="sel-site">{name}</strong>
-        <span className="sel-when num">
-          {dayText(t_ms)} {new Date(t_ms).toISOString().slice(11, 16)} UTC
-        </span>
-        {verdict && (
-          <span className="sel-verdict" data-tone={verdict}>
-            {VERDICT_LABEL[verdict]}
-            {verdict !== "pass" && limiting ? ` · ${limiting}` : ""}
+        <span className="sel-sub">
+          <span className="num">
+            {dayText(t_ms)} · {new Date(t_ms).toISOString().slice(11, 16)} UTC
           </span>
-        )}
-        {n !== null && <span className="sel-rank num">#{n}</span>}
+          {verdict && (
+            <span className="sel-verdict" data-tone={verdict}>
+              {VERDICT_LABEL[verdict]}
+              {verdict !== "pass" && limiting ? ` · ${limiting}` : ""}
+            </span>
+          )}
+          {n !== null && <span className="num">Rank {n}</span>}
+        </span>
       </div>
       <div className="sel-tools">
         <IconButton icon="chevronLeft" size="sm" label="One day earlier" onClick={() => onShift(-1)} />
