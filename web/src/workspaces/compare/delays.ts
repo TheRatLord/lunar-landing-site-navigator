@@ -3,7 +3,7 @@ import { MAX_SLIPS, MAX_SLIP_H, normalizeSlips } from "./options";
 
 const trim = (v: number, decimals: number) => String(Number(v.toFixed(decimals)));
 
-export function delayLabel(h: number): string {
+function delayLabel(h: number): string {
   if (h === 0) return "Planned";
   const sign = h > 0 ? "+" : "−";
   const a = Math.abs(h);
@@ -11,10 +11,6 @@ export function delayLabel(h: number): string {
   const d1 = Math.round(d * 10) / 10;
   if (a >= 24 && Math.abs(d - d1) * 24 < 1) return `${sign}${trim(d1, 1)} d`;
   return `${sign}${trim(a, 2)} h`;
-}
-
-export function delayHours(h: number): string {
-  return h === 0 ? "0 h" : `${h > 0 ? "+" : "−"}${trim(Math.abs(h), 3)} h`;
 }
 
 export function delayLabels(hours: readonly number[]): string[] {
@@ -48,7 +44,7 @@ const toHours = (a: Amount, unit: "d" | "h") => Number(((a.unit ?? unit) === "d"
 function parsePart(part: string, plannedMs: number | null, noDate: string): number[] | string {
   if (DATE.test(part)) {
     const ms = parseUtc(part.replace(/z$/i, ""));
-    if (ms === null) return `"${part}" is not a UTC date and time (write it as 2027-03-20 06:00)`;
+    if (ms === null) return `"${part}" is not a date (write 2027-03-20 06:00)`;
     if (plannedMs === null) return `"${part}": ${noDate}`;
     return [Number(((ms - plannedMs) / MS_HOUR).toFixed(3))];
   }
@@ -86,13 +82,13 @@ function parseDelays(text: string, plannedMs: number | null, noDate = "a date ne
     .split(/[,;]+/)
     .map((p) => p.trim())
     .filter(Boolean);
-  if (parts.length === 0) return { ok: false, error: "Type a delay, a list, a range or a date." };
+  if (parts.length === 0) return { ok: false, error: "Type a delay or a date." };
   const hours: number[] = [];
   for (const p of parts) {
     const got = parsePart(p, plannedMs, noDate);
     if (typeof got === "string") return { ok: false, error: got };
     const far = got.find((h) => Math.abs(h) > MAX_SLIP_H);
-    if (far !== undefined) return { ok: false, error: `"${p}" is ${delayHours(far)} from the plan; the engine takes at most ±${MAX_SLIP_H} h (365 d)` };
+    if (far !== undefined) return { ok: false, error: `"${p}" is more than a year from the planned landing` };
     hours.push(...got);
   }
   return { ok: true, hours };
@@ -102,15 +98,6 @@ export function addDelays(existing: readonly number[], text: string, plannedMs: 
   const p = parseDelays(text, plannedMs, noDate);
   if (!p.ok) return p;
   const unique = new Set([0, ...existing, ...p.hours]);
-  if (unique.size > MAX_SLIPS) return { ok: false, error: `That makes ${unique.size} dates; at most ${MAX_SLIPS} fit in one run. Remove some first.` };
+  if (unique.size > MAX_SLIPS) return { ok: false, error: `At most ${MAX_SLIPS} dates` };
   return { ok: true, hours: normalizeSlips([...unique]) };
-}
-
-const MAX_SEARCH_DAYS = 400;
-
-export function parseSearchDays(text: string): number | null {
-  const t = text.trim();
-  if (!/^\d+(\.\d+)?$/.test(t)) return null;
-  const d = Number(t);
-  return d > 0 && d <= MAX_SEARCH_DAYS ? d : null;
 }

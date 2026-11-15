@@ -1,10 +1,7 @@
-import { utcText } from "../../lib/time";
-import type { SlipResult, SlipRow, SlipSite, VerdictState } from "../../api/planning";
-import { limitingRow, slipMargins } from "../calendar/format";
-import { formatSigned, formatSignedValue } from "../../lib/format";
-import { kindWord } from "../../lib/marginKind";
+import type { ServiceConstraintVerdict, SlipResult, SlipRow, SlipSite } from "../../api/planning";
+import { formatSigned } from "../../lib/format";
+import { MS_HOUR, parseUtc } from "../../lib/time";
 import { VERDICT_LABEL } from "../../lib/verdict";
-import { delayLabel } from "./delays";
 import { BASELINE_SITE } from "./options";
 
 export interface SiteRef {
@@ -15,69 +12,48 @@ export interface SiteRef {
   catalog_id: string | null;
 }
 
-type CellState = VerdictState | "no_opportunity";
+type CellState = SlipRow["state"];
 
-export const CELL_MARK: Record<CellState, { word: string }> = {
-  pass: { word: VERDICT_LABEL.pass },
-  marginal: { word: VERDICT_LABEL.marginal },
-  fail: { word: VERDICT_LABEL.fail },
-  unknown: { word: "Unknown" },
-  no_opportunity: { word: "No landing" },
+export const STATE_WORD: Record<CellState, string> = {
+  pass: VERDICT_LABEL.pass,
+  marginal: VERDICT_LABEL.marginal,
+  fail: VERDICT_LABEL.fail,
+  unknown: "Unknown",
+  no_opportunity: "No landing",
 };
 
-const EPS_DEG = 1e-6;
-const sameSpot = (a: { lat_deg: number; lon_deg: number }, b: { lat_deg: number; lon_deg: number }) =>
-  Math.abs(a.lat_deg - b.lat_deg) < EPS_DEG && Math.abs(a.lon_deg - b.lon_deg) < EPS_DEG;
+export const works = (s: CellState): boolean => s === "pass" || s === "marginal";
 
-function siteKeys(served: readonly Pick<SlipSite, "site">[], requested: readonly SiteRef[]): Array<string | null> {
-  const free = [...requested];
-  return served.map((s) => {
-    const at = free.findIndex((r) => r.catalog_id === s.site.catalog_id && sameSpot(r, s.site));
-    return at < 0 ? null : free.splice(at, 1)[0]!.key;
-  });
-}
+const PREFIX = /^Artemis candidate region:\s*/i;
+export const siteName = (name: string | null | undefined): string => (name ?? "").replace(PREFIX, "").trim() || "Unnamed site";
+
+const EPS_DEG = 1e-6;
+type Spot = { lat_deg: number; lon_deg: number; catalog_id?: string | null };
+export const sameSite = (a: Spot, b: Spot): boolean =>
+  (a.catalog_id && b.catalog_id ? a.catalog_id === b.catalog_id : false) ||
+  (Math.abs(a.lat_deg - b.lat_deg) < EPS_DEG && Math.abs(a.lon_deg - b.lon_deg) < EPS_DEG);
 
 export function requestedSites(
-  doc: { site: { name: string; lat_deg: number; lon_deg: number; catalog_id?: string | null } },
+  plan: { name: string; lat_deg: number; lon_deg: number; catalog_id?: string | null },
   alternatives: ReadonlyArray<{ id: string; name: string; lat_deg: number; lon_deg: number; catalog_id: string | null }>,
 ): SiteRef[] {
-  const s = doc.site;
-  return [
-    { key: BASELINE_SITE, name: s.name || "Baseline", lat_deg: s.lat_deg, lon_deg: s.lon_deg, catalog_id: s.catalog_id ?? null },
-    ...alternatives.map((a) => ({ key: a.id, name: a.name, lat_deg: a.lat_deg, lon_deg: a.lon_deg, catalog_id: a.catalog_id })),
-  ];
+  const out: SiteRef[] = [{ key: BASELINE_SITE, name: siteName(plan.name), lat_deg: plan.lat_deg, lon_deg: plan.lon_deg, catalog_id: plan.catalog_id ?? null }];
+  for (const a of alternatives) {
+    if (out.some((r) => sameSite(r, a))) continue;
+    out.push({ key: a.id, name: siteName(a.name), lat_deg: a.lat_deg, lon_deg: a.lon_deg, catalog_id: a.catalog_id });
+  }
+  return out;
 }
 
-export function findCell(result: SlipResult | null, keys: ReadonlyArray<string | null>, site: string, slip_h: number): { site: SlipSite; row: SlipRow } | null {
-  const i = keys.indexOf(site);
-  const s = i < 0 ? undefined : result?.results[i];
-  const row = s?.rows.find((r) => r.slip_h === slip_h);
-  return s && row ? { site: s, row } : null;
-}
-
-export function limitingLabel(row: SlipRow): string | null {
-  return limitingRow(row)?.label ?? row.limiting;
-}
-
-function rowMarginText(row: SlipRow): string | null {
-  if (row.margin_kind === null) return null;
-  const m = slipMargins(row);
-  const cell = row.margin_kind === "worst_case" ? m.worst : row.margin_kind === "nominal" ? m.nominal : m.headingUnknown;
-  return cell ? `${kindWord(row.margin_kind)} margin ${cell.text}` : null;
-}
-
-export function cellName(siteName: string, row: SlipRow, pinned: number | null): string {
-  const parts = [`${siteName}, ${delayLabel(row.slip_h)}`];
-  parts.push(row.landing_utc ? `landing ${utcText(row.landing_utc)} UTC` : "no landing");
-  parts.push(CELL_MARK[row.state].word);
-  const limiting = limitingLabel(row);
-  if (limiting) parts.push(`limited by ${limiting}`);
-  const margin = rowMarginText(row);
-  if (margin) parts.push(margin);
-  else if (row.margin_note) parts.push(row.margin_note);
-  if (row.next_open_utc) parts.push(`next open ${utcText(row.next_open_utc)} UTC`);
-  if (pinned !== null) parts.push(`in the shortlist as number ${pinned}`);
-  return parts.join("; ");
+export function servedByKey(result: SlipResult | null, requested: readonly SiteRef[]): Map<string, SlipSite> {
+  const out = new Map<string, SlipSite>();
+  if (!result) return out;
+  const free = [...requested];
+  for (const s of result.results) {
+    const at = free.findIndex((r) => (r.catalog_id && s.site.catalog_id ? r.catalog_id === s.site.catalog_id : r.catalog_id === s.site.catalog_id && sameSite({ ...r, catalog_id: null }, { ...s.site, catalog_id: null })));
+    if (at >= 0) out.set(free.splice(at, 1)[0]!.key, s);
+  }
+  return out;
 }
 
 const SHORT_NAME: Record<string, string> = {
@@ -85,48 +61,68 @@ const SHORT_NAME: Record<string, string> = {
   landing_hours_after_sunrise: "Since sunrise",
   dte_at_landing_deg: "Earth elevation",
   min_sunlit_hours_after_landing: "Sunlight",
-  max_dark_span_h: "Dark span",
+  max_dark_span_h: "Longest dark span",
   min_total_sunlit_h: "Sunlight total",
-  min_total_contact_h: "Earth contact total",
-  min_total_sunlit_contact_h: "Sun and Earth total",
+  min_total_contact_h: "Earth link total",
+  min_total_sunlit_contact_h: "Sunlight with Earth link",
   min_state_of_charge: "Battery",
-  min_contact_fraction: "Contact",
-  max_contact_gap_h: "Contact gap",
+  min_contact_fraction: "Earth link share",
+  max_contact_gap_h: "Earth link gap",
   min_link_margin_db: "Link margin",
   max_slope_deg: "Slope",
 };
 
-export function shortName(key: string | null | undefined, label: string | null | undefined): string | null {
-  return (key ? SHORT_NAME[key] : undefined) ?? label ?? key ?? null;
-}
+const CELL_NAME: Record<string, string> = {
+  max_dark_span_h: "Dark span",
+  min_total_sunlit_contact_h: "Sun and Earth",
+  min_total_contact_h: "Earth link",
+  min_total_sunlit_h: "Sunlight",
+};
 
 export function limitingShort(row: SlipRow): string | null {
-  return shortName(row.limiting, limitingLabel(row));
+  return (row.limiting ? CELL_NAME[row.limiting] : undefined) ?? limitingName(row);
 }
 
-export function cellFigure(row: SlipRow): string | null {
-  const c = limitingRow(row);
-  if (c && typeof c.margin === "number" && Number.isFinite(c.margin)) return formatSignedValue(c.margin, c.unit, 1);
-  if (c && typeof c.margin_worst === "number" && Number.isFinite(c.margin_worst)) return formatSignedValue(c.margin_worst, c.unit, 1);
-  if (row.margin !== null && Number.isFinite(row.margin)) return `${formatSigned(row.margin, 2)} ×`;
-  return null;
+function limiting(row: SlipRow): ServiceConstraintVerdict | null {
+  return row.verdict?.constraints.find((c) => c.key === row.limiting) ?? null;
 }
 
-interface GridRow {
-  key: string | null;
-  site: SlipSite;
-  name: string;
+export function limitingName(row: SlipRow): string | null {
+  if (!row.limiting) return null;
+  return SHORT_NAME[row.limiting] ?? limiting(row)?.label ?? row.limiting;
 }
 
-export function gridRows(result: SlipResult, requested: readonly SiteRef[]): GridRow[] {
-  const keys = siteKeys(result.results, requested);
-  return result.results.map((site, i) => ({
-    key: keys[i] ?? null,
-    site,
-    name: requested.find((r) => r.key === keys[i])?.name ?? site.site_name ?? site.scenario_name,
-  }));
+function quantity(v: number, unit: string): string {
+  if (unit === "deg" || unit === "°") return `${formatSigned(v, 1)}°`;
+  if (unit === "h" && Math.abs(v) >= 48) return `${formatSigned(v / 24, 1)} d`;
+  if (unit === "fraction") return `${formatSigned(v * 100, 1)} %`;
+  return unit ? `${formatSigned(v, 1)} ${unit}` : formatSigned(v, 1);
 }
 
-export function worksParts(site: Pick<SlipSite, "n_pass" | "rows">): { pass: number; total: number; marginal: number } {
-  return { pass: site.n_pass, total: site.rows.length, marginal: site.rows.filter((r) => r.state === "marginal").length };
+export function marginText(row: SlipRow): string | null {
+  const c = limiting(row);
+  if (!c) return null;
+  const v = typeof c.margin === "number" && Number.isFinite(c.margin) ? c.margin : typeof c.margin_worst === "number" && Number.isFinite(c.margin_worst) ? c.margin_worst : null;
+  return v === null ? null : quantity(v, c.unit);
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const pad = (n: number) => String(n).padStart(2, "0");
+
+export function dayText(ms: number, year = false): string {
+  const d = new Date(ms);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ""}`;
+}
+
+export function dateText(ms: number): string {
+  const d = new Date(ms);
+  return `${dayText(ms, true)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+}
+
+export function nextText(row: SlipRow, landingMs: number): string {
+  const next = parseUtc(row.next_open_utc ?? null);
+  if (next === null) return "";
+  const sameDay = Math.floor(next / (24 * MS_HOUR)) === Math.floor(landingMs / (24 * MS_HOUR));
+  const d = new Date(next);
+  return `next ${sameDay ? `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` : dayText(next, new Date(landingMs).getUTCFullYear() !== d.getUTCFullYear())}`;
 }
