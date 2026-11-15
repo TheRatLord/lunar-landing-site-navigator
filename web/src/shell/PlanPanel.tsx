@@ -1,3 +1,4 @@
+import { siteLabel } from "../lib/siteName";
 import { lazy, Suspense } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Icon } from "../components/ui/Icon";
@@ -24,7 +25,6 @@ import { formatLimit } from "../lib/requirements";
 const SitePicker = lazy(() => import("./plan/SitePicker").then((m) => ({ default: m.SitePicker })));
 
 const MAX_LISTED = 6;
-const REGION_PREFIX = /^Artemis candidate region:\s*/i;
 
 function limitText(limit: Limit): string {
   return formatLimit(limit.min, limit.max, limit.unit);
@@ -42,7 +42,7 @@ export function PlanPanel() {
   if (!doc) return <aside className="plan-side" aria-hidden="true" />;
 
   const landing = parseUtc(doc.landing_utc);
-  const siteName = (doc.site.name || "Unnamed site").replace(REGION_PREFIX, "");
+  const siteName = siteLabel(doc.site.name) || "Unnamed site";
   const active = CONSTRAINT_META.filter((m) => doc.constraints[m.key]);
   const area = areaText(radius);
   const span = windowText(win);

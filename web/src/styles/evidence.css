@@ -4,26 +4,26 @@
 
 .evi-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr); container: evi / inline-size; }
 
-.evi-list { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3) var(--sp-2); border-right: var(--hairline) solid var(--border); background: var(--bg-raised); overflow: auto; }
+.evi-list { display: flex; flex-direction: column; gap: var(--sp-3); margin: 0 var(--gutter) 0 0; padding: var(--sp-3) var(--sp-2); border-radius: var(--r-xl); background: var(--panel); box-shadow: var(--shadow-card); overflow: auto; }
 .evi-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-0); }
 .evi-group-title { margin: 0; padding: 0 var(--sp-2) var(--sp-1); font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-3); }
 .evi-item { display: flex; align-items: center; width: 100%; min-height: var(--control-h); padding: var(--sp-1) var(--sp-2); text-align: left; font: inherit; font-size: var(--fs-md); line-height: var(--lh-tight); color: var(--text-2); background: none; border: 0; border-radius: var(--r-sm); cursor: pointer; overflow-wrap: anywhere; }
-.evi-item:hover { background: var(--panel-hover); color: var(--text); }
-.evi-item[aria-current="page"] { background: var(--accent-bg); color: var(--text); font-weight: var(--fw-medium); }
+.evi-item:hover { background: var(--fill); color: var(--text); }
+.evi-item[aria-current="page"] { background: var(--fill-strong); color: var(--text); font-weight: var(--fw-medium); }
 
 .evi-glance-scroll { min-height: 0; overflow: auto; padding: var(--sp-4) var(--sp-5); }
 .evi-glance { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--sp-3); }
-.evi-glance-head h1 { margin: 0; font-size: var(--fs-2xl); font-weight: var(--fw-semibold, 600); line-height: var(--lh-tight); }
-.evi-glance-sum { margin: var(--sp-1) 0 0; color: var(--text-2); font-size: var(--fs-title); }
+.evi-glance-head h1 { margin: 0; font-size: var(--fs-hero); font-weight: var(--fw-semibold); line-height: 1.08; letter-spacing: var(--tracking-display); }
+.evi-glance-sum { margin: var(--sp-2) 0 var(--sp-2); color: var(--text-2); font-size: var(--fs-lg); }
 
-.evi-checks-wrap { border: var(--hairline) solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+.evi-checks-wrap { border: 0; border-radius: var(--r-xl); background: var(--panel); box-shadow: var(--shadow-card); overflow: hidden; }
 .evi-checks { width: 100%; border-collapse: collapse; font-size: var(--fs-md); line-height: 1.35; }
-.evi-checks thead th { padding: var(--sp-1-5) var(--sp-3); text-align: left; font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-3); background: var(--panel-2); border-bottom: var(--hairline) solid var(--border); }
-.evi-checks tbody th, .evi-checks tbody td { padding: var(--sp-1-5) var(--sp-3); text-align: left; vertical-align: top; border-bottom: var(--hairline) solid var(--border); font-weight: var(--fw-regular); }
+.evi-checks thead th { padding: var(--sp-3) var(--sp-4) var(--sp-2); text-align: left; font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-3); background: none; border-bottom: var(--hairline) solid var(--border); }
+.evi-checks tbody th, .evi-checks tbody td { padding: var(--sp-2) var(--sp-4); text-align: left; vertical-align: top; border-bottom: var(--hairline) solid var(--border); font-weight: var(--fw-regular); }
 .evi-checks tbody tr:last-child > * { border-bottom: 0; }
 .evi-checks tbody th[scope="row"] { width: 23%; }
-.evi-check-name { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--text); font-weight: var(--fw-medium); text-decoration: none; }
-.evi-check-name svg { color: var(--text-3); flex: none; }
+.evi-check-name { display: inline; color: var(--text); font-weight: var(--fw-medium); text-decoration: none; }
+.evi-check-name svg { color: var(--text-3); margin-left: var(--sp-1); vertical-align: -1px; }
 .evi-check-name:hover { color: var(--accent-text); text-decoration: underline; text-underline-offset: var(--underline-offset); }
 .evi-check-name:hover svg { color: var(--accent-text); }
 .evi-check-name:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: var(--focus-offset); border-radius: var(--r-xs); }

@@ -46,17 +46,16 @@ import "../../styles/site.css";
 
 const Terrain3D = lazy(() => import("./terrain3d/Terrain3D"));
 
-type View = "timeline" | "panorama" | "terrain";
+type View = "panorama" | "terrain";
 
 const VIEW_TABS = [
-  { id: "timeline", label: "Timeline" },
   { id: "panorama", label: "Horizon" },
-  { id: "terrain", label: "3D" },
+  { id: "terrain", label: "3D terrain" },
 ] as const satisfies readonly TabItem[];
 
-const VIEW_NAME: Record<View, string> = { timeline: "Mission timeline", panorama: "Horizon panorama", terrain: "3D terrain" };
+const VIEW_NAME: Record<View, string> = { panorama: "Horizon panorama", terrain: "3D terrain" };
 
-let keptView: View = "timeline";
+let keptView: View = "panorama";
 
 export function SiteTarget() {
   const doc = useScenario((s) => s.doc)!;
@@ -102,7 +101,7 @@ export function SiteTarget() {
   usePublishScreenContext({
     where: "Site, Landing site",
     summary: VIEW_NAME[view],
-    lines: [`The view is ${VIEW_NAME[view]}.`, ...(view === "panorama" ? [`The horizon is drawn for the ${observer} height.`] : [])],
+    lines: [`The mission timeline is shown above the ${VIEW_NAME[view]}.`, ...(view === "panorama" ? [`The horizon is drawn for the ${observer} height.`] : [])],
   });
 
   const heightLabel = (o: Observer) => {
@@ -137,6 +136,8 @@ export function SiteTarget() {
         <div className={`site-body ${stale ? "is-stale" : ""}`}>
           <div className="site-grid">
             <div className="site-main">
+              <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" />
+
               <div className="site-toolbar">
                 <Tabs tabs={VIEW_TABS} value={view} onChange={(v) => setView(v as View)} label="Site view" />
                 {view === "panorama" && (
@@ -155,7 +156,6 @@ export function SiteTarget() {
               </div>
 
               <div className="site-visual">
-                {view === "timeline" && <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" />}
                 {view === "panorama" &&
                   (horizon ? (
                     <HorizonPanorama
@@ -195,7 +195,6 @@ export function SiteTarget() {
                 onShow={(id) => {
                   const span = spans.get(id);
                   if (!span) return;
-                  setView("timeline");
                   setTime(span[0]);
                 }}
               />
@@ -209,7 +208,6 @@ export function SiteTarget() {
                 tracing={attr.state.phase === "running" ? tracing : null}
                 onTrace={(kind, e) => {
                   setTracing(kind);
-                  if (view === "timeline") setView("panorama");
                   attr.request(eventRequest(kind, e, eventsAt), attributionLabel(kind, e), null);
                   setTime(e.best_ms);
                 }}

@@ -1,3 +1,4 @@
+import { siteLabel } from "../lib/siteName";
 import { create } from "zustand";
 import { ApiError, reportError } from "../api/client";
 import { clamp } from "../lib/scale";
@@ -271,7 +272,7 @@ async function saveDoc(asNew: boolean): Promise<boolean> {
   const copyOfShared = saved !== null && !asNew && !inPlace;
   const name = current.name.trim();
   if (!name) useScenario.getState().edit(["name"], "Untitled plan");
-  else if (!saved && name === EXAMPLE_NAME) useScenario.getState().edit(["name"], (current.site.name || name).replace(/^Artemis candidate region:\s*/i, ""));
+  else if (!saved && name === EXAMPLE_NAME) useScenario.getState().edit(["name"], siteLabel(current.site.name) || name);
   else if (asNew) useScenario.getState().edit(["name"], `${name} (copy)`);
   const doc = useScenario.getState().doc ?? current;
   useScenario.setState({ phase: "saving", error: null, issues: [], conflictVersion: null });

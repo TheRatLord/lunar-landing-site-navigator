@@ -8,7 +8,7 @@ import { IconButton } from "../ui/Button";
 import { Slider } from "../ui/Fields";
 import { Canvas } from "./canvas";
 import { placeLabels, type Bounds } from "./labels";
-import { MONO, SANS, drawReadout, localPoint, roundRect, type Size, type ThemeColors } from "./draw";
+import { SANS, drawReadout, localPoint, roundRect, type Size, type ThemeColors } from "./draw";
 import { useColors } from "./useColors";
 import { earthCentre, earthInsetPairs, formatBlockerDistance, servedSunlight, sunDiscLit, sunInsetPairs, type InsetPair } from "./panoramaText";
 
@@ -36,9 +36,50 @@ export interface HorizonPanoramaProps {
   elevationFit?: [number, number];
   discInset?: boolean;
   compact?: boolean;
+  skyPad?: number;
+  groundPad?: number;
 }
 
-const PLOT = { left: 44, right: 12, top: 26, bottom: 10 } as const;
+interface Plot {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+const PLOT: Plot = { left: 40, right: 14, top: 30, bottom: 12 };
+
+const SCENE: Record<string, string> = {
+  text: "#f5f5f7",
+  "text-2": "#b4b4ba",
+  "text-3": "#8e8e93",
+  panel: "#1c1c1e",
+  "panel-2": "#2a2a2e",
+  border: "rgba(255, 255, 255, 0.1)",
+  "border-strong": "rgba(255, 255, 255, 0.2)",
+  "on-accent": "#000000",
+  "c-sun": "#ffb340",
+  "c-sun-soft": "rgba(255, 179, 64, 0.3)",
+  "c-earth": "#4da3ff",
+  "c-earth-soft": "rgba(77, 163, 255, 0.3)",
+  "c-terrain-line": "#e5e5ea",
+  "grid-strong": "rgba(235, 235, 245, 0.16)",
+  shadow: "0 18px 50px rgba(0, 0, 0, 0.6)",
+};
+
+function mulberry(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const STARS: ReadonlyArray<readonly [number, number, number, number]> = (() => {
+  const r = mulberry(11);
+  return Array.from({ length: 260 }, () => [r(), r(), 0.4 + r() * 0.9, 0.12 + r() * r() * 0.6] as const);
+})();
 const INSET_W = 140;
 const INSET_H = 128;
 const INSET_FOOT = 52;
@@ -60,6 +101,8 @@ interface Layout {
   x1: number;
   y0: number;
   y1: number;
+  cy0: number;
+  cy1: number;
   w: number;
   h: number;
   pxX: number;
@@ -70,11 +113,11 @@ interface Layout {
   azSpan: number;
 }
 
-function makeLayout(size: Size, view: View, extent: [number, number], gutter: number): Layout {
-  const x0 = PLOT.left;
-  const x1 = size.w - PLOT.right - gutter;
-  const y0 = PLOT.top;
-  const y1 = size.h - PLOT.bottom;
+function makeLayout(size: Size, view: View, extent: [number, number], gutter: number, plot: Plot, bleed: boolean): Layout {
+  const x0 = plot.left;
+  const x1 = size.w - plot.right - gutter;
+  const y0 = plot.top;
+  const y1 = Math.max(y0 + 10, size.h - plot.bottom);
   const plotW = Math.max(10, x1 - x0);
   const plotH = Math.max(10, y1 - y0);
   const pxX = plotW / view.azSpan;
@@ -84,10 +127,10 @@ function makeLayout(size: Size, view: View, extent: [number, number], gutter: nu
     ({ vexag, elCenter } = view.manual);
   } else {
     const span = Math.max(3, extent[1] - extent[0]);
-    vexag = clamp(plotH / (span * pxX), 1, DEFAULT_VEXAG);
+    vexag = clamp(plotH / (span * pxX), 1, bleed ? MAX_VEXAG : DEFAULT_VEXAG);
     elCenter = (extent[0] + extent[1]) / 2;
   }
-  return { x0, x1, y0, y1, w: size.w, h: size.h, pxX, pxY: pxX * vexag, vexag, elCenter, azCenter: view.azCenter, azSpan: view.azSpan };
+  return { x0, x1, y0, y1, cy0: bleed ? 0 : y0, cy1: bleed ? size.h : y1, w: size.w, h: size.h, pxX, pxY: pxX * vexag, vexag, elCenter, azCenter: view.azCenter, azSpan: view.azSpan };
 }
 
 const toX = (L: Layout, azUnwrapped: number) => (L.x0 + L.x1) / 2 + (azUnwrapped - L.azCenter) * L.pxX;
@@ -161,13 +204,18 @@ function drawLabels(ctx: CanvasRenderingContext2D, labels: PendingLabel[], bound
   });
 }
 
-function litDisc(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, style: BodyStyle, alpha: number): void {
+function litDisc(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, style: BodyStyle, alpha: number, glow = 0): void {
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.globalAlpha = alpha;
   ctx.fillStyle = style.color;
+  if (glow > 0) {
+    ctx.shadowColor = style.color;
+    ctx.shadowBlur = glow;
+  }
   ctx.fill();
+  ctx.shadowBlur = 0;
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
   g.addColorStop(0, style.highlight);
   g.addColorStop(0.75, style.color);
@@ -186,18 +234,13 @@ function drawDisc(
   ry: number,
   style: BodyStyle,
   clipAbove: ((ctx: CanvasRenderingContext2D) => void) | null,
+  glow = 0,
 ): void {
-  const ellipse = () => {
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, Math.max(rx, 0.5), Math.max(ry, 0.5), 0, 0, Math.PI * 2);
-  };
-  ellipse();
-  ctx.fillStyle = style.soft;
-  ctx.fill();
   ctx.save();
-  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, Math.max(rx, 0.5), Math.max(ry, 0.5), 0, 0, Math.PI * 2);
   ctx.strokeStyle = style.color;
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = 0.45;
   ctx.lineWidth = 1;
   ctx.stroke();
   ctx.restore();
@@ -206,7 +249,7 @@ function drawDisc(
   if (clipAbove) clipAbove(ctx);
   ctx.translate(cx, cy);
   ctx.scale(1, Math.max(ry, 0.5) / Math.max(rx, 0.5));
-  litDisc(ctx, 0, 0, Math.max(rx, 0.5), style, 1);
+  litDisc(ctx, 0, 0, Math.max(rx, 0.5), style, 1, glow);
   ctx.restore();
 
   if (rx < 5) {
@@ -236,12 +279,9 @@ function drawInset(
   const cx = x + W / 2;
   const cy = y + 46;
   ctx.save();
-  roundRect(ctx, x, y, W, H, 6);
-  ctx.fillStyle = c.get("panel");
+  roundRect(ctx, x, y, W, H, 12);
+  ctx.fillStyle = c.get("panel-2");
   ctx.fill();
-  ctx.strokeStyle = c.get("border-strong");
-  ctx.lineWidth = 1;
-  ctx.stroke();
   ctx.clip();
 
   const hz = (px: number, elev: ArrayLike<number>) => {
@@ -269,11 +309,10 @@ function drawInset(
     ctx.arc(cx, cy, R, 0, Math.PI * 2);
   };
   ghost();
-  ctx.fillStyle = style.soft;
-  ctx.fill();
   ctx.save();
-  ctx.setLineDash([3, 3]);
   ctx.strokeStyle = style.color;
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = 1;
   ctx.stroke();
   ctx.restore();
   ctx.save();
@@ -302,10 +341,8 @@ function drawInset(
   ctx.stroke();
 
   const fy = y + H - INSET_FOOT;
-  ctx.fillStyle = c.get("panel");
+  ctx.fillStyle = c.get("panel-2");
   ctx.fillRect(x, fy, W, INSET_FOOT);
-  ctx.fillStyle = c.get("border");
-  ctx.fillRect(x, fy, W, 1);
 
   ctx.textBaseline = "top";
   ctx.textAlign = "left";
@@ -318,7 +355,7 @@ function drawInset(
     ctx.fillStyle = c.get("text-3");
     ctx.textAlign = "left";
     ctx.fillText(label, x + 8, ty);
-    ctx.font = `11px ${MONO}`;
+    ctx.font = `500 11px ${SANS}`;
     ctx.fillStyle = c.get("text");
     ctx.textAlign = "right";
     ctx.fillText(value, x + W - 8, ty);
@@ -357,8 +394,12 @@ export function HorizonPanorama({
   elevationFit,
   discInset = true,
   compact = false,
+  skyPad = 0,
+  groundPad = 0,
 }: HorizonPanoramaProps) {
-  const colors = useColors();
+  const themed = useColors();
+  const colors = useMemo<ThemeColors>(() => (compact ? { get: (t) => SCENE[t] ?? themed.get(t), station: themed.station } : themed), [compact, themed]);
+  const plot = useMemo<Plot>(() => (compact ? { left: 0, right: 0, top: skyPad, bottom: groundPad } : PLOT), [compact, skyPad, groundPad]);
   const [size, setSize] = useState<Size>({ w: 0, h: 0 });
   const [view, setView] = useState<View>({ azCenter: 180, azSpan: 360, manual: null });
   const [seenHorizon, setSeenHorizon] = useState(horizon);
@@ -373,9 +414,17 @@ export function HorizonPanorama({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const tracks = useMemo(() => [sun, earth].filter((t): t is TargetTrack => !!t), [sun, earth]);
-  const extent = useMemo(() => elevationFit ?? elevationExtent(horizon, tracks), [elevationFit, horizon, tracks]);
+  const extent = useMemo<[number, number]>(() => {
+    if (!compact) return elevationFit ?? elevationExtent(horizon, tracks);
+    const lo = arrMin(horizon.elev_deg);
+    let hi = arrMax(horizon.elev_deg);
+    for (const t of tracks) hi = Math.max(hi, arrMax(t.el_deg));
+    hi = Math.min(90, Math.max(hi, lo + 3));
+    const pad = Math.max(0.3, (hi - lo) * 0.08);
+    return [lo - pad, hi + pad];
+  }, [compact, elevationFit, horizon, tracks]);
   const gutter = inset && size.w >= 640 && size.h >= PLOT.top + PLOT.bottom + INSET_H ? INSET_GUTTER : 0;
-  const L = useMemo(() => makeLayout(size, view, extent, gutter), [size, view, extent, gutter]);
+  const L = useMemo(() => makeLayout(size, view, extent, gutter, plot, compact), [size, view, extent, gutter, plot, compact]);
 
   const n = horizon.elev_deg.length;
   const nearestIndex = useCallback((az: number) => Math.round((wrap360(az) / 360) * n) % n, [n]);
@@ -389,21 +438,45 @@ export function HorizonPanorama({
 
       ctx.save();
       ctx.beginPath();
-      ctx.rect(L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0);
+      if (compact) ctx.rect(L.x0, L.cy0, L.x1 - L.x0, L.cy1 - L.cy0);
+      else ctx.roundRect(L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0, 14);
       ctx.clip();
 
-      const sky = ctx.createLinearGradient(0, L.y0, 0, L.y1);
-      sky.addColorStop(0, c.get("sky"));
-      sky.addColorStop(1, c.get("sky-low"));
+      const sky = ctx.createLinearGradient(0, L.cy0, 0, L.cy1);
+      sky.addColorStop(0, compact ? "#000000" : c.get("sky"));
+      sky.addColorStop(1, compact ? "#08080b" : c.get("sky-low"));
       ctx.fillStyle = sky;
-      ctx.fillRect(L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0);
+      ctx.fillRect(L.x0, L.cy0, L.x1 - L.x0, L.cy1 - L.cy0);
+
+      if (compact) {
+        ctx.fillStyle = "#ffffff";
+        for (const [u, v, r, a] of STARS) {
+          ctx.globalAlpha = a;
+          ctx.beginPath();
+          ctx.arc(L.x0 + u * (L.x1 - L.x0), L.cy0 + v * (L.cy1 - L.cy0), r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        const sp = sun ? interpTrack(sun, timeMs) : null;
+        if (sp && sp.el_deg >= horizonAt(horizon.elev_deg, sp.az_deg) - 1.5) {
+          const gx = toX(L, sp.az_deg + Math.round((L.azCenter - sp.az_deg) / 360) * 360);
+          const gy = toY(L, sp.el_deg);
+          const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, Math.max(220, (L.x1 - L.x0) * 0.32));
+          glow.addColorStop(0, "rgba(255, 190, 110, 0.3)");
+          glow.addColorStop(0.35, "rgba(255, 170, 90, 0.1)");
+          glow.addColorStop(1, "rgba(255, 170, 90, 0)");
+          ctx.fillStyle = glow;
+          ctx.fillRect(L.x0, L.cy0, L.x1 - L.x0, L.cy1 - L.cy0);
+        }
+      }
 
       const elLo = L.elCenter - (L.y1 - L.y0) / 2 / L.pxY;
       const elHi = L.elCenter + (L.y1 - L.y0) / 2 / L.pxY;
       ctx.lineWidth = 1;
-      const elTicks = niceTicks(elLo, elHi, Math.max(3, (L.y1 - L.y0) / 44));
+      const elTicks = niceTicks(elLo, elHi, Math.max(3, (L.y1 - L.y0) / (compact ? 70 : 52)));
       const elDecimals = tickDecimals(elTicks, 3);
       for (const e of elTicks) {
+        if (compact && e !== 0) continue;
         const y = Math.round(toY(L, e)) + 0.5;
         ctx.strokeStyle = e === 0 ? c.get("grid-strong") : c.get("grid");
         ctx.beginPath();
@@ -414,21 +487,24 @@ export function HorizonPanorama({
       const azStep = azStepFor(L.pxX);
       const azLo = L.azCenter - L.azSpan / 2;
       const azHi = L.azCenter + L.azSpan / 2;
-      for (let a = Math.ceil(azLo / azStep) * azStep; a <= azHi; a += azStep) {
-        const x = Math.round(toX(L, a)) + 0.5;
-        ctx.strokeStyle = a % 90 === 0 ? c.get("grid-strong") : c.get("grid");
-        ctx.beginPath();
-        ctx.moveTo(x, L.y0);
-        ctx.lineTo(x, L.y1);
-        ctx.stroke();
-      }
 
+      const ridgeTop = Math.min(...best.map((q) => q[1]));
+      const ground = ctx.createLinearGradient(0, ridgeTop, 0, L.cy1);
+      if (compact) {
+        ground.addColorStop(0, "#6b6b72");
+        ground.addColorStop(0.12, "#434348");
+        ground.addColorStop(0.45, "#232327");
+        ground.addColorStop(1, "#0b0b0d");
+      } else {
+        ground.addColorStop(0, c.get("c-terrain-fill-top"));
+        ground.addColorStop(1, c.get("c-terrain-fill"));
+      }
       ctx.beginPath();
       tracePath(ctx, best);
-      ctx.lineTo(best[best.length - 1]![0], L.y1 + 2);
-      ctx.lineTo(best[0]![0], L.y1 + 2);
+      ctx.lineTo(best[best.length - 1]![0], L.cy1 + 2);
+      ctx.lineTo(best[0]![0], L.cy1 + 2);
       ctx.closePath();
-      ctx.fillStyle = c.get("c-terrain-fill");
+      ctx.fillStyle = ground;
       ctx.fill();
 
       if (!compact) {
@@ -438,21 +514,12 @@ export function HorizonPanorama({
         ctx.closePath();
         ctx.fillStyle = c.get("c-uncertainty-soft");
         ctx.fill();
-        ctx.setLineDash([3, 3]);
-        ctx.strokeStyle = c.get("c-uncertainty");
-        ctx.lineWidth = 1;
-        for (const p of [lo, hi]) {
-          ctx.beginPath();
-          tracePath(ctx, p);
-          ctx.stroke();
-        }
-        ctx.setLineDash([]);
       }
 
       ctx.beginPath();
       tracePath(ctx, best);
       ctx.strokeStyle = c.get("c-terrain-line");
-      ctx.lineWidth = 1.6;
+      ctx.lineWidth = compact ? 1.25 : 1.5;
       ctx.lineJoin = "round";
       ctx.stroke();
 
@@ -496,25 +563,26 @@ export function HorizonPanorama({
             prevO = o;
           }
           ctx.strokeStyle = color;
-          ctx.lineWidth = past ? 1.2 : 1.8;
-          ctx.globalAlpha = past ? 0.55 : 0.95;
-          ctx.setLineDash(past ? [4, 3] : []);
+          ctx.lineWidth = past ? 1.25 : 2;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.globalAlpha = past ? 0.38 : 0.95;
           ctx.stroke();
         }
-        ctx.setLineDash([]);
         ctx.globalAlpha = 1;
       };
       const clipAbove = (g: CanvasRenderingContext2D) => {
         g.beginPath();
         tracePath(g, best);
-        g.lineTo(best[best.length - 1]![0], L.y0 - 2000);
-        g.lineTo(best[0]![0], L.y0 - 2000);
+        g.lineTo(best[best.length - 1]![0], L.cy0 - 2000);
+        g.lineTo(best[0]![0], L.cy0 - 2000);
         g.closePath();
         g.clip();
       };
       if (compact) {
         ctx.save();
         clipAbove(ctx);
+        if (earth) drawTrackLine(earth, c.get("c-earth"));
         if (sun) drawTrackLine(sun, c.get("c-sun"));
         ctx.restore();
       } else {
@@ -530,9 +598,9 @@ export function HorizonPanorama({
         const a = p.az_deg + Math.round((L.azCenter - p.az_deg) / 360) * 360;
         const cx = toX(L, a);
         const cy = toY(L, p.el_deg);
-        const rx = compact ? 6 : p.ang_radius_deg * L.pxX;
-        drawDisc(ctx, cx, cy, rx, compact ? 6 : p.ang_radius_deg * L.pxY, style, clipAbove);
-        if (cy >= L.y0 && cy <= L.y1 && cx >= L.x0 && cx <= L.x1 && p.el_deg >= horizonAt(horizon.elev_deg, p.az_deg)) labels.push({ text: style.name, color: c.get("text"), font: `600 11px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) });
+        const rx = compact ? 7 : p.ang_radius_deg * L.pxX;
+        drawDisc(ctx, cx, cy, rx, compact ? 7 : p.ang_radius_deg * L.pxY, style, clipAbove, compact ? 26 : 10);
+        if (cy >= L.cy0 && cy <= L.cy1 && cx >= L.x0 && cx <= L.x1 && p.el_deg >= horizonAt(horizon.elev_deg, p.az_deg)) labels.push({ text: style.name, color: c.get("text"), font: `600 ${compact ? 12 : 11}px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) + (compact ? 4 : 0) });
         return p;
       };
       const sunStyle: BodyStyle = { color: c.get("c-sun"), soft: c.get("c-sun-soft"), highlight: c.get("on-accent"), name: "Sun" };
@@ -564,44 +632,40 @@ export function HorizonPanorama({
         labels.push({ text: st.label, color: c.get("text-2"), font: `500 10px ${SANS}`, ax: x, ay: y, gap: 7, side: "left" });
       });
 
-      drawLabels(ctx, labels, { x0: L.x0 + 2, y0: L.y0 + 2, x1: L.x1 - 2, y1: L.y1 - 2 });
+      drawLabels(ctx, labels, { x0: L.x0 + 8, y0: L.cy0 + 8, x1: L.x1 - 8, y1: L.cy1 - 8 });
 
       ctx.restore();
 
-      ctx.font = `11px ${MONO}`;
+      ctx.font = `500 11px ${SANS}`;
       ctx.fillStyle = c.get("text-3");
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
+      ctx.textAlign = compact ? "left" : "right";
+      ctx.textBaseline = compact ? "bottom" : "middle";
       for (const e of elTicks) {
         const y = toY(L, e);
-        if (y < L.y0 + 4 || y > L.y1 - 4) continue;
-        ctx.fillText(`${formatNum(e, elDecimals)}°`, L.x0 - 6, y);
+        if (compact ? e !== 0 : y < L.y0 + 4 || y > L.y1 - 4) continue;
+        ctx.fillText(`${formatNum(e, elDecimals)}°`, compact ? L.x0 + 18 : L.x0 - 8, compact ? y - 4 : y);
       }
 
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
-      for (let a = Math.ceil(azLo / azStep) * azStep; a <= azHi; a += azStep) {
+      const cardStep = azStep <= 45 ? 45 : 90;
+      for (let a = Math.ceil(azLo / cardStep) * cardStep; a <= azHi; a += cardStep) {
         const x = toX(L, a);
-        if (x < L.x0 + 10 || x > L.x1 - 10) continue;
+        if (x < L.x0 + 14 || x > L.x1 - 14) continue;
         const deg = wrap360(a);
-        const card = deg % 45 === 0 ? CARDINALS[deg / 45] : undefined;
-        if (card) {
-          ctx.font = `600 ${deg % 90 === 0 ? 12 : 10}px ${SANS}`;
-          ctx.fillStyle = deg % 90 === 0 ? c.get("text") : c.get("text-2");
-          ctx.fillText(card, x, L.y0 - 14);
-          ctx.font = `10px ${MONO}`;
-          ctx.fillStyle = c.get("text-3");
-          ctx.fillText(`${deg}°`, x, L.y0 - 4);
-        } else {
-          ctx.font = `10px ${MONO}`;
-          ctx.fillStyle = c.get("text-3");
-          ctx.fillText(`${deg}°`, x, L.y0 - 8);
+        const main = deg % 90 === 0;
+        ctx.font = `600 ${main ? 12 : 11}px ${SANS}`;
+        ctx.fillStyle = main ? c.get("text-2") : c.get("text-3");
+        ctx.fillText(CARDINALS[deg / 45]!, x, compact ? L.cy1 - 16 : L.y0 - 14);
+        if (!compact) {
+          ctx.strokeStyle = c.get("grid-strong");
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(Math.round(x) + 0.5, L.y0);
+          ctx.lineTo(Math.round(x) + 0.5, L.y0 + (main ? 8 : 5));
+          ctx.stroke();
         }
       }
-
-      ctx.strokeStyle = c.get("border-strong");
-      ctx.lineWidth = 1;
-      ctx.strokeRect(L.x0 + 0.5, L.y0 + 0.5, L.x1 - L.x0 - 1, L.y1 - L.y0 - 1);
 
       if (inset && gutter > 0) {
         let iy = L.y0;
@@ -632,15 +696,15 @@ export function HorizonPanorama({
           sz,
           c,
         );
-      } else if (hover && hover.x >= L.x0 && hover.x <= L.x1 && hover.y >= L.y0 && hover.y <= L.y1) {
+      } else if (hover && hover.x >= L.x0 && hover.x <= L.x1 && hover.y >= L.cy0 && hover.y <= L.cy1) {
         const az = fromX(L, hover.x);
         const idx = nearestIndex(az);
         ctx.strokeStyle = c.get("text-2");
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 3]);
         ctx.beginPath();
-        ctx.moveTo(hover.x + 0.5, L.y0);
-        ctx.lineTo(hover.x + 0.5, L.y1);
+        ctx.moveTo(hover.x + 0.5, L.cy0);
+        ctx.lineTo(hover.x + 0.5, L.cy1);
         ctx.stroke();
         ctx.setLineDash([]);
         const hz = horizonAt(horizon.elev_deg, az);
@@ -760,6 +824,27 @@ export function HorizonPanorama({
 
   const resetView = () => setView({ azCenter: 180, azSpan: 360, manual: null });
 
+  if (compact) {
+    return (
+      <section className="viz-scene" aria-label={title}>
+        <Canvas
+          className="panorama-canvas"
+          canvasRef={canvasRef}
+          label={summary}
+          draw={draw}
+          onSize={setSize}
+          tabIndex={0}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={() => setHover(null)}
+          onKeyDown={onKey}
+          onDoubleClick={resetView}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="panel viz-panel" aria-label={title}>
       <div className="viz-stack">
@@ -777,8 +862,7 @@ export function HorizonPanorama({
           onKeyDown={onKey}
           onDoubleClick={resetView}
         >
-          {!compact && (
-          <div className="viz-float toolstrip toolstrip-float" role="group" aria-label="View controls" style={{ top: L.y0 + 6, right: Math.max(6, size.w - L.x1 + 6) }}>
+          <div className="viz-float toolstrip toolstrip-float" role="group" aria-label="View controls" style={{ top: L.y0 + 10, right: Math.max(10, size.w - L.x1 + 10) }}>
             <IconButton icon="target" label="True-size Sun and Earth discs" size="sm" pressed={inset} onClick={() => setInset((v) => !v)} />
             <span className="toolstrip-sep" aria-hidden="true" />
             <div className="viz-float-slider">
@@ -797,17 +881,14 @@ export function HorizonPanorama({
             <IconButton icon="minus" label="Zoom out" size="sm" onClick={() => zoom(1 / 1.5)} />
             <IconButton icon="reset" label="Reset view" size="sm" shortcut="F" onClick={resetView} />
           </div>
-          )}
         </Canvas>
         <ul className="legend" aria-label="Legend">
           <li>
             <i className="lg-line" style={{ background: "var(--c-terrain-line)" }} /> Horizon
           </li>
-          {!compact && (
-            <li>
-              <i className="lg-band" /> Terrain error range
-            </li>
-          )}
+          <li>
+            <i className="lg-band" /> Terrain error range
+          </li>
           {sun && (
             <li>
               <i className="lg-line" style={{ background: "var(--c-sun)" }} /> Sun
@@ -815,12 +896,12 @@ export function HorizonPanorama({
           )}
           {earth && (
             <li>
-              <i className={compact ? "lg-dot" : "lg-line"} style={{ background: "var(--c-earth)" }} /> Earth
+              <i className="lg-line" style={{ background: "var(--c-earth)" }} /> Earth
             </li>
           )}
-          {!compact && (sun || earth) && (
+          {(sun || earth) && (
             <li>
-              <i className="lg-dash" /> Past
+              <i className="lg-past" /> Past
             </li>
           )}
           {stations.length > 0 && (

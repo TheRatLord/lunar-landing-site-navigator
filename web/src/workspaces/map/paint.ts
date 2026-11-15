@@ -1,4 +1,4 @@
-import { MONO, SANS } from "../../components/viz/draw";
+import { SANS } from "../../components/viz/draw";
 import type { Shape } from "./sites";
 import type { ScaleBar } from "./scaleBar";
 import { clamp } from "../../lib/scale";
@@ -21,11 +21,13 @@ export const PALETTE_TOKENS = {
   fail: "c-fail",
   marginal: "c-marginal",
   network: "c-network",
+  dim: "map-dim",
+  vignette: "map-vignette",
 };
 
 export type Palette = Record<keyof typeof PALETTE_TOKENS, string>;
 
-export const LABEL_FONT = `10.5px ${MONO}`;
+export const LABEL_FONT = `500 11px ${SANS}`;
 export const NAME_FONT = `11px ${SANS}`;
 export const NAME_FONT_STRONG = `600 11px ${SANS}`;
 export const BADGE_FONT = `600 10px ${SANS}`;

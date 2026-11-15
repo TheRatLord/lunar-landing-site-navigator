@@ -1,3 +1,4 @@
+import { siteLabel } from "../../lib/siteName";
 import { formatQuantity, outcomeFromJson, requirementName, verdictSentence } from "../../lib/requirements";
 import type { ServiceConstraintVerdict, SlipResult, SlipRow, SlipSite } from "../../api/planning";
 import { MS_HOUR, parseUtc } from "../../lib/time";
@@ -24,8 +25,7 @@ export const STATE_WORD: Record<CellState, string> = {
 
 export const works = (s: CellState): boolean => s === "pass" || s === "marginal";
 
-const PREFIX = /^Artemis(?:\s+\d{4})?\s+candidate region:\s*/i;
-export const siteName = (name: string | null | undefined): string => (name ?? "").replace(PREFIX, "").trim() || "Unnamed site";
+export const siteName = (name: string | null | undefined): string => siteLabel(name).trim() || "Unnamed site";
 
 const EPS_DEG = 1e-6;
 type Spot = { lat_deg: number; lon_deg: number; catalog_id?: string | null };

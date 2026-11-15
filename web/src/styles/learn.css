@@ -1911,3 +1911,8 @@ button.l-lessons-label {
     animation-duration: 1ms !important;
   }
 }
+@media (min-width: 760px) {
+  .learn > .topbar {
+    padding: 0 calc(var(--gutter) + var(--sp-2));
+  }
+}

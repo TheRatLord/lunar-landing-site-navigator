@@ -9,12 +9,13 @@ import type { ActiveLayer, AltMark, MapEngine, MapOptions, ScenarioMark, SearchA
 import { MapCanvas } from "../map/MapCanvas";
 import { announceSiteMove, siteSnapshot } from "../map/siteMove";
 import { viewKindFor } from "../map/urlState";
+import { siteLabel } from "../../lib/siteName";
 import "../../styles/map.css";
 
 const loadTilesets = (signal: AbortSignal) => terrainApi.tilesets({ signal });
 
 const LAYERS: ActiveLayer[] = [{ id: "relief", opacity: 1 }];
-const OPTIONS: MapOptions = { graticule: false, sites: true, compass: false };
+const OPTIONS: MapOptions = { graticule: false, sites: true, compass: false, scale: false };
 const FOCUS_RADIUS_M = 45_000;
 const noop = () => undefined;
 
@@ -42,7 +43,7 @@ export function HomeMap({ site, focus, sites, pinned, onPickSite, onSetPoint, ra
   const kind = viewKindFor(focus.lat_deg);
   const tilesetList = tilesets.state.status === "ready" ? tilesets.state.data.tilesets : null;
   const renderVersion = tilesets.state.status === "ready" ? tilesets.state.data.render_version : "";
-  const mark = useMemo<ScenarioMark>(() => ({ lat_deg: site.lat_deg, lon_deg: site.lon_deg, name: site.name, ellipse: null }), [site.lat_deg, site.lon_deg, site.name]);
+  const mark = useMemo<ScenarioMark>(() => ({ lat_deg: site.lat_deg, lon_deg: site.lon_deg, name: siteLabel(site.name), ellipse: null }), [site.lat_deg, site.lon_deg, site.name]);
   const area = useMemo<SearchArea | null>(() => (radiusKm ? { lat_deg: site.lat_deg, lon_deg: site.lon_deg, radius_m: radiusKm * 1000 } : null), [radiusKm, site.lat_deg, site.lon_deg]);
   const fitRadius = Math.max(FOCUS_RADIUS_M, (radiusKm ?? 0) * 1300);
 

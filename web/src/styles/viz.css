@@ -131,8 +131,8 @@
 .lg-band {
   width: 16px;
   height: 8px;
+  border-radius: 2px;
   background: var(--c-uncertainty-soft);
-  border: 1px dashed var(--c-uncertainty);
 }
 .lg-diamond {
   width: 9px;
@@ -201,4 +201,13 @@
   overflow-wrap: anywhere;
   white-space: normal;
   color: var(--text-2);
+}
+.viz-scene {
+  min-width: 0;
+  min-height: 0;
+}
+.lg-past {
+  width: 16px;
+  height: 1px;
+  background: var(--text-3);
 }

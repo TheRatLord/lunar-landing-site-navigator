@@ -139,20 +139,48 @@ function limitOf(o: RequirementOutcome): string {
   return formatLimit(o.limitMin, o.limitMax, o.unit);
 }
 
-function failPart(o: RequirementOutcome, ctx: VerdictContext): string {
+function failBits(o: RequirementOutcome, ctx: VerdictContext): { lead: string; limit: string } {
   const name = requirementName(o.key, o.label);
-  const lim = limitOf(o);
-  const tail = lim ? ` (limit ${lim})` : "";
-  if (o.key === "min_state_of_charge" && ctx.batteryEveryHeading) return `${name} ${formatQuantity(ctx.batteryWorst ?? o.worstValue ?? o.value ?? 0, o.unit)} at every heading (limit ${formatQuantity(o.limitMin ?? o.limitMax, o.unit)})`;
+  if (o.key === "min_state_of_charge" && ctx.batteryEveryHeading) return { lead: `${name} ${formatQuantity(ctx.batteryWorst ?? o.worstValue ?? o.value ?? 0, o.unit)} at every heading`, limit: formatQuantity(o.limitMin ?? o.limitMax, o.unit) };
   const v = o.headingDependent ? (o.worstValue ?? o.value) : o.value;
-  return `${name}${v !== null ? ` ${against(v, o)}` : ""}${tail}`;
+  return { lead: `${name}${v !== null ? ` ${against(v, o)}` : ""}`, limit: limitOf(o) };
+}
+
+function failPart(o: RequirementOutcome, ctx: VerdictContext): string {
+  const b = failBits(o, ctx);
+  return `${b.lead}${b.limit ? ` (limit ${b.limit})` : ""}`;
+}
+
+const byShare = (a: RequirementOutcome, b: RequirementOutcome): number => share(a, a.margin ?? a.marginWorst) - share(b, b.margin ?? b.marginWorst);
+
+export interface VerdictHeadline {
+  word: string;
+  lead: string | null;
+  note: string | null;
+}
+
+export function verdictHeadline(overall: string, outcomes: readonly RequirementOutcome[], ctx: VerdictContext = {}): VerdictHeadline | null {
+  const s = verdictSentence(overall, outcomes, ctx);
+  if (!s) return null;
+  const n = outcomes.length;
+  if (overall === "pass") return { word: s.word, lead: n === 1 ? "Requirement met" : `All ${n} requirements met`, note: null };
+  if (overall === "fail") {
+    const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
+    const first = failing[0];
+    if (!first) return { word: s.word, lead: null, note: null };
+    const b = failBits(first, ctx);
+    const count = `${failing.length} of ${n} requirement${n === 1 ? "" : "s"} failed`;
+    return { word: s.word, lead: b.lead, note: b.limit ? `Limit ${b.limit} · ${count}` : count };
+  }
+  const m = s.detail ? /^(.*) \(limit (.*)\)$/.exec(s.detail) : null;
+  return m ? { word: s.word, lead: m[1]!, note: `Limit ${m[2]!}` } : { word: s.word, lead: s.detail, note: null };
 }
 
 export function verdictSentence(overall: string, outcomes: readonly RequirementOutcome[], ctx: VerdictContext = {}): { word: string; detail: string | null } | null {
   const n = outcomes.length;
   if (overall === "pass") return { word: "Pass", detail: n === 1 ? "requirement met" : `all ${n} requirements met` };
   if (overall === "fail") {
-    const failing = outcomes.filter((o) => o.state === "fail").sort((a, b) => share(a, a.margin ?? a.marginWorst) - share(b, b.margin ?? b.marginWorst));
+    const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
     if (failing.length === 0) return { word: "Fail", detail: null };
     return { word: "Fail", detail: `${failing.length} of ${n}: ${failing.map((o) => failPart(o, ctx)).join("; ")}` };
   }

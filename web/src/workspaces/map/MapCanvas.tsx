@@ -123,8 +123,8 @@ export function MapCanvas(props: MapCanvasProps) {
   useEffect(() => engineRef.current?.setPalette(colors.get), [colors]);
   useEffect(() => engineRef.current?.setSites(props.sites), [props.sites]);
   useEffect(() => engineRef.current?.setLayers(props.layers), [props.layers]);
-  const { graticule, sites: showSites, compass } = props.options;
-  useEffect(() => engineRef.current?.setOptions({ graticule, sites: showSites, compass }), [graticule, showSites, compass]);
+  const { graticule, sites: showSites, compass, scale } = props.options;
+  useEffect(() => engineRef.current?.setOptions({ graticule, sites: showSites, compass, scale }), [graticule, showSites, compass, scale]);
   useEffect(() => engineRef.current?.setSearchArea(props.area), [props.area]);
   useEffect(() => engineRef.current?.setProbe(props.probe), [props.probe]);
   useEffect(() => engineRef.current?.setSelected(props.selectedId), [props.selectedId]);

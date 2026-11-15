@@ -6,12 +6,15 @@ import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Spinner } from "../../components/ui/Progress";
-import { VerdictChip } from "../../components/ui/VerdictChip";
 import { useScenario } from "../../scenario/store";
 import type { Limit, Scenario } from "../../scenario/types";
 import { useEllipsePassShare } from "../ellipse/store";
 import { DownloadMenu } from "../ReportButton";
-import { batteryRisk, verdictSentence, type VerdictSummary } from "./adapt";
+import { verdictHeadline } from "../../lib/requirements";
+import { siteLabel } from "../../lib/siteName";
+import { parseUtc } from "../../lib/time";
+import { hoursOrDays, whenText } from "../../scenario/when";
+import { batteryRisk, type VerdictSummary } from "./adapt";
 import { Assumptions } from "./Assumptions";
 import { SiteTabs } from "./SiteTabs";
 
@@ -60,7 +63,8 @@ function Notes({ doc, result }: { doc: Scenario; result: EvaluateResult | null }
 export function SiteHeader({ doc, evaluated, result, summary, run }: SiteHeaderProps) {
   const computing = run.phase === "running";
   const known = summary && summary.overall !== "unknown";
-  const sentence = summary && !run.stale ? verdictSentence(summary) : null;
+  const head = known && !run.stale ? verdictHeadline(summary.overall, summary.outcomes, { batteryEveryHeading: summary.batteryEveryHeading, batteryWorst: summary.batteryWorst }) : null;
+  const landing = parseUtc(doc.landing_utc);
   return (
     <>
       <PageHeader
@@ -72,21 +76,31 @@ export function SiteHeader({ doc, evaluated, result, summary, run }: SiteHeaderP
             <DownloadMenu scenario={doc} />
           </>
         }
-      >
-        {known && !run.stale ? (
+      />
+      <section className="site-verdict" aria-live="polite">
+        <p className="site-eyebrow">
+          {siteLabel(doc.site.name) || "Unnamed site"}
+          {landing !== null && ` · ${whenText(landing)}`} · {hoursOrDays(doc.mission_duration_h)} on the surface
+        </p>
+        {head ? (
           <>
-            <VerdictChip verdict={summary.overall as Exclude<VerdictSummary["overall"], "unknown">} />
-            {sentence && <span className="vs-sentence">{sentence}</span>}
+            <p className="site-headline">
+              <strong className="verdict-word" data-tone={summary?.overall}>
+                {head.word}.
+              </strong>
+              {head.lead && ` ${head.lead}.`}
+            </p>
+            {head.note && <p className="site-headline-note">{head.note}</p>}
           </>
         ) : computing ? (
-          <span className="vs-computing" role="status">
-            <Spinner size={12} />
+          <p className="site-headline site-headline-wait" role="status">
+            <Spinner size={16} />
             Computing
-          </span>
+          </p>
         ) : (
-          <span className="faint">Not evaluated</span>
+          <p className="site-headline site-headline-wait">Not evaluated</p>
         )}
-      </PageHeader>
+      </section>
       {!run.stale && <Notes doc={doc} result={result} />}
     </>
   );

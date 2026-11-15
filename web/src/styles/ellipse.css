@@ -1,12 +1,12 @@
 .el { display: flex; flex-direction: column; min-width: 0; }
 .el-notice { padding: var(--sp-3) var(--sp-4) 0; }
-.el-body { display: grid; grid-template-columns: 300px minmax(0, 1fr); align-items: start; min-width: 0; }
-.el-side { align-self: stretch; display: flex; flex-direction: column; min-width: 0; border-right: var(--hairline) solid var(--border); }
-.el-side > section, .el-params { padding: var(--sp-3) var(--sp-4); }
-.el-params { display: flex; flex-direction: column; gap: var(--sp-3); border-top: var(--hairline) solid var(--border); }
+.el-body { display: grid; grid-template-columns: 320px minmax(0, 1fr); align-items: start; gap: var(--gutter); min-width: 0; padding: 0 var(--sp-3) var(--sp-4); }
+.el-side { align-self: start; display: flex; flex-direction: column; min-width: 0; border-radius: var(--r-xl); background: var(--panel); box-shadow: var(--shadow-card); }
+.el-side > section, .el-params { padding: var(--sp-4) var(--sp-4); }
+.el-params { display: flex; flex-direction: column; gap: var(--sp-3); padding-top: 0; }
 
 .el-ellipse-head { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-1); }
-.el-title { font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--text); }
+.el-title { font-size: var(--fs-title); font-weight: var(--fw-semibold); color: var(--text); }
 .el-ellipse { display: flex; flex-direction: column; gap: var(--sp-2); }
 .el-about, .el-ellipse-head .origin { display: none; }
 .el-validation { text-decoration: none; }
@@ -35,7 +35,7 @@
 .el-plotcol { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
 .el-plotbar { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; min-height: var(--control-h-sm); }
 .el-relief-error { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-xs); color: var(--c-marginal); }
-.el-detailcol { display: flex; flex-direction: column; min-width: 0; border: var(--hairline) solid var(--border); border-radius: var(--r-lg); background: var(--panel); overflow: hidden; }
+.el-detailcol { display: flex; flex-direction: column; min-width: 0; border: 0; border-radius: var(--r-xl); background: var(--panel); overflow: hidden; box-shadow: var(--shadow-card); }
 .el-detailcol > * + * { border-top: var(--hairline) solid var(--border); }
 .el-detailcol .table th { background: var(--panel); }
 .el-sec { min-width: 0; }
@@ -53,7 +53,7 @@
 .el-glyph-fail { color: var(--c-fail); }
 .el-glyph-unknown { color: var(--text-2); }
 
-.el-plot { display: block; width: 100%; height: auto; border: 1px solid var(--border-strong); border-radius: var(--r-sm); font-family: var(--font-mono); }
+.el-plot { display: block; width: 100%; height: auto; border: 0; border-radius: var(--r-xl); font-family: var(--font-ui); }
 .el-bg { fill: var(--panel-2); }
 .el-grid-frame { fill: none; stroke: var(--border-strong); stroke-width: 1; }
 .el-cross { stroke: var(--grid-strong); stroke-width: 1; fill: none; }

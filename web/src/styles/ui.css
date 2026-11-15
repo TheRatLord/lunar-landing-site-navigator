@@ -199,6 +199,7 @@
   border: 0;
   border-radius: var(--r-xl);
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 .panel-head {
   display: flex;
@@ -242,35 +243,34 @@
 /* ---------- tabs (underline) ---------- */
 .tabs {
   display: inline-flex;
-  align-items: center;
-  gap: 2px;
+  align-items: stretch;
+  gap: 0;
   height: var(--control-h);
+  padding: 2px;
+  border-radius: var(--r-pill);
+  background: var(--fill);
 }
-.page-header .tabs {
-  height: auto;
-}
+.page-header .tabs { height: var(--control-h); }
 .tab {
   position: relative;
-  height: var(--control-h);
+  height: auto;
   padding: 0 var(--sp-3);
   border: 0;
   border-radius: var(--r-pill);
   background: transparent;
   color: var(--text-2);
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
   cursor: pointer;
   white-space: nowrap;
-  transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease), background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
-.tab:hover:not(:disabled) {
-  color: var(--text);
-  background: var(--fill);
-}
+.tab:hover:not(:disabled) { color: var(--text); }
 .tab[aria-selected="true"] {
   color: var(--text);
-  background: var(--fill-strong);
+  background: var(--seg-on);
+  box-shadow: var(--shadow-raised);
 }
 
 .tab:focus-visible {
@@ -455,7 +455,7 @@
   min-width: 0;
   padding: 0 var(--sp-3);
   background: var(--input-bg);
-  border: var(--hairline) solid transparent;
+  border: var(--hairline) solid var(--field-edge);
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
   color: var(--text);
@@ -1101,6 +1101,7 @@ input[type="radio"]:disabled {
   font-size: var(--fs-md);
   box-shadow: var(--shadow-popover);
   overflow: auto;
+  transform-origin: left center;
 }
 .popover:focus-visible {
   outline: none;
@@ -1439,4 +1440,23 @@ input[type="radio"]:disabled {
 }
 .popover {
   animation: pop-in var(--dur) var(--ease-out);
+}
+button.cmp-btn:hover { filter: none; }
+.palette-list li .kbd {
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.verdict-word {
+  font-weight: inherit;
+}
+.verdict-word[data-tone="pass"] {
+  color: var(--c-pass);
+}
+.verdict-word[data-tone="marginal"] {
+  color: var(--c-marginal);
+}
+.verdict-word[data-tone="fail"] {
+  color: var(--c-fail);
 }

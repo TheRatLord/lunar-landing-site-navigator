@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { siteLabel } from "../../lib/siteName";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PLANNING_ENDPOINTS, type ScanResult } from "../../api/planning";
 import { useReportPlanning } from "../../api/report";
 import { SITE_ENDPOINTS, evaluateBody, type EvaluateResult } from "../../api/site";
@@ -22,15 +23,17 @@ import { evaluatedScenario, summarize } from "../site/adapt";
 import { Headline } from "./Headline";
 import { HomeMap, type MapFocus } from "./HomeMap";
 import { adaptScan, bestLandings, scanParams, yearScanBody } from "./scan";
-import { SPAN_MS, adaptSurvey, roundToHour, spanStartFor, surveyBody, trackWindow, withExact, type Survey, type SurveySite } from "./survey";
+import { useApp } from "../../state/store";
+import { SPAN_MS, adaptSurvey, dayText, roundToHour, spanStartFor, surveyBody, trackWindow, withExact, type Survey, type SurveySite } from "./survey";
 import { PinnedRow, WindowStrip } from "./WindowStrip";
 import "../../styles/home.css";
 
 const loadSites = (signal: AbortSignal) => catalogApi.sites({ limit: 1000 }, { signal });
 const MAX_PINS = 4;
+const GROUND_PAD = 132;
+const SKY_GAP = 28;
 const FALLBACK_MS = Date.UTC(2027, 0, 12);
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
-const shortName = (n: string): string => n.replace(/^Artemis candidate region:\s*/i, "");
 
 function useSurvey(doc: Scenario, site: SurveySite, anchor: number | null) {
   const body = useMemo(() => (anchor === null ? null : surveyBody(doc, site, anchor)), [doc, site, anchor]);
@@ -58,7 +61,7 @@ function PinnedSite({ pin, doc, anchor, start, end, requirements, onSelect, onRe
   const scan = useMemo(() => (scanRun.result && !scanRun.stale ? adaptScan(scanRun.result) : null), [scanRun.result, scanRun.stale]);
   return (
     <PinnedRow
-      label={shortName(pin.name)}
+      label={siteLabel(pin.name)}
       sub={`${formatLat(pin.lat_deg, 2)} ${formatLon(pin.lon_deg, 2)}`}
       survey={survey && !run.stale ? survey : null}
       scan={scan}
@@ -160,6 +163,18 @@ export function HomeWorkspace() {
   const pinMarks = useMemo(() => pins.filter((p) => !samePlace(p, site)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, site]);
 
   const fresh = survey !== null;
+  const theme = useApp((st) => st.theme);
+  const verdictRef = useRef<HTMLElement>(null);
+  const [skyPad, setSkyPad] = useState(190);
+  useEffect(() => {
+    const el = verdictRef.current;
+    if (!el) return;
+    const measure = () => setSkyPad(Math.round(el.offsetTop + el.offsetHeight + SKY_GAP));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const sunWindow = useMemo(() => trackWindow(survey?.sunTrack ?? null, timeMs), [survey, timeMs]);
   const earthWindow = useMemo(() => trackWindow(survey?.earthTrack ?? null, timeMs), [survey, timeMs]);
 
@@ -172,47 +187,48 @@ export function HomeWorkspace() {
   return (
     <div className="home" aria-label="Overview page">
       <h1 className="sr-only">Overview: {name}</h1>
-      <Headline
-        survey={survey}
-        failed={failed}
-        onRetry={retry}
-        timeMs={timeMs}
-        dragging={live !== null}
-        requirements={requirements}
-        summary={live === null ? summary : null}
-        evaluation={evaluation}
-        scan={showScan ? scan : null}
-        best={best}
-        onJump={commit}
-      />
-
-      <div className="home-stage">
-        <div className="home-pane home-pane-map">
+      <section className="home-hero" data-theme="dark" data-stale={!fresh}>
+        {survey?.horizon ? (
+          <HorizonPanorama
+            compact
+            skyPad={skyPad}
+            groundPad={GROUND_PAD}
+            horizon={survey.horizon}
+            sun={sunWindow}
+            earth={earthWindow}
+            timeMs={timeMs}
+            elevationFit={survey.fit ?? undefined}
+            title="Sun and Earth paths over the terrain horizon"
+          />
+        ) : (
+          <div className="home-sky-wait" role="status">
+            {!failed && <Spinner size={16} />}
+          </div>
+        )}
+        <Headline
+          subject={`${siteLabel(name) || "Unnamed site"} · ${dayText(timeMs, true)}`}
+          blockRef={verdictRef}
+          survey={survey}
+          failed={failed}
+          onRetry={retry}
+          timeMs={timeMs}
+          dragging={live !== null}
+          requirements={requirements}
+          summary={live === null ? summary : null}
+          evaluation={evaluation}
+          scan={showScan ? scan : null}
+          best={best}
+          onJump={commit}
+        />
+        <div className="home-locator" data-theme={theme}>
           <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} radiusKm={radiusKm} />
         </div>
-        <div className="home-pane home-pane-sky" data-stale={!fresh}>
-          {survey?.horizon ? (
-            <HorizonPanorama
-              compact
-              horizon={survey.horizon}
-              sun={sunWindow}
-              earth={earthWindow}
-              timeMs={timeMs}
-              elevationFit={survey.fit ?? undefined}
-              title="Sun and Earth paths over the terrain horizon"
-            />
-          ) : (
-            <div className="home-sky-wait" role="status">
-              {!failed && <Spinner size={14} />}
-            </div>
-          )}
-          {survey?.smooth && (
-            <p className="home-sky-note">
-              <Icon name="warn" size={12} /> No terrain data: smooth-sphere horizon
-            </p>
-          )}
-        </div>
-      </div>
+        {survey?.smooth && (
+          <p className="home-sky-note">
+            <Icon name="warn" size={12} /> No terrain data: smooth-sphere horizon
+          </p>
+        )}
+      </section>
 
       <WindowStrip
         start_ms={start}
@@ -221,7 +237,7 @@ export function HomeWorkspace() {
         survey={survey}
         busy={!fresh}
         failed={failed}
-        siteName={shortName(name) || "Unnamed site"}
+        siteName={siteLabel(name) || "Unnamed site"}
         scan={showScan ? scan : null}
         scanState={!showScan ? "off" : scan ? "ready" : scanRun.phase === "error" ? "failed" : "busy"}
         best={best}

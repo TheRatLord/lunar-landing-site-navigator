@@ -1,3 +1,4 @@
+import { siteLabel } from "../../lib/siteName";
 import { useCallback, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useLoad } from "../../api/useLoad";
@@ -33,7 +34,6 @@ const MAX_RESULTS = 40;
 const loadSites = (signal: AbortSignal) => catalogApi.sites({ limit: 1000 }, { signal });
 const coords = (lat: number, lon: number) => `${formatLat(lat, 2)} ${formatLon(lon, 2)}`;
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
-const short = (name: string): string => name.replace(/^Artemis candidate region:\s*/i, "");
 
 export function SitePicker() {
   const site = useScenario((s) => s.doc?.site);
@@ -65,12 +65,12 @@ export function SitePicker() {
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_RESULTS);
-    for (const { s } of scored) out.push({ key: s.id, title: short(s.name), note: coords(s.lat_deg, s.lon_deg), site: { lat_deg: s.lat_deg, lon_deg: s.lon_deg, name: s.name, catalog_id: s.id } });
+    for (const { s } of scored) out.push({ key: s.id, title: siteLabel(s.name), note: coords(s.lat_deg, s.lon_deg), site: { lat_deg: s.lat_deg, lon_deg: s.lon_deg, name: s.name, catalog_id: s.id } });
     return out;
   }, [sites, query]);
 
   const pinned = useMemo<Option[]>(
-    () => pins.map((p) => ({ key: `pin:${p.id}`, title: short(p.name), note: coords(p.lat_deg, p.lon_deg), site: { lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id } })),
+    () => pins.map((p) => ({ key: `pin:${p.id}`, title: siteLabel(p.name), note: coords(p.lat_deg, p.lon_deg), site: { lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id } })),
     [pins],
   );
 

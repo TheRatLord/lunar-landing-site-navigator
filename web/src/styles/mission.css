@@ -6,8 +6,9 @@
 }
 .mission-title {
   margin: 0;
-  font-size: var(--fs-title);
-  font-weight: var(--fw-medium);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-display);
 }
 .mission-grid {
   display: flex;
@@ -17,33 +18,31 @@
 .mission-index {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-0);
+  gap: 2px;
   flex: none;
-  width: 196px;
-  padding: var(--sp-3) var(--sp-2);
-  border-right: var(--hairline) solid var(--border);
+  width: 212px;
+  padding: var(--sp-2) var(--sp-3);
 }
 .mission-link {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  height: var(--control-h);
-  padding: 0 var(--sp-2);
+  height: 36px;
+  padding: 0 var(--sp-3);
   background: transparent;
   border: 0;
-  border-left: var(--sel-bar) solid transparent;
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  border-radius: var(--r-md);
   color: var(--text-2);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
   text-align: left;
   white-space: nowrap;
 }
 .mission-link:hover {
-  background: var(--panel-hover);
+  background: var(--fill);
   color: var(--text);
 }
 .mission-link[aria-current="true"] {
-  border-left-color: var(--accent);
+  background: var(--fill-strong);
   color: var(--text);
   font-weight: var(--fw-medium);
 }
@@ -62,7 +61,7 @@
   outline: none;
 }
 .mission-sec {
-  max-width: 760px;
+  max-width: 640px;
   padding-top: var(--sp-5);
 }
 .mission-sec + .mission-sec {
@@ -86,7 +85,6 @@
 .mission-sec-about {
   margin: var(--sp-1) 0 0;
   padding-bottom: var(--sp-2);
-  border-bottom: var(--hairline) solid var(--border-strong);
   color: var(--text-2);
   font-size: var(--fs-md);
   line-height: var(--lh-body);

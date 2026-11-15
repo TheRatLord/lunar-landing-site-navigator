@@ -104,6 +104,36 @@ function Compare() {
     lines: [`Sites: ${sites.map((s) => s.name).join("; ")}.`, `Landing dates, from the planned landing: ${delayLabels(slips).join(", ")}.`],
   });
 
+  const tally = useMemo(() => {
+    let total = 0;
+    let ok = 0;
+    const okSites = new Set<string>();
+    for (const site of sites)
+      for (const h of slips) {
+        const row = cellAt(site.key, h);
+        if (!row) continue;
+        total += 1;
+        if (works(row.state)) {
+          ok += 1;
+          okSites.add(site.key);
+        }
+      }
+    return { total, ok, okSites: okSites.size };
+  }, [sites, slips, cellAt]);
+  const options = sites.length * slips.length;
+  const title =
+    tally.total < options || tally.total === 0
+      ? "Comparing sites and dates"
+      : tally.ok === 0
+        ? `None of ${options} option${options === 1 ? "" : "s"} works.`
+        : `${tally.ok} of ${options} options work${tally.ok === 1 ? "s" : ""}.`;
+  const subtitle =
+    tally.total < options || tally.total === 0
+      ? null
+      : tally.ok === 0
+        ? "Select a cell to see the next date that does, or add a site."
+        : `${tally.okSites} of ${sites.length} site${sites.length === 1 ? "" : "s"} ha${tally.okSites === 1 ? "s" : "ve"} a landing date that meets the requirements. Select a cell to use it.`;
+
   const csv = () => downloadText(`${slug(doc.name)}-compare.csv`, gridCsv(sites, slips, cellAt, plannedMs), "text/csv");
 
   return (
@@ -126,7 +156,12 @@ function Compare() {
         <AddSite present={sites} />
         <AddDate plannedMs={plannedMs} />
       </PageHeader>
-      <h1 className="sr-only">Compare</h1>
+      <header className="cmp-head">
+        <h1 className="cmp-title" data-tone={tally.total === options && options > 0 ? (tally.ok === 0 ? "fail" : "pass") : undefined}>
+          {title}
+        </h1>
+        {subtitle && <p className="cmp-sub">{subtitle}</p>}
+      </header>
       <div className="cmp-body">
         {failed && (
           <p className="cmp-notice" role="alert">

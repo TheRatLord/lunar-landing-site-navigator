@@ -1,3 +1,4 @@
+import { siteLabel } from "../../lib/siteName";
 import { fetchTileBitmap, tileUrl, type TileLayerId, type TilesetDef } from "../../api/terrain";
 import {
   MOON_R_M,
@@ -120,6 +121,7 @@ export interface MapOptions {
   graticule: boolean;
   sites: boolean;
   compass: boolean;
+  scale?: boolean;
 }
 
 interface SiteMarker {
@@ -163,6 +165,7 @@ export class MapEngine {
   private showGraticule = true;
   private showSitesLayer = true;
   private showCompass = true;
+  private showScale = true;
   private area: readonly SearchArea[] = [];
   private probe: { lat: number; lon: number } | null = null;
   private frameListeners = new Set<() => void>();
@@ -356,6 +359,7 @@ export class MapEngine {
     this.showGraticule = o.graticule;
     this.showSitesLayer = o.sites;
     this.showCompass = o.compass;
+    this.showScale = o.scale !== false;
     this.invalidate();
   }
 
@@ -891,6 +895,13 @@ export class MapEngine {
 
     this.paintBase(ctx, f, p);
     this.paintTiles(ctx, f);
+    ctx.fillStyle = p.dim;
+    ctx.fillRect(0, 0, w, h);
+    const edge = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.42, w / 2, h / 2, Math.hypot(w, h) / 2);
+    edge.addColorStop(0, "rgba(0, 0, 0, 0)");
+    edge.addColorStop(1, p.vignette);
+    ctx.fillStyle = edge;
+    ctx.fillRect(0, 0, w, h);
     const gridLabels = this.showGraticule ? this.paintGraticule(ctx, f, p) : [];
     this.paintScenarioEllipse(ctx, f, p);
     const taken = this.paintSites(ctx, f, p);
@@ -1116,7 +1127,7 @@ export class MapEngine {
       markerBoxes.push([x - 8, y - 8, x + 8, y + 8]);
       if (site.kind === "poi" && f.zoom < this.basis.grid.minZ + 5 && !sel) return;
       if (scPt && Math.abs(x - scPt.x) < 3 && Math.abs(y - scPt.y) < 3) return;
-      const text = clipName(site.name.replace(/^Artemis( \d{4})? candidate region: /, ""), 28);
+      const text = clipName(siteLabel(site.name), 28);
       ctx.font = sel ? NAME_FONT_STRONG : NAME_FONT;
       const box: LabelBox = { id: site.id, x, y, r: 8, w: ctx.measureText(text).width, must: sel };
       if (sel) labels.unshift(box);
@@ -1408,7 +1419,7 @@ export class MapEngine {
     const g = proj.groundPerUnit(lat);
     const bar = niceScaleBar(f.upp * g.x);
     this.hudRects = [];
-    if (bar) {
+    if (bar && this.showScale) {
       drawScaleBar(ctx, bar, 18, this.h - 14, "", p);
       this.hudRects.push([12, this.h - 48, 18 + bar.px + 20, this.h]);
     }

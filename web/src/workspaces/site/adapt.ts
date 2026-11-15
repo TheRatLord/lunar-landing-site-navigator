@@ -1,4 +1,4 @@
-import { outcomeFromJson, verdictSentence as sharedVerdict, type RequirementOutcome } from "../../lib/requirements";
+import { outcomeFromJson, type RequirementOutcome } from "../../lib/requirements";
 import { wrap360 } from "../../lib/scale";
 import type {
   ConstraintVerdict,
@@ -426,7 +426,7 @@ export function timelineRows(r: EvaluateResult, scenario: Scenario | null): Time
   const rows: Array<TimelineRow | null> = [
     intervalRow("sunlit", "Sunlight", "c-sun", r.intervals["sunlit"], span),
     intervalRow("eclipse", "Eclipse", "c-uncertainty", r.intervals["eclipse"], span),
-    intervalRow("contact", "Earth link", "c-network", r.intervals["contact"], span),
+    intervalRow("contact", "Earth link", "c-earth", r.intervals["contact"], span),
     percentRow(
       lineRow(r.series, "soc", "soc", "Battery", "%", "c-power", {
         domain: [0, 1],
@@ -702,11 +702,6 @@ const canonical = (v: unknown): string =>
 
 export function limitKey(note: Pick<LimitNoteJson, "id" | "parameters">): string {
   return `${note.id} ${canonical(note.parameters)}`;
-}
-
-export function verdictSentence(summary: VerdictSummary): string | null {
-  if (summary.overall === "unknown") return null;
-  return sharedVerdict(summary.overall, summary.outcomes, { batteryEveryHeading: summary.batteryEveryHeading, batteryWorst: summary.batteryWorst })?.detail ?? null;
 }
 
 export interface BatteryRisk {
