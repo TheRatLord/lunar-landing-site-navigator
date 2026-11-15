@@ -1,30 +1,23 @@
 import type { CountdownKind, CrossingEvent } from "../../contract/types";
-import { formatNum } from "../../lib/format";
-import { MS_DAY, MS_HOUR, formatUtc } from "../../lib/time";
+import { Icon } from "../ui/Icon";
 import { Panel } from "../ui/Panel";
-import { Stat } from "../ui/Stat";
+import { Spinner } from "../ui/Progress";
+import { spanText, whenText } from "./units";
 
 export interface CountdownProps {
   events: CrossingEvent[];
   timeMs: number;
   title?: string;
+  onTrace?: (kind: CountdownKind, event: CrossingEvent) => void;
+  tracing?: CountdownKind | null;
 }
 
-const KINDS: Array<{ kind: CountdownKind; label: string; body: "sun" | "earth" }> = [
-  { kind: "sunset", label: "Sunlight ends", body: "sun" },
-  { kind: "sunrise", label: "Sunlight begins", body: "sun" },
-  { kind: "earthset", label: "Contact ends", body: "earth" },
-  { kind: "earthrise", label: "Contact begins", body: "earth" },
-];
+export const KIND_LABEL: Record<CountdownKind, string> = { sunset: "Sunset", sunrise: "Sunrise", earthset: "Earth link ends", earthrise: "Earth link begins" };
 
-const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const KINDS: readonly CountdownKind[] = ["sunset", "sunrise", "earthset", "earthrise"];
+const BODY: Record<CountdownKind, "sun" | "earth"> = { sunset: "sun", sunrise: "sun", earthset: "earth", earthrise: "earth" };
 
-function hoursText(ms: number): string {
-  const h = Math.max(0, ms) / MS_HOUR;
-  return h >= 100 ? h.toFixed(0) : h >= 10 ? h.toFixed(1) : h.toFixed(2);
-}
-
-function next(events: CrossingEvent[], kind: CountdownKind, now: number): CrossingEvent | null {
+function next(events: readonly CrossingEvent[], kind: CountdownKind, now: number): CrossingEvent | null {
   let best: CrossingEvent | null = null;
   for (const e of events) {
     if (e.kind !== kind || (!e.latest_open && e.latest_ms < now)) continue;
@@ -33,49 +26,50 @@ function next(events: CrossingEvent[], kind: CountdownKind, now: number): Crossi
   return best;
 }
 
-function CountdownCard({ spec, event, timeMs }: { spec: (typeof KINDS)[number]; event: CrossingEvent | null; timeMs: number }) {
-  const cls = `cd-card cd-${spec.body}`;
-  if (!event) {
-    return (
-      <div className={`${cls} cd-none`} role="group" aria-label={`${spec.label}, none in the loaded range`}>
-        <Stat label={spec.label} value="—" />
-      </div>
-    );
-  }
+function rangeText(e: CrossingEvent, now: number): string | null {
+  if (e.earliest_open || e.latest_open) return "range open";
+  if (e.latest_ms - e.earliest_ms < 60_000) return null;
+  return `${spanText(e.earliest_ms - now)} to ${spanText(e.latest_ms - now)}`;
+}
+
+function Row({ kind, event, timeMs, onTrace, busy }: { kind: CountdownKind; event: CrossingEvent; timeMs: number; onTrace?: CountdownProps["onTrace"]; busy: boolean }) {
   const rem = event.best_ms - timeMs;
-  const early = event.earliest_ms - timeMs;
-  const late = event.latest_ms - timeMs;
-  const earlyOpen = event.earliest_open === true;
-  const lateOpen = event.latest_open === true;
-  const now = (earlyOpen || early <= 0) && rem <= 0;
-  const spread = Math.max(1, event.latest_ms - event.earliest_ms);
-  const bestFrac = earlyOpen || lateOpen ? 50 : ((event.best_ms - event.earliest_ms) / spread) * 100;
-  const bound = (open: boolean, ms: number) => (open ? "unbounded (beyond the analysed span)" : `${hoursText(ms)} hours`);
-  const head = event.title ? (event.cause ? `${capFirst(event.title)} (${event.cause})` : capFirst(event.title)) : spec.label;
-  const aria = `${head} in ${hoursText(rem)} hours (${formatNum(Math.max(0, rem) / MS_DAY, 3)} Earth days), between ${bound(earlyOpen, early)} and ${bound(lateOpen, late)}`;
-  const rangeText = earlyOpen && lateOpen ? "unbounded" : lateOpen ? `≥ ${hoursText(early)} h` : earlyOpen ? `≤ ${hoursText(late)} h` : `${hoursText(early)}–${hoursText(late)} h`;
+  const now = rem <= 0;
+  const range = rangeText(event, timeMs);
+  const body = (
+    <>
+      <span className={`cd-dot cd-${BODY[kind]}`} aria-hidden="true" />
+      <span className="cd-name">{KIND_LABEL[kind]}</span>
+      <span className="cd-in num">{now ? "now" : `in ${spanText(rem)}`}</span>
+      <span className="cd-when num">
+        {whenText(event.best_ms)}
+        {range && <span className="cd-range"> · {range}</span>}
+      </span>
+      {onTrace && <span className="cd-act">{busy ? <Spinner size={12} /> : <Icon name="search" size={12} />}</span>}
+    </>
+  );
+  if (!onTrace) return <li className="cd-row">{body}</li>;
   return (
-    <div className={cls} role="group" aria-label={aria}>
-      <Stat label={head} value={now ? "now" : hoursText(rem)} unit={now ? undefined : "h"} sub={formatUtc(event.best_ms, { seconds: false })} />
-      <div className="cd-range" aria-hidden="true">
-        <div className={`cd-bar ${earlyOpen ? "open-start" : ""} ${lateOpen ? "open-end" : ""}`}>
-          <div className="cd-bar-fill" />
-          <div className="cd-bar-best" style={{ left: `${bestFrac}%` }} />
-        </div>
-        <div className="cd-range-text num">{rangeText}</div>
-      </div>
-    </div>
+    <li>
+      <button type="button" className="cd-row cd-btn" onClick={() => onTrace(kind, event)} title="Trace what sets it">
+        {body}
+      </button>
+    </li>
   );
 }
 
-export function Countdown({ events, timeMs, title = "Countdown" }: CountdownProps) {
+export function Countdown({ events, timeMs, title = "Next events", onTrace, tracing = null }: CountdownProps) {
+  const found = KINDS.map((k) => ({ kind: k, event: next(events, k, timeMs) }));
+  const shown = found.filter((f): f is { kind: CountdownKind; event: CrossingEvent } => f.event !== null).sort((a, b) => a.event.best_ms - b.event.best_ms);
+  const missing = found.filter((f) => f.event === null).map((f) => KIND_LABEL[f.kind]);
   return (
-    <Panel title={title}>
-      <div className="cd-grid">
-        {KINDS.map((k) => (
-          <CountdownCard key={k.kind} spec={k} event={next(events, k.kind, timeMs)} timeMs={timeMs} />
+    <Panel title={title} scroll={false}>
+      <ul className="cd-list">
+        {shown.map((f) => (
+          <Row key={f.kind} kind={f.kind} event={f.event} timeMs={timeMs} onTrace={onTrace} busy={tracing === f.kind} />
         ))}
-      </div>
+      </ul>
+      {missing.length > 0 && <p className="cd-none">None later in the mission: {missing.join(", ")}</p>}
     </Panel>
   );
 }

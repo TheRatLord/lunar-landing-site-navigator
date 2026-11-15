@@ -268,10 +268,6 @@ export function indices(g: Grid): { index: Uint32Array; triangles: number } {
   return { index: out.subarray(0, w), triangles: w / 3 };
 }
 
-export function triangleCount(n: number): number {
-  return 2 * (n - 1) * (n - 1);
-}
-
 export function edgeDistance(g: Grid, az_deg: number): number {
   const half = ((g.n - 1) * g.spacing) / 2;
   const { east, north } = offsetAt(az_deg, 1);

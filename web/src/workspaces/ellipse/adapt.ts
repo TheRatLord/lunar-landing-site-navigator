@@ -1,9 +1,8 @@
 import { clamp, wrap360 } from "../../lib/scale";
 import { formatSigned, withUnit } from "../../lib/format";
-import type { Convergence, EllipseMapGrid, EllipseResult, EllipseSamples, SampleState } from "../../api/ellipse";
-import { MAP_STATE } from "../../api/ellipse";
+import { quantityText } from "../../components/viz/units";
+import type { Convergence, EllipseResult, EllipseSamples, SampleState } from "../../api/ellipse";
 import type { Ellipse, Limit, Scenario } from "../../scenario/types";
-import { UNPUBLISHED_BASES, type Basis } from "../../scenario/types";
 
 export const STATES: readonly SampleState[] = ["pass", "marginal", "fail", "unknown"];
 export const STATE_LABEL: Record<SampleState, string> = { pass: "Pass", marginal: "Marginal", fail: "Fail", unknown: "Unknown" };
@@ -96,44 +95,22 @@ export function standardError(c: Convergence, key: "pass" | "marginal" | "fail")
   return se === undefined ? "" : `± ${withUnit((se * 100).toFixed(1), "%")}`;
 }
 
-interface MapCell {
-  east: number;
-  north: number;
-  state: SampleState;
-  margin: number | null;
-}
-
-const CODE_STATE: Record<number, SampleState> = { [MAP_STATE.fail]: "fail", [MAP_STATE.marginal]: "marginal", [MAP_STATE.pass]: "pass", [MAP_STATE.unknown]: "unknown" };
-
-export function mapCells(grid: EllipseMapGrid): MapCell[] {
-  const out: MapCell[] = [];
-  grid.state.forEach((row, j) =>
-    row.forEach((code, i) => {
-      if (code === MAP_STATE.outside) return;
-      out.push({ east: grid.east_m[j]![i]!, north: grid.north_m[j]![i]!, state: CODE_STATE[code] ?? "unknown", margin: grid.worst_margin[j]![i] ?? null });
-    }),
-  );
-  return out;
-}
-
 interface LimitInfo {
   label: string;
   unit: string;
-  basis: Basis | null;
   rule: string;
 }
 
 export function limitInfo(scenario: Scenario | { [key: string]: unknown } | null, key: string): LimitInfo {
   const constraints = (scenario as { constraints?: Record<string, unknown> } | null)?.constraints;
   const lim = constraints?.[key] as Limit | null | undefined;
-  if (!lim || typeof lim !== "object" || !("unit" in lim)) return { label: key.replace(/_/g, " "), unit: "", basis: null, rule: "" };
+  if (!lim || typeof lim !== "object" || !("unit" in lim)) return { label: key.replace(/_/g, " "), unit: "", rule: "" };
   const lo = lim.min ?? null;
   const hi = lim.max ?? null;
   const rule = lo !== null && hi !== null ? `${lo} to ${hi}` : lo !== null ? `≥ ${lo}` : hi !== null ? `≤ ${hi}` : "";
-  return { label: lim.label || key.replace(/_/g, " "), unit: lim.unit, basis: lim.origin?.basis ?? null, rule };
+  return { label: lim.label || key.replace(/_/g, " "), unit: lim.unit, rule };
 }
 
-export const isUnpublished = (b: Basis | null | undefined): boolean => b !== null && b !== undefined && UNPUBLISHED_BASES.has(b);
 
 export function offsetText(east: number, north: number): string {
   const d = Math.hypot(east, north);
@@ -214,7 +191,7 @@ export function hazardOriginText(o: { origin: "request" | "scenario_constraint" 
 
 export function marginText(r: MarginRef): string {
   const phys = r.worst_margin_physical;
-  if (phys !== null && phys !== undefined && Number.isFinite(phys)) return withUnit(signedMargin(phys), r.margin_unit);
+  if (phys !== null && phys !== undefined && Number.isFinite(phys)) return quantityText(phys, r.margin_unit, { sign: true });
   const norm = r.worst_margin;
   return `${norm === null || norm === undefined ? "n/a" : signedMargin(norm)} normalised`;
 }

@@ -1,5 +1,4 @@
 import type { ConstraintVerdict } from "../../contract/types";
-import { Disclosure } from "../../components/ui/Disclosure";
 import { Panel } from "../../components/ui/Panel";
 import { Stat } from "../../components/ui/Stat";
 import { formatNum } from "../../lib/format";
@@ -15,8 +14,8 @@ function point(deg: number, r: number): [number, number] {
 
 function Ring({ view, c, label }: { view: HeadingView; c: HeadingConstraintView; label: string }) {
   const marks: Array<{ deg: number | null; cls: string; text: string }> = [
-    { deg: view.best, cls: "hd-best", text: "best single" },
-    { deg: view.worst, cls: "hd-worst", text: "worst single" },
+    { deg: view.best, cls: "hd-best", text: "best" },
+    { deg: view.worst, cls: "hd-worst", text: "worst" },
     { deg: view.nominalYaw, cls: "hd-nominal", text: "nominal" },
   ];
   const aria = `${label}: heading passes for ${c.allPass ? "every heading" : c.nonePass ? "no heading" : arcText(c.passing)}, clockwise from north`;
@@ -45,84 +44,30 @@ function Ring({ view, c, label }: { view: HeadingView; c: HeadingConstraintView;
   );
 }
 
-const CAUSE_SHORT: Record<string, string> = { heading: "Heading", terrain: "Terrain", both: "Heading and terrain", none: "None" };
-
 const deg = (v: number | null) => (v === null ? "—" : Math.round(v));
-const fmt = (v: number) => formatNum(v, 2);
 
 export function HeadingPanel({ view, rows }: { view: HeadingView; rows: readonly ConstraintVerdict[] }) {
-  const shown = view.constraints.filter((c) => c.samples.length > 0 || c.passing.length > 0 || c.allPass || c.nonePass);
-  const soc: Array<{ key: string; label: string; r: [number, number] | null }> = [
-    { key: "total", label: "Total", r: view.socMinTotal },
-    { key: "heading", label: "Heading alone", r: view.socMinHeadingOnly },
-    { key: "terrain", label: "Terrain alone", r: view.socMinHorizonOnly },
-  ];
-  const notes = rows.filter((r) => r.heading_note || r.heading_facts);
+  const shown = view.constraints.filter((c) => rows.some((r) => r.id === c.key) && (c.samples.length > 0 || c.passing.length > 0 || c.allPass || c.nonePass));
+  const same = view.best !== null && view.worst !== null && Math.round(view.best) === Math.round(view.worst);
   return (
-    <Panel
-      title="Lander heading"
-      actions={
-        <>
-          {!view.known && <span className="chip chip-unknown">Heading unknown</span>}
-          {view.known && <span className="chip chip-unknown num">{deg(view.nominalYaw)}° ± {formatNum(view.uncertaintyDeg, 0)}°</span>}
-          {view.known && <span className="faint">{view.nominalBasis}</span>}
-          {!view.depends && <span className="chip chip-unknown">Heading has no effect</span>}
-        </>
-      }
-    >
+    <Panel title="Lander heading" actions={view.known ? <span className="faint num">Nominal {deg(view.nominalYaw)}° ± {formatNum(view.uncertaintyDeg, 0)}°</span> : undefined}>
       <div className="hd">
         <div className="hd-stats">
-          <div className="hd-stat">
-            <i className="hd-sw hd-best" aria-hidden="true" />
-            <Stat label="Best" value={deg(view.best)} unit="°" />
-          </div>
-          <div className="hd-stat">
-            <i className="hd-sw hd-worst" aria-hidden="true" />
-            <Stat label="Worst" value={deg(view.worst)} unit="°" sub={view.worstArcs.length > 0 ? arcText(view.worstArcs) : undefined} />
-          </div>
-          {view.nominalYaw !== null && (
-            <div className="hd-stat">
-              <i className="hd-sw hd-nominal" aria-hidden="true" />
-              <Stat label="Nominal" value={deg(view.nominalYaw)} unit="°" />
-            </div>
+          {same ? (
+            <p className="hd-same">Same result at every heading</p>
+          ) : (
+            <>
+              <div className="hd-stat">
+                <i className="hd-sw hd-best" aria-hidden="true" />
+                <Stat label="Best" value={deg(view.best)} unit="°" />
+              </div>
+              <div className="hd-stat">
+                <i className="hd-sw hd-worst" aria-hidden="true" />
+                <Stat label="Worst" value={deg(view.worst)} unit="°" />
+              </div>
+            </>
           )}
         </div>
-        {view.socMinTotal && (
-          <table className="hd-soc">
-            <caption className="sr-only">Minimum state of charge, lower and upper bound</caption>
-            <thead>
-              <tr>
-                <th scope="col">Minimum state of charge</th>
-                <th scope="col" className="num-col">
-                  Lower
-                </th>
-                <th scope="col" className="num-col">
-                  Upper
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {soc.map(
-                (s) =>
-                  s.r && (
-                    <tr key={s.key}>
-                      <th scope="row">{s.label}</th>
-                      <td className="num num-col">{fmt(s.r[0])}</td>
-                      <td className="num num-col">{fmt(s.r[1])}</td>
-                    </tr>
-                  ),
-              )}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row">Set by</th>
-                <td colSpan={2} className="num-col">
-                  <span className="chip chip-unknown">{CAUSE_SHORT[view.cause] ?? view.cause}</span>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        )}
         <div className="hd-rings">
           {shown.map((c) => {
             const row = rows.find((r) => r.id === c.key);
@@ -132,37 +77,13 @@ export function HeadingPanel({ view, rows }: { view: HeadingView; rows: readonly
                 <Ring view={view} c={c} label={label} />
                 <figcaption className="hd-cap">
                   <strong>{label}</strong>
-                  <span className="num">{c.allPass ? "all headings" : c.nonePass ? "no heading" : arcText(c.passing)}</span>
-                  {c.limit_min !== null && (
-                    <span className="faint num">
-                      ≥ {formatNum(c.limit_min, 2)} {c.unit}
-                    </span>
-                  )}
+                  <span className="num">{c.allPass ? "every heading passes" : c.nonePass ? "no heading passes" : `passes ${arcText(c.passing)}`}</span>
                 </figcaption>
               </figure>
             );
           })}
         </div>
       </div>
-      {notes.length > 0 && (
-        <Disclosure title="Heading notes" count={notes.length}>
-          <div className="site-basis">
-            {notes.map((r) => (
-              <div key={r.id} className="hd-note">
-                <p>
-                  <strong>{r.label}</strong> {r.heading_note}
-                </p>
-                {r.heading_facts && (
-                  <p data-testid="heading-facts">
-                    {r.heading_facts.line}
-                    {r.heading_facts.basis && <span className="faint hd-basis">{r.heading_facts.basis}</span>}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </Disclosure>
-      )}
     </Panel>
   );
 }

@@ -1,200 +1,136 @@
-import { useMemo, useState } from "react";
+import { Fragment, useState } from "react";
 import type { ConstraintVerdict, Verdict } from "../../contract/types";
-import { formatLimit, formatRange, formatSignedValue, formatValue } from "../../lib/format";
 import type { WhenLine } from "../../lib/when";
-import { VERDICT_LABEL } from "../../lib/verdict";
-import { DataTable, type Column } from "../ui/DataTable";
-import { Icon } from "../ui/Icon";
+import { Icon, type IconName } from "../ui/Icon";
 import { Panel } from "../ui/Panel";
-import { VerdictChip } from "../ui/VerdictChip";
+import { quantityText, whenText } from "./units";
 
 export interface ConstraintPanelProps {
   constraints: ConstraintVerdict[];
   limitingId: string | null;
-  overall: Verdict | null;
-  onSelect?: (c: ConstraintVerdict) => void;
-  selectedId?: string | null;
   title?: string;
   whenById?: Readonly<Record<string, readonly WhenLine[]>>;
 }
 
-const CAUSE_LABEL: Record<string, string> = { heading: "heading", terrain: "terrain", both: "heading and terrain" };
-const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const VERDICT_ICON: Record<Verdict, IconName> = { pass: "check", marginal: "warn", fail: "cross" };
+const VERDICT_WORD: Record<Verdict, string> = { pass: "Pass", marginal: "Marginal", fail: "Fail" };
+const CAUSE_LABEL: Record<string, string> = { heading: "Heading", terrain: "Terrain", both: "Heading and terrain" };
 
-function limitText(c: ConstraintVerdict): string {
-  const d = c.decimals ?? 2;
-  if (c.limit_range) return `within ${formatRange(c.limit_range[0], c.limit_range[1], c.unit, d)}`;
-  return c.sense && c.limit !== undefined ? formatLimit(c.sense, c.limit, c.unit, d) : "";
+export function limitText(c: Pick<ConstraintVerdict, "limit" | "limit_range" | "sense" | "unit">): string {
+  if (c.limit_range) return `${quantityText(c.limit_range[0], c.unit, { exact: true })}–${quantityText(c.limit_range[1], c.unit, { exact: true })}`;
+  if (!c.sense || c.limit === undefined) return "";
+  return `${c.sense === "min" ? "≥" : "≤"} ${quantityText(c.limit, c.unit, { exact: true })}`;
 }
 
-type Pair = readonly [string, string];
+function valueText(c: ConstraintVerdict): string {
+  if (c.heading_dependent) return "by heading";
+  return `${c.censored ? "≥ " : ""}${quantityText(c.value, c.unit)}`;
+}
 
-function detailPairs(c: ConstraintVerdict, when: readonly WhenLine[] | undefined): Pair[] {
-  const d = c.decimals ?? 2;
-  const out: Pair[] = [];
+function marginOf(c: ConstraintVerdict): number | null {
+  if (c.heading_dependent) return c.margin_worst ?? null;
+  return Number.isFinite(c.margin) ? c.margin : null;
+}
+
+function detailPairs(c: ConstraintVerdict, when: readonly WhenLine[] | undefined): Array<readonly [string, string]> {
+  const out: Array<readonly [string, string]> = [];
   const w = c.value_worlds;
-  if (w) {
-    for (const k of ["optimistic", "pessimistic"] as const) if (w[k] !== null && w[k] !== undefined) out.push([capFirst(k), formatValue(w[k]!, c.unit, d)]);
-    if (out.length > 0 && c.case_basis) out.push(["Cases by", c.case_basis]);
+  const best = w?.optimistic;
+  const worst = w?.pessimistic;
+  if (best !== null && best !== undefined && worst !== null && worst !== undefined) {
+    const lo = quantityText(worst, c.unit);
+    const hi = quantityText(best, c.unit);
+    if (lo !== hi) out.push(["Worst to best case", `${lo} to ${hi}`]);
   }
-  if (c.margin_worst !== undefined) {
-    out.push(["Worst margin", formatSignedValue(c.margin_worst, c.unit, d)]);
-    if (c.worst_world) out.push(["Worst case", c.worst_world]);
-    if (c.worst_limit) {
-      const v = c.limit_range ? c.limit_range[c.worst_limit === "min" ? 0 : 1] : c.sense === c.worst_limit ? c.limit : undefined;
-      out.push(["Against", v === undefined ? (c.worst_limit === "min" ? "lower threshold" : "upper threshold") : formatLimit(c.worst_limit, v, c.unit, d)]);
-    }
+  if (c.margin_worst !== undefined && !c.heading_dependent) {
+    const wm = quantityText(c.margin_worst, c.unit, { sign: true });
+    if (wm !== quantityText(c.margin, c.unit, { sign: true })) out.push(["Worst margin", wm]);
   }
-  if (when && when.length > 0) out.push(["Minimum at", when.map((l) => l.text).join(" · ")]);
+  const at = (when ?? []).filter((l) => l.t_ms !== null);
+  if (at.length > 0) out.push(["When", [...new Set(at.map((l) => whenText(l.t_ms!)))].join(", ")]);
   if (c.cause && CAUSE_LABEL[c.cause]) out.push(["Set by", CAUSE_LABEL[c.cause]!]);
   if (c.heading_dependent && c.heading_note) out.push(["Heading", c.heading_note]);
   return out;
 }
 
-export function ConstraintPanel({ constraints, limitingId, overall, onSelect, selectedId, title = "Requirements", whenById }: ConstraintPanelProps) {
-  const limiting = useMemo(() => (limitingId ? (constraints.find((c) => c.id === limitingId) ?? null) : null), [constraints, limitingId]);
-  const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
-  const toggle = (id: string) =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
-  const counts = { pass: 0, marginal: 0, fail: 0 };
-  for (const c of constraints) counts[c.verdict]++;
-
-  const columns: Column<ConstraintVerdict>[] = [
-    {
-      key: "verdict",
-      header: "Verdict",
-      width: "88px",
-      render: (c) => <VerdictChip verdict={c.verdict} compact />,
-    },
-    {
-      key: "label",
-      header: "Requirement",
-      render: (c) => {
-        const pairs = open.has(c.id) ? detailPairs(c, whenById?.[c.id]) : [];
-        return (
-          <span className="cp-name">
-            <span className="cp-title">
-              {c.label}
-              {limiting?.id === c.id && <span className="chip cp-limiting">Limiting</span>}
-            </span>
-            {pairs.length > 0 && (
-              <dl className="cp-detail">
-                {pairs.map(([k, v]) => (
-                  <div key={k}>
-                    <dt>{k}</dt>
-                    <dd className="num">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </span>
-        );
-      },
-    },
-    {
-      key: "value",
-      header: "Value",
-      numeric: true,
-      width: "112px",
-      render: (c) =>
-        c.heading_dependent ? (
-          <span className="faint">by heading</span>
-        ) : (
-          <span>
-            {c.censored ? "≥ " : ""}
-            {formatValue(c.value, c.unit, c.decimals ?? 2)}
-          </span>
-        ),
-    },
-    {
-      key: "limit",
-      header: "Threshold",
-      numeric: true,
-      width: "128px",
-      render: (c) => <span className="dim">{limitText(c)}</span>,
-    },
-    {
-      key: "margin",
-      header: "Margin",
-      numeric: true,
-      width: "112px",
-      render: (c) =>
-        c.heading_dependent ? (
-          c.margin_worst !== undefined ? (
-            <span>
-              <span className={`cp-margin ${c.verdict}`}>{formatSignedValue(c.margin_worst, c.unit, c.decimals ?? 2)}</span> <span className="faint">worst</span>
-            </span>
-          ) : (
-            <span className="faint">—</span>
-          )
-        ) : (
-          <span className={`cp-margin ${c.verdict}`}>{formatSignedValue(c.margin, c.unit, c.decimals ?? 2)}</span>
-        ),
-    },
-    {
-      key: "more",
-      header: <span className="sr-only">Details</span>,
-      width: "36px",
-      render: (c) => {
-        if (detailPairs(c, whenById?.[c.id]).length === 0) return null;
-        const isOpen = open.has(c.id);
-        return (
-          <button
-            type="button"
-            className="cp-more"
-            aria-expanded={isOpen}
-            aria-label={`Details for ${c.label}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggle(c.id);
-            }}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            <Icon name={isOpen ? "chevronUp" : "chevronDown"} size={12} />
-          </button>
-        );
-      },
-    },
-  ];
-
+export function ConstraintPanel({ constraints, limitingId, title = "Requirements", whenById }: ConstraintPanelProps) {
+  const [open, setOpen] = useState<string | null>(null);
   return (
-    <Panel
-      title={title}
-      flush
-      actions={
-        constraints.length > 0 && (
-          <div className="cp-summary" role="group" aria-label={overall ? `Overall ${VERDICT_LABEL[overall]}: ${counts.pass} pass, ${counts.marginal} marginal, ${counts.fail} fail` : "Overall verdict not stated"}>
-            {overall && <VerdictChip verdict={overall} compact />}
-            <span className="cp-counts num">
-              <span className="pass">
-                <Icon name="check" size={12} /> {counts.pass}
-              </span>
-              <span className="marginal">
-                <Icon name="warn" size={12} /> {counts.marginal}
-              </span>
-              <span className="fail">
-                <Icon name="cross" size={12} /> {counts.fail}
-              </span>
-            </span>
-          </div>
-        )
-      }
-    >
-      <div className="cp">
-        <DataTable
-          caption="Requirement verdicts"
-          columns={columns}
-          rows={constraints}
-          rowKey={(c) => c.id}
-          selectedKey={selectedId}
-          onRowClick={onSelect}
-          empty="No requirements set"
-        />
-      </div>
+    <Panel title={title} flush>
+      {constraints.length === 0 ? (
+        <p className="cp-empty">No requirements set</p>
+      ) : (
+        <table className="cp">
+          <caption className="sr-only">Requirement verdicts</caption>
+          <thead>
+            <tr>
+              <th scope="col">Requirement</th>
+              <th scope="col" className="cp-n">
+                Value
+              </th>
+              <th scope="col" className="cp-n">
+                Limit
+              </th>
+              <th scope="col" className="cp-n">
+                Margin
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {constraints.map((c) => {
+              const pairs = detailPairs(c, whenById?.[c.id]);
+              const isOpen = open === c.id && pairs.length > 0;
+              const m = marginOf(c);
+              return (
+                <Fragment key={c.id}>
+                  <tr
+                    className={`cp-row ${pairs.length > 0 ? "cp-click" : ""} ${isOpen ? "is-open" : ""}`}
+                    onClick={pairs.length > 0 ? () => setOpen(isOpen ? null : c.id) : undefined}
+                    onKeyDown={(e) => {
+                      if (pairs.length > 0 && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        setOpen(isOpen ? null : c.id);
+                      }
+                    }}
+                    tabIndex={pairs.length > 0 ? 0 : undefined}
+                    aria-expanded={pairs.length > 0 ? isOpen : undefined}
+                  >
+                    <th scope="row">
+                      <span className="cp-name">
+                        <span className={`cp-icon ${c.verdict}`} role="img" aria-label={VERDICT_WORD[c.verdict]}>
+                          <Icon name={VERDICT_ICON[c.verdict]} size={12} strokeWidth={2.2} />
+                        </span>
+                        <span>{c.label}</span>
+                      </span>
+                    </th>
+                    <td className="cp-n num">{valueText(c)}</td>
+                    <td className="cp-n num dim">{limitText(c)}</td>
+                    <td className="cp-n num">
+                      <span className={`cp-margin ${c.verdict}`}>{m === null ? "—" : quantityText(m, c.unit, { sign: true })}</span>
+                      {c.heading_dependent && m !== null && <span className="cp-tag">worst</span>}
+                      {limitingId === c.id && <span className="cp-tag">limiting</span>}
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr className="cp-detail-row">
+                      <td colSpan={4}>
+                        <dl className="cp-detail">
+                          {pairs.map(([k, v]) => (
+                            <div key={k}>
+                              <dt>{k}</dt>
+                              <dd className="num">{v}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </Panel>
   );
 }

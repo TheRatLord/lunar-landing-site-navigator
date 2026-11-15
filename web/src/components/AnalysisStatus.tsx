@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ApiError } from "../api/client";
 import { queueSummary } from "../api/queue";
 import type { AnalysisControls, AnalysisState } from "../api/useAnalysis";
@@ -18,41 +18,19 @@ export interface AnalysisStatusProps {
   what: string;
 }
 
-function ago(ms: number): string {
-  const s = Math.max(0, Math.round(ms / 1000));
-  if (s < 10) return "just now";
-  if (s < 60) return `${s} s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m} min ago`;
-  return `${Math.floor(m / 60)} h ago`;
-}
+const PREPARING = /^(ephemeris table|utc strings|epochs)$/i;
 
-/** True once the phase has changed to done during this session; false after any later change away from it. */
-function useFinishedHere(phase: AnalysisStatusProps["state"]["phase"]): boolean {
-  const [seen, setSeen] = useState(phase);
-  const [finished, setFinished] = useState(false);
-  if (phase !== seen) {
-    setSeen(phase);
-    setFinished(phase === "done");
-  }
-  return finished;
-}
-
-function Since() {
-  const [at] = useState(() => Date.now());
-  const [now, setNow] = useState(at);
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 15000);
-    return () => window.clearInterval(id);
-  }, []);
-  return <span className="faint num">{ago(now - at)}</span>;
+export function stageText(stage: string | undefined): string {
+  if (!stage) return "Running";
+  if (PREPARING.test(stage)) return "Preparing";
+  const s = stage.replace(/ the scenario for its limits$/i, "").replace(/ scenarios\b/gi, " plans");
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export function AnalysisStatus({ state, what }: AnalysisStatusProps) {
-  const finishedHere = useFinishedHere(state.phase);
   return (
     <>
-      <StatusBody state={state} what={what} finishedHere={finishedHere} />
+      <StatusBody state={state} what={what} />
       {state.cancelNote && state.phase !== "running" && <CancelNote state={state} />}
     </>
   );
@@ -93,7 +71,7 @@ function Stale() {
   );
 }
 
-function StatusBody({ state, what, finishedHere }: AnalysisStatusProps & { finishedHere: boolean }) {
+function StatusBody({ state, what }: AnalysisStatusProps) {
   if (state.phase === "error" && state.error) {
     const err = state.error instanceof ApiError ? state.error : new ApiError({ status: 0, title: "Could not run the analysis", detail: state.error.message });
     return (
@@ -109,13 +87,12 @@ function StatusBody({ state, what, finishedHere }: AnalysisStatusProps & { finis
       <div className="an-status" role="status" aria-live="polite">
         <Spinner />
         <span>{q.headline}</span>
-        {(q.waited || q.reason || q.ahead || state.jobId) && (
+        {(q.waited || q.reason || q.ahead) && (
           <Popover iconOnly label="Queue" icon="clock">
             <div className="an-detail">
               {q.waited && <p className="num">{q.waited}</p>}
               {q.reason && <p>{q.reason}</p>}
               {q.ahead && <p>{q.ahead}</p>}
-              {state.jobId && <p className="num">job {state.jobId}</p>}
             </div>
           </Popover>
         )}
@@ -129,29 +106,17 @@ function StatusBody({ state, what, finishedHere }: AnalysisStatusProps & { finis
     return (
       <div className="an-status an-running" role="status" aria-live="polite">
         <Spinner />
-        <span className="an-stage">{state.stage ?? "Running"}</span>
+        <span className="an-stage">{stageText(state.stage)}</span>
         <span className="an-bar">
           <ProgressBar value={state.progress} label={`Progress of ${what}`} />
         </span>
         {pct !== null && <span className="num an-pct">{pct}%</span>}
-        {state.jobId && <span className="faint num an-job">job {state.jobId}</span>}
         <IconButton icon="close" label="Cancel" size="sm" onClick={state.cancel} />
         {state.stale && <Stale />}
       </div>
     );
   }
   if (state.stale) return <OutOfDate state={state} />;
-  if (state.phase === "done") {
-    return (
-      <div className="an-status" role="status">
-        <span className="an-dot an-dot-ok" aria-hidden="true" />
-        <span>{state.cached ? "From cache" : "Computed"}</span>
-        {finishedHere && <Since />}
-        {state.jobId && <span className="faint num an-job">job {state.jobId}</span>}
-        <IconButton icon="reset" label="Recompute" size="sm" onClick={state.rerun} />
-      </div>
-    );
-  }
   return null;
 }
 

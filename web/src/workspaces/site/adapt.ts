@@ -17,16 +17,17 @@ import type {
   TimelineRow,
   Verdict,
 } from "../../contract/types";
-import { formatNum, formatSignedValue, formatValue, glue, glueQuantities, withUnit } from "../../lib/format";
-import { formatUtc, toIsoUtc, parseUtc } from "../../lib/time";
-import { headingFacts } from "../calendar/format";
+import { formatNum, withUnit } from "../../lib/format";
+import { toIsoUtc, parseUtc } from "../../lib/time";
+import { KIND_LABEL } from "../../components/viz/Countdown";
+import { quantityText, whenText } from "../../components/viz/units";
 import { whenLines, type WhenLine } from "../../lib/when";
 import { intervalsContain } from "../../lib/intervals";
 import { interpTrack } from "../../lib/track";
 import type { BlockerMark } from "../../scenario/alternatives";
-import { storeCovers } from "../../scenario/terrainStack";
+import type { PanoramaStation } from "../../components/viz/HorizonPanorama";
 import { UNPUBLISHED_BASES, type Basis, type Origin, type Scenario } from "../../scenario/types";
-import type { BlockerPoint, Column, ConstraintBoundJson, ConstraintVerdictJson, EvaluateResult, EvaluateSeries, HeadingJson, HorizonCurve, IntervalJson, LimitNoteJson, MetricJson, NextEventJson, Observer, Provenance, TerrainStackJson, TerrainStoreJson } from "../../api/site";
+import type { AttributionResult, BlockerPoint, Column, ConstraintVerdictJson, EvaluateResult, EvaluateSeries, HeadingJson, HorizonCurve, IntervalJson, LimitNoteJson, MetricJson, Observer, Provenance, TerrainStackJson } from "../../api/site";
 
 export function toArray(c: Column | undefined | null): Float64Array {
   const n = c?.length ?? 0;
@@ -87,6 +88,44 @@ export function adaptClearance(s: EvaluateSeries): BandSeries | null {
   const lo = seriesColumn(s, "contact_clearance_deg_lo");
   const hi = seriesColumn(s, "contact_clearance_deg_hi");
   return { utc_ms: t, value: v, ...(lo && hi ? { lo, hi } : {}) };
+}
+
+export function stationShortName(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, "").trim() || name;
+}
+
+function complexName(name: string): string | null {
+  const m = /\(([^,)]+)/.exec(name);
+  return m ? m[1]!.trim() : null;
+}
+
+export function stationGroups(markers: readonly StationMarker[], scenario: Scenario | null): PanoramaStation[] {
+  const groups: Array<{ key: string; name: string; lat: number | null; lon: number | null; list: StationMarker[] }> = [];
+  for (const m of markers) {
+    const meta = scenario?.network.stations.find((x) => x.id === m.id || x.name === m.id);
+    const full = meta?.name || m.label;
+    const complex = complexName(full);
+    const lat = meta?.lat_deg ?? null;
+    const lon = meta?.lon_deg ?? null;
+    const near = groups.find((g) => (complex !== null && g.key === complex) || (lat !== null && lon !== null && g.lat !== null && g.lon !== null && Math.abs(g.lat - lat) < 1 && Math.abs(wrap360(g.lon - lon + 180) - 180) < 1));
+    if (near) near.list.push({ ...m, label: stationShortName(full) });
+    else groups.push({ key: complex ?? m.id, name: complex ?? stationShortName(full), lat, lon, list: [{ ...m, label: stationShortName(full) }] });
+  }
+  return groups.map((g) => {
+    const on = g.list.filter((m) => m.in_contact).length;
+    const az = Math.atan2(
+      g.list.reduce((a, m) => a + Math.sin((m.az_deg * Math.PI) / 180), 0),
+      g.list.reduce((a, m) => a + Math.cos((m.az_deg * Math.PI) / 180), 0),
+    );
+    return {
+      id: g.key,
+      label: g.list.length > 1 ? `${g.name} ${on}/${g.list.length}` : g.name,
+      az_deg: wrap360((az * 180) / Math.PI),
+      el_deg: g.list.reduce((a, m) => a + m.el_deg, 0) / g.list.length,
+      in_contact: on > 0,
+      members: g.list.map((m) => ({ label: m.label, in_contact: m.in_contact })),
+    };
+  });
 }
 
 export function adaptStations(s: EvaluateSeries, intervals: Readonly<Record<string, readonly IntervalJson[]>>, scenario: Scenario | null, timeMs: number): StationMarker[] {
@@ -181,16 +220,7 @@ const EVENT_EDGE: Record<CountdownKind, { set: "sunlit" | "contact"; edge: "end"
   earthrise: { set: "contact", edge: "start" },
 };
 
-function serviceName(best: number, ne: NextEventJson | null | undefined): Pick<CrossingEvent, "title" | "cause"> {
-  const utc = ne ? parseSec(ne.utc) : null;
-  if (!ne || utc === null || Math.abs(utc - best) >= 1000) return {};
-  const out: Pick<CrossingEvent, "title" | "cause"> = {};
-  if (ne.name) out.title = ne.name;
-  if (ne.cause) out.cause = ne.cause;
-  return out;
-}
-
-export function crossingEvents(intervals: Record<string, IntervalJson[]>, nextEvents?: Record<string, NextEventJson | null>): CrossingEvent[] {
+export function crossingEvents(intervals: Record<string, IntervalJson[]>): CrossingEvent[] {
   const out: CrossingEvent[] = [];
   for (const kind of Object.keys(EVENT_EDGE) as CountdownKind[]) {
     const { set, edge } = EVENT_EDGE[kind];
@@ -201,44 +231,13 @@ export function crossingEvents(intervals: Record<string, IntervalJson[]>, nextEv
       if (best === null) continue;
       const raw = edge === "end" ? r.end_range_utc : r.start_range_utc;
       const [lo, hi] = edgeRange(raw, best);
-      const ev: CrossingEvent = { kind, best_ms: best, earliest_ms: Math.min(lo, best), latest_ms: Math.max(hi, best), ...serviceName(best, nextEvents?.[kind]) };
+      const ev: CrossingEvent = { kind, best_ms: best, earliest_ms: Math.min(lo, best), latest_ms: Math.max(hi, best) };
       if (raw[0] === null || (edge === "start" && r.start_range_censored)) ev.earliest_open = true;
       if (raw[1] === null || (edge === "end" && r.end_range_censored)) ev.latest_open = true;
       out.push(ev);
     }
   }
   return out.sort((a, b) => a.best_ms - b.best_ms);
-}
-
-function eventTitle(kind: CountdownKind, e: CrossingEvent | null): string {
-  return e?.title ? e.title.charAt(0).toUpperCase() + e.title.slice(1) : KIND_LABEL[kind];
-}
-
-export function eventName(kind: CountdownKind, e: CrossingEvent | null): string {
-  return e?.title && e.cause ? `${eventTitle(kind, e)} (${e.cause})` : eventTitle(kind, e);
-}
-
-export function nextCrossing(events: readonly CrossingEvent[], kind: CountdownKind, ms: number): CrossingEvent | null {
-  let best: CrossingEvent | null = null;
-  for (const e of events) if (e.kind === kind && e.best_ms > ms && (best === null || e.best_ms < best.best_ms)) best = e;
-  return best;
-}
-
-export interface EventDelta {
-  kind: CountdownKind;
-  terrain: CrossingEvent | null;
-  sphere: CrossingEvent | null;
-  delta_min: number | null;
-}
-
-export const COUNTDOWN_KINDS: readonly CountdownKind[] = ["sunset", "sunrise", "earthset", "earthrise"];
-
-export function eventDeltas(terrain: readonly CrossingEvent[], sphere: readonly CrossingEvent[], ms: number): EventDelta[] {
-  return COUNTDOWN_KINDS.map((kind) => {
-    const t = nextCrossing(terrain, kind, ms);
-    const s = nextCrossing(sphere, kind, ms);
-    return { kind, terrain: t, sphere: s, delta_min: t && s ? (t.best_ms - s.best_ms) / 60_000 : null };
-  });
 }
 
 const DECIMALS_BY_UNIT: Record<string, number> = { deg: 2, h: 2, fraction: 3, dB: 2, "": 2 };
@@ -289,8 +288,6 @@ function adaptConstraint(c: ConstraintVerdictJson): ConstraintVerdict | null {
     out.heading_dependent = true;
     out.heading_note = c.heading_note ?? "";
   }
-  const facts = headingFacts(c);
-  if (facts) out.heading_facts = facts;
   const cause = text(field(c, "cause"));
   if (cause) out.cause = cause;
   return out;
@@ -327,8 +324,6 @@ export function summarize(r: EvaluateResult): VerdictSummary {
   };
 }
 
-const STATION_COLORS = ["c-station-0", "c-station-1", "c-station-2", "c-station-3"] as const;
-
 function envelope(s: EvaluateSeries, name: string): { lo: Float64Array; hi: Float64Array } | null {
   const a = seriesColumn(s, `${name}_lo`);
   const b = seriesColumn(s, `${name}_hi`);
@@ -358,11 +353,6 @@ function noNominalSeries(provenance: unknown): ReadonlySet<string> {
   return new Set(Array.isArray(n) ? n.filter((x): x is string => typeof x === "string") : []);
 }
 
-function seriesNotes(provenance: unknown): string[] {
-  const n = (provenance as Record<string, unknown> | undefined | null)?.["series_notes"];
-  return Array.isArray(n) ? n.filter((x): x is string => typeof x === "string" && x !== "") : [];
-}
-
 const metricShown = (m: MetricJson) => (v: number) => withUnit(metricNum(v, m.unit), m.unit);
 
 function socMarks(metrics: readonly MetricJson[]): LineMark[] | undefined {
@@ -382,36 +372,26 @@ export function metricWhenLines(metrics: readonly MetricJson[]): Record<string, 
 
 export function timelineRows(r: EvaluateResult, scenario: Scenario | null): TimelineRow[] {
   const span = seriesExtent(r.series) ?? [NaN, NaN];
-  const rows: Array<TimelineRow | null> = [
-    intervalRow("sunlit", "Array sunlit", "c-sun", r.intervals["sunlit"], span),
-    intervalRow("dark", "Dark", "c-dark", r.intervals["dark"], span),
-    intervalRow("eclipse", "Eclipse (Earth's shadow)", "c-uncertainty", r.intervals["eclipse"], span),
-    intervalRow("contact", "Contact", "c-network", r.intervals["contact"], span),
-  ];
-  let k = 0;
-  for (const key of Object.keys(r.intervals)) {
-    if (!key.startsWith("contact:")) continue;
-    const id = key.slice("contact:".length);
-    const meta = scenario?.network.stations.find((x) => x.id === id || x.name === id);
-    rows.push(intervalRow(key, meta?.name || id, STATION_COLORS[k % STATION_COLORS.length]!, r.intervals[key], span));
-    k++;
-  }
   const minSoc = scenario?.constraints.min_state_of_charge?.min;
   const noNominal = noNominalSeries(r.provenance);
-  const notes = seriesNotes(r.provenance);
-  rows.push(
-    lineRow(r.series, "sunlight_fraction", "flux", "Sunlight fraction", "", "c-sun", { domain: [0, 1], decimals: 2 }),
-    lineRow(r.series, "soc", "soc", "State of charge", "", "c-power", {
+  const rows: Array<TimelineRow | null> = [
+    intervalRow("sunlit", "Sunlit", "c-sun", r.intervals["sunlit"], span),
+    intervalRow("eclipse", "Eclipse", "c-uncertainty", r.intervals["eclipse"], span),
+    intervalRow("contact", "Earth link", "c-network", r.intervals["contact"], span),
+    lineRow(r.series, "soc", "soc", "Battery", "", "c-power", {
       domain: [0, 1],
       decimals: 2,
       noNominal: noNominal.has("soc"),
-      threshold: minSoc !== null && minSoc !== undefined ? { value: minSoc, label: "min SoC" } : undefined,
-      notes,
+      threshold: minSoc !== null && minSoc !== undefined ? { value: minSoc, label: "limit" } : undefined,
       marks: socMarks(r.metrics),
     }),
-    lineRow(r.series, "contact_clearance_deg", "clearance", "Contact clearance", "°", "c-earth", { decimals: 1, threshold: { value: 0, label: "threshold" } }),
-  );
-  return rows.filter((x): x is TimelineRow => x !== null).map((x) => (x.kind === "line" && !x.noNominal ? { ...x, notes: undefined } : x));
+    lineRow(r.series, "contact_clearance_deg", "clearance", "Earth above mask", "°", "c-earth", { decimals: 1, threshold: { value: 0, label: "mask" } }),
+  ];
+  return rows.filter((x): x is TimelineRow => x !== null && (x.kind !== "intervals" || x.best.length > 0 || (x.optimistic?.length ?? 0) > 0 || (x.pessimistic?.length ?? 0) > 0));
+}
+
+export function rangeOnlyRows(rows: readonly TimelineRow[]): boolean {
+  return rows.some((r) => r.kind === "line" && r.noNominal === true);
 }
 
 export function seriesExtent(s: EvaluateSeries): [number, number] | null {
@@ -441,104 +421,12 @@ export function estimatesUsed(scenario: Scenario): EstimateFlag[] {
   return out;
 }
 
-interface TerrainState {
-  terrain: boolean;
-  label: string;
-}
-
-export function terrainState(provider: string): TerrainState {
-  const terrain = provider === "terrain";
-  return { terrain, label: terrain ? "Terrain" : provider === "smooth_sphere" ? "Smooth sphere (no terrain)" : `Horizon provider: ${provider}` };
-}
-
-interface HashRow {
-  label: string;
-  value: string;
-}
-
 function field(o: unknown, key: string): unknown {
   return o !== null && typeof o === "object" ? Reflect.get(o, key) : undefined;
 }
 
 function text(v: unknown): string | null {
   return typeof v === "string" && v ? v : null;
-}
-
-export function provenanceRows(p: Provenance, scenarioSha: string | null, stack?: TerrainStackJson | null): HashRow[] {
-  const rows: HashRow[] = [];
-  const sha = scenarioSha ?? text(p["scenario_sha256"]);
-  if (sha) rows.push({ label: "Plan", value: sha });
-  const code = p["code"];
-  const version = text(field(code, "package_version"));
-  if (version) rows.push({ label: "Code version", value: version });
-  const source = text(field(code, "source_sha256"));
-  if (source) rows.push({ label: "Code SHA-256", value: source });
-  const listed = (label: string, o: unknown) => {
-    if (o === null || typeof o !== "object") return;
-    for (const [name, h] of Object.entries(o)) {
-      const v = text(h);
-      if (v) rows.push({ label: `${label} ${name}`, value: v });
-    }
-  };
-  listed("Kernel", p["kernels"]);
-  const terrain = field(p["horizon_provider"], "terrain");
-  const stackHash = stack?.stack_hash ?? text(field(terrain, "stack_hash"));
-  if (stackHash) rows.push({ label: "Terrain stack", value: stackHash });
-  const siteDem = text(field(p["site_terrain"], "meta_hash"));
-  if (siteDem) rows.push({ label: "Site DEM metadata", value: siteDem });
-  return rows;
-}
-
-export function defaultStackIds(stores: readonly TerrainStoreJson[] | null): string[] | null {
-  return stores ? stores.filter((s) => !s.error).map((s) => s.dem_id) : null;
-}
-
-export function stackLabel(t: Pick<TerrainInfo, "stackKind" | "stackIds" | "chosenBy">, defaultIds?: readonly string[] | null): string | null {
-  const ids = t.stackIds ?? [];
-  const n = ids.length;
-  const by = t.chosenBy === "scenario" ? " · chosen by the plan" : t.chosenBy === "caller" ? " · chosen by the caller" : "";
-  if (t.chosenBy === "none") return "no terrain stack";
-  if (t.stackKind === "restricted") {
-    const missing = defaultIds ? defaultIds.filter((d) => !ids.includes(d)) : [];
-    const subset = !!defaultIds && ids.every((d) => defaultIds.includes(d));
-    if (subset && missing.length > 0 && missing.length < n) return `Restricted stack: default without ${missing.join(", ")} (${n} of ${defaultIds.length} DEMs)${by}`;
-    return `Restricted stack: ${ids.join(", ") || "no DEMs"}${by}`;
-  }
-  if (t.stackKind === "default") return `default stack (${n} DEMs)`;
-  if (t.stackKind === "custom") return `custom stack (${n} DEMs)${by}`;
-  return null;
-}
-
-export function groundLabel(t: Pick<TerrainInfo, "stackKind" | "demId" | "pixelM">): string | null {
-  if (!t.demId) return null;
-  const kind = t.stackKind === "default" ? "default stack, " : t.stackKind === "restricted" ? "restricted stack, " : t.stackKind === "custom" ? "custom stack, " : "";
-  return `${kind}ground DEM ${t.demId}${t.pixelM !== null ? ` · ${withUnit(formatNum(t.pixelM, 1), "m/px")}` : ""}`;
-}
-
-export function storesReaching(stackIds: readonly string[] | null, stores: readonly TerrainStoreJson[] | null, latDeg: number, lonDeg: number): string[] | null {
-  if (!stackIds || !stores) return null;
-  return stackIds.filter((id) => {
-    const s = stores.find((x) => x.dem_id === id);
-    return !!s && storeCovers(s, latDeg, lonDeg) === true;
-  });
-}
-
-interface StackRow {
-  demId: string;
-  detail: string;
-}
-
-export function stackRows(ids: readonly string[], stores: readonly TerrainStoreJson[] | null): StackRow[] {
-  return ids.map((demId) => {
-    const s = stores?.find((x) => x.dem_id === demId);
-    const bits: string[] = [];
-    if (s) {
-      if (typeof s.pixel_size_m === "number") bits.push(withUnit(formatNum(s.pixel_size_m, 1), "m/px"));
-      if (typeof s.sigma_z_m === "number") bits.push(`σ_z ${formatValue(s.sigma_z_m, "m", 1)}${s.error_basis_z ? ` (${s.error_basis_z})` : ""}`);
-      if (typeof s.sigma_xy_m === "number") bits.push(`σ_xy ${formatValue(s.sigma_xy_m, "m", 1)}`);
-    }
-    return { demId, detail: bits.join(" · ") };
-  });
 }
 
 interface TerrainInfo {
@@ -595,31 +483,6 @@ export function seamWarnings(warnings: readonly string[] | undefined): string[] 
   return (warnings ?? []).filter((w) => /seam|changes source|near-field/i.test(w));
 }
 
-interface NearFieldSeam {
-  groundStore: string | null;
-  otherStore: string;
-  distanceM: number | null;
-  observers: Observer[];
-}
-
-export function nearFieldSeams(p: Provenance): NearFieldSeam[] {
-  const out: NearFieldSeam[] = [];
-  for (const obs of ["array", "antenna"] as const) {
-    const s = field(field(field(p["horizons"], obs), "provenance"), "near_field_seam");
-    const other = text(field(s, "other_store"));
-    if (field(s, "warning") !== true || !other) continue;
-    const known = out.find((x) => x.otherStore === other);
-    if (known) known.observers.push(obs);
-    else out.push({ groundStore: text(field(s, "ground_store")), otherStore: other, distanceM: num(field(s, "distance_m")), observers: [obs] });
-  }
-  return out;
-}
-
-export function stackWithout(store: string, stack: TerrainStackJson | null, defaultIds: readonly string[] | null): string[] | null {
-  const base = stack && stack.restricted ? stack.dem_ids : defaultIds;
-  return base ? [...base.filter((d) => d !== store)].sort() : null;
-}
-
 export interface Direction {
   az_deg: number;
   el_deg: number;
@@ -632,6 +495,11 @@ export function directionsAt(s: EvaluateSeries, timeMs: number): { sun: Directio
     return p && Number.isFinite(p.az_deg) && Number.isFinite(p.el_deg) ? { az_deg: p.az_deg, el_deg: p.el_deg } : null;
   };
   return { sun: pick("sun"), earth: pick("earth") };
+}
+
+export function terrainSets(ev: AttributionResult["event"]): boolean {
+  if (!ev || ev.station) return true;
+  return ev.cause === "terrain horizon" || ev.cause === "horizon at the sphere dip";
 }
 
 export function blockerMark(scenario: Scenario, label: string, az_deg: number, dist_m: number | null, blocker: BlockerPoint | null): BlockerMark | null {
@@ -647,18 +515,12 @@ export function blockerMark(scenario: Scenario, label: string, az_deg: number, d
   };
 }
 
-export const KIND_LABEL: Record<CountdownKind, string> = { sunset: "Sunlight ends", sunrise: "Sunlight begins", earthset: "Contact ends", earthrise: "Contact begins" };
-
 export function attributionLabel(kind: CountdownKind, e: CrossingEvent): string {
-  return `${eventName(kind, e)} ${formatUtc(e.best_ms)}`;
+  return `${KIND_LABEL[kind]} ${whenText(e.best_ms, { year: false })}`;
 }
 
 export function eventRequest(kind: CountdownKind, e: CrossingEvent, timeMs: number): { kind: CountdownKind; from_utc: string } {
   return { kind, from_utc: toIsoUtc(Math.max(timeMs, e.best_ms - 60_000)) };
-}
-
-export function fileSlug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "scenario";
 }
 
 export type Arc = [number, number];
@@ -738,39 +600,8 @@ export function arcText(a: readonly Arc[]): string {
   return a.map(([from, to]) => (from === to ? `${Math.round(from)}°` : `${Math.round(from)}° to ${Math.round(to)}°`)).join(", ");
 }
 
-const CAUSE_TEXT: Record<string, string> = {
-  heading: "the unknown or uncertain heading",
-  terrain: "the terrain uncertainty",
-  both: "both the heading and the terrain uncertainty",
-  none: "neither (the range is a single value)",
-};
-
 function metricNum(v: number | null, unit: string): string {
   return v === null ? "—" : formatNum(v, Math.max(decimalsFor(unit), Math.abs(v) >= 1000 ? 0 : 2));
-}
-
-export function metricValueText(m: MetricJson): string {
-  if (m.value === null) return m.censored ? "none in the analysed span" : m.note ? "no value · see note" : "—";
-  const v = metricNum(m.value, m.unit);
-  if (!m.censored) return v;
-  return glue(m.unit === "h" ? `at least ${v}` : `${v} (bound only)`);
-}
-
-export function metricRangeText(m: MetricJson): string {
-  if (m.low === null && m.high === null) return "—";
-  const lo = metricNum(m.low, m.unit);
-  const hi = metricNum(m.high, m.unit);
-  if (!m.one_sided || m.low === null || m.high === null) return glue(`${lo} … ${hi}`);
-  return glue(m.unit === "h" ? `${lo} … at least ${hi}` : `${lo} … ${hi} (one-sided)`);
-}
-
-export function metricNoteText(m: MetricJson): string {
-  const sided = m.one_sided ? "A world with no such event in the analysed span is left out of the range, so the range is one-sided: the true bound lies beyond the data. " : "";
-  return glueQuantities(`${sided}${m.note}`.trim());
-}
-
-export function formatDelta(minutes: number): string {
-  return Math.abs(minutes) * 60 < 90 ? formatSignedValue(Math.round(minutes * 60), "s", 0) : formatSignedValue(minutes, "min", 1);
 }
 
 export function evaluatedScenario(r: Pick<EvaluateResult, "scenario">): Scenario | null {
@@ -778,41 +609,6 @@ export function evaluatedScenario(r: Pick<EvaluateResult, "scenario">): Scenario
   if (!s || typeof s !== "object") return null;
   const net = field(s, "network");
   return Array.isArray(field(net, "stations")) && field(s, "profile") && field(s, "constraints") && field(s, "site") ? (s as unknown as Scenario) : null;
-}
-
-export function boundLines(b: ConstraintBoundJson): string[] {
-  const out: string[] = [];
-  const cause = CAUSE_TEXT[b.cause];
-  if (cause) out.push(`Range set by ${cause}.`);
-  if (b.interval_kind) out.push(`The ${b.interval_kind.replace(/_/g, " ")} interval differs by ${formatValue(b.spread_h, "h", 2)} between the pessimistic and optimistic cases${b.same_interval ? " (the same interval, different edges)" : ""}.`);
-  if (!b.decomposable && b.decomposition_note) out.push(b.decomposition_note);
-  for (const e of b.events) {
-    const what = `${e.kind.replace(/_/g, " ")} ${e.role}`;
-    if (!b.decomposable || e.contribution_h === null) {
-      out.push(what);
-      continue;
-    }
-    const share = e.share === null ? "" : ` (${formatValue(e.share * 100, "%", 0)})`;
-    out.push(`${what}: ${formatSignedValue(e.contribution_h, "h", 2)}${share}`);
-  }
-  if (b.decomposable && b.decomposition_note) out.push(b.decomposition_note);
-  const soc = worldSocLine(b);
-  if (soc) out.push(soc);
-  if (b.world_soc_note) out.push(b.world_soc_note);
-  if (b.note) out.push(b.note);
-  return out;
-}
-
-function worldSocLine(b: ConstraintBoundJson): string | null {
-  const w = b.world_soc;
-  if (!w) return null;
-  const parts: string[] = [];
-  for (const c of ["pessimistic", "nominal", "optimistic"]) {
-    if (!(c in w)) continue;
-    const v = w[c];
-    parts.push(`${c} ${typeof v === "number" && Number.isFinite(v) ? formatNum(v, 2) : "no value"}`);
-  }
-  return parts.length ? `State of charge by case: ${parts.join(", ")}.` : null;
 }
 
 export function arcPath(a: Arc, c: number, r: number): string {
@@ -858,4 +654,37 @@ const canonical = (v: unknown): string =>
 
 export function limitKey(note: Pick<LimitNoteJson, "id" | "parameters">): string {
   return `${note.id} ${canonical(note.parameters)}`;
+}
+
+export function verdictSentence(summary: VerdictSummary): string | null {
+  const c = summary.limiting;
+  if (!c || summary.overall === "unknown") return null;
+  const lead = summary.overall === "fail" ? `Fails on ${c.label}` : `Limited by ${c.label}`;
+  const m = c.heading_dependent ? (c.margin_worst ?? null) : Number.isFinite(c.margin) ? c.margin : null;
+  if (m === null) return c.heading_dependent ? `${lead}, which depends on the heading` : lead;
+  const by = quantityText(Math.abs(m), c.unit);
+  const worst = c.heading_dependent ? " at the worst heading" : "";
+  if (c.limit_range) {
+    return `${lead}: ${by} ${m >= 0 ? "inside" : "outside"} the ${quantityText(c.limit_range[0], c.unit, { exact: true })}–${quantityText(c.limit_range[1], c.unit, { exact: true })} range${worst}`;
+  }
+  if (c.limit === undefined || !c.sense) return lead;
+  const side = c.sense === "max" ? (m >= 0 ? "under" : "over") : m >= 0 ? "above" : "below";
+  return `${lead}: ${by} ${side} the ${quantityText(c.limit, c.unit, { exact: true })} limit${worst}`;
+}
+
+export interface BatteryRisk {
+  low: number;
+  high: number | null;
+  heading: boolean;
+  suggestedMin: number;
+}
+
+export function batteryRisk(r: EvaluateResult, scenario: Scenario | null): BatteryRisk | null {
+  if (!scenario || scenario.constraints.min_state_of_charge) return null;
+  const m = r.metrics.find((x) => x.key === "min_state_of_charge");
+  const low = m ? (m.low ?? m.value) : null;
+  if (low === null || low === undefined || !Number.isFinite(low) || low > 0.05) return null;
+  const dod = scenario.profile.battery?.max_dod;
+  const suggestedMin = typeof dod === "number" && dod > 0 && dod < 1 ? Math.round((1 - dod) * 100) / 100 : 0.2;
+  return { low, high: m?.high ?? null, heading: r.heading?.depends === true && (m?.value ?? null) === null, suggestedMin };
 }

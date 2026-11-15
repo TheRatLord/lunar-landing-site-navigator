@@ -20,13 +20,10 @@
 
 /* ---------- analysis status: inline, no box ---------- */
 .an-status { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--control-h-sm); font-size: var(--fs-sm); color: var(--text-2); min-width: 0; }
-.an-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--text-3); }
-.an-dot-ok { background: var(--c-pass); }
 .an-running { min-width: 260px; }
 .an-stage { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .an-bar { flex: 1; min-width: 60px; }
 .an-pct { min-width: 3ch; text-align: right; }
-.an-job { font-size: var(--fs-xs); }
 .an-detail p { margin: 0; }
 .an-chip { display: inline-flex; align-items: center; gap: var(--sp-1-5); height: var(--chip-h); padding: 0; font-size: var(--fs-xs); font-weight: var(--fw-medium); }
 .an-chip-stale { color: var(--c-marginal); background: none; }

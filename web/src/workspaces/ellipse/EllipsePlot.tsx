@@ -1,8 +1,8 @@
 import { useCallback, useId, useMemo } from "react";
-import type { EllipseMapGrid, EllipseSampleRef, EllipseSamples } from "../../api/ellipse";
+import type { EllipseSampleRef, EllipseSamples } from "../../api/ellipse";
 import { niceScaleBar } from "../map/scaleBar";
 import type { Ellipse } from "../../scenario/types";
-import { STATES, ellipseOutline, ellipsePoint, indicesByState, mapCells, plotHalfWidth, polygonPath, samplePath, sigmaRings, toPx } from "./adapt";
+import { STATES, ellipseOutline, ellipsePoint, indicesByState, plotHalfWidth, polygonPath, samplePath, sigmaRings, toPx } from "./adapt";
 import type { Backdrop } from "./useBackdrop";
 
 const SIZE = 640;
@@ -12,15 +12,14 @@ export type Marker = "centre" | "worst" | "best";
 export interface EllipsePlotProps {
   ellipse: Ellipse;
   samples: EllipseSamples | null;
-  map: EllipseMapGrid | null;
   refs: Record<Marker, EllipseSampleRef> | null;
   backdrop: Backdrop;
-  layers: { terrain: boolean; map: boolean; samples: boolean };
+  showSamples: boolean;
   selected: Marker | null;
   description: string;
 }
 
-export function EllipsePlot({ ellipse, samples, map, refs, backdrop, layers, selected, description }: EllipsePlotProps) {
+export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, selected, description }: EllipsePlotProps) {
   const uid = useId();
   const half = plotHalfWidth(ellipse);
   const at = useCallback((e: number, n: number) => toPx(e, n, half, SIZE), [half]);
@@ -52,9 +51,6 @@ export function EllipsePlot({ ellipse, samples, map, refs, backdrop, layers, sel
     })).filter((g) => g.n > 0);
   }, [samples, at, r]);
 
-  const cells = useMemo(() => (map ? mapCells(map) : []), [map]);
-  const cellPx = map ? map.spacing_m / mpp : 0;
-
   const bar = niceScaleBar(mpp, 70, 170);
   const img = backdrop.image;
 
@@ -72,17 +68,10 @@ export function EllipsePlot({ ellipse, samples, map, refs, backdrop, layers, sel
         <clipPath id={`${uid}-clip`}>
           <rect width={SIZE} height={SIZE} />
         </clipPath>
-        <pattern id={`${uid}-hatch`} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="7" className="el-hatch-marginal" />
-        </pattern>
-        <pattern id={`${uid}-cross`} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="7" className="el-hatch-fail" />
-          <line x1="0" y1="0" x2="7" y2="0" className="el-hatch-fail" />
-        </pattern>
       </defs>
       <g clipPath={`url(#${uid}-clip)`}>
         <rect className="el-bg" width={SIZE} height={SIZE} />
-        {layers.terrain && img && (
+        {img && (
           <image
             href={img.url}
             x={at(img.x0, img.y1)[0]}
@@ -96,18 +85,6 @@ export function EllipsePlot({ ellipse, samples, map, refs, backdrop, layers, sel
         <rect className="el-grid-frame" width={SIZE} height={SIZE} />
         <path className="el-cross" d={`M${SIZE / 2} 0V${SIZE}M0 ${SIZE / 2}H${SIZE}`} />
 
-        {layers.map &&
-          cells.map((c) => {
-            const [x, y] = at(c.east, c.north);
-            return (
-              <g key={`${c.east}|${c.north}`} className={`el-cell el-cell-${c.state}`}>
-                <rect x={x - cellPx / 2} y={y - cellPx / 2} width={cellPx} height={cellPx} />
-                {c.state === "marginal" && <rect x={x - cellPx / 2} y={y - cellPx / 2} width={cellPx} height={cellPx} fill={`url(#${uid}-hatch)`} />}
-                {c.state === "fail" && <rect x={x - cellPx / 2} y={y - cellPx / 2} width={cellPx} height={cellPx} fill={`url(#${uid}-cross)`} />}
-              </g>
-            );
-          })}
-
         {rings.map((g) => (
           <g key={g.sigma}>
             <path className="el-ring" d={g.d} />
@@ -119,7 +96,7 @@ export function EllipsePlot({ ellipse, samples, map, refs, backdrop, layers, sel
         <path className="el-outline" d={outline} />
         <path className="el-axis" d={axis} />
 
-        {layers.samples &&
+        {showSamples &&
           paths?.map((g) => (
             <g key={g.state} className={`el-pts el-pts-${g.state}`}>
               <path className="el-halo" d={g.d} strokeWidth={g.state === "pass" ? 2 * r + 2 : 4.2} />

@@ -19,19 +19,24 @@ export interface BlockerRequest {
   index: number;
 }
 
+export interface PanoramaStation extends StationMarker {
+  members?: ReadonlyArray<{ label: string; in_contact: boolean }>;
+}
+
 export interface HorizonPanoramaProps {
   horizon: HorizonProfile;
   sun?: TargetTrack;
   earth?: TargetTrack;
   sunlight?: SunlightSeries;
   clearance?: BandSeries;
-  stations?: StationMarker[];
+  stations?: PanoramaStation[];
   timeMs: number;
   onBlockerRequest?: (req: BlockerRequest) => void;
   markedAz_deg?: number | null;
   title?: string;
   elevationFit?: [number, number];
   discInset?: boolean;
+  compact?: boolean;
 }
 
 const PLOT = { left: 44, right: 12, top: 26, bottom: 10 } as const;
@@ -41,6 +46,8 @@ const INSET_FOOT = 52;
 const INSET_GUTTER = INSET_W + 12;
 const DISC_R = 22;
 const MAX_VEXAG = 60;
+const DEFAULT_VEXAG = 15;
+const STATION_HIT_PX = 9;
 const CARDINALS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
 interface View {
@@ -78,7 +85,7 @@ function makeLayout(size: Size, view: View, extent: [number, number], gutter: nu
     ({ vexag, elCenter } = view.manual);
   } else {
     const span = Math.max(3, extent[1] - extent[0]);
-    vexag = clamp(plotH / (span * pxX), 1, MAX_VEXAG);
+    vexag = clamp(plotH / (span * pxX), 1, DEFAULT_VEXAG);
     elCenter = (extent[0] + extent[1]) / 2;
   }
   return { x0, x1, y0, y1, w: size.w, h: size.h, pxX, pxY: pxX * vexag, vexag, elCenter, azCenter: view.azCenter, azSpan: view.azSpan };
@@ -320,6 +327,24 @@ function drawInset(
   ctx.restore();
 }
 
+function stationXY(L: Layout, st: StationMarker): { x: number; y: number } {
+  return { x: toX(L, st.az_deg + Math.round((L.azCenter - st.az_deg) / 360) * 360), y: toY(L, st.el_deg) };
+}
+
+function stationAt(L: Layout, stations: readonly PanoramaStation[], x: number, y: number): PanoramaStation | null {
+  let best: PanoramaStation | null = null;
+  let bestD = STATION_HIT_PX;
+  for (const st of stations) {
+    const p = stationXY(L, st);
+    const d = Math.hypot(p.x - x, p.y - y);
+    if (d <= bestD) {
+      best = st;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
 export function HorizonPanorama({
   horizon,
   sun,
@@ -333,6 +358,7 @@ export function HorizonPanorama({
   title = "Horizon panorama",
   elevationFit,
   discInset = true,
+  compact = false,
 }: HorizonPanoramaProps) {
   const colors = useColors();
   const [size, setSize] = useState<Size>({ w: 0, h: 0 });
@@ -343,7 +369,9 @@ export function HorizonPanorama({
     setView((v) => (v.manual === null ? v : { ...v, manual: null }));
   }
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
-  const [inset, setInset] = useState(discInset);
+  const [insetOn, setInset] = useState(discInset);
+  const inset = insetOn && !compact;
+  const marked = compact ? null : markedAz_deg;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const tracks = useMemo(() => [sun, earth].filter((t): t is TargetTrack => !!t), [sun, earth]);
@@ -358,8 +386,8 @@ export function HorizonPanorama({
     (ctx: CanvasRenderingContext2D, sz: Size) => {
       const c = colors;
       const best = horizonPath(L, horizon.elev_deg);
-      const lo = horizonPath(L, horizon.elev_lo_deg);
-      const hi = horizonPath(L, horizon.elev_hi_deg);
+      const lo = compact ? [] : horizonPath(L, horizon.elev_lo_deg);
+      const hi = compact ? [] : horizonPath(L, horizon.elev_hi_deg);
 
       ctx.save();
       ctx.beginPath();
@@ -405,21 +433,23 @@ export function HorizonPanorama({
       ctx.fillStyle = c.get("c-terrain-fill");
       ctx.fill();
 
-      ctx.beginPath();
-      tracePath(ctx, hi);
-      tracePath(ctx, [...lo].reverse(), false);
-      ctx.closePath();
-      ctx.fillStyle = c.get("c-uncertainty-soft");
-      ctx.fill();
-      ctx.setLineDash([3, 3]);
-      ctx.strokeStyle = c.get("c-uncertainty");
-      ctx.lineWidth = 1;
-      for (const p of [lo, hi]) {
+      if (!compact) {
         ctx.beginPath();
-        tracePath(ctx, p);
-        ctx.stroke();
+        tracePath(ctx, hi);
+        tracePath(ctx, [...lo].reverse(), false);
+        ctx.closePath();
+        ctx.fillStyle = c.get("c-uncertainty-soft");
+        ctx.fill();
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = c.get("c-uncertainty");
+        ctx.lineWidth = 1;
+        for (const p of [lo, hi]) {
+          ctx.beginPath();
+          tracePath(ctx, p);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
       }
-      ctx.setLineDash([]);
 
       ctx.beginPath();
       tracePath(ctx, best);
@@ -428,11 +458,11 @@ export function HorizonPanorama({
       ctx.lineJoin = "round";
       ctx.stroke();
 
-      if (markedAz_deg !== null) {
-        let a = markedAz_deg;
+      if (marked !== null) {
+        let a = marked;
         a += Math.round((L.azCenter - a) / 360) * 360;
         const x = toX(L, a);
-        const idx = nearestIndex(markedAz_deg);
+        const idx = nearestIndex(marked);
         const y = toY(L, horizon.elev_deg[idx]!);
         ctx.strokeStyle = c.get("text");
         ctx.lineWidth = 1;
@@ -450,10 +480,12 @@ export function HorizonPanorama({
         const m = t.utc_ms.length;
         const stride = Math.max(1, Math.floor(m / 3000));
         const now = lowerBound(t.utc_ms, timeMs);
-        const segments: Array<[number, number, boolean]> = [
-          [0, Math.min(m - 1, now), true],
-          [Math.max(0, now - 1), m - 1, false],
-        ];
+        const segments: Array<[number, number, boolean]> = compact
+          ? [[0, m - 1, false]]
+          : [
+              [0, Math.min(m - 1, now), true],
+              [Math.max(0, now - 1), m - 1, false],
+            ];
         for (const [from, to, past] of segments) {
           ctx.beginPath();
           let prevO = Number.NaN;
@@ -496,7 +528,7 @@ export function HorizonPanorama({
         const cy = toY(L, p.el_deg);
         const rx = p.ang_radius_deg * L.pxX;
         drawDisc(ctx, cx, cy, rx, p.ang_radius_deg * L.pxY, style, clipAbove);
-        labels.push({ text: style.name, color: c.get("text"), font: `600 11px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) });
+        if (cy >= L.y0 && cy <= L.y1) labels.push({ text: style.name, color: c.get("text"), font: `600 11px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) });
         return p;
       };
       const sunStyle: BodyStyle = { color: c.get("c-sun"), soft: c.get("c-sun-soft"), highlight: c.get("on-accent"), name: "Sun" };
@@ -506,9 +538,7 @@ export function HorizonPanorama({
 
       const sorted = [...stations].sort((a, b) => a.el_deg - b.el_deg);
       sorted.forEach((st) => {
-        const a = st.az_deg + Math.round((L.azCenter - st.az_deg) / 360) * 360;
-        const x = toX(L, a);
-        const y = toY(L, st.el_deg);
+        const { x, y } = stationXY(L, st);
         const col = c.station(stations.indexOf(st));
         ctx.beginPath();
         ctx.moveTo(x, y - 5);
@@ -526,7 +556,7 @@ export function HorizonPanorama({
         ctx.strokeStyle = col;
         ctx.lineWidth = 1.4;
         ctx.stroke();
-        labels.push({ text: st.label, color: col, font: `500 10px ${MONO}`, ax: x, ay: y, gap: 7, side: "left" });
+        labels.push({ text: st.label, color: c.get("text-2"), font: `500 10px ${SANS}`, ax: x, ay: y, gap: 7, side: "left" });
       });
 
       drawLabels(ctx, labels, { x0: L.x0 + 2, y0: L.y0 + 2, x1: L.x1 - 2, y1: L.y1 - 2 });
@@ -580,16 +610,26 @@ export function HorizonPanorama({
           const served = isSun && sunlight ? servedSunlight(sunlight, timeMs) : null;
           const pairs = isSun
             ? sunInsetPairs(served, discFractionAboveHorizon(horizon.elev_deg, p.az_deg, p.el_deg, p.ang_radius_deg))
-            : earthInsetPairs((earth ? earthCentre(earth, timeMs) : null) ?? { el_deg: NaN, note: null }, clearance ? servedBand(clearance, timeMs) : null);
+            : earthInsetPairs((earth ? earthCentre(earth, timeMs) : null) ?? { el_deg: NaN }, clearance ? servedBand(clearance, timeMs) : null);
           drawInset(ctx, horizon, p, style, pairs, ix, iy, c, isSun ? sunDiscLit(served) : 1);
           iy += INSET_H + 8;
         }
       }
 
-      if (hover && hover.x >= L.x0 && hover.x <= L.x1 && hover.y >= L.y0 && hover.y <= L.y1) {
+      const station = hover ? stationAt(L, stations, hover.x, hover.y) : null;
+      if (hover && station) {
+        const members = station.members ?? [{ label: station.label, in_contact: station.in_contact }];
+        drawReadout(
+          ctx,
+          [...(members.length > 1 ? [[station.label, ""] as [string, string]] : []), ...members.map((m) => [m.label, m.in_contact ? "link" : "no link"] as [string, string])],
+          hover.x,
+          hover.y,
+          sz,
+          c,
+        );
+      } else if (hover && hover.x >= L.x0 && hover.x <= L.x1 && hover.y >= L.y0 && hover.y <= L.y1) {
         const az = fromX(L, hover.x);
         const idx = nearestIndex(az);
-        const el = L.elCenter - (hover.y - (L.y0 + L.y1) / 2) / L.pxY;
         ctx.strokeStyle = c.get("text-2");
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 3]);
@@ -601,42 +641,25 @@ export function HorizonPanorama({
         const hz = horizonAt(horizon.elev_deg, az);
         const boundLo = horizonAt(horizon.elev_lo_deg, az);
         const boundHi = horizonAt(horizon.elev_hi_deg, az);
-        const sampleAz = horizon.az_deg[idx] ?? wrap360(az);
-        drawReadout(
-          ctx,
-          [
-            ["Azimuth", formatDeg(az, 2, { azimuth: true })],
-            ["Elevation", `${formatNum(el, 2)}°`],
-            ["Horizon", `${formatNum(hz, 2)}°`],
-            ["Bounds", `${formatNum(boundLo, 2)}…${formatNum(boundHi, 2)}°`],
-            ["Blocker", formatBlockerDistance(horizon.blocker_dist_m[idx]!)],
-            ["Sample", formatDeg(sampleAz, 1, { azimuth: true })],
-          ],
-          hover.x,
-          hover.y,
-          sz,
-          c,
-        );
+        const rows: Array<[string, string]> = [
+          ["Azimuth", formatDeg(az, 1, { azimuth: true })],
+          ["Horizon", `${formatNum(hz, 2)}°`],
+        ];
+        if (!compact) {
+          if (Math.abs(boundHi - boundLo) >= 0.005) rows.push(["Error range", `${formatNum(boundLo, 2)}…${formatNum(boundHi, 2)}°`]);
+          rows.push(["Blocker", formatBlockerDistance(horizon.blocker_dist_m[idx]!)]);
+        }
+        drawReadout(ctx, rows, hover.x, hover.y, sz, c);
       }
-
-      ctx.font = `10px ${MONO}`;
-      ctx.fillStyle = c.get("text-3");
-      ctx.textAlign = "left";
-      ctx.textBaseline = "bottom";
-      ctx.fillText(`×${L.vexag.toFixed(L.vexag < 10 ? 1 : 0)}`, L.x0 + 6, L.y1 - 5);
-      const notes: string[] = [];
-      if (sun && !sunNow) notes.push("Sun · no data");
-      if (earth && !earthNow) notes.push("Earth · no data");
-      ctx.fillStyle = c.get("text-2");
-      notes.forEach((text, i) => ctx.fillText(text, L.x0 + 6, L.y1 - 5 - 14 * (i + 1)));
     },
-    [colors, L, horizon, sun, earth, sunlight, clearance, stations, timeMs, markedAz_deg, inset, gutter, hover, nearestIndex],
+    [colors, L, horizon, sun, earth, sunlight, clearance, stations, timeMs, marked, inset, gutter, hover, nearestIndex, compact],
   );
 
   const drag = useRef<{ x: number; y: number; moved: number; view: View; eff: Layout } | null>(null);
 
   const requestBlocker = useCallback(
     (az: number) => {
+      if (compact) return;
       const idx = nearestIndex(az);
       onBlockerRequest?.({
         az_deg: horizon.az_deg[idx] ?? wrap360(az),
@@ -645,7 +668,7 @@ export function HorizonPanorama({
         index: idx,
       });
     },
-    [horizon, nearestIndex, onBlockerRequest],
+    [horizon, nearestIndex, onBlockerRequest, compact],
   );
 
   const onPointerDown = (e: PointerEvent<HTMLCanvasElement>) => {
@@ -665,7 +688,7 @@ export function HorizonPanorama({
     setView({
       azCenter: wrap360(d.view.azCenter - dx / d.eff.pxX),
       azSpan: d.view.azSpan,
-      manual: { vexag: d.eff.vexag, elCenter: d.eff.elCenter + dy / d.eff.pxY },
+      manual: compact ? d.view.manual : { vexag: d.eff.vexag, elCenter: d.eff.elCenter + dy / d.eff.pxY },
     });
   };
   const onPointerUp = (e: PointerEvent<HTMLCanvasElement>) => {
@@ -700,17 +723,20 @@ export function HorizonPanorama({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const f = Math.exp(-e.deltaY * 0.0016);
-      if (e.altKey || e.ctrlKey) setVexag(L.vexag * f);
+      if (e.altKey || e.ctrlKey) {
+        if (!compact) setVexag(L.vexag * f);
+      }
       else zoom(f, localPoint(e, el).x);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [zoom, setVexag, L.vexag]);
+  }, [zoom, setVexag, L.vexag, compact]);
 
   const onKey = (e: KeyboardEvent) => {
     const k = e.key;
     if (k === "ArrowLeft") setView((v) => ({ ...v, azCenter: wrap360(v.azCenter - v.azSpan / 10) }));
     else if (k === "ArrowRight") setView((v) => ({ ...v, azCenter: wrap360(v.azCenter + v.azSpan / 10) }));
+    else if (compact && (k === "ArrowUp" || k === "ArrowDown" || k === "[" || k === "]" || k === "Enter")) return;
     else if (k === "ArrowUp") setView((v) => ({ ...v, manual: { vexag: L.vexag, elCenter: (v.manual?.elCenter ?? L.elCenter) + 20 / L.pxY } }));
     else if (k === "ArrowDown") setView((v) => ({ ...v, manual: { vexag: L.vexag, elCenter: (v.manual?.elCenter ?? L.elCenter) - 20 / L.pxY } }));
     else if (k === "+" || k === "=") zoom(1.4);
@@ -723,7 +749,9 @@ export function HorizonPanorama({
     e.preventDefault();
   };
 
-  const summary = `Terrain horizon from ${formatNum(arrMin(horizon.elev_deg), 2)} to ${formatNum(arrMax(horizon.elev_deg), 2)} degrees elevation over 360 degrees of azimuth. Arrow keys pan, plus and minus zoom, square brackets change vertical exaggeration, F fits, Enter requests blocker attribution.`;
+  const summary = compact
+    ? "Sun and Earth paths over the terrain horizon."
+    : `Terrain horizon from ${formatNum(arrMin(horizon.elev_deg), 1)}° to ${formatNum(arrMax(horizon.elev_deg), 1)}°, with the Sun and Earth paths. Click the horizon to trace what blocks it.`;
 
   const resetView = () => setView({ azCenter: 180, azSpan: 360, manual: null });
 
@@ -744,6 +772,7 @@ export function HorizonPanorama({
           onKeyDown={onKey}
           onDoubleClick={resetView}
         >
+          {!compact && (
           <div className="viz-float toolstrip toolstrip-float" role="group" aria-label="View controls" style={{ top: L.y0 + 6, right: Math.max(6, size.w - L.x1 + 6) }}>
             <IconButton icon="target" label="True-size Sun and Earth discs" size="sm" pressed={inset} onClick={() => setInset((v) => !v)} />
             <span className="toolstrip-sep" aria-hidden="true" />
@@ -763,14 +792,17 @@ export function HorizonPanorama({
             <IconButton icon="minus" label="Zoom out" size="sm" onClick={() => zoom(1 / 1.5)} />
             <IconButton icon="reset" label="Reset view" size="sm" shortcut="F" onClick={resetView} />
           </div>
+          )}
         </Canvas>
         <ul className="legend" aria-label="Legend">
           <li>
             <i className="lg-line" style={{ background: "var(--c-terrain-line)" }} /> Horizon
           </li>
-          <li>
-            <i className="lg-band" /> Bounds
-          </li>
+          {!compact && (
+            <li>
+              <i className="lg-band" /> Terrain error range
+            </li>
+          )}
           {sun && (
             <li>
               <i className="lg-line" style={{ background: "var(--c-sun)" }} /> Sun
@@ -781,18 +813,18 @@ export function HorizonPanorama({
               <i className="lg-line" style={{ background: "var(--c-earth)" }} /> Earth
             </li>
           )}
-          {(sun || earth) && (
+          {!compact && (sun || earth) && (
             <li>
-              <i className="lg-dash" /> Elapsed
+              <i className="lg-dash" /> Past
             </li>
           )}
           {stations.length > 0 && (
             <>
               <li>
-                <i className="lg-diamond filled" /> Contact
+                <i className="lg-diamond filled" /> Earth link
               </li>
               <li>
-                <i className="lg-diamond" /> No contact
+                <i className="lg-diamond" /> No link
               </li>
             </>
           )}

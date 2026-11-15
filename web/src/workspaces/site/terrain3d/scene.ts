@@ -40,8 +40,6 @@ import {
   type Shading,
   type ShadowMask,
 } from "./mesh";
-import { formatNum } from "../../../lib/format";
-import { directionLabel } from "./legend";
 import type { Patch } from "./patch";
 
 export interface SceneColors {
@@ -262,7 +260,9 @@ export class TerrainScene {
   }
 
   setDirections(sun: Direction | null, earth: Direction | null): void {
+    const flip = (this.dirs.sun !== null && Math.sin((this.dirs.sun.az_deg * Math.PI) / 180) < 0) !== (sun !== null && Math.sin((sun.az_deg * Math.PI) / 180) < 0);
     this.dirs = { sun, earth };
+    if (flip) this.buildOverlays();
     this.rebuildSky();
     this.requestRender();
   }
@@ -320,7 +320,8 @@ export class TerrainScene {
     overlay.add(new Line(new BufferGeometry().setFromPoints([new Vector3(0, y0, 0), new Vector3(0, y0 + pin, 0)]), new LineBasicMaterial({ color: col.accent, depthTest: false })));
     overlay.add(point(0, y0 + pin, 0, col.accent, 9));
     const bLeft = this.blockerView !== null && Math.sin((this.blockerView.az_deg * Math.PI) / 180) < 0;
-    const ls = label(`Lander · mast ${formatNum(this.mast, 1)} m (pin not to scale)`, col.text, col.textBg, this.blockerView ? (bLeft ? 0 : 1) : 1);
+    const sunLeft = this.dirs.sun !== null && Math.sin((this.dirs.sun.az_deg * Math.PI) / 180) < 0;
+    const ls = label("Landing site", col.text, col.textBg, this.blockerView ? (bLeft ? 0 : 1) : sunLeft ? 0 : 1);
     ls.center.y = 1;
     ls.position.set(0, y0 + pin, 0);
     ls.scale.set(LABEL_H * (ls.userData["aspect"] as number), LABEL_H, 1);
@@ -366,7 +367,7 @@ export class TerrainScene {
       const dashed = d.el_deg <= 0;
       this.sky.add(new Line(new BufferGeometry().setFromPoints([origin, end]), new LineBasicMaterial({ color, depthTest: false, transparent: true, opacity: dashed ? 0.45 : 1 })));
       this.sky.add(point(end.x, end.y, end.z, color, 14));
-      const s = label(directionLabel(name, d), this.colors.text, this.colors.textBg, name === "Sun" ? 0 : 1);
+      const s = label(name, this.colors.text, this.colors.textBg, Math.sin((d.az_deg * Math.PI) / 180) < 0 ? 1 : 0);
       s.position.set(end.x, end.y, end.z);
       s.scale.set(LABEL_H * (s.userData["aspect"] as number), LABEL_H, 1);
       this.sky.add(s);

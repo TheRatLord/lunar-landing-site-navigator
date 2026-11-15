@@ -2,30 +2,39 @@ import type { EvaluateResult, MetricJson } from "../../api/site";
 import { DataTable, type Column } from "../../components/ui/DataTable";
 import { Disclosure } from "../../components/ui/Disclosure";
 import { Popover } from "../../components/ui/Popover";
-import { formatValue } from "../../lib/format";
-import { metricWhenLines, metricNoteText, metricRangeText, metricValueText } from "./adapt";
+import { quantityText, whenText } from "../../components/viz/units";
+import { glueQuantities } from "../../lib/format";
+import { whenLines } from "../../lib/when";
+
+const q = (v: number | null, unit: string) => quantityText(v, unit, { decimals: unit === "fraction" || unit === "" ? 0 : 1 });
+
+function valueText(m: MetricJson): string {
+  const lo = m.low;
+  const hi = m.high;
+  if (m.value === null) {
+    if (lo !== null && hi !== null) return q(lo, m.unit) === q(hi, m.unit) ? q(lo, m.unit) : `${q(lo, m.unit)} to ${q(hi, m.unit)}`;
+    return m.censored ? "none" : "—";
+  }
+  return `${m.censored ? "≥ " : ""}${q(m.value, m.unit)}`;
+}
+
+function rangeText(m: MetricJson): string {
+  if (m.value === null || m.low === null || m.high === null) return "";
+  const lo = q(m.low, m.unit);
+  const hi = q(m.high, m.unit);
+  if (lo === hi) return "";
+  return `${lo} to ${m.one_sided ? "≥ " : ""}${hi}`;
+}
 
 function MetricDetail({ m }: { m: MetricJson }) {
-  const lines = metricWhenLines([m])[m.key] ?? [];
-  const note = metricNoteText(m);
-  const res = m.when_resolution_s;
-  const hasRes = res !== null && res !== undefined;
-  if (!note && lines.length === 0 && !hasRes && !m.when_basis) return null;
+  const lines = whenLines(m.when).filter((l) => l.t_ms !== null);
+  const note = m.note ? glueQuantities(m.note) : "";
+  if (!note && lines.length === 0) return null;
   return (
-    <Popover label="Details" icon={note ? "alert" : "clock"} align="end" width={360}>
+    <Popover label="Details" iconOnly icon={note ? "alert" : "clock"} align="end" width={320}>
       <div className="mt-detail">
         {note && <p>{note}</p>}
-        {lines.length > 0 && (
-          <ul className="mt-when" aria-label={`When the ${m.label.toLowerCase()} occurs`}>
-            {lines.map((l) => (
-              <li key={l.world} className="num">
-                {l.text}
-              </li>
-            ))}
-          </ul>
-        )}
-        {hasRes && <p className="faint num">resolution {formatValue(res, "s", Number.isInteger(res) ? 0 : 2)}</p>}
-        {m.when_basis && <p className="faint">{m.when_basis}</p>}
+        {lines.length > 0 && <p className="num">{[...new Set(lines.map((l) => whenText(l.t_ms!)))].join(", ")}</p>}
       </div>
     </Popover>
   );
@@ -33,16 +42,15 @@ function MetricDetail({ m }: { m: MetricJson }) {
 
 const COLUMNS: Column<MetricJson>[] = [
   { key: "label", header: "Metric", render: (m) => m.label },
-  { key: "value", header: "Value", numeric: true, render: (m) => <span className="num">{metricValueText(m)}</span> },
-  { key: "range", header: "Range", numeric: true, render: (m) => <span className="num">{metricRangeText(m)}</span> },
-  { key: "unit", header: "Unit", render: (m) => <span className="faint">{m.unit || "—"}</span> },
+  { key: "value", header: "Value", numeric: true, render: (m) => <span className="num">{valueText(m)}</span> },
+  { key: "range", header: "Best to worst", numeric: true, render: (m) => <span className="num dim">{rangeText(m)}</span> },
   { key: "detail", header: <span className="sr-only">Details</span>, width: "1%", render: (m) => <MetricDetail m={m} /> },
 ];
 
 export function MetricsTable({ result }: { result: EvaluateResult }) {
   return (
     <Disclosure title="All metrics" count={result.metrics.length}>
-      <DataTable columns={COLUMNS} rows={result.metrics} rowKey={(m) => m.key} caption="Evaluation metrics with units and bounds" empty="No metrics" />
+      <DataTable columns={COLUMNS} rows={result.metrics} rowKey={(m) => m.key} caption="Evaluation metrics" empty="No metrics" />
     </Disclosure>
   );
 }

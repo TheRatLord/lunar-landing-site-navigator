@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { Interval, LineMark, LineRow, TimelineRow } from "../../contract/types";
 import { bandEnvelope, minMaxEnvelope } from "../../lib/decimate";
-import { formatNum, formatValue, tickDecimals } from "../../lib/format";
+import { formatNum, tickDecimals } from "../../lib/format";
 import { visibleIntervals } from "../../lib/intervals";
 import { clamp, niceTicks, panDomain, zoomDomain, type Range } from "../../lib/scale";
-import { MS_HOUR, formatDuration, formatUtc, timeTicks } from "../../lib/time";
+import { formatUtc, timeTicks } from "../../lib/time";
 import { IconButton } from "../ui/Button";
 import { Panel } from "../ui/Panel";
-import { Popover } from "../ui/Popover";
 import { Canvas } from "./canvas";
+import { spanText, whenText } from "./units";
 import { MONO, SANS, drawReadout, fitText, localPoint, type Size, type ThemeColors } from "./draw";
 import { useColors } from "./useColors";
 import { describeInterval, describeLine, gutterNote, gutterReadout } from "./timelineText";
@@ -18,9 +18,8 @@ export interface TimelineProps {
   extent: Range;
   timeMs: number;
   onTimeChange: (ms: number) => void;
-  range: { start_ms: number; end_ms: number };
-  onRangeChange: (r: { start_ms: number; end_ms: number }) => void;
   title?: string;
+  note?: string | null;
 }
 
 const GUTTER = 176;
@@ -30,6 +29,7 @@ const INTERVAL_H = 26;
 const LINE_H = 74;
 const OVERVIEW_H = 30;
 const MIN_SPAN = 10 * 60_000;
+const MARK_GLYPH_HINT = "▲ ▼ lowest battery";
 
 const rowHeight = (r: TimelineRow) => (r.kind === "intervals" ? INTERVAL_H : LINE_H);
 
@@ -94,8 +94,6 @@ function drawIntervals(
 }
 
 const MARK_R = 5;
-const MARK_GLYPH: Record<string, string> = { optimistic: "▲", nominal: "◆", pessimistic: "▼" };
-
 function markY(world: string, top: number, bottom: number): number {
   return world === "optimistic" ? top + MARK_R + 1 : world === "pessimistic" ? bottom - MARK_R - 1 : (top + bottom) / 2;
 }
@@ -133,12 +131,11 @@ function drawMark(ctx: CanvasRenderingContext2D, world: string, x: number, y: nu
   ctx.strokeStyle = c.get("bg");
   ctx.stroke();
 }
-export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeChange, title = "Timeline" }: TimelineProps) {
+export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline", note = null }: TimelineProps) {
   const colors = useColors();
   const [size, setSize] = useState<Size>({ w: 0, h: 0 });
   const [view, setView] = useState<Range>(extent);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
-  const [brush, setBrush] = useState<Range | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const extentKey = `${extent[0]}:${extent[1]}`;
@@ -156,8 +153,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
   const plotW = plotX1 - plotX0;
 
   const lineExtents = useMemo(() => new Map(rows.filter((r): r is LineRow => r.kind === "line").map((r) => [r.id, lineExtent(r)])), [rows]);
-  const marked = useMemo(() => rows.flatMap((row) => (row.kind === "line" ? (row.marks ?? []).map((mark) => ({ row, mark })) : [])), [rows]);
-  const markedWorlds = useMemo(() => [...new Set(marked.map((m) => m.mark.world))], [marked]);
+  const hasMarks = useMemo(() => rows.some((row) => row.kind === "line" && (row.marks?.length ?? 0) > 0), [rows]);
 
   const markAt = (px: number, py: number) => {
     let y = rowsTop;
@@ -381,27 +377,6 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
       ctx.beginPath();
       ctx.rect(plotX0, plotTop, plotW, rowsH);
       ctx.clip();
-      const rx0 = tx(range.start_ms);
-      const rx1 = tx(range.end_ms);
-      ctx.fillStyle = c.get("accent");
-      ctx.globalAlpha = 0.07;
-      ctx.fillRect(rx0, plotTop, rx1 - rx0, rowsH);
-      ctx.globalAlpha = 0.8;
-      ctx.fillRect(rx0 - 0.5, plotTop, 1.5, rowsH);
-      ctx.fillRect(rx1 - 0.5, plotTop, 1.5, rowsH);
-      ctx.globalAlpha = 1;
-
-      if (brush) {
-        const b0 = tx(Math.min(...brush));
-        const b1 = tx(Math.max(...brush));
-        ctx.fillStyle = c.get("accent");
-        ctx.globalAlpha = 0.22;
-        ctx.fillRect(b0, plotTop, b1 - b0, rowsH);
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = c.get("accent");
-        ctx.strokeRect(b0 + 0.5, plotTop + 0.5, b1 - b0 - 1, rowsH - 1);
-      }
-
       const cx = Math.round(tx(timeMs)) + 0.5;
       ctx.strokeStyle = c.get("c-sun");
       ctx.lineWidth = 1.5;
@@ -436,10 +411,6 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
         ctx.stroke();
         ctx.fillText(t.label, x, oy + OVERVIEW_H - 3);
       }
-      ctx.fillStyle = c.get("accent");
-      ctx.globalAlpha = 0.28;
-      ctx.fillRect(ox(range.start_ms), oy + 1, Math.max(1, ox(range.end_ms) - ox(range.start_ms)), OVERVIEW_H - 2);
-      ctx.globalAlpha = 1;
       ctx.strokeStyle = c.get("text");
       ctx.lineWidth = 1.5;
       ctx.strokeRect(ox(view[0]) + 0.5, oy + 2, Math.max(3, ox(view[1]) - ox(view[0])), OVERVIEW_H - 4);
@@ -456,18 +427,15 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
         ctx.lineTo(hover.x + 0.5, plotBottom);
         ctx.stroke();
         ctx.setLineDash([]);
-        const lines: Array<[string, string]> = [["Time", formatUtc(t, { seconds: false })]];
+        const lines: Array<[string, string]> = [["Time", whenText(t)]];
         for (const r of rows) lines.push([r.label, r.kind === "intervals" ? describeInterval(r, t) : describeLine(r, t)]);
         drawReadout(ctx, lines, hover.x, hover.y, sz, c);
       }
     },
-    [colors, view, rows, rowsH, plotW, plotX0, plotX1, tx, tFromX, ox, timeMs, range, brush, hover, extent, lineExtents, overviewY, rowsTop],
+    [colors, view, rows, rowsH, plotW, plotX0, plotX1, tx, tFromX, ox, timeMs, hover, extent, lineExtents, overviewY, rowsTop],
   );
 
-  type Drag =
-    | { kind: "pan"; x: number; view: Range; moved: number }
-    | { kind: "brush"; anchor: number; moved: number }
-    | { kind: "overview"; grab: number; view: Range };
+  type Drag = { kind: "pan"; x: number; view: Range; moved: number } | { kind: "overview"; grab: number; view: Range };
   const drag = useRef<Drag | null>(null);
 
   const onPointerDown = (e: PointerEvent<HTMLCanvasElement>) => {
@@ -487,7 +455,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
       onTimeChange(tFromX(p.x));
       return;
     }
-    drag.current = e.shiftKey ? { kind: "brush", anchor: clamp(tFromX(p.x), extent[0], extent[1]), moved: 0 } : { kind: "pan", x: p.x, view, moved: 0 };
+    drag.current = { kind: "pan", x: p.x, view, moved: 0 };
   };
 
   const onPointerMove = (e: PointerEvent<HTMLCanvasElement>) => {
@@ -498,9 +466,6 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
     if (d.kind === "pan") {
       d.moved = Math.max(d.moved, Math.abs(p.x - d.x));
       if (d.moved >= 4) setView(panDomain(d.view, -((p.x - d.x) / plotW) * (d.view[1] - d.view[0]), extent));
-    } else if (d.kind === "brush") {
-      d.moved = Math.max(d.moved, Math.abs(tx(d.anchor) - p.x));
-      if (d.moved >= 3) setBrush([clamp(d.anchor, extent[0], extent[1]), clamp(tFromX(p.x), extent[0], extent[1])]);
     } else {
       const t = tFromOx(p.x);
       const span = d.view[1] - d.view[0];
@@ -512,12 +477,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
     const d = drag.current;
     drag.current = null;
     if (!d) return;
-    if (d.kind === "brush") {
-      if (brush && Math.abs(brush[1] - brush[0]) >= MS_HOUR / 4) {
-        onRangeChange({ start_ms: Math.min(...brush), end_ms: Math.max(...brush) });
-      }
-      setBrush(null);
-    } else if (d.kind === "pan" && d.moved < 4) {
+    if (d.kind === "pan" && d.moved < 4) {
       const p = localPoint(e, e.currentTarget);
       const hit = markAt(p.x, p.y);
       onTimeChange(hit ? hit.t_ms : clamp(tFromX(p.x), extent[0], extent[1]));
@@ -556,59 +516,20 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
     e.preventDefault();
   };
 
-  const summary = `Timeline of ${rows.map((r) => r.label).join(", ")} from ${formatUtc(view[0], { seconds: false })} to ${formatUtc(view[1], { seconds: false })}. Arrow keys pan, plus and minus zoom, Home shows everything.`;
-
-  const rangeOnly = rows.filter((r): r is LineRow => r.kind === "line" && r.noNominal === true && (r.notes?.length ?? 0) > 0);
+  const summary = `Timeline of ${rows.map((r) => r.label).join(", ")} from ${formatUtc(view[0], { seconds: false })} to ${formatUtc(view[1], { seconds: false })}. Click to move the time; arrow keys pan, plus and minus zoom, Home shows everything.`;
 
   return (
     <Panel
       title={title}
-      subtitle={formatDuration(view[1] - view[0])}
+      subtitle={spanText(view[1] - view[0])}
       flush
-      className="viz-panel"
+      className="viz-panel timeline-panel"
       actions={
         <>
-          {rangeOnly.length > 0 && (
-            <Popover label="Range only" tone="marginal" align="end" width={360}>
-              <div className="viz-notes">
-                {rangeOnly.map((r) => (
-                  <div key={r.id} className="viz-note">
-                    <div className="viz-note-title">{r.label}</div>
-                    <p>{r.notes!.join(" ")}</p>
-                  </div>
-                ))}
-              </div>
-            </Popover>
-          )}
-          {marked.length > 0 && (
-            <Popover label={`${marked.length} minima`} align="end" width={340}>
-              <ul className="viz-marks" aria-label="Instants marked on the timeline">
-                {marked.map(({ row, mark }) => (
-                  <li key={`${row.id}:${mark.world}`}>
-                    <button type="button" className="viz-mark" aria-label={`Move the clock to the ${mark.label} marker, ${mark.text}`} onClick={() => onTimeChange(mark.t_ms)}>
-                      <span className="viz-mark-head">
-                        <span className="lg-glyph" aria-hidden="true">
-                          {MARK_GLYPH[mark.world] ?? "●"}
-                        </span>
-                        <span>{mark.world}</span>
-                        <span className="grow" />
-                        <span className="num dim">{formatUtc(mark.t_ms, { seconds: false })}</span>
-                        <span className="num">{mark.value === null ? "—" : formatValue(mark.value, row.unit, row.decimals ?? 2)}</span>
-                      </span>
-                      <span className="viz-mark-text">{mark.text}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </Popover>
-          )}
           <div className="toolstrip">
             <IconButton icon="plus" size="sm" label="Zoom in" onClick={() => zoom(1.5)} />
             <IconButton icon="minus" size="sm" label="Zoom out" onClick={() => zoom(1 / 1.5)} />
             <IconButton icon="reset" size="sm" label="Show whole mission" onClick={() => setView([extent[0], extent[1]])} />
-            <span className="toolstrip-sep" aria-hidden="true" />
-            <IconButton icon="expand" size="sm" label="Zoom to analysis range" onClick={() => setView([range.start_ms, range.end_ms])} />
-            <IconButton icon="ruler" size="sm" label="Set analysis range to view" onClick={() => onRangeChange({ start_ms: view[0], end_ms: view[1] })} />
           </div>
         </>
       }
@@ -629,32 +550,9 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, range, onRangeCha
           onKeyDown={onKey}
           onDoubleClick={() => setView([extent[0], extent[1]])}
         />
-        <ul className="legend" aria-label="Legend">
-          <li>
-            <i className="lg-bar solid" /> Best
-          </li>
-          {rows.some((r) => r.kind === "intervals" && r.optimistic) ? (
-            <li>
-              <i className="lg-bar stripe-above" /> Optimistic
-            </li>
-          ) : null}
-          {rows.some((r) => r.kind === "intervals" && r.pessimistic) ? (
-            <li>
-              <i className="lg-bar stripe-below" /> Pessimistic
-            </li>
-          ) : null}
-          <li>
-            <i className="lg-line" style={{ background: "var(--c-sun)" }} /> Cursor
-          </li>
-          {markedWorlds.map((w) => (
-            <li key={w}>
-              <span className="lg-glyph" aria-hidden="true">
-                {MARK_GLYPH[w] ?? "●"}
-              </span>{" "}
-              Min · {w}
-            </li>
-          ))}
-        </ul>
+        <p className="viz-key">
+          {note ? `${note} · ` : ""}Thick bar = nominal, thin bars = best and worst case{hasMarks ? ` · ${MARK_GLYPH_HINT}` : ""}
+        </p>
       </div>
     </Panel>
   );

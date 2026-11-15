@@ -4,16 +4,12 @@
 .el-side { align-self: stretch; display: flex; flex-direction: column; min-width: 0; border-right: var(--hairline) solid var(--border); }
 .el-side > section, .el-params { padding: var(--sp-3) var(--sp-4); }
 .el-params { display: flex; flex-direction: column; gap: var(--sp-3); border-top: var(--hairline) solid var(--border); }
-.el-advanced { display: flex; flex-direction: column; gap: var(--sp-3); padding-top: var(--sp-1); }
-.el-advanced .field-row { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.el-advanced .toggle { align-self: flex-start; }
-.el-params .disclosure-body { padding-left: 0; }
-.el-params .disclosure { margin: 0 calc(-1 * var(--sp-1)); padding: 0 var(--sp-1); }
 
 .el-ellipse-head { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-1); }
 .el-title { font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--text); }
 .el-ellipse { display: flex; flex-direction: column; gap: var(--sp-2); }
-.el-about { margin: 0; font-size: var(--fs-sm); line-height: var(--lh-body); color: var(--text-2); }
+.el-about, .el-ellipse-head .origin { display: none; }
+.el-validation { text-decoration: none; }
 .el-ellipse-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
 .el-dl { margin: 0; display: flex; flex-direction: column; }
 .el-dl-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); min-height: var(--row-h); font-size: var(--fs-sm); }
@@ -49,9 +45,6 @@
 .el-more .disclosure-head { gap: var(--sp-2); }
 .el-more .disclosure-body { padding-left: 0; padding-right: 0; }
 .el-more .el-dl-row { padding: 0; }
-.el-scroll { overflow-x: auto; margin: 0 calc(-1 * var(--sp-3)); }
-.el-prov { display: flex; flex-direction: column; gap: var(--sp-1); align-items: flex-start; width: 100%; }
-.el-prov .el-dl { width: 100%; }
 .el-cellstack { display: inline-flex; flex-direction: column; gap: 1px; }
 .el-keys { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-xs); color: var(--text-2); }
 .el-glyph { font-size: var(--fs-sm); }
@@ -70,14 +63,6 @@
 .el-label, .el-mark-text, .el-scale text, .el-north text { fill: var(--text); font-size: 11px; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
 .el-mark-text { font-weight: 700; }
 
-.el-cell rect { fill-opacity: 0.22; stroke: none; }
-.el-cell-pass rect { fill: var(--c-pass); }
-.el-cell-marginal rect:first-child { fill: var(--c-marginal); fill-opacity: 0.2; }
-.el-cell-marginal rect:last-child, .el-cell-fail rect:last-child { fill-opacity: 1; }
-.el-cell-fail rect:first-child { fill: var(--c-fail); fill-opacity: 0.26; }
-.el-cell-unknown rect { fill: var(--text-3); fill-opacity: 0.25; }
-.el-hatch-marginal { stroke: var(--c-marginal); stroke-width: 1.4; opacity: 0.75; }
-.el-hatch-fail { stroke: var(--c-fail); stroke-width: 1.4; opacity: 0.75; }
 
 .el-halo { fill: none; stroke: var(--bg); stroke-opacity: 0.85; stroke-linecap: round; stroke-linejoin: round; }
 .el-shape { fill: none; stroke-linecap: round; stroke-linejoin: round; }

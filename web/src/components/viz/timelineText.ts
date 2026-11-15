@@ -88,7 +88,7 @@ export function describeInterval(r: IntervalRow, t: number): string {
   const pess = r.pessimistic ? intervalsContain(r.pessimistic, t) : null;
   const parts = [inBest ? "yes" : "no"];
   if (pess !== null || opt !== null) {
-    parts.push(`(${pess === null ? "" : `pess ${pess ? "yes" : "no"}`}${pess !== null && opt !== null ? ", " : ""}${opt === null ? "" : `opt ${opt ? "yes" : "no"}`})`);
+    parts.push(`(${pess === null ? "" : `worst ${pess ? "yes" : "no"}`}${pess !== null && opt !== null ? ", " : ""}${opt === null ? "" : `best ${opt ? "yes" : "no"}`})`);
   }
   const win = r.best.find((iv) => t >= iv.start_ms && t <= iv.end_ms);
   if (win) {

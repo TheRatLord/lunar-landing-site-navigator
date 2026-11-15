@@ -15,6 +15,29 @@ export function ToastViewport() {
             <div className="toast-title">{t.title}</div>
             {t.detail && <div className="toast-detail">{t.detail}</div>}
           </div>
+          {t.action && (
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                t.action!.run();
+                dismiss(t.id);
+              }}
+            >
+              {t.action.label}
+            </button>
+          )}
+          {t.actions?.map((a) => (
+            <button
+              key={a.label}
+              className="btn btn-sm"
+              onClick={() => {
+                a.run();
+                dismiss(t.id);
+              }}
+            >
+              {a.label}
+            </button>
+          ))}
           <button className="btn btn-ghost btn-icon btn-sm" aria-label="Dismiss notification" onClick={() => dismiss(t.id)}>
             <Icon name="close" size={12} />
           </button>

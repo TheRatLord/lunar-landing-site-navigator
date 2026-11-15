@@ -4,7 +4,7 @@ import { runAnalysis } from "../../api/jobs";
 import { SITE_ENDPOINTS, attributionBody, type AttributionRequest, type AttributionResult } from "../../api/site";
 import { useOverlays } from "../../scenario/alternatives";
 import type { Scenario } from "../../scenario/types";
-import { blockerMark } from "./adapt";
+import { blockerMark, terrainSets } from "./adapt";
 
 export interface AttributionState {
   phase: "idle" | "running" | "done" | "error";
@@ -63,7 +63,7 @@ export function useAttribution(scenario: Scenario) {
           const ev = result.event;
           const az = result.azimuth;
           const mark = ev
-            ? blockerMark(scenario, label, ev.az_deg, ev.blocker_dist_m, ev.blocker)
+            ? (terrainSets(ev) ? blockerMark(scenario, label, ev.az_deg, ev.blocker_dist_m, ev.blocker) : null)
             : az
               ? blockerMark(scenario, label, az.az_deg, az.blocker_dist_m, az.blocker)
               : null;

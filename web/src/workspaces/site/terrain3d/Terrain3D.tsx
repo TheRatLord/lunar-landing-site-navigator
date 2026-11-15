@@ -5,19 +5,18 @@ import { IconButton } from "../../../components/ui/Button";
 import { Select, Slider } from "../../../components/ui/Fields";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { Icon } from "../../../components/ui/Icon";
-import { Popover } from "../../../components/ui/Popover";
 import { Segmented } from "../../../components/ui/Segmented";
 import { Spinner } from "../../../components/ui/Progress";
 import { ServiceNotice } from "../../../components/ServiceNotice";
 import { useColors } from "../../../components/viz/useColors";
 import { cividis, cssGradient, viridis } from "../../../lib/colormaps";
-import { formatNum, formatValue, glue } from "../../../lib/format";
+import { formatValue, glue } from "../../../lib/format";
 import type { BlockerMark } from "../../../scenario/alternatives";
 import type { Scenario } from "../../../scenario/types";
 import type { ColorMode } from "./mesh";
-import { SLOPE_FULL_SCALE_DEG, triangleCount } from "./mesh";
+import { SLOPE_FULL_SCALE_DEG } from "./mesh";
 import { decodePatch, type Patch, PatchFormatError } from "./patch";
-import { directionLabel, heightLegendText, slopeLegendText, sunLightText } from "./legend";
+import { directionLabel } from "./legend";
 import type { Direction, SceneColors, SceneStats, TerrainScene } from "./scene";
 
 interface Terrain3DProps {
@@ -27,10 +26,9 @@ interface Terrain3DProps {
   blocker: BlockerMark | null;
 }
 
-const PATCH_SIZES_KM = [2, 5, 10, 20, 40] as const;
-const MESH_SAMPLES = [129, 257, 513, 1025] as const;
+const PATCH_SIZES_KM = [2, 5, 10, 20, 40, 100] as const;
 const DEFAULT_SIZE_KM = 10;
-const DEFAULT_SAMPLES = 257;
+const SAMPLES = 257;
 
 interface Loaded {
   key: string;
@@ -43,7 +41,12 @@ interface Loaded {
 type Status = { kind: "loading-three" } | { kind: "ready" } | { kind: "unavailable"; message: string };
 
 const sizeOptions = PATCH_SIZES_KM.map((k) => ({ value: String(k), label: `${k} km` }));
-const meshOptions = MESH_SAMPLES.map((n) => ({ value: String(n), label: `${n} × ${n}` }));
+
+function sizeFor(blocker: BlockerMark | null): number | null {
+  if (!blocker || !Number.isFinite(blocker.distance_m)) return null;
+  const need = (2.4 * blocker.distance_m) / 1000;
+  return PATCH_SIZES_KM.find((k) => k >= need) ?? PATCH_SIZES_KM[PATCH_SIZES_KM.length - 1]!;
+}
 const modeOptions = [
   { value: "height", label: "Height" },
   { value: "slope", label: "Slope" },
@@ -57,8 +60,14 @@ function fetchReducer(s: Fetch, a: { type: "ok"; loaded: Loaded } | { type: "fai
 
 export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DProps) {
   const colors = useColors();
-  const [sizeKm, setSizeKm] = useState<number>(DEFAULT_SIZE_KM);
-  const [samples, setSamples] = useState<number>(DEFAULT_SAMPLES);
+  const [sizeKm, setSizeKm] = useState<number>(() => Math.max(DEFAULT_SIZE_KM, sizeFor(blocker) ?? 0));
+  const [seenBlocker, setSeenBlocker] = useState(blocker);
+  if (seenBlocker !== blocker) {
+    setSeenBlocker(blocker);
+    const need = sizeFor(blocker);
+    if (need !== null && need > sizeKm) setSizeKm(need);
+  }
+  const samples = SAMPLES;
   const [mode, setMode] = useState<ColorMode>("height");
   const [exag, setExag] = useState(1);
   const [status, setStatus] = useState<Status>({ kind: "loading-three" });
@@ -66,7 +75,6 @@ export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DPr
   const [fetched, dispatch] = useReducer(fetchReducer, { loaded: null, failed: null });
   const [retry, bump] = useReducer((n: number) => n + 1, 0);
   const [stats, setStats] = useState<SceneStats | null>(null);
-  const [totalMs, setTotalMs] = useState<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -170,7 +178,6 @@ export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DPr
       const total = performance.now() - loaded.t0;
       const st = scene.stats();
       setStats(st);
-      setTotalMs(total);
       const box = boxRef.current;
       if (box) {
         box.dataset["loadTotalMs"] = total.toFixed(0);
@@ -219,12 +226,9 @@ export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DPr
 
   const header = loaded?.patch.header;
   const shownStats = stats && loaded && stats.patch === loaded.patch ? stats : null;
-  const spacing = header?.spacing_m;
-  const srcRes = header?.effective_resolution_m;
   const err = failed instanceof ApiError ? failed : null;
 
   const noData = shownStats && shownStats.nodata > 0 ? (100 * shownStats.nodata) / (shownStats.vertices || 1) : null;
-  const sunState = sun === null || !Number.isFinite(sun.el_deg) ? "no Sun data" : !(sun.el_deg > 0) ? "Sun below horizon" : null;
 
   return (
     <div className="site-stage t3">
@@ -237,25 +241,11 @@ export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DPr
         />
         <div className="t3-controls" role="toolbar" aria-label="3D view controls">
           <Segmented label="Colour by" size="sm" value={mode} onChange={(v) => setMode(v === "slope" ? "slope" : "height")} options={modeOptions} />
-          <Select aria-label="Patch size" value={String(sizeKm)} options={sizeOptions} onChange={(v) => setSizeKm(Number(v))} />
-          <Select aria-label="Mesh samples per side" value={String(samples)} options={meshOptions} onChange={(v) => setSamples(Number(v))} />
+          <Select aria-label="Area" value={String(sizeKm)} options={sizeOptions} onChange={(v) => setSizeKm(Number(v))} />
           <div className="t3-slider">
             <Slider label="Exaggeration" value={exag} min={1} max={10} step={0.5} onChange={setExag} format={(v) => `×${v}`} />
           </div>
           <IconButton icon="reset" label="Reset camera" size="sm" onClick={() => scene?.resetCamera()} disabled={!scene} />
-          {header && shownStats && (
-            <Popover label="About this view" icon="info" align="end" width={380}>
-              <div className="site-basis">
-                <p>{mode === "height" ? heightLegendText(header.size_m, header.radius_m || undefined) : slopeLegendText(spacing ?? 0, header.size_m, header.radius_m || undefined)}</p>
-                <p>
-                  Shading and hard shadows are computed on the true surface, not the exaggerated one; shadows are the Sun centre's terrain shadow (no penumbra) tested every{" "}
-                  {shownStats.shadowN ? formatNum(((header.n ?? 1) - 1) / (shownStats.shadowN - 1), 0) : "1"} grid step(s); the lander pin is drawn larger than the mast.
-                  {triangleCount(samples) > 1_000_000 ? " This mesh size is for desktop GPUs." : ""}
-                </p>
-                <p className="faint num">{sunLightText(sun ? sun.el_deg : null, 100 * shownStats.shadowedFraction, shownStats.shadowN).replace(/^ · /, "")}</p>
-              </div>
-            </Popover>
-          )}
         </div>
         {status.kind === "unavailable" && (
           <div className="t3-overlay" role="alert">
@@ -266,9 +256,7 @@ export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DPr
         {status.kind !== "unavailable" && (loading || status.kind === "loading-three") && !failed && (
           <div className="t3-overlay t3-overlay-soft" role="status">
             <Spinner size={14} />
-            <span className="num faint">
-              {sizeKm} km · {samples}²
-            </span>
+
           </div>
         )}
         {failed && (
@@ -307,16 +295,6 @@ export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DPr
               )}
             </div>
             <p className="sr-only t3-directions">{[sun && directionLabel("Sun", sun), earth && directionLabel("Earth", earth)].filter(Boolean).join(" · ")}</p>
-            <div className="t3-stats num" aria-label="Rendering statistics">
-              <span>
-                {formatNum(header.size_m / 1000, header.size_m % 1000 === 0 ? 0 : 1)} km · {formatNum(spacing ?? 0, 1)} m grid{srcRes != null && Number.isFinite(srcRes) ? ` · source ${formatNum(srcRes, 1)} m` : ""}
-              </span>
-              <span>
-                {formatNum(shownStats.triangles / 1000, 0)} k triangles · {header.n}² samples
-                {sunState ? ` · ${sunState}` : Number.isFinite(shownStats.shadowedFraction) ? ` · ${formatValue(100 * shownStats.shadowedFraction, "%", 1)} shadow` : ""}
-                {totalMs !== null ? ` · ${formatValue(totalMs, "ms", 0)}` : ""}
-              </span>
-            </div>
           </>
         )}
       </div>

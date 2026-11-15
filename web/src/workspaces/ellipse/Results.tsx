@@ -5,17 +5,10 @@ import { Pairs } from "../../components/ui/Pairs";
 import { Stat } from "../../components/ui/Stat";
 import { VerdictChip } from "../../components/ui/VerdictChip";
 import { formatLat, formatLon } from "../../lib/coords";
-import { formatSig, withUnit } from "../../lib/format";
+import { withUnit } from "../../lib/format";
 import { kindWord } from "../../lib/marginKind";
-import { BASIS_LABEL, type Basis } from "../../scenario/types";
-import { TerrainStackTag } from "../search/TerrainStackTag";
-import { PROB_KEY, STATES, STATE_LABEL, hazardOriginText, isUnpublished, limitInfo, marginText, offsetText, percent, standardError, stateShares } from "./adapt";
+import { PROB_KEY, STATES, STATE_LABEL, hazardOriginText, limitInfo, marginText, offsetText, percent, standardError, stateShares } from "./adapt";
 import type { Marker } from "./EllipsePlot";
-
-function EstimateTag({ basis }: { basis: Basis | null | undefined }) {
-  if (!basis || !isUnpublished(basis)) return null;
-  return <span className="chip chip-marginal">{BASIS_LABEL[basis]}</span>;
-}
 
 function StateChip({ state }: { state: SampleState }) {
   if (state === "unknown") return <span className="chip chip-unknown">Unknown</span>;
@@ -118,7 +111,6 @@ interface ConstraintRow {
   key: string;
   label: string;
   rule: string;
-  basis: Basis | null;
   pass: number | null;
   notFail: number | null;
   unknown: number | null;
@@ -127,7 +119,7 @@ interface ConstraintRow {
 export function ConstraintTable({ result }: { result: EllipseResult }) {
   const rows: ConstraintRow[] = Object.entries(result.constraint_probability).map(([key, p]) => {
     const info = limitInfo(result.scenario, key);
-    return { key, label: info.label, rule: info.rule ? withUnit(info.rule, info.unit) : "", basis: info.basis, pass: p["pass"] ?? null, notFail: p["not_fail"] ?? null, unknown: p["unknown"] ?? null };
+    return { key, label: info.label, rule: info.rule ? (info.unit === "deg" ? `${info.rule}°` : withUnit(info.rule, info.unit)) : "", pass: p["pass"] ?? null, notFail: p["not_fail"] ?? null, unknown: p["unknown"] ?? null };
   });
   if (rows.length === 0) return null;
   const anyUnknown = rows.some((r) => (r.unknown ?? 0) > 0);
@@ -137,58 +129,19 @@ export function ConstraintTable({ result }: { result: EllipseResult }) {
       header: "Requirement",
       render: (r) => (
         <span className="el-cellstack">
-          <span className="row">
-            {r.label} <EstimateTag basis={r.basis} />
-          </span>
+          <span>{r.label}</span>
           {r.rule && <span className="faint num">{r.rule}</span>}
         </span>
       ),
     },
     { key: "pass", header: "Pass", numeric: true, render: (r) => percent(r.pass) },
-    { key: "nf", header: "Not fail", numeric: true, render: (r) => percent(r.notFail) },
+    { key: "nf", header: "Pass or marginal", numeric: true, render: (r) => percent(r.notFail) },
     ...(anyUnknown ? [{ key: "u", header: "Unknown", numeric: true, render: (r: ConstraintRow) => percent(r.unknown) }] : []),
   ];
   return (
     <section className="el-sec" aria-label="Requirements">
       <DataTable columns={cols} rows={rows} rowKey={(r) => r.key} caption="Probability of meeting each requirement over the landing ellipse" />
     </section>
-  );
-}
-
-interface PctRow {
-  key: string;
-  label: string;
-  unit: string;
-  basis: Basis | null;
-  stats: Record<string, number | null>;
-}
-
-const PCT_COLS = ["p5", "p25", "p50", "p75", "p95"] as const;
-const num = (v: number | null | undefined) => (v === null || v === undefined || !Number.isFinite(v) ? "n/a" : Number(v.toPrecision(4)).toString().replace(/^-/, "\u2212"));
-
-function PercentileTable({ result }: { result: EllipseResult }) {
-  const rows: PctRow[] = Object.entries(result.percentiles).map(([key, stats]) => {
-    const info = limitInfo(result.scenario, key);
-    return { key, label: info.label, unit: info.unit, basis: info.basis, stats };
-  });
-  const cols: Column<PctRow>[] = [
-    {
-      key: "v",
-      header: "Requirement",
-      render: (r) => (
-        <span className="row">
-          {r.label} <EstimateTag basis={r.basis} /> <span className="faint">{r.unit}</span>
-        </span>
-      ),
-    },
-    ...PCT_COLS.map<Column<PctRow>>((p) => ({ key: p, header: p.toUpperCase(), numeric: true, render: (r) => num(r.stats[p]) })),
-    { key: "min", header: "Min", numeric: true, render: (r) => num(r.stats["min"]) },
-    { key: "max", header: "Max", numeric: true, render: (r) => num(r.stats["max"]) },
-  ];
-  return (
-    <div className="el-scroll">
-      <DataTable columns={cols} rows={rows} rowKey={(r) => r.key} caption="Percentiles, minimum and maximum of every requirement value over the landing ellipse" empty="No percentiles" />
-    </div>
   );
 }
 
@@ -257,28 +210,7 @@ function ClosingPairs({ result }: { result: EllipseResult }) {
   );
 }
 
-function ProvenancePairs({ result, relief }: { result: EllipseResult; relief: number | null }) {
-  const ell = (result.scenario as { ellipse?: { dispersion?: string; sigma_level?: number } } | null)?.ellipse;
-  return (
-    <div className="el-prov">
-      <TerrainStackTag stack={result.terrain_stack} />
-      <Pairs
-        className="el-dl"
-        rows={[
-          ["Horizon", result.provider === "terrain" ? "Terrain" : "Smooth sphere"],
-          ["Points", result.n_samples.toLocaleString("en-US")],
-          ["Seed", String(result.seed)],
-          ["Scheme", result.scheme],
-          ell?.dispersion ? ["Dispersion", `${ell.dispersion}${ell.dispersion === "gaussian" && result.truncated_to_ellipse ? ` · truncated ${ell.sigma_level}σ` : ""}`] : null,
-          relief !== null ? ["Relief source", withUnit(formatSig(relief, 3, { trim: true }), "m")] : null,
-          result.scenario_sha256 ? ["Plan", <span key="h" className="mono">{result.scenario_sha256.slice(0, 12)}</span>] : null,
-        ]}
-      />
-    </div>
-  );
-}
-
-export function ResultDetails({ result, relief }: { result: EllipseResult; relief: number | null }) {
+export function ResultDetails({ result }: { result: EllipseResult }) {
   const c = result.convergence;
   const hasClosing = Object.keys(result.closing_constraints ?? {}).length > 0;
   return (
@@ -300,12 +232,6 @@ export function ResultDetails({ result, relief }: { result: EllipseResult; relie
         }
       >
         <ConvergenceTable result={result} />
-      </Disclosure>
-      <Disclosure title="Distribution">
-        <PercentileTable result={result} />
-      </Disclosure>
-      <Disclosure title="Provenance">
-        <ProvenancePairs result={result} relief={relief} />
       </Disclosure>
     </div>
   );

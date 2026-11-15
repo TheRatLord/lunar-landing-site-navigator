@@ -5,7 +5,6 @@ import type { MenuItem } from "../components/ui/Menu";
 import { downloadBlob } from "../lib/download";
 import { toast } from "../state/toasts";
 
-/** Menu entries that each download one export; all are disabled while one runs. */
 export function useExportItems<T extends { kind: string; label: string; hint?: string | null }>(items: readonly T[], files: (item: T) => Promise<ExportedFile[]>): MenuItem[] {
   const [busy, setBusy] = useState<string | null>(null);
   const run = async (item: T) => {
@@ -16,7 +15,7 @@ export function useExportItems<T extends { kind: string; label: string; hint?: s
       toast({
         kind: "success",
         title: `${item.label} downloaded`,
-        detail: got.map((f) => f.filename + (f.sha256 ? ` · sha256 ${f.sha256.slice(0, 12)}…` : "")).join("\n"),
+        detail: got.map((f) => f.filename).join("\n"),
       });
     } catch (e) {
       reportError(e, `Could not export ${item.label}`);

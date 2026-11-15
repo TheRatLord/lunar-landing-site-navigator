@@ -10,7 +10,7 @@ const MARGIN = 8;
 type Align = "start" | "end";
 type Side = "below" | "right";
 
-/** Positions `panel` against `anchor`: below if it fits (or below has more room), else above; clamped to the viewport. With `side` "right" it sits beside the anchor instead, top-aligned. */
+/** Positions `panel` against `anchor`: below if it fits (or below has more room), else above; clamped to the viewport. With `side` "right" it sits beside the anchor instead, top-aligned and below the top bar. */
 function place(anchor: HTMLElement, panel: HTMLElement, align: Align, side: Side) {
   const r = anchor.getBoundingClientRect();
   const vw = window.innerWidth;
@@ -18,8 +18,9 @@ function place(anchor: HTMLElement, panel: HTMLElement, align: Align, side: Side
   if (side === "right") {
     const left = r.right + GAP;
     panel.style.maxWidth = `${Math.max(0, vw - left - MARGIN)}px`;
-    const h = Math.min(panel.scrollHeight, vh - 2 * MARGIN);
-    const top = clamp(r.top, MARGIN, Math.max(MARGIN, vh - MARGIN - h));
+    const floor = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--topbar-h")) || 0) + MARGIN;
+    const h = Math.min(panel.scrollHeight, vh - floor - MARGIN);
+    const top = clamp(r.top, floor, Math.max(floor, vh - MARGIN - h));
     panel.style.left = `${left}px`;
     panel.style.top = `${top}px`;
     panel.style.maxHeight = `${vh - top - MARGIN}px`;

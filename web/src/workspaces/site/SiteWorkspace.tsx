@@ -6,15 +6,16 @@ import "../../styles/site.css";
 
 export function SiteWorkspace() {
   const sub = useParams()["*"] ?? "";
-  const tab = sub === "" ? "target" : sub === "accuracy" ? "accuracy" : null;
+  if (sub === "accuracy") return <Navigate to="/site/ellipse" replace />;
+  const tab = sub === "" ? "point" : sub === "ellipse" ? "ellipse" : null;
   if (tab === null) return <Navigate to="/site" replace />;
   return (
     <div className="site-shell">
       <div role="tabpanel" id={`tabpanel-${tab}`} aria-labelledby={`tab-${tab}`} className="site-shell-panel">
-        <WorkspaceBoundary key={tab} workspace={tab === "target" ? "Site" : "Landing accuracy"} usesDraft>
+        <WorkspaceBoundary key={tab} workspace={tab === "point" ? "Site" : "Landing ellipse"} usesDraft>
           <Routes>
             <Route index element={<SiteTarget />} />
-            <Route path="accuracy" element={<EllipseWorkspace />} />
+            <Route path="ellipse" element={<EllipseWorkspace />} />
           </Routes>
         </WorkspaceBoundary>
       </div>
