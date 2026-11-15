@@ -167,11 +167,15 @@ export function plateText(ctx: CanvasRenderingContext2D, lines: string[], x: num
   if (avoid && bx < avoid[2] && bx + tw > avoid[0] && by < avoid[3] && by + th > avoid[1]) by = Math.min(avoid[3] + 4, h - th - 4);
   ctx.fillStyle = p.panel;
   ctx.globalAlpha = 0.94;
-  ctx.fillRect(bx, by, tw, th);
+  ctx.beginPath();
+  ctx.roundRect(bx, by, tw, th, 7);
+  ctx.fill();
   ctx.globalAlpha = 1;
   ctx.strokeStyle = accent;
   ctx.lineWidth = 1;
-  ctx.strokeRect(bx + 0.5, by + 0.5, tw - 1, th - 1);
+  ctx.beginPath();
+  ctx.roundRect(bx + 0.5, by + 0.5, tw - 1, th - 1, 6.5);
+  ctx.stroke();
   ctx.fillStyle = p.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
@@ -184,7 +188,9 @@ export function drawScaleBar(ctx: CanvasRenderingContext2D, bar: ScaleBar, x: nu
   const plateW = Math.max(bar.px, captionW) + 16;
   ctx.fillStyle = p.panel;
   ctx.globalAlpha = 0.86;
-  ctx.fillRect(x - 6, y - 34, plateW, 40);
+  ctx.beginPath();
+  ctx.roundRect(x - 10, y - 34, plateW + 8, 44, 12);
+  ctx.fill();
   ctx.globalAlpha = 1;
   ctx.strokeStyle = p.text;
   ctx.fillStyle = p.text;

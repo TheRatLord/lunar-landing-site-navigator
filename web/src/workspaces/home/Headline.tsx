@@ -70,11 +70,10 @@ export function Headline({ survey, failed, onRetry, timeMs, dragging, requiremen
           )
         ) : line ? (
           <p className="home-headline-text" data-preview={!summary || undefined}>
-            <span className="home-tone" data-tone={line.tone} aria-hidden="true" />
             <strong className="home-verdict-word" data-tone={line.tone}>
-              {line.word}
+              {line.word}.
             </strong>
-            {line.detail && <span className="home-verdict-detail"> · {line.detail}</span>}
+            {line.detail && <span className="home-verdict-detail"> {sentence(line.detail)}</span>}
           </p>
         ) : failed ? (
           <Failed onRetry={onRetry} />
@@ -129,6 +128,13 @@ export function Headline({ survey, failed, onRetry, timeMs, dragging, requiremen
       </Link>
     </section>
   );
+}
+
+function sentence(text: string): string {
+  const t = text.trim();
+  if (!t) return t;
+  const first = t.charAt(0).toUpperCase() + t.slice(1);
+  return /[.!?]$/.test(first) ? first : `${first}.`;
 }
 
 function Failed({ onRetry, small }: { onRetry(): void; small?: boolean }) {

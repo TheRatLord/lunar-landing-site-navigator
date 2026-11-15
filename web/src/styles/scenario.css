@@ -441,20 +441,19 @@
   flex: 1 1 0;
   height: var(--control-h-sm);
   padding: 0 var(--sp-2);
-  background: var(--panel-2);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-sm);
+  background: var(--fill);
+  border: 0;
+  border-radius: var(--r-pill);
   color: var(--text);
   font: inherit;
   font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
 }
-.sc-step:hover:not(:disabled) {
-  background: var(--panel-hover);
-  border-color: var(--text-3);
-}
+.sc-step:hover:not(:disabled) { background: var(--fill-strong); }
 .sc-step:focus-visible {
   outline: var(--focus-w) solid var(--focus);
   outline-offset: var(--focus-offset);

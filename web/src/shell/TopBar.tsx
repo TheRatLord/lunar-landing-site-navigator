@@ -61,29 +61,30 @@ export function TopBar({ nav, tools }: { nav: ReactNode; tools?: ReactNode }) {
 
   return (
     <header className="topbar">
-      <Link to={HOME.path} className="brand" aria-label="Lunar Landing Site Navigator, home">
-        <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
-          <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2" />
-          <path d="M3.5 19Q9 14 14 18T28.5 16" fill="none" stroke="var(--c-sun)" strokeWidth="2.6" />
-        </svg>
-        <span className="brand-text">Lunar Navigator</span>
-      </Link>
-
-      <ModeSwitch />
+      <div className="tb-side">
+        <Link to={HOME.path} className="brand" aria-label="Lunar Landing Site Navigator, home">
+          <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2" />
+            <path d="M3.5 19Q9 14 14 18T28.5 16" fill="none" stroke="var(--c-sun)" strokeWidth="2.6" />
+          </svg>
+          <span className="brand-text">Lunar Navigator</span>
+        </Link>
+        <ModeSwitch />
+      </div>
 
       {nav}
 
-      <span className="grow" />
-
-      {tools}
-      <button
-        type="button"
-        className="btn btn-icon btn-ghost btn-md"
-        aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      >
-        <Icon name={theme === "dark" ? "sun" : "moon"} size={16} />
-      </button>
+      <div className="tb-side tb-side-end">
+        {tools}
+        <button
+          type="button"
+          className="btn btn-icon btn-ghost btn-md"
+          aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <Icon name={theme === "dark" ? "sun" : "moon"} size={16} />
+        </button>
+      </div>
     </header>
   );
 }
