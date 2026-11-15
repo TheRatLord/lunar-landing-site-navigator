@@ -25,14 +25,14 @@
 .el-outcome { display: flex; flex-direction: column; gap: var(--sp-3); padding-bottom: var(--sp-4); }
 .el-outcome .el-sec-title { padding-bottom: 0; }
 .el-outcome .el-stack { margin: 0 var(--sp-4); }
-.el-shares { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); margin: 0; padding: 0 var(--sp-4); }
-.el-share { display: flex; align-items: baseline; gap: var(--sp-1-5); min-width: 0; }
+.el-shares { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: var(--sp-3); margin: 0; padding: 0 var(--sp-4); }
+.el-share { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
 .el-share dt { display: flex; align-items: center; gap: var(--sp-1-5); font-size: var(--fs-sm); color: var(--text-2); }
 .el-share dt::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
 .el-share[data-state="pass"] dt::before { background: var(--c-pass-fill); }
 .el-share[data-state="marginal"] dt::before { background: var(--c-marginal-fill); }
-.el-share[data-state="fail"] dt::before { background: var(--c-fail); }
-.el-share dd { margin: 0; font-size: var(--fs-lg); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); color: var(--text); }
+.el-share[data-state="fail"] dt::before { background: var(--c-fail-fill); }
+.el-share dd { margin: 0; font-size: 22px; font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); color: var(--text); }
 .el-share dd span { margin-left: 1px; font-size: var(--fs-sm); font-weight: var(--fw-regular); letter-spacing: 0; color: var(--text-3); }
 .el-share[data-zero] dd { color: var(--text-3); }
 .el-share-se { font-size: var(--fs-xs); color: var(--text-3); }
@@ -40,7 +40,7 @@
 .el-seg { display: block; height: 100%; }
 .el-seg-pass { background: var(--c-pass-fill); }
 .el-seg-marginal { background: var(--c-marginal-fill); }
-.el-seg-fail { background: var(--c-fail); }
+.el-seg-fail { background: var(--c-fail-fill); }
 .el-seg-unknown { background: var(--text-3); }
 
 .el-head { display: flex; flex-direction: column; gap: var(--sp-1-5); padding: var(--sp-1) var(--sp-5) var(--sp-4); min-width: 0; }
@@ -66,7 +66,7 @@
 .el-glyph { font-size: var(--fs-sm); }
 .el-glyph-pass { color: var(--c-pass-fill); }
 .el-glyph-marginal { color: var(--c-marginal-fill); }
-.el-glyph-fail { color: var(--c-fail); }
+.el-glyph-fail { color: var(--c-fail-fill); }
 .el-glyph-unknown { color: var(--text-2); }
 
 .el-plot { display: block; width: 100%; height: auto; border: 0; font-family: var(--font-ui); }
@@ -77,12 +77,12 @@
 .el-ring { fill: none; stroke: var(--text-2); stroke-width: calc(1px * var(--k, 1)); stroke-dasharray: 4 4; }
 .el-axis { fill: none; stroke: var(--text-2); stroke-width: calc(1px * var(--k, 1)); stroke-dasharray: 1 5; stroke-linecap: round; }
 .el-label, .el-mark-text, .el-scale text { fill: var(--text); font-size: calc(11px * var(--k, 1)); paint-order: stroke; stroke: var(--bg); stroke-opacity: 0.9; stroke-width: calc(3px * var(--k, 1)); stroke-linejoin: round; }
-.el-label { stroke-opacity: 0.6; stroke-width: calc(2.5px * var(--k, 1)); }
+.el-label { font-size: calc(12px * var(--k, 1)); font-weight: 600; stroke-width: calc(2.5px * var(--k, 1)); stroke-opacity: 0.75; }
 .el-north text { text-anchor: middle; font-weight: 700; }
 .el-mark-text { font-size: calc(12px * var(--k, 1)); font-weight: 600; stroke-opacity: 1; stroke-width: calc(4px * var(--k, 1)); }
 .el-mark-halo { fill: none; stroke: var(--bg); stroke-opacity: 0.85; stroke-width: calc(5px * var(--k, 1)); }
-.el-plot.has-sel .el-pts { opacity: 0.45; }
-.el-plot.has-sel .el-mark:not(.is-on) { opacity: 0.5; }
+.el-plot.has-sel .el-pts { opacity: 0.7; }
+.el-plot.has-sel .el-mark:not(.is-on) { opacity: 0.75; }
 .el-mark { transition: opacity var(--dur) var(--ease); }
 .el-pts { transition: opacity var(--dur) var(--ease); }
 
@@ -91,7 +91,9 @@
 .el-shape { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .el-pts-pass .el-shape { stroke: var(--c-pass-fill); }
 .el-pts-marginal .el-shape { stroke: var(--c-marginal-fill); fill: var(--c-marginal-fill); }
-.el-pts-fail .el-shape { stroke: var(--c-fail); stroke-opacity: 0.75; }
+.el-pts-fail .el-shape { stroke: var(--c-fail-fill); }
+[data-theme="light"] .el-pts-marginal .el-shape { stroke: #b38600; }
+[data-theme="light"] .el-head .verdict-word[data-tone="marginal"] { color: #b38600; }
 .el-pts-unknown .el-shape { stroke: var(--text-2); }
 
 .el-mark-worst .el-mark-ring { stroke-dasharray: 3 2; }
@@ -111,10 +113,11 @@
 .el-tocheck-list li .num { color: var(--text-2); white-space: nowrap; }
 .el-tocheck-none { margin: 0; padding: 0 var(--sp-4) var(--sp-4); font-size: var(--fs-sm); color: var(--text-3); }
 @media (min-width: 1700px) {
-  .el-rail { max-width: none; display: grid; grid-template-columns: minmax(320px, 400px) minmax(360px, 560px); align-items: start; }
+  .el-rail { max-width: none; }
+  .el-ellipse-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 1180px) {
   .el-body { grid-template-columns: minmax(0, 1fr); }
-  .el-plotcol { position: relative; width: min(100%, calc(100vh - 200px)); }
+  .el-plotcol { position: relative; width: min(100%, calc(100vh - 290px)); }
   .el-rail { max-width: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 }

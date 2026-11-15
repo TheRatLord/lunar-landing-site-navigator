@@ -128,7 +128,7 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
               <circle cx={x} cy={y} r={(on ? 12 : 9) * k} className="el-mark-halo" />
               <circle cx={x} cy={y} r={(on ? 12 : 9) * k} className="el-mark-ring" />
               {m.id === "centre" && <path className="el-mark-plus" d={`M${x - 5 * k} ${y}H${x + 5 * k}M${x} ${y - 5 * k}V${y + 5 * k}`} />}
-              <text className="el-mark-text" x={x + 13 * k} y={y - 9 * k}>
+              <text className="el-mark-text" textAnchor={m.id === "centre" ? "end" : "start"} x={x + (m.id === "centre" ? -13 : 13) * k} y={y + (m.id === "best" ? 20 : -9) * k}>
                 {m.label}
               </text>
             </g>

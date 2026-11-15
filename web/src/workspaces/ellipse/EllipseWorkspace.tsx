@@ -179,7 +179,6 @@ function EllipseHeadline({ result }: { result: EllipseResult | null }) {
       <p className="site-headline-note">
         Worst point {marginText(worst)}
         {limit ? ` on ${limit.toLowerCase()}` : ""}
-        {marginal > 0.0005 ? ` · ${Math.max(1, Math.round(marginal * 100))}% marginal` : ""}
       </p>
     </>
   );

@@ -127,6 +127,7 @@
   --c-power: #c7e86d;
   --c-toggle: #32d74b;
   --c-pass-fill: #30d158;
+  --c-fail-fill: #ff5a4f;
   --c-marginal-fill: #ffd60a;
   --c-sun-fill: #ff9f0a;
   --c-earth-fill: #0a84ff;
@@ -203,6 +204,7 @@
   --c-power: #5c7f00;
   --c-toggle: #34c759;
   --c-pass-fill: #34c759;
+  --c-fail-fill: #ff3b30;
   --c-marginal-fill: #ffcc00;
   --c-sun-fill: #ff9500;
   --c-earth-fill: #007aff;
