@@ -33,7 +33,7 @@
 .home-sky-note { display: flex; align-items: center; gap: var(--sp-1-5); margin: 0; padding: var(--sp-1) var(--sp-3); font-size: var(--fs-xs); color: var(--c-marginal); border-top: var(--hairline) solid var(--border); }
 
 
-.ws-strip { --ws-gutter: 210px; position: relative; flex: none; padding: var(--sp-2) var(--sp-3) var(--sp-3) 0; background: var(--panel); border: var(--hairline) solid var(--border); border-radius: var(--r-lg); user-select: none; }
+.ws-strip { --ws-gutter: 236px; position: relative; flex: none; padding: var(--sp-2) var(--sp-3) var(--sp-3) 0; background: var(--panel); border: var(--hairline) solid var(--border); border-radius: var(--r-lg); user-select: none; }
 .ws-row { display: grid; grid-template-columns: var(--ws-gutter) minmax(0, 1fr); align-items: stretch; }
 .ws-gutter { min-width: 0; padding: 0 var(--sp-3); font-size: var(--fs-sm); color: var(--text-2); }
 .ws-gutter-tools { display: flex; align-items: center; gap: var(--sp-1); padding: 0 var(--sp-2) 0 var(--sp-3); }
@@ -69,13 +69,17 @@
 .ws-req-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs); color: var(--text-3); }
 .ws-best { position: absolute; z-index: 3; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; padding: 0; background: var(--panel); border: 2px solid var(--text); border-radius: 2px; transform: rotate(45deg); cursor: pointer; }
 .ws-best[data-top] { width: 14px; height: 14px; margin: -7px 0 0 -7px; background: var(--text); border-color: var(--panel); box-shadow: 0 0 0 1px var(--text); }
+.ws-best[data-verdict="marginal"] { border-color: var(--c-marginal); }
+.ws-best-label { position: absolute; z-index: 3; top: 50%; margin-left: 11px; padding: 0 var(--sp-1); font-size: var(--fs-2xs); font-weight: var(--fw-semibold); line-height: 16px; white-space: nowrap; color: var(--text); background: var(--panel); border-radius: var(--r-xs); transform: translateY(-50%); pointer-events: none; }
+.ws-best-label[data-flip] { margin-left: -11px; transform: translate(-100%, -50%); }
+.ws-key-best { margin-left: auto; padding-right: var(--sp-1); font-style: normal; font-size: var(--fs-2xs); font-weight: var(--fw-medium); color: var(--text-2); }
 .ws-best:hover { background: var(--accent-text); }
 .ws-best:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: 2px; }
 .ws-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-3); }
 .ws-strip[data-busy="true"] .ws-primary .ws-lane { opacity: 0.45; }
 
 .ws-pinned .ws-lane { height: 6px; }
-.ws-pinned .ws-lane-both { height: 14px; }
+.ws-pinned .ws-lane-both, .ws-pinned .ws-lane-req { height: 14px; }
 .ws-pinned .ws-lane i { line-height: 14px; }
 .ws-pin-head { position: relative; z-index: 2; display: flex; align-items: center; gap: var(--sp-1); }
 .ws-pin-name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; padding: 0; font: inherit; text-align: left; color: var(--text-2); background: none; border: 0; cursor: pointer; }
@@ -86,7 +90,8 @@
 .ws-scrub { position: absolute; top: 0; bottom: 0; left: var(--ws-gutter); right: var(--sp-3); cursor: ew-resize; touch-action: none; }
 .ws-scrub:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: 2px; border-radius: var(--r-sm); }
 .ws-grid { position: absolute; top: 20px; bottom: var(--sp-3); width: var(--hairline); background: var(--grid); pointer-events: none; }
-.ws-window { position: absolute; top: 20px; bottom: var(--sp-1); background: var(--accent-bg); border-inline: var(--hairline) dashed var(--text-3); pointer-events: none; }
+.ws-window { position: absolute; top: 20px; bottom: var(--sp-1); background: color-mix(in srgb, var(--accent) 16%, transparent); border-inline: 2px solid var(--accent); pointer-events: none; }
+.ws-window span { position: absolute; top: 0; left: var(--sp-1); font-size: var(--fs-2xs); font-weight: var(--fw-semibold); color: var(--accent-text); }
 .ws-cursor, .ws-hover { position: absolute; top: var(--sp-1); bottom: var(--sp-2); width: 0; pointer-events: none; }
 .ws-cursor { border-left: 2px solid var(--text); margin-left: -1px; }
 .ws-hover { border-left: var(--hairline) dashed var(--text-3); }
@@ -102,3 +107,4 @@
   .home-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: 260px 320px; flex-basis: auto; }
   .ws-strip { --ws-gutter: 132px; }
 }
+.home-best-key { font-size: var(--fs-2xs); color: var(--text); }

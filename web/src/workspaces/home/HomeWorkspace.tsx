@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ApiError } from "../../api/client";
 import { PLANNING_ENDPOINTS, type ScanResult } from "../../api/planning";
 import { useReportPlanning } from "../../api/report";
 import { SITE_ENDPOINTS, evaluateBody, type EvaluateResult } from "../../api/site";
 import { useAnalysis } from "../../api/useAnalysis";
 import { useLoad } from "../../api/useLoad";
 import { usePublishScreenContext } from "../../ask/screenContext";
-import { ServiceNotice } from "../../components/ServiceNotice";
 import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Progress";
@@ -24,7 +22,7 @@ import { evaluatedScenario, summarize } from "../site/adapt";
 import { Headline } from "./Headline";
 import { HomeMap, type MapFocus } from "./HomeMap";
 import { adaptScan, bestLandings, scanParams, yearScanBody } from "./scan";
-import { SPAN_MS, adaptSurvey, inSpan, roundToHour, spanStartFor, surveyBody, trackWindow, type Survey, type SurveySite } from "./survey";
+import { SPAN_MS, adaptSurvey, roundToHour, spanStartFor, surveyBody, trackWindow, withExact, type Survey, type SurveySite } from "./survey";
 import { PinnedRow, WindowStrip } from "./WindowStrip";
 import "../../styles/home.css";
 
@@ -34,28 +32,38 @@ const FALLBACK_MS = Date.UTC(2027, 0, 12);
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
 const shortName = (n: string): string => n.replace(/^Artemis candidate region:\s*/i, "");
 
-function useSurvey(doc: Scenario, site: SurveySite, anchor: number) {
-  const body = useMemo(() => surveyBody(doc, site, anchor), [doc, site, anchor]);
+function useSurvey(doc: Scenario, site: SurveySite, anchor: number | null) {
+  const body = useMemo(() => (anchor === null ? null : surveyBody(doc, site, anchor)), [doc, site, anchor]);
   const run = useAnalysis<EvaluateResult>(SITE_ENDPOINTS.evaluate, body, { debounceMs: 120 });
   const survey = useMemo<Survey | null>(() => {
     if (!run.result) return null;
     const start = parseUtc(evaluatedScenario(run.result)?.landing_utc ?? null);
-    return adaptSurvey(run.result, start ?? anchor);
+    return adaptSurvey(run.result, start ?? anchor ?? 0);
   }, [run.result, anchor]);
   return { run, survey };
 }
 
 const pinId = (s: SurveySite): string => s.catalog_id ?? `point:${s.lat_deg},${s.lon_deg}`;
+const samePlace = (p: Candidate, s: SurveySite): boolean => p.id === pinId(s) || (Math.abs(p.lat_deg - s.lat_deg) < 1e-4 && Math.abs(p.lon_deg - s.lon_deg) < 1e-4);
 
-function PinnedSite({ pin, doc, anchor, start, end, onSelect, onRemove }: { pin: Candidate; doc: Scenario; anchor: number; start: number; end: number; onSelect(): void; onRemove(): void }) {
+function PinnedSite({ pin, doc, anchor, start, end, requirements, onSelect, onRemove }: { pin: Candidate; doc: Scenario; anchor: number; start: number; end: number; requirements: boolean; onSelect(): void; onRemove(): void }) {
   const site = useMemo<SurveySite>(() => ({ lat_deg: pin.lat_deg, lon_deg: pin.lon_deg, name: pin.name, catalog_id: pin.catalog_id }), [pin]);
-  const { run, survey } = useSurvey(doc, site, anchor);
+  const { run, survey } = useSurvey(doc, site, requirements ? null : anchor);
+  const params = useMemo(() => scanParams(anchor), [anchor]);
+  const scanReq = useMemo(
+    () => (requirements ? yearScanBody({ ...doc, site: { ...doc.site, lat_deg: site.lat_deg, lon_deg: site.lon_deg, name: site.name, catalog_id: site.catalog_id ?? undefined } }, params) : null),
+    [requirements, doc, site, params],
+  );
+  const scanRun = useAnalysis<ScanResult>(PLANNING_ENDPOINTS.scan, scanReq, { debounceMs: 400 });
+  const scan = useMemo(() => (scanRun.result && !scanRun.stale ? adaptScan(scanRun.result) : null), [scanRun.result, scanRun.stale]);
   return (
     <PinnedRow
       label={shortName(pin.name)}
       sub={`${formatLat(pin.lat_deg, 2)} ${formatLon(pin.lon_deg, 2)}`}
       survey={survey && !run.stale ? survey : null}
-      failed={run.phase === "error"}
+      scan={scan}
+      requirements={requirements}
+      failed={requirements ? scanRun.phase === "error" : run.phase === "error"}
       start_ms={start}
       end_ms={end}
       onSelect={onSelect}
@@ -82,8 +90,7 @@ export function HomeWorkspace() {
   const site = useMemo<SurveySite>(() => ({ lat_deg: lat, lon_deg: lon, name, catalog_id: catalogId }), [lat, lon, name, catalogId]);
   const landingMs = parseUtc(doc.landing_utc) ?? FALLBACK_MS;
 
-  const [anchor, setAnchor] = useState(() => spanStartFor(landingMs));
-  if (!inSpan(landingMs, anchor)) setAnchor(spanStartFor(landingMs));
+  const anchor = spanStartFor(landingMs);
   const [live, setLive] = useState<number | null>(null);
   const [focus, setFocus] = useState<MapFocus>(() => ({ lat_deg: lat, lon_deg: lon, nonce: 0 }));
   const place = `${lat},${lon}`;
@@ -94,13 +101,15 @@ export function HomeWorkspace() {
     if (mapPlace !== place) setFocus((f) => ({ lat_deg: lat, lon_deg: lon, nonce: f.nonce + 1 }));
   }
 
-  const { run, survey } = useSurvey(doc, site, anchor);
-  const start = survey?.start_ms ?? anchor;
+  const { run, survey: yearSurvey } = useSurvey(doc, site, anchor);
+  const start = anchor;
   const end = start + SPAN_MS;
   const timeMs = clamp(live ?? landingMs, start, end);
 
   const evalBody = useMemo(() => evaluateBody(doc, "auto"), [doc]);
   const evaluation = useAnalysis<EvaluateResult>(SITE_ENDPOINTS.evaluate, evalBody, { debounceMs: 350 });
+  const exact = evaluation.result && !evaluation.stale ? evaluation.result : null;
+  const survey = useMemo(() => (yearSurvey && !run.stale ? (exact ? withExact(yearSurvey, exact) : yearSurvey) : null), [yearSurvey, run.stale, exact]);
   const summary = useMemo(() => (evaluation.result && !evaluation.stale ? summarize(evaluation.result) : null), [evaluation.result, evaluation.stale]);
 
   const requirements = activeRequirements(doc);
@@ -109,7 +118,14 @@ export function HomeWorkspace() {
   const scanReq = useMemo(() => (showScan ? yearScanBody(doc, params) : null), [showScan, doc, params]);
   const scanRun = useAnalysis<ScanResult>(PLANNING_ENDPOINTS.scan, scanReq, { debounceMs: 400 });
   const scan = useMemo(() => (scanRun.result && !scanRun.stale ? adaptScan(scanRun.result) : null), [scanRun.result, scanRun.stale]);
-  const best = useMemo(() => (scan ? bestLandings(scan, rank, landingWindow) : []), [scan, rank, landingWindow]);
+  const best = useMemo(() => (scan ? bestLandings(scan, rank, landingWindow, survey?.both ?? null) : []), [scan, rank, landingWindow, survey]);
+  const radiusKm = usePlanSearch((s) => s.radius_km);
+  const failed = run.phase === "error" || evaluation.phase === "error" || scanRun.phase === "error";
+  const retry = useCallback(() => {
+    if (run.phase === "error") run.rerun();
+    if (evaluation.phase === "error") evaluation.rerun();
+    if (scanRun.phase === "error") scanRun.rerun();
+  }, [run, evaluation, scanRun]);
   useEffect(() => routeStackIssues(scanRun.error), [scanRun.error]);
   const setReportScan = useReportPlanning((s) => s.setScan);
   useEffect(() => {
@@ -140,10 +156,10 @@ export function HomeWorkspace() {
     [moveOnMap],
   );
 
-  const pinned = pins.some((p) => p.id === pinId(site));
-  const pinMarks = useMemo(() => pins.filter((p) => p.id !== pinId(site)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, site]);
+  const pinned = pins.some((p) => samePlace(p, site));
+  const pinMarks = useMemo(() => pins.filter((p) => !samePlace(p, site)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, site]);
 
-  const fresh = survey !== null && !run.stale;
+  const fresh = survey !== null;
   const sunWindow = useMemo(() => trackWindow(survey?.sunTrack ?? null, timeMs), [survey, timeMs]);
   const earthWindow = useMemo(() => trackWindow(survey?.earthTrack ?? null, timeMs), [survey, timeMs]);
 
@@ -157,8 +173,9 @@ export function HomeWorkspace() {
     <div className="home" aria-label="Overview page">
       <h1 className="sr-only">Overview: {name}</h1>
       <Headline
-        survey={fresh ? survey : null}
-        surveyFailed={run.phase === "error"}
+        survey={survey}
+        failed={failed}
+        onRetry={retry}
         timeMs={timeMs}
         dragging={live !== null}
         requirements={requirements}
@@ -168,19 +185,10 @@ export function HomeWorkspace() {
         best={best}
         onJump={commit}
       />
-      {run.error && run.phase === "error" && (
-        <div className="home-pad">
-          <ServiceNotice
-            error={run.error instanceof ApiError ? run.error : new ApiError({ status: 0, title: "Failed", detail: run.error.message })}
-            what="the year of Sun and Earth visibility"
-            onRetry={run.rerun}
-          />
-        </div>
-      )}
 
       <div className="home-stage">
         <div className="home-pane home-pane-map">
-          <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} />
+          <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} radiusKm={radiusKm} />
         </div>
         <div className="home-pane home-pane-sky" data-stale={!fresh}>
           {survey?.horizon ? (
@@ -195,7 +203,7 @@ export function HomeWorkspace() {
             />
           ) : (
             <div className="home-sky-wait" role="status">
-              {run.phase !== "error" && <Spinner size={14} />}
+              {!failed && <Spinner size={14} />}
             </div>
           )}
           {survey?.smooth && (
@@ -212,6 +220,7 @@ export function HomeWorkspace() {
         timeMs={timeMs}
         survey={survey}
         busy={!fresh}
+        failed={failed}
         siteName={shortName(name) || "Unnamed site"}
         scan={showScan ? scan : null}
         scanState={!showScan ? "off" : scan ? "ready" : scanRun.phase === "error" ? "failed" : "busy"}
@@ -226,7 +235,7 @@ export function HomeWorkspace() {
               variant="ghost"
               icon="pin"
               disabled={pins.length >= MAX_PINS}
-              title={pins.length >= MAX_PINS ? `${MAX_PINS} pins at most` : "Keep this row to compare"}
+              title={pins.length >= MAX_PINS ? `${MAX_PINS} pins at most` : "Compare this site"}
               onClick={() => addPin({ id: pinId(site), name: name || "Unnamed site", lat_deg: lat, lon_deg: lon, catalog_id: catalogId })}
             >
               Pin
@@ -234,9 +243,10 @@ export function HomeWorkspace() {
           )
         }
       >
-        {pins.map((p) => (
+        {pins.filter((p) => !samePlace(p, site)).map((p) => (
           <PinnedSite
             key={p.id}
+            requirements={showScan}
             pin={p}
             doc={doc}
             anchor={anchor}

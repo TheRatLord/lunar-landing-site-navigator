@@ -12,7 +12,8 @@ import { dayText, skyFacts, type Survey } from "./survey";
 
 interface HeadlineProps {
   survey: Survey | null;
-  surveyFailed: boolean;
+  failed: boolean;
+  onRetry(): void;
   timeMs: number;
   dragging: boolean;
   requirements: number;
@@ -29,6 +30,7 @@ interface VerdictLine {
   tone: Tone;
   word: string;
   detail: string | null;
+  worst?: { value: number; margin: number; limit: string | null; unit: string };
 }
 
 function exactLine(s: VerdictSummary): VerdictLine {
@@ -40,10 +42,13 @@ function exactLine(s: VerdictSummary): VerdictLine {
   const lo = lim.limit_range?.[0] ?? (lim.sense === "min" ? lim.limit : undefined);
   const hi = lim.limit_range?.[1] ?? (lim.sense === "max" ? lim.limit : undefined);
   const limit = formatBounds(lo, hi, lim.unit, [lo, hi].every((x) => x === undefined || Number.isInteger(x)) ? 0 : 1);
-  return { tone: s.overall, word: VERDICT_LABEL[s.overall], detail: `${lim.label}${value ? ` ${value}` : ""}${limit ? `, limit ${limit}` : ""}` };
+  const world = lim.worst_world;
+  const worstValue = world ? lim.value_worlds?.[world] : null;
+  const worst = s.overall === "marginal" && worstValue !== null && worstValue !== undefined && lim.margin_worst !== undefined ? { value: worstValue, margin: lim.margin_worst, limit, unit: lim.unit } : undefined;
+  return { tone: s.overall, word: VERDICT_LABEL[s.overall], detail: `${lim.label}${value ? ` ${value}` : ""}${limit ? `, limit ${limit}` : ""}`, worst };
 }
 
-export function Headline({ survey, surveyFailed, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump }: HeadlineProps) {
+export function Headline({ survey, failed, onRetry, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump }: HeadlineProps) {
   const sky = survey ? skyFacts(survey, timeMs) : null;
   const preview = scan && (dragging || (!summary && evaluation.phase === "running")) ? scanAt(scan, timeMs) : null;
   const line: VerdictLine | null =
@@ -54,7 +59,6 @@ export function Headline({ survey, surveyFailed, timeMs, dragging, requirements,
         : preview
           ? { tone: preview.verdict, word: VERDICT_LABEL[preview.verdict], detail: preview.verdict === "pass" ? null : preview.limiting }
           : null;
-  const failed = requirements > 0 && !summary && !preview && evaluation.phase === "error";
   const current = line?.tone ?? null;
   const next = scan && current !== null && current !== "pass" ? nextPass(scan, timeMs) : null;
   const top = best.reduce<BestLanding | null>((a, b) => (!a || b.key > a.key ? b : a), null);
@@ -69,7 +73,9 @@ export function Headline({ survey, surveyFailed, timeMs, dragging, requirements,
               <span className="home-tone" data-tone={sky.tone} aria-hidden="true" />
               {sky.text}
             </p>
-          ) : surveyFailed ? null : (
+          ) : failed ? (
+            <Failed onRetry={onRetry} />
+          ) : (
             <Wait text="Computing the year" />
           )
         ) : line ? (
@@ -81,24 +87,19 @@ export function Headline({ survey, surveyFailed, timeMs, dragging, requirements,
             {line.detail && <span className="home-verdict-detail"> · {line.detail}</span>}
           </p>
         ) : failed ? (
-          <p className="home-headline-text home-headline-fail">
-            <span className="home-tone" data-tone="unknown" aria-hidden="true" />
-            Requirement check failed
-            <button type="button" className="home-jump" onClick={evaluation.rerun}>
-              Retry
-            </button>
-          </p>
+          <Failed onRetry={onRetry} />
         ) : (
           <Wait text="Checking requirements" />
         )}
-        {requirements !== 0 && (
+        {line && failed && <Failed onRetry={onRetry} small />}
+        {requirements !== 0 && (sky || !failed) && (
           <p className="home-headline-sub">
             {sky ? (
               <>
                 <span className={sky.warn ? "home-warn" : undefined}>{sky.text}</span>
                 {sky.events && <span className="faint"> · {sky.events}</span>}
               </>
-            ) : surveyFailed ? null : (
+            ) : failed ? null : (
               <span className="faint">
                 <Spinner size={12} /> Computing the year
               </span>
@@ -119,7 +120,11 @@ export function Headline({ survey, surveyFailed, timeMs, dragging, requirements,
             )}
             {showTop && (
               <>
-                {" · Best: "}
+                {" · "}
+                <span className="home-best-key" aria-hidden="true">
+                  ◆
+                </span>
+                {" Best: "}
                 <button type="button" className="home-jump" onClick={() => onJump(top.t_ms)}>
                   {dayText(top.t_ms)}
                 </button>
@@ -133,6 +138,18 @@ export function Headline({ survey, surveyFailed, timeMs, dragging, requirements,
         <Icon name="chevronRight" size={14} />
       </Link>
     </section>
+  );
+}
+
+function Failed({ onRetry, small }: { onRetry(): void; small?: boolean }) {
+  return (
+    <p className={small ? "home-headline-sub home-headline-fail" : "home-headline-text home-headline-fail"} role="alert">
+      <span className="home-tone" data-tone="unknown" aria-hidden="true" />
+      Couldn't compute
+      <button type="button" className="home-jump" onClick={onRetry}>
+        Retry
+      </button>
+    </p>
   );
 }
 

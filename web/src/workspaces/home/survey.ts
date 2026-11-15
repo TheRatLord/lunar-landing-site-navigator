@@ -4,11 +4,10 @@ import { lowerBound } from "../../lib/scale";
 import { arrMax, arrMin } from "../../lib/track";
 import { MS_DAY, MS_HOUR, MS_MIN, toIsoUtc } from "../../lib/time";
 import { CONSTRAINT_KEYS, type Scenario } from "../../scenario/types";
-import { adaptHorizon, adaptTrack, parseSec } from "../site/adapt";
+import { adaptHorizon, adaptTrack, parseSec, seriesExtent } from "../site/adapt";
 
 export const SPAN_DAYS = 365;
 export const SPAN_MS = SPAN_DAYS * MS_DAY;
-const LEAD_MS = 30 * MS_DAY;
 const TRACK_BEFORE_MS = 2 * MS_DAY;
 const TRACK_AFTER_MS = 14 * MS_DAY;
 
@@ -20,12 +19,9 @@ export interface SurveySite {
 }
 
 export function spanStartFor(landingMs: number): number {
-  const d = new Date(landingMs - LEAD_MS);
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
-}
-
-export function inSpan(ms: number, startMs: number): boolean {
-  return ms >= startMs && ms <= startMs + SPAN_MS;
+  const d = new Date(landingMs);
+  const y = d.getUTCFullYear();
+  return d.getUTCMonth() === 11 ? Date.UTC(y, 11, 1) : Date.UTC(y - 1, 11, 1);
 }
 
 export function surveyBody(doc: Scenario, site: SurveySite, startMs: number) {
@@ -39,7 +35,6 @@ export function surveyBody(doc: Scenario, site: SurveySite, startMs: number) {
     mission_duration_h: SPAN_DAYS * 24,
     sampling: { ...doc.sampling, step_s: 3600 },
     constraints,
-    network: { ...doc.network, stations: [] },
     ellipse: undefined,
     transfer: undefined,
   };
@@ -75,6 +70,37 @@ function nominal(rows: readonly IntervalJson[] | undefined, start: number, end: 
     else merged.push({ ...iv });
   }
   return merged;
+}
+
+function merge(list: Interval[]): Interval[] {
+  const sorted = [...list].sort((a, b) => a.start_ms - b.start_ms);
+  const out: Interval[] = [];
+  for (const iv of sorted) {
+    const last = out[out.length - 1];
+    if (last && iv.start_ms <= last.end_ms + MS_MIN) last.end_ms = Math.max(last.end_ms, iv.end_ms);
+    else out.push({ ...iv });
+  }
+  return out;
+}
+
+function splice(year: readonly Interval[], exact: Interval[], from: number, to: number): Interval[] {
+  const outside: Interval[] = [];
+  for (const iv of year) {
+    if (iv.start_ms < from) outside.push({ start_ms: iv.start_ms, end_ms: Math.min(iv.end_ms, from) });
+    if (iv.end_ms > to) outside.push({ start_ms: Math.max(iv.start_ms, to), end_ms: iv.end_ms });
+  }
+  return merge([...outside, ...exact].filter((iv) => iv.end_ms > iv.start_ms));
+}
+
+export function withExact(s: Survey, r: EvaluateResult): Survey {
+  const span = seriesExtent(r.series);
+  if (!span) return s;
+  const from = Math.max(span[0], s.start_ms);
+  const to = Math.min(span[1], s.end_ms);
+  if (to <= from) return s;
+  const sun = splice(s.sun, nominal(r.intervals["sunlit"], from, to), from, to);
+  const earth = splice(s.earth, nominal(r.intervals["contact"], from, to), from, to);
+  return { ...s, sun, earth, both: intersect(sun, earth) };
 }
 
 function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
@@ -157,14 +183,6 @@ export function windowAt(list: readonly Interval[], t: number): Interval | null 
   return list.find((iv) => iv.start_ms <= t && t < iv.end_ms) ?? null;
 }
 
-export function spanText(ms: number): string {
-  const h = Math.max(0, ms) / MS_HOUR;
-  if (h < 1) return `${Math.round(h * 60)} min`;
-  if (h < 48) return `${Math.round(h)} h`;
-  const d = h / 24;
-  return `${d < 10 ? d.toFixed(1) : Math.round(d)} days`;
-}
-
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function dayText(ms: number, year = false): string {
@@ -172,7 +190,8 @@ export function dayText(ms: number, year = false): string {
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ""}`;
 }
 
-function eventText(ms: number): string {
+function eventText(raw: number): string {
+  const ms = Math.round(raw / MS_MIN) * MS_MIN;
   const d = new Date(ms);
   return `${dayText(ms)} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
@@ -190,11 +209,14 @@ export function skyFacts(s: Survey, t: number): SkyFacts {
   const sunNever = s.sun.length === 0;
   const earthNever = s.earth.length === 0;
   const after = dayText(s.end_ms, true);
+  const both = sun.up && earth.up ? windowAt(s.both, t) : null;
+  const until = both && both.end_ms < s.end_ms ? both.end_ms : null;
   const events: Array<[number, string]> = [];
   const add = (st: BodyState, never: boolean, rise: string, set: string, always: string) => {
-    if (st.change_ms !== null) events.push([st.change_ms, `${st.up ? set : rise} ${eventText(st.change_ms)}`]);
-    else if (st.up) events.push([Infinity, st.since_ms === null ? always : `No ${set} before ${after}`]);
-    else if (!never) events.push([Infinity, `No ${rise} before ${after}`]);
+    if (st.change_ms !== null) {
+      if (st.change_ms !== until) events.push([st.change_ms, `${st.up ? set : rise} ${eventText(st.change_ms)}`]);
+    } else if (st.up) events.push([Infinity, st.since_ms === null ? always : `No ${set.toLowerCase()} before ${after}`]);
+    else if (!never) events.push([Infinity, `No ${rise.toLowerCase()} before ${after}`]);
   };
   add(sun, sunNever, "Sunrise", "Sunset", "Sun never sets");
   add(earth, earthNever, "Earthrise", "Earthset", "Earth never sets");
@@ -204,16 +226,15 @@ export function skyFacts(s: Survey, t: number): SkyFacts {
   const withUtc = [...timed, ...events.filter((e) => !Number.isFinite(e[0])).map((e) => e[1])].join(" · ");
   const facts = (text: string, tone: SkyFacts["tone"], warn = false): SkyFacts => ({ text, tone, warn, events: withUtc });
   if (sun.up && earth.up) {
-    const w = windowAt(s.both, t);
-    const span = !w ? "" : w.end_ms >= s.end_ms ? ` past ${after}` : ` for ${spanText(w.end_ms - t)}`;
-    return facts(`Sunlit and in view of Earth${span}`, "pass");
+    const span = !both ? "" : until === null ? ` past ${after}` : ` until ${eventText(until)}${timed.length ? "" : " UTC"}`;
+    return facts(`Sunlit with Earth link${span}`, "pass");
   }
-  if (sun.up) return earthNever ? facts("Sunlit, but Earth never rises here", "fail", true) : facts("Sunlit, Earth below the horizon", "marginal");
-  if (earth.up) return sunNever ? facts("Never sunlit, Earth in view", "fail", true) : facts("Earth in view, site dark", "marginal");
-  if (sunNever && earthNever) return facts("Never sunlit, and Earth never rises here", "fail", true);
-  if (sunNever) return facts("Never sunlit, Earth below the horizon", "fail", true);
-  if (earthNever) return facts("Dark, and Earth never rises here", "fail", true);
-  return facts("Dark, Earth below the horizon", "fail");
+  if (sun.up) return earthNever ? facts("Sunlit, but no Earth link here", "fail", true) : facts("Sunlit, no Earth link", "marginal");
+  if (earth.up) return sunNever ? facts("Never sunlit, Earth link", "fail", true) : facts("Earth link, site dark", "marginal");
+  if (sunNever && earthNever) return facts("Never sunlit, and no Earth link here", "fail", true);
+  if (sunNever) return facts("Never sunlit, no Earth link", "fail", true);
+  if (earthNever) return facts("Dark, and no Earth link here", "fail", true);
+  return facts("Dark, no Earth link", "fail");
 }
 
 export function dayTimeText(ms: number): string {

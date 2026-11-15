@@ -12,6 +12,8 @@ interface PinnedRowProps {
   label: string;
   sub: string;
   survey: Survey | null;
+  scan: YearScan | null;
+  requirements: boolean;
   failed: boolean;
   start_ms: number;
   end_ms: number;
@@ -25,6 +27,7 @@ interface WindowStripProps {
   timeMs: number;
   survey: Survey | null;
   busy: boolean;
+  failed: boolean;
   siteName: string;
   scan: YearScan | null;
   scanState: "off" | "busy" | "failed" | "ready";
@@ -46,7 +49,7 @@ function Lane({ kind, list, start, end, lengths }: { kind: LaneKind; list: reado
         const days = (iv.end_ms - iv.start_ms) / MS_DAY;
         return (
           <i key={iv.start_ms} style={{ left: `${((iv.start_ms - start) / span) * 100}%`, width: `${((iv.end_ms - iv.start_ms) / span) * 100}%` }}>
-            {lengths && days >= 6 ? `${Math.round(days)} d` : null}
+            {lengths && days >= 8 ? `${Math.round(days)} d` : null}
           </i>
         );
       })}
@@ -54,10 +57,13 @@ function Lane({ kind, list, start, end, lengths }: { kind: LaneKind; list: reado
   );
 }
 
+const EDGE = 0.006;
+
 function RequirementLane({ spans, start, end, best, state, onPick }: { spans: readonly VerdictSpan[]; start: number; end: number; best: BestLanding[]; state: WindowStripProps["scanState"]; onPick(ms: number): void }) {
   const span = end - start;
   const top = best.reduce<BestLanding | null>((a, b) => (!a || b.key > a.key ? b : a), null);
-  const pos = (ms: number) => `${((ms - start) / span) * 100}%`;
+  const frac = (ms: number) => (ms - start) / span;
+  const pos = (ms: number) => `${frac(ms) * 100}%`;
   return (
     <div className="ws-req">
       <div className="ws-lane ws-lane-req">
@@ -69,10 +75,9 @@ function RequirementLane({ spans, start, end, best, state, onPick }: { spans: re
             <Spinner size={10} />
           </span>
         )}
-        {state === "failed" && <span className="ws-req-wait">Failed</span>}
       </div>
       {best.map((b) =>
-        b.t_ms < start || b.t_ms > end ? null : (
+        frac(b.t_ms) < EDGE || frac(b.t_ms) > 1 - EDGE ? null : (
           <button
             key={b.t_ms}
             type="button"
@@ -80,33 +85,49 @@ function RequirementLane({ spans, start, end, best, state, onPick }: { spans: re
             data-top={b === top || undefined}
             data-verdict={b.verdict}
             style={{ left: pos(b.t_ms) }}
-            aria-label={`${b === top ? "Best landing" : "Best in this lunar day"}: ${dayTimeText(b.t_ms)}`}
-            title={`${dayText(b.t_ms)}${b.hours !== null ? ` · Both ${Math.round(b.hours)} h` : ""}`}
+            aria-label={`${b === top ? "Best landing" : b.verdict === "marginal" ? "Marginal, best in this lunar day" : "Best in this lunar day"}: ${dayTimeText(b.t_ms)}`}
+            title={`${b === top ? "Best" : b.verdict === "marginal" ? "Marginal" : "Best in this lunar day"} · ${dayText(b.t_ms)}`}
             onClick={() => onPick(b.t_ms)}
           />
         ),
+      )}
+      {top && frac(top.t_ms) >= EDGE && frac(top.t_ms) <= 1 - EDGE && (
+        <span className="ws-best-label" data-flip={frac(top.t_ms) > 0.85 || undefined} style={{ left: pos(top.t_ms) }} aria-hidden="true">
+          Best {dayText(top.t_ms)}
+        </span>
       )}
     </div>
   );
 }
 
-export function PinnedRow({ label, sub, survey, failed, start_ms, end_ms, onSelect, onRemove }: PinnedRowProps) {
+function share(scan: YearScan): string {
+  return `${Math.round(scan.passFraction * 100)}%`;
+}
+
+export function PinnedRow({ label, sub, survey, scan, requirements, failed, start_ms, end_ms, onSelect, onRemove }: PinnedRowProps) {
+  const ready = requirements ? scan !== null : survey !== null;
   return (
     <div className="ws-row ws-block ws-pinned">
       <div className="ws-gutter ws-pin-head">
         <button type="button" className="ws-pin-name" title={`Switch to ${label}`} onClick={onSelect}>
           <strong>{label}</strong>
-          <span className="num">{sub}</span>
+          <span className="num">{requirements && scan ? `Meets ${share(scan)} · ${sub}` : sub}</span>
         </button>
         <IconButton icon="close" size="sm" label={`Unpin ${label}`} onClick={onRemove} />
       </div>
       <div className="ws-lanes">
-        <Lane kind="sun" list={survey?.sun ?? []} start={start_ms} end={end_ms} />
-        <Lane kind="earth" list={survey?.earth ?? []} start={start_ms} end={end_ms} />
-        <Lane kind="both" list={survey?.both ?? []} start={start_ms} end={end_ms} lengths />
-        {!survey && (
+        {requirements ? (
+          <div className="ws-lane ws-lane-req">
+            {(scan?.spans ?? []).map((iv) => (
+              <i key={iv.start_ms} data-verdict={iv.verdict} style={{ left: `${((iv.start_ms - start_ms) / (end_ms - start_ms)) * 100}%`, width: `${((iv.end_ms - iv.start_ms) / (end_ms - start_ms)) * 100}%` }} />
+            ))}
+          </div>
+        ) : (
+          <Lane kind="both" list={survey?.both ?? []} start={start_ms} end={end_ms} lengths />
+        )}
+        {!ready && (
           <div className="ws-wait" role="status">
-            {failed ? "Failed" : <Spinner size={12} />}
+            {failed ? null : <Spinner size={12} />}
           </div>
         )}
       </div>
@@ -114,7 +135,7 @@ export function PinnedRow({ label, sub, survey, failed, start_ms, end_ms, onSele
   );
 }
 
-export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, siteName, scan, scanState, best, landingWindow, children, tools, onScrub, onCommit }: WindowStripProps) {
+export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, failed, siteName, scan, scanState, best, landingWindow, children, tools, onScrub, onCommit }: WindowStripProps) {
   const dragging = useRef(false);
   const [hover, setHover] = useState<number | null>(null);
   const span = end_ms - start_ms;
@@ -170,18 +191,22 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, siteName, 
       <div className="ws-row ws-block ws-primary">
         <div className="ws-gutter ws-lane-labels">
           <span className="ws-key ws-key-sun">Sunlight</span>
-          <span className="ws-key ws-key-earth">Earth in view</span>
-          <span className="ws-key ws-key-both">Both</span>
-          {scanState !== "off" && <span className="ws-key ws-key-req">Meets requirements</span>}
+          <span className="ws-key ws-key-earth">Earth link</span>
+          {scanState === "off" ? <span className="ws-key ws-key-both">Both</span> : (
+            <span className="ws-key ws-key-req">
+              Meets requirements
+              {best.length > 0 && scan && <em className="ws-key-best">◆ best</em>}
+            </span>
+          )}
         </div>
         <div className="ws-lanes">
           <Lane kind="sun" list={survey?.sun ?? []} start={start_ms} end={end_ms} />
           <Lane kind="earth" list={survey?.earth ?? []} start={start_ms} end={end_ms} />
-          <Lane kind="both" list={survey?.both ?? []} start={start_ms} end={end_ms} lengths />
+          {scanState === "off" && <Lane kind="both" list={survey?.both ?? []} start={start_ms} end={end_ms} lengths />}
           {scanState !== "off" && <RequirementLane spans={scan?.spans ?? []} start={start_ms} end={end_ms} best={scan ? best : []} state={scanState} onPick={onCommit} />}
-          {!survey && (
+          {!survey && !failed && (
             <div className="ws-wait" role="status">
-              <Spinner size={12} /> Computing the year
+              <Spinner size={12} />
             </div>
           )}
         </div>
@@ -213,7 +238,9 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, siteName, 
           <i
             className="ws-window"
             style={{ left: `${clamp((landingWindow.first_ms - start_ms) / span, 0, 1) * 100}%`, right: `${(1 - clamp((landingWindow.last_ms - start_ms) / span, 0, 1)) * 100}%` }}
-          />
+          >
+            <span>Window</span>
+          </i>
         )}
         {hover !== null && (
           <div className="ws-hover" style={{ left: `${((hover - start_ms) / span) * 100}%` }}>

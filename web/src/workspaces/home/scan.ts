@@ -2,7 +2,7 @@ import type { ScanParams, ScanResult } from "../../api/planning";
 import { scanBody } from "../../api/planning";
 import type { Interval, Verdict } from "../../contract/types";
 import { lowerBound } from "../../lib/scale";
-import { MS_HOUR, parseUtc, toIsoUtc } from "../../lib/time";
+import { MS_DAY, MS_HOUR, parseUtc, toIsoUtc } from "../../lib/time";
 import type { LandingWindow, RankBy, TotalKey } from "../../scenario/planSearch";
 import type { Limit, Scenario } from "../../scenario/types";
 import { SPAN_MS } from "./survey";
@@ -106,12 +106,11 @@ export function nextPass(s: YearScan, ms: number): number | null {
   return null;
 }
 
-const RANK_OF: Record<Verdict, number> = { pass: 2, marginal: 1, fail: 0 };
-
-export function bestLandings(s: YearScan, rank: RankBy, window: LandingWindow | null): BestLanding[] {
+export function bestLandings(s: YearScan, rank: RankBy, window: LandingWindow | null, both: readonly Interval[] | null): BestLanding[] {
   const c = s.result.candidates;
   const tie = c.totals?.["sunlit_contact_h"];
   const column = rank === "margin" ? c.worst_margin : c.totals?.[rank as TotalKey];
+  const linked = (t: number) => (both ?? []).some((iv) => iv.start_ms <= t && t < iv.end_ms);
   const out: BestLanding[] = [];
   for (const day of s.lunarDays) {
     const from = Math.max(day.start_ms, window?.first_ms ?? -Infinity);
@@ -124,10 +123,17 @@ export function bestLandings(s: YearScan, rank: RankBy, window: LandingWindow | 
       const v = verdictOf(s.result.states, c.state[i]);
       if (v === null || v === "fail") continue;
       const score = Math.max(-1e5, Math.min(1e5, column?.[i] ?? -1e5));
-      const key = RANK_OF[v] * 1e12 + score * 1e4 + (tie?.[i] ?? 0);
+      const key = (v === "pass" ? 2e13 : 0) + (linked(t) ? 1e13 : 0) + score * 1e4 + (tie?.[i] ?? 0);
       if (!best || key > best.key) best = { t_ms: t, verdict: v, hours: tie?.[i] ?? null, key };
     }
     if (best) out.push(best);
   }
-  return out;
+  const kept: BestLanding[] = [];
+  for (const b of out) {
+    const last = kept[kept.length - 1];
+    if (last && b.t_ms - last.t_ms < 10 * MS_DAY) {
+      if (b.key > last.key) kept[kept.length - 1] = b;
+    } else kept.push(b);
+  }
+  return kept;
 }
