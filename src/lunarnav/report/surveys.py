@@ -11,8 +11,19 @@ from __future__ import annotations
 
 from . import figures
 from .errors import ReportInputError, need
-from .fmt import DASH, MARGIN_KIND_NOTE, NA, basis_label, esc, kind_notes, num, qty, signed_kind, unit_label
-from .html import _figure, _to_second, site_terrain, state_chip, table, td, th
+from .fmt import (
+    MARGIN_KIND_NOTE,
+    NA,
+    basis_label,
+    esc,
+    kind_notes,
+    num,
+    qty,
+    signed_kind,
+    unit_label,
+    when_utc,
+)
+from .html import _figure, site_terrain, state_chip, table, td, th
 
 STATES = ("pass", "marginal", "fail", "unknown")
 PERCENTILE_COLUMNS = ("p5", "p25", "p50", "p75", "p95", "mean", "min", "max")
@@ -78,7 +89,7 @@ def _ellipse_sampling(res, ev) -> str:
         f"<p><b>Sampling.</b> {esc(str(res.n_samples))} samples, seed {esc(str(res.seed))}; scheme: {esc(res.scheme)}. "
         f"Ellipse: semi-major {esc(num(ell['semi_major_m']))} m, semi-minor {esc(num(ell['semi_minor_m']))} m, major axis at azimuth "
         f"{esc(num(ell['azimuth_deg']))}\u00b0 clockwise from north, {esc(disp)}. "
-        f"Every sample is evaluated at the landing {esc(_to_second(res.provenance['landing_utc']))} in the nominal, optimistic and pessimistic cases. "
+        f"Every sample is evaluated at the landing {esc(when_utc(res.provenance['landing_utc']))} in the nominal, optimistic and pessimistic cases. "
         + (f"The verdict map has {esc(str(shape[1]))} x {esc(str(shape[0]))} nodes spaced {esc(num(res.map.spacing_m))} m. " if shape else "")
         + f"Convergence is checked at {esc(', '.join(str(n) for n in sizes))} samples.</p>"]
     return "".join(parts)
@@ -195,7 +206,7 @@ def _convergence(res) -> str:
 def section_ellipse(ev, res, number: int, fig_n: int, cons: Constraints) -> str:
     if res.n_samples < 1:
         raise ReportInputError("the ellipse result has no samples")
-    out = [f'<section id="ellipse"><h2>{number}. Landing ellipse statistics</h2>',
+    out = ['<section id="ellipse"><h2>Landing ellipse</h2>',
            _ellipse_sampling(res, ev), _state_table(res), _hazard_sentence(res, ev)]
     if res.provenance.get("heading_unknown_soc"):
         out.append(_heading_note(cons))
@@ -216,8 +227,8 @@ def _region_text(reg: dict) -> str:
 
 def _search_sampling(res) -> str:
     s, prov = res.settings, res.provenance
-    epochs = (f"{esc(str(s['n_epochs']))} landing epochs from {esc(_to_second(prov['first_landing_utc']))} to {esc(_to_second(prov['last_landing_utc']))}, each site scored at its best epoch"
-              if s["n_epochs"] > 1 else f"one landing epoch, {esc(_to_second(prov['first_landing_utc']))}")
+    epochs = (f"{esc(str(s['n_epochs']))} landing epochs from {esc(when_utc(prov['first_landing_utc']))} to {esc(when_utc(prov['last_landing_utc']))}, each site scored at its best epoch"
+              if s["n_epochs"] > 1 else f"one landing epoch, {esc(when_utc(prov['first_landing_utc']))}")
     method = ("exhaustive: every lattice point inside the region is evaluated with the full horizon"
               if s["exhaustive"] else
               f"coarse to fine, coarse factor {s['coarse_factor']}: coarse levels use a cheap horizon ({s['cheap_n_az']} azimuths"
@@ -255,7 +266,7 @@ def _sites_table(res, cons: Constraints) -> str:
                  + td(num(s.east_m), f"{k}:east", s.east_m, "num") + td(num(s.north_m), f"{k}:north", s.north_m, "num")
                  + td(num(s.slope_deg), f"{k}:slope", s.slope_deg, "num"))
         if multi:
-            cells += td(f"{s.n_epochs_pass} of {s.n_epochs}", cls="num") + td(_to_second(s.landing_utc), f"{k}:landing", s.landing_utc, "nw")
+            cells += td(f"{s.n_epochs_pass} of {s.n_epochs}", cls="num") + td(when_utc(s.landing_utc), f"{k}:landing", s.landing_utc, "nw")
         if soc:
             v = s.values.get("min_state_of_charge")
             cells += td("no nominal value" if v is None else qty(v, "fraction"), f"{k}:soc", v, "small" if v is None else "num")
@@ -288,7 +299,7 @@ def _search_not_covered(res) -> str:
 
 
 def section_search(ev, res, number: int, fig_n: int, cons: Constraints) -> str:
-    out = [f'<section id="search"><h2>{number}. Site search</h2>',
+    out = ['<section id="search"><h2>Site search</h2>',
            "<p class='small'>A ranked site's verdict equals a full evaluation of the plan moved to it.</p>", _search_sampling(res), _levels_table(res)]
     if res.provenance.get("heading_unknown_soc"):
         out.append(_heading_note(cons))
@@ -299,14 +310,3 @@ def section_search(ev, res, number: int, fig_n: int, cons: Constraints) -> str:
     out.append(_figure(figures.search_map(res), "Final-level verdict over the search lattice; numbered circles are the best ranked sites.", fig_n))
     out += [_search_not_covered(res), "</section>"]
     return "".join(out)
-
-
-def provenance_rows(res, kind: str) -> list[tuple[str, str]]:
-    """Rows for the provenance appendix: what the result was computed with."""
-    p = res.provenance
-    rows = [("Plan SHA-256", p["scenario_hash"]), ("Horizon provider", str(p["provider"].get("provider", DASH)))]
-    if kind == "ellipse":
-        rows += [("Samples, seed", f"{res.n_samples}, {res.seed}"), ("Landing", p["landing_utc"])]
-    else:
-        rows += [("Final spacing (m)", num(res.settings["final_spacing_m"])), ("Landing epochs", str(res.settings["n_epochs"]))]
-    return rows

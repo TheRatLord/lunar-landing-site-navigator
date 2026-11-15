@@ -7,7 +7,7 @@ challenge ([problem statement](problem-statement.md)).
 The first screen answers one question: if the landing site or the landing date moves, is the mission still
 viable, and where is the nearest alternative? Click the map to move the site, drag the year timeline to move
 the date, and pin a site to keep its row while you try another. For the chosen site and date it shows the Sun
-and Earth against the terrain horizon, how long until sunset and Earthset, and every window in the year with
+and Earth against the terrain horizon, when the Sun and Earth next set, and every window in the year with
 both sunlight and a direct Earth link, computed from SPICE ephemerides and LOLA terrain.
 
 Behind it, the other pages add power and battery survival through dark spans, ground-station contact,
@@ -28,7 +28,7 @@ Evidence shows how each part was checked.
 - **Web app** (`web/`): React interface. A plan panel on the left holds the four choices (site, landing time,
   lander, requirements), with a search radius, a landing window and what to rank by. The Overview, Site, Map and
   Compare tabs show what those choices give: Overview has the year's landing dates, Site the full analysis and the
-  landing ellipse, Map finds sites and runs an area analysis, Compare sets sites against dates. Setup holds every
+  landing ellipse, Map finds sites, Compare sets sites against dates. Setup holds every
   other setting, Evidence summarises how each part was validated, and Explorer is an interactive mode for students
   and the public.
 - **Analysis agent** (`lunarnav agent`): a Claude agent that answers planning questions through typed

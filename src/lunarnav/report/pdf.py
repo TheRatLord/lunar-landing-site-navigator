@@ -8,14 +8,13 @@ network or the file system.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import os
 import re
 import threading
 from calendar import timegm
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import datetime
 
 import weasyprint
 from weasyprint.urls import URLFetcher
@@ -48,25 +47,10 @@ def generated_epoch(html: str) -> int:
     return timegm(datetime.strptime(parse_generated_utc(m.group(1)), "%Y-%m-%dT%H:%M:%SZ").timetuple())
 
 
-_DOWNLOAD = re.compile(
-    r'<a class="scenario-file" download="([^"]+)" href="data:application/json;base64,([A-Za-z0-9+/=]+)">([^<]*)</a>')
-
-
 def render_pdf(html: str) -> bytes:
-    """PDF bytes for `html` (as returned by `render_html`).
-
-    The scenario download link becomes a PDF attachment with the report's own timestamp as its dates (a link would
-    be stamped with the wall clock)."""
+    """PDF bytes for `html` (as returned by `render_html`)."""
     check_coverage(html)
     ident = hashlib.md5(html.encode("utf-8"), usedforsecurity=False).digest()
-    epoch = generated_epoch(html)
-    when = datetime.fromtimestamp(epoch, UTC)
     fetcher = URLFetcher(allowed_protocols=("data",), fail_on_errors=True)
-    attachments = [
-        weasyprint.Attachment(string=base64.b64decode(m.group(2)).decode("utf-8"), name=m.group(1),
-                              description="Scenario document for rerun", created=when, modified=when,
-                              url_fetcher=fetcher)
-        for m in _DOWNLOAD.finditer(html)]
-    body = _DOWNLOAD.sub(lambda m: m.group(3), html)
-    with _source_date(epoch):
-        return weasyprint.HTML(string=body, url_fetcher=fetcher).write_pdf(pdf_identifier=ident, attachments=attachments)
+    with _source_date(generated_epoch(html)):
+        return weasyprint.HTML(string=html, url_fetcher=fetcher).write_pdf(pdf_identifier=ident)

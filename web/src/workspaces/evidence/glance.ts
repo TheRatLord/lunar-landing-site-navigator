@@ -83,7 +83,7 @@ export const CHECKS: readonly Check[] = [
     section: "What a planner can take from this",
   },
   {
-    check: "Area analysis on the Map",
+    check: "Regional layers",
     reference: "Exact engine, 960 cells",
     result: "Sunlight mean error 0.11 points; Earth up to 6.47 points; longest shadow up to 8,920 h",
     status: "Mixed",
@@ -133,7 +133,7 @@ export const CHECKS: readonly Check[] = [
   {
     check: "Barker 2021, Site 01",
     reference: "Published percentiles, 7 regions",
-    result: "Nominal on the right side in 14 of 14; at 1 m the worst case falls short in 6 of 7 regions",
+    result: "Nominal on the right side in 14 of 14; at 1 m the worst case falls short in 7 of 7 (average), 6 of 7 (longest light)",
     status: "Mixed",
     doc: "validation/scenario",
     section: "11.6",

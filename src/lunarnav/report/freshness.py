@@ -1,7 +1,7 @@
 """Is a report current for the checked-out code?
 
-Every report embeds the SHA-256 over the `lunarnav` source and packaged data files that produced it (provenance
-appendix). A report is current when that hash equals the hash of the code that is checked out now. The hash covers the
+Every report embeds the SHA-256 over the `lunarnav` source and packaged data files that produced it in its
+footer. A report is current when that hash equals the hash of the code that is checked out now. The hash covers the
 whole package, so any edit makes earlier reports stale even where it does not change their numbers: regenerate.
 
 A PDF written next to an HTML report carries, as its file identifier, the MD5 of that HTML, so the pair can be checked
@@ -23,7 +23,7 @@ _PDF_ID = re.compile(rb"/ID\s*\[\s*")
 
 
 def embedded_source_hash(html: str) -> str:
-    """The source hash a report's provenance appendix records."""
+    """The source hash a report's footer records."""
     m = _HASH.search(html)
     if not m:
         raise ReportInputError("the document records no lunarnav source hash (not a lunarnav HTML report?)")

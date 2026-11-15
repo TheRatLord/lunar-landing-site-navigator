@@ -72,7 +72,9 @@
 .evi-article .md-table-wrap:has(.md-img) :is(table, tbody, tr, td) { display: block; width: 100%; min-width: 0; padding: 0; border: 0; }
 .evi-article .md-table-wrap:has(.md-img) thead, .evi-article .md-table-wrap:has(.md-img) td:not(:has(.md-img)) { display: none; }
 .evi-article .md-table-wrap:has(.md-img) tbody tr:hover td { background: none; }
-.evi-article .md-table-wrap .md-img, .evi-article .md-img { max-width: 100%; margin: 0 0 var(--sp-3); }
+.evi-article .md-table-wrap:not(:has(.md-img)) table { width: 100%; }
+.evi-article .md-table-wrap:not(:has(.md-img)) :is(th, td, td code) { white-space: normal; overflow-wrap: anywhere; }
+.evi-article .md-table-wrap .md-img,.evi-article .md-img { max-width: 100%; margin: 0 0 var(--sp-3); }
 
 .evi-aside { position: sticky; top: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-3); max-height: calc(100dvh - var(--topbar-h) - 2 * var(--sp-5)); min-height: 0; }
 .evi-toc { min-height: 0; overflow: auto; font-size: var(--fs-sm); }

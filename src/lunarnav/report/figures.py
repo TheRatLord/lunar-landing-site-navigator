@@ -17,9 +17,8 @@ from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-from lunarnav.ephem import et_to_utc
-
 from .errors import ReportInputError, need
+from .fmt import when as when_text
 
 INK = "#111111"
 GREY_DARK = "#4d4d4d"
@@ -99,8 +98,8 @@ def timeline(ev) -> str:
     for k in ("sunlit", "eclipse", "contact"):
         need(ivs, k, "evaluation.intervals")
     strips = [("Sunlit (array)", ivs["sunlit"]), ("Earth eclipse", ivs["eclipse"]),
-              ("Network contact", ivs["contact"])]
-    strips += [(f"Contact {k.split(':', 1)[1]}", v) for k, v in ivs.items() if k.startswith("contact:")]
+              ("Earth link", ivs["contact"])]
+    strips += [(f"Link {k.split(':', 1)[1]}", v) for k, v in ivs.items() if k.startswith("contact:")]
     soc = need(ev, "soc", "evaluation")
     for w in ("nominal", "pessimistic", "optimistic"):
         need(soc, w, "evaluation.soc")
@@ -111,11 +110,11 @@ def timeline(ev) -> str:
 
     ax_sun.plot(x, sig.sun_el_deg[mask], color=INK, lw=1.1)
     ax_sun.axhline(0, color=GREY_MID, lw=0.6, ls=":")
-    ax_sun.set_ylabel("Sun elev.\n(deg)", fontsize=7)
+    ax_sun.set_ylabel("Sun elev.\n(°)", fontsize=7)
     ax_sun.set_title("Mission timeline")
     ax_earth.plot(x, sig.earth_el_deg[mask], color=INK, lw=1.1, ls="--")
     ax_earth.axhline(0, color=GREY_MID, lw=0.6, ls=":")
-    ax_earth.set_ylabel("Earth elev.\n(deg)", fontsize=7)
+    ax_earth.set_ylabel("Earth elev.\n(°)", fontsize=7)
 
     for i, (_name, rows) in enumerate(strips):
         _bars(ax_st, rows, n - 1 - i, t0, x_lo, x_hi)
@@ -145,7 +144,7 @@ def timeline(ev) -> str:
             ax_soc.plot([hx], [float(np.interp(hx, x, s[case]))], marker="v", ms=5.5, mfc="white", mec=INK, mew=0.9, ls="none", zorder=5)
     ax_soc.set_ylim(-2.0, 105.0)
     ax_soc.set_ylabel("State of\ncharge (%)", fontsize=7)
-    ax_soc.set_xlabel(f"Hours after landing ({et_to_utc(t0, 0)})")
+    ax_soc.set_xlabel("Hours after landing")
 
     for ax in (ax_sun, ax_earth, ax_st, ax_soc):
         ax.set_xlim(x_lo, x_hi)
@@ -157,14 +156,14 @@ def timeline(ev) -> str:
                Line2D([], [], color=INK, lw=1.1, ls="--", label="Earth elevation"),
                Patch(facecolor=GREY_DARK, edgecolor=INK, label="Interval (nominal horizon)"),
                Patch(facecolor="white", edgecolor=INK, hatch="/////", label="Edge range, optimistic to pessimistic"),
-               *([] if no_nominal else [Line2D([], [], color=INK, lw=1.2, label="SOC nominal")]),
-               Line2D([], [], color=INK, lw=0.8, ls=":", label="SOC pessimistic"),
-               Line2D([], [], color=INK, lw=0.8, ls="-.", label="SOC optimistic")]
+               *([] if no_nominal else [Line2D([], [], color=INK, lw=1.2, label="Battery nominal")]),
+               Line2D([], [], color=INK, lw=0.8, ls=":", label="Battery pessimistic"),
+               Line2D([], [], color=INK, lw=0.8, ls="-.", label="Battery optimistic")]
     if no_nominal:
-        handles.append(Patch(facecolor=GREY_LIGHT, edgecolor="none", label="SOC range over headings (no nominal)"))
+        handles.append(Patch(facecolor=GREY_LIGHT, edgecolor="none", label="Battery range over headings (no nominal)"))
     if when:
         handles.append(Line2D([], [], marker="v", ms=5.5, mfc="white", mec=INK, mew=0.9, ls="none",
-                              label="Minimum SOC instant" + ("s (optimistic, pessimistic)" if no_nominal else " (nominal)")))
+                              label="Lowest battery" + (" (optimistic, pessimistic)" if no_nominal else " (nominal)")))
     fig.legend(handles=handles, loc="outside lower center", ncol=4, fontsize=6.5, frameon=False)
     return _svg(fig)
 
@@ -202,8 +201,8 @@ def panorama(ev) -> str:
     ax.set_xlim(0, 360)
     ax.set_xticks(range(0, 361, 45))
     ax.set_xticklabels(["N 0", "NE 45", "E 90", "SE 135", "S 180", "SW 225", "W 270", "NW 315", "N 360"])
-    ax.set_xlabel("Azimuth (deg clockwise from north)")
-    ax.set_ylabel("Elevation (deg)")
+    ax.set_xlabel("Azimuth (° clockwise from north)")
+    ax.set_ylabel("Elevation (°)")
     ax.set_title("Horizon panorama with Sun and Earth paths")
     handles = [Line2D([], [], color=INK, lw=1.0, label="Array horizon (nominal)"),
                Patch(facecolor=GREY_LIGHT, edgecolor="none", label="Array horizon bracket"),
@@ -241,11 +240,11 @@ def calendar(scan) -> str:
     ax.set_xlim(0, xe[-1])
     step = max(1, n_rows // 14)
     ax.set_yticks(np.arange(0, n_rows, step) + 0.5)
-    ax.set_yticklabels([et_to_utc(lunas[i].start_et, 0)[:10] for i in range(0, n_rows, step)], fontsize=6.5)
+    ax.set_yticklabels([when_text(lunas[i].start_et).rsplit(" ", 2)[0] for i in range(0, n_rows, step)], fontsize=6.5)
     ax.set_xlabel("Days after new moon (landing candidate), bins of "
                   f"{cal.bin_h:g} h")
-    ax.set_ylabel("Lunation\n(new moon, UTC)", fontsize=7)
-    ax.set_title("Landing opportunity calendar")
+    ax.set_ylabel("Lunar day\n(new moon, UTC)", fontsize=7)
+    ax.set_title("Landing dates")
     handles = [Patch(facecolor="white", edgecolor=INK, label="Pass"),
                Patch(facecolor=GREY_MID, edgecolor=INK, hatch="/////", label="Marginal (best candidate in cell)"),
                Patch(facecolor=GREY_DARK, edgecolor=INK, label="Fail"),
