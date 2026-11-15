@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { PLANNING_ENDPOINTS, type ScanResult } from "../../api/planning";
 import { useReportPlanning } from "../../api/report";
 import { SITE_ENDPOINTS, type EvaluateResult } from "../../api/site";
-import { useAnalysis } from "../../api/useAnalysis";
+import { prefetchAnalysis, useAnalysis } from "../../api/useAnalysis";
 import { useLoad } from "../../api/useLoad";
 import { usePublishScreenContext } from "../../ask/screenContext";
 import { Button } from "../../components/ui/Button";
@@ -22,6 +22,8 @@ import { leftText } from "../map/eta";
 import { announceSiteMove, pointName, siteSnapshot } from "../map/siteMove";
 import { useFindOutOfDate, useFindPlan, useSearchCovers } from "../search/findSites";
 import { useSearchResults } from "../search/results";
+import { useCompareOptions } from "../compare/options";
+import { compareRequest } from "../compare/request";
 import { GlobeSearch } from "./globe/GlobeSearch";
 import { adaptLattice, type Cell } from "./globe/lattice";
 import { MoonGlobe, type GlobeFocus } from "./globe/MoonGlobe";
@@ -39,6 +41,7 @@ const FALLBACK_MS = Date.UTC(2027, 0, 1);
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
 const sameWindow = (a: LandingWindow, b: LandingWindow): boolean => a.first_ms === b.first_ms && a.last_ms === b.last_ms;
 const overlaps = (a: LandingWindow, b: LandingWindow): boolean => a.first_ms < b.last_ms && b.first_ms < a.last_ms;
+let comparePrefetched = false;
 
 function useYearScan(doc: Scenario, place: Place, view: LandingWindow) {
   const { lat_deg, lon_deg, name, catalog_id } = place;
@@ -114,6 +117,14 @@ export function HomeWorkspace() {
   const reportPin = useCallback((id: string, s: YearScan | null, failed: boolean) => {
     setPinScans((m) => (m[id]?.scan === s && m[id]?.failed === failed ? m : { ...m, [id]: { scan: s, failed } }));
   }, []);
+  const demo = useScenario((s) => s.demo);
+  const compareSlipsStored = useCompareOptions((s) => s.slips_h);
+  const pinsReady = pins.length > 0 && pins.every((p) => pinScans[p.id]?.scan);
+  useEffect(() => {
+    if (!demo || !scan || !pinsReady || comparePrefetched) return;
+    comparePrefetched = true;
+    prefetchAnalysis(PLANNING_ENDPOINTS.slip, compareRequest(doc, pins, compareSlipsStored, planWindow).body);
+  }, [demo, scan, pinsReady, doc, pins, compareSlipsStored, planWindow]);
   const pinPlaces = useMemo(() => pins.map((p) => ({ id: p.id, label: siteLabel(p.name) || pointName(p.lat_deg, p.lon_deg), place: { lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id } })), [pins]);
 
   const findPlan = useFindPlan();

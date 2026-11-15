@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { IconButton } from "../../components/ui/Button";
 import { MS_HOUR } from "../../lib/time";
-import { usePlanSearch } from "../../scenario/planSearch";
+import { isYear, usePlanSearch } from "../../scenario/planSearch";
 import { addDelays } from "./delays";
 import { useCompareOptions } from "./options";
 
@@ -21,7 +21,7 @@ export function AddDate({ plannedMs }: { plannedMs: number | null }) {
         if (text.trim() === "") return;
         const r = addDelays(slips, text, plannedMs);
         if (!r.ok) return setError(r.error);
-        const outside = landingWindow && plannedMs !== null && r.hours.filter((h) => !slips.includes(h)).every((h) => plannedMs + h * MS_HOUR < landingWindow.first_ms || plannedMs + h * MS_HOUR > landingWindow.last_ms);
+        const outside = landingWindow && !isYear(landingWindow) && plannedMs !== null && r.hours.filter((h) => !slips.includes(h)).every((h) => plannedMs + h * MS_HOUR < landingWindow.first_ms || plannedMs + h * MS_HOUR > landingWindow.last_ms);
         if (outside) return setError("Outside the landing window");
         setSlips(r.hours);
         setText("");

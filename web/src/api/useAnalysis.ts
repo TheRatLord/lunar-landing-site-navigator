@@ -80,12 +80,40 @@ function analysisView<R>({ key: innerKey, resultKey, ...inner }: Inner<R>, key: 
 }
 
 const cache = new Map<string, unknown>();
+const inflight = new Map<string, Promise<unknown>>();
 const CACHE_MAX = 24;
 
+const keyOf = (path: string, body: unknown): string => (body === null ? "" : `${path}\n${JSON.stringify(body)}`);
+
+function remember(key: string, result: unknown): void {
+  cache.delete(key);
+  cache.set(key, result);
+  if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value as string);
+}
+
+export function prefetchAnalysis(path: string, body: unknown): void {
+  const key = keyOf(path, body);
+  if (!key || cache.has(key) || inflight.has(key)) return;
+  const p = runAnalysis(path, body).then((r) => {
+    remember(key, r);
+    return r;
+  });
+  inflight.set(key, p);
+  p.then(
+    () => inflight.delete(key),
+    () => inflight.delete(key),
+  );
+}
+
+function fromCache<R>(key: string): Inner<R> {
+  const hit = key ? (cache.get(key) as R | undefined) : undefined;
+  return hit === undefined ? initialAnalysis<R>() : { ...initialAnalysis<R>(), key, phase: "done", progress: 1, result: hit, resultKey: key, cached: true };
+}
+
 export function useAnalysis<R>(path: string, body: unknown, opts: { debounceMs?: number } = {}): AnalysisState<R> & AnalysisControls {
-  const key = body === null ? "" : `${path}\n${JSON.stringify(body)}`;
+  const key = keyOf(path, body);
   const debounceMs = opts.debounceMs ?? 250;
-  const [inner, dispatch] = useReducer(reduceAnalysis<R>, undefined, initialAnalysis<R>);
+  const [inner, dispatch] = useReducer(reduceAnalysis<R>, key, fromCache<R>);
   const [nonce, bump] = useReducer((n: number) => n + 1, 0);
   const ctlRef = useRef<AbortController | null>(null);
   const bodyRef = useRef(body);
@@ -97,34 +125,45 @@ export function useAnalysis<R>(path: string, body: unknown, opts: { debounceMs?:
     if (!key) return;
     const ctl = new AbortController();
     ctlRef.current = ctl;
-    const timer = setTimeout(() => {
+    const go = () => {
       const hit = nonce === 0 ? (cache.get(key) as R | undefined) : undefined;
       dispatch({ type: "start", key });
       if (hit !== undefined) {
         dispatch({ type: "done", key, result: hit, cached: true });
         return;
       }
+      const pending = nonce === 0 ? (inflight.get(key) as Promise<R> | undefined) : undefined;
       let cachedByService = false;
-      runAnalysis<R>(path, bodyRef.current, {
-        signal: ctl.signal,
-        onStatus: (status) => dispatch({ type: "status", key, status }),
-        onCancel: (reply) => {
-          if (reply.effect === "detached") dispatch({ type: "cancelReply", key, detail: reply.detail, effect: reply.effect });
-        },
-        onCache: (hit) => {
-          cachedByService = hit;
-        },
-      }).then(
+      const work =
+        pending ??
+        runAnalysis<R>(path, bodyRef.current, {
+          signal: ctl.signal,
+          onStatus: (status) => dispatch({ type: "status", key, status }),
+          onCancel: (reply) => {
+            if (reply.effect === "detached") dispatch({ type: "cancelReply", key, detail: reply.detail, effect: reply.effect });
+          },
+          onCache: (hit) => {
+            cachedByService = hit;
+          },
+        });
+      work.then(
         (result) => {
-          cache.set(key, result);
-          if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value as string);
-          dispatch({ type: "done", key, result, cached: cachedByService });
+          if (ctl.signal.aborted) return;
+          remember(key, result);
+          dispatch({ type: "done", key, result, cached: cachedByService || pending !== undefined });
         },
         (e: unknown) => {
           if (ctl.signal.aborted || isAbort(e)) return;
           dispatch({ type: "fail", key, error: e instanceof Error ? e : new Error(String(e)) });
         },
       );
+    };
+    if (nonce === 0 && cache.has(key)) {
+      go();
+      return () => ctl.abort();
+    }
+    const timer = setTimeout(() => {
+      go();
     }, debounceMs);
     return () => {
       clearTimeout(timer);

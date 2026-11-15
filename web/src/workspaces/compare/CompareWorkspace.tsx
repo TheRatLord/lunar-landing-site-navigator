@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { PLANNING_ENDPOINTS, slipBody, type SlipParams, type SlipResult, type SlipRow } from "../../api/planning";
+import { PLANNING_ENDPOINTS, type SlipResult, type SlipRow } from "../../api/planning";
 import { useReportPlanning } from "../../api/report";
 import { useAnalysis } from "../../api/useAnalysis";
 import { usePublishScreenContext } from "../../ask/screenContext";
@@ -10,6 +10,7 @@ import { Spinner } from "../../components/ui/Progress";
 import { VerdictChip } from "../../components/ui/VerdictChip";
 import { downloadText, slug } from "../../lib/download";
 import { MS_HOUR, MS_MIN, parseUtc, toIsoUtc } from "../../lib/time";
+import { compareRequest } from "./request";
 import { useAlternatives, type Candidate } from "../../scenario/alternatives";
 import { usePlanSearch } from "../../scenario/planSearch";
 import type { Path } from "../../scenario/path";
@@ -21,8 +22,8 @@ import { AddDate } from "./AddDate";
 import { AddSite } from "./AddSite";
 import { delayLabels } from "./delays";
 import { Grid, type Cell } from "./Grid";
-import { STATE_WORD, dateText, dayText, limitingName, marginValue, requestedSites, rowVerdict, sameSite, servedByKey, works, type SiteRef } from "./gridModel";
-import { BASELINE_SITE, MAX_SLIP_H, SEARCH_DAYS, normalizeSlips, useCompareOptions } from "./options";
+import { STATE_WORD, dateText, dayText, limitingName, marginValue, rowVerdict, sameSite, servedByKey, works, type SiteRef } from "./gridModel";
+import { BASELINE_SITE, MAX_SLIP_H, useCompareOptions } from "./options";
 
 export function CompareWorkspace() {
   return (
@@ -40,34 +41,10 @@ function Compare() {
   const removeSlip = useCompareOptions((s) => s.removeSlip);
   const landingWindow = usePlanSearch((s) => s.window);
   const plannedMs = parseUtc(doc.landing_utc);
-  const windowStart = useMemo(() => {
-    if (!landingWindow || plannedMs === null) return null;
-    const h = Number(((landingWindow.first_ms - plannedMs) / MS_HOUR).toFixed(3));
-    return Math.abs(h) <= MAX_SLIP_H ? h : null;
-  }, [landingWindow, plannedMs]);
-  const slips = useMemo(() => {
-    if (!landingWindow || plannedMs === null) return stored;
-    const inside = stored.filter((h) => {
-      const at = plannedMs + h * MS_HOUR;
-      return at >= landingWindow.first_ms - MS_MIN && at <= landingWindow.last_ms + MS_MIN;
-    });
-    return normalizeSlips(windowStart === null ? inside : [...inside, windowStart]);
-  }, [stored, landingWindow, plannedMs, windowStart]);
+  const req = useMemo(() => compareRequest(doc, alternatives, stored, landingWindow), [doc, alternatives, stored, landingWindow]);
+  const { sites, slips, params, body } = req;
   const removable = useCallback((h: number) => stored.includes(h), [stored]);
 
-  const sites = useMemo(() => requestedSites(doc.site, alternatives), [doc.site, alternatives]);
-  const params = useMemo<SlipParams>(() => {
-    const extra = sites.slice(1);
-    return {
-      slips_h: slips,
-      mode: "landing",
-      search_days: SEARCH_DAYS,
-      spacing_s: 3600,
-      alternative_sites: extra.flatMap((s) => (s.catalog_id !== null ? [s.catalog_id] : [])),
-      alternative_coordinates: extra.flatMap((s) => (s.catalog_id === null ? [{ name: s.name, lat_deg: s.lat_deg, lon_deg: s.lon_deg }] : [])),
-    };
-  }, [sites, slips]);
-  const body = useMemo(() => slipBody(doc, params, "auto"), [doc, params]);
   const slip = useAnalysis<SlipResult>(PLANNING_ENDPOINTS.slip, body, { debounceMs: 500 });
   useEffect(() => routeStackIssues(slip.error), [slip.error]);
   const setReportSlip = useReportPlanning((s) => s.setSlip);
