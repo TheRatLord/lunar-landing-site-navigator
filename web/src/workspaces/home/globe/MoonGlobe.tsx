@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import type { SearchRow } from "../../../api/search";
 import { terrainApi } from "../../../api/terrain";
 import { useLoad } from "../../../api/useLoad";
@@ -12,7 +12,7 @@ import { dayText } from "../survey";
 import { CELL_COLOR, cellAt, circle, latticeMesh, type Cell, type Lattice } from "./lattice";
 import { MoonScene, type Hit, type Marker, type ViewInfo } from "./MoonScene";
 import type { Rect } from "../../map/rect";
-import { EARTH_COLOR, PIN_COLOR, PLAN_COLOR, bySalience, labelCandidates, layoutLabels, siteLines, siteMarkers, siteSummary } from "./marks";
+import { EARTH_COLOR, PICK_COLOR, PIN_COLOR, PLAN_COLOR, bySalience, clusterRect, clusterSites, labelCandidates, layoutClusters, layoutLabels, siteLines, siteMarkers, siteSummary, spreadOf, type SiteGroup } from "./marks";
 import { polarCap, viewPatch } from "./patches";
 import { subpointsAt, type Subpoints } from "./subpoints";
 
@@ -29,6 +29,7 @@ type Popup =
   | { kind: "cell"; cell: Cell }
   | { kind: "point"; lat_deg: number; lon_deg: number }
   | { kind: "site"; site: SiteEntry }
+  | { kind: "cluster"; sites: SiteEntry[] }
   | { kind: "pin"; pin: AltMark };
 
 interface MoonGlobeProps {
@@ -56,6 +57,7 @@ const sameView = (a: ViewInfo, b: ViewInfo): boolean =>
 const MAX_DETAIL_M = 700_000;
 const contextView = (r: number | null): number => Math.max(20_000, (r ?? 0) * 4);
 const tightView = (r: number): number => Math.max(3_000, r * 1.35);
+const SITE_VIEW_M = 15_000;
 
 function utcText(ms: number): string {
   const d = new Date(ms);
@@ -105,10 +107,8 @@ export function MoonGlobe(props: MoonGlobeProps) {
     }
     const p = latest.current;
     s.flyTo(p.site.lat_deg, p.site.lon_deg, WHOLE, true);
-    const intro = window.setTimeout(() => s.flyTo(latest.current.site.lat_deg, latest.current.site.lon_deg, contextView(latest.current.areaRadius_m)), 700);
     setScene(s);
     return () => {
-      window.clearTimeout(intro);
       s.dispose();
       setScene(null);
     };
@@ -119,14 +119,32 @@ export function MoonGlobe(props: MoonGlobeProps) {
     if (popup.kind === "cell") return [popup.cell.lat_deg, popup.cell.lon_deg];
     if (popup.kind === "point") return [popup.lat_deg, popup.lon_deg];
     if (popup.kind === "site") return [popup.site.lat_deg, popup.site.lon_deg];
+    if (popup.kind === "cluster") {
+      const c = spreadOf(popup.sites);
+      return [c.lat_deg, c.lon_deg];
+    }
     return [popup.pin.lat_deg, popup.pin.lon_deg];
   }, [popup]);
+
+  const clusterHost = useRef<HTMLDivElement>(null);
+  const groupsRef = useRef<SiteGroup[]>([]);
+  const drawn = useRef<{ key: string; of: SiteEntry[] | null; index: number[] }>({ key: "", of: null, index: [] });
 
   const place = useCallback(() => {
     if (!scene) return;
     const lab = labelRef.current;
     const box = lab?.parentElement;
     if (lab && box) {
+      const { groups, clustered } = clusterSites(shown, (la, lo) => scene.screenOf(la, lo), box.clientWidth, box.clientHeight, scene.screenOf(site.lat_deg, site.lon_deg));
+      groupsRef.current = groups;
+      const key = groups.map((g) => g.members.join(",")).join("|");
+      if (drawn.current.of !== shown || drawn.current.key !== key) {
+        const index = shown.map((_, i) => i).filter((i) => !clustered.has(i));
+        drawn.current = { key, of: shown, index };
+        scene.setMarkers("sites", siteMarkers(index.map((i) => shown[i]!)));
+      }
+      if (clusterHost.current) layoutClusters(clusterHost.current, groups, shown);
+      const hidden = new Set([...clustered].map((i) => `site:${shown[i]!.id}`));
       const r0 = box.getBoundingClientRect();
       const hero = box.closest(".home-hero");
       const obstacles: Rect[] = [];
@@ -134,7 +152,8 @@ export function MoonGlobe(props: MoonGlobeProps) {
         const r = el.getBoundingClientRect();
         if (r.width > 0) obstacles.push([r.left - r0.left, r.top - r0.top, r.right - r0.left, r.bottom - r0.top]);
       });
-      layoutLabels(lab, cands, (la, lo) => scene.screenOf(la, lo), obstacles, box.clientWidth, box.clientHeight);
+      for (const g of groups) obstacles.push(clusterRect(g));
+      layoutLabels(lab, hidden.size ? cands.filter((c) => !hidden.has(c.id)) : cands, (la, lo) => scene.screenOf(la, lo), obstacles, box.clientWidth, box.clientHeight);
     }
     const pop = popRef.current;
     if (pop && popupAnchor) {
@@ -151,7 +170,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
         pop.style.transform = `translate(${Math.round(Math.max(8, x))}px, ${Math.round(Math.max(8, y))}px)`;
       }
     }
-  }, [scene, popupAnchor, cands]);
+  }, [scene, popupAnchor, cands, shown, site.lat_deg, site.lon_deg]);
 
   useLayoutEffect(() => {
     if (!scene) return;
@@ -166,7 +185,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
       setTip(null);
       if (h.kind === "marker") {
         if (h.layer === "sites") {
-          const s = shownRef.current[h.index];
+          const s = shownRef.current[drawn.current.index[h.index] ?? -1];
           if (s) setPopup({ kind: "site", site: s });
         } else if (h.layer === "pins") {
           const pin = p.pins[h.index];
@@ -190,7 +209,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
         const text =
           h.layer === "sites"
             ? (() => {
-                const s = shownRef.current[h.index];
+                const s = shownRef.current[drawn.current.index[h.index] ?? -1];
                 return s ? `${siteLabel(s.name)} · ${siteSummary(s)}` : "";
               })()
             : h.layer === "pins"
@@ -232,12 +251,12 @@ export function MoonGlobe(props: MoonGlobeProps) {
     place();
   }, [scene, site.lat_deg, site.lon_deg, earthMark, place]);
 
+  const pick = popup?.kind === "point" ? ([popup.lat_deg, popup.lon_deg] as const) : popup?.kind === "cell" ? ([popup.cell.lat_deg, popup.cell.lon_deg] as const) : null;
+  const pickLat = pick?.[0] ?? null;
+  const pickLon = pick?.[1] ?? null;
   useEffect(() => {
-    scene?.setMarkers(
-      "sites",
-      siteMarkers(shown),
-    );
-  }, [scene, shown]);
+    scene?.setMarkers("pick", pickLat === null || pickLon === null ? [] : [{ lat_deg: pickLat, lon_deg: pickLon, color: PICK_COLOR, size: 26, shape: "target" }]);
+  }, [scene, pickLat, pickLon]);
 
   useEffect(() => {
     scene?.setMarkers(
@@ -325,12 +344,24 @@ export function MoonGlobe(props: MoonGlobeProps) {
   }
 
   const close = () => setPopup(null);
+  const goTo = (s: SiteEntry) => {
+    scene?.flyTo(s.lat_deg, s.lon_deg, SITE_VIEW_M);
+    setPopup({ kind: "site", site: s });
+  };
+  const openCluster = (e: MouseEvent<HTMLDivElement>) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>(".globe-cluster");
+    const g = el ? groupsRef.current[Number(el.dataset["index"])] : undefined;
+    if (!g) return;
+    setTip(null);
+    setPopup({ kind: "cluster", sites: g.members.map((i) => shown[i]!) });
+  };
   const words = popup?.kind === "cell" ? cellWords(popup.cell) : null;
 
   return (
     <div className="globe">
       <canvas ref={canvasRef} className="globe-canvas" role="img" aria-label="3D Moon with the plan's site, catalogue sites and search results. Drag to turn, scroll to zoom, click a point for details." />
       <div ref={labelRef} className="globe-labels" aria-hidden />
+      <div ref={clusterHost} className="globe-clusters" onClick={openCluster} />
       {tip && !popup && (
         <div className="globe-tip" style={{ transform: `translate(${tip.x + 12}px, ${tip.y - 28}px)` }} aria-hidden>
           {tip.text}
@@ -416,6 +447,41 @@ export function MoonGlobe(props: MoonGlobeProps) {
                   }}
                 >
                   Use this site
+                </Button>
+                <Button size="sm" icon="target" onClick={() => scene?.flyTo(popup.site.lat_deg, popup.site.lon_deg, SITE_VIEW_M)}>
+                  Go to
+                </Button>
+              </div>
+            </>
+          )}
+          {popup.kind === "cluster" && (
+            <>
+              <p className="globe-pop-title">{popup.sites.length} sites</p>
+              <ul className="globe-pop-list">
+                {popup.sites.map((s) => (
+                  <li key={s.id}>
+                    <span className="globe-pop-list-text">
+                      <span className="globe-pop-list-name">{siteLabel(s.name)}</span>
+                      <span className="globe-pop-list-sub">{siteSummary(s)}</span>
+                    </span>
+                    <Button size="sm" variant="ghost" onClick={() => goTo(s)}>
+                      Go to
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+              <div className="globe-pop-actions">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon="plus"
+                  onClick={() => {
+                    const c = spreadOf(popup.sites);
+                    scene?.flyTo(c.lat_deg, c.lon_deg, Math.max(3_000, c.radius_m * 1.6));
+                    close();
+                  }}
+                >
+                  Zoom to these
                 </Button>
               </div>
             </>

@@ -3,20 +3,22 @@ import type { SiteEntry } from "../../../scenario/api";
 import { placeLabels, type LabelBox } from "../../map/declutter";
 import type { Rect } from "../../map/rect";
 import { KIND_STYLE, type SiteKind } from "../../map/sites";
-import type { Marker, MarkerShape } from "./MoonScene";
+import { MOON_R_M } from "../../../lib/projection";
+import { surfacePoint, type Marker, type MarkerShape } from "./MoonScene";
 
 export const KIND_MARK: Record<SiteKind, { shape: MarkerShape; color: string; size: number; prio: number }> = {
-  planned: { shape: "diamond", color: "#ffb340", size: 16, prio: 6 },
-  landed: { shape: "triangle", color: "#4da3ff", size: 16, prio: 5 },
-  impact: { shape: "cross", color: "#ff7a70", size: 14, prio: 4 },
-  not_landed: { shape: "square", color: "#a3a7b0", size: 13, prio: 3 },
-  region: { shape: "ring", color: "#b992ff", size: 15, prio: 2 },
-  poi: { shape: "dot", color: "#e5e5ea", size: 9, prio: 1 },
+  planned: { shape: "diamond", color: "#ffb340", size: 22, prio: 6 },
+  landed: { shape: "triangle", color: "#4da3ff", size: 22, prio: 5 },
+  impact: { shape: "cross", color: "#ff7a70", size: 19, prio: 4 },
+  not_landed: { shape: "square", color: "#a3a7b0", size: 18, prio: 3 },
+  region: { shape: "ring", color: "#b992ff", size: 20, prio: 2 },
+  poi: { shape: "dot", color: "#e5e5ea", size: 13, prio: 1 },
 };
 
 export const PLAN_COLOR = "#ffffff";
 export const PIN_COLOR = "#d08cff";
 export const EARTH_COLOR = "#64d2ff";
+export const PICK_COLOR = "#ffd60a";
 
 export function bySalience(sites: readonly SiteEntry[]): SiteEntry[] {
   return [...sites].sort((a, b) => KIND_MARK[a.kind].prio - KIND_MARK[b.kind].prio);
@@ -118,4 +120,122 @@ export function layoutLabels(
     el.style.transform = `translate(${Math.round(spot.x)}px, ${Math.round(spot.y - 12)}px) translateX(${shift})`;
   });
   for (let i = spots.length; i < host.childElementCount; i++) (host.children[i] as HTMLElement).style.display = "none";
+}
+
+export interface SiteGroup {
+  members: number[];
+  x: number;
+  y: number;
+}
+
+export const CLUSTER_PX = 34;
+const AVOID_PX = 16;
+
+const clusterSize = (n: number): number => Math.round(Math.min(46, 26 + Math.log2(n) * 5));
+
+export function clusterSites(
+  sites: readonly SiteEntry[],
+  screenOf: (lat: number, lon: number) => [number, number] | null,
+  w: number,
+  h: number,
+  avoid: [number, number] | null,
+): { groups: SiteGroup[]; clustered: Set<number> } {
+  const seeds: Array<{ x: number; y: number; members: number[]; sx: number; sy: number }> = [];
+  for (let i = sites.length - 1; i >= 0; i--) {
+    const s = sites[i]!;
+    const at = screenOf(s.lat_deg, s.lon_deg);
+    if (!at || at[0] < -CLUSTER_PX || at[1] < -CLUSTER_PX || at[0] > w + CLUSTER_PX || at[1] > h + CLUSTER_PX) continue;
+    const near = seeds.find((g) => Math.hypot(g.x - at[0], g.y - at[1]) < CLUSTER_PX);
+    if (near) {
+      near.members.push(i);
+      near.sx += at[0];
+      near.sy += at[1];
+    } else seeds.push({ x: at[0], y: at[1], members: [i], sx: at[0], sy: at[1] });
+  }
+  let groups: SiteGroup[] = seeds.filter((g) => g.members.length > 1).map((g) => ({ members: g.members, x: g.sx / g.members.length, y: g.sy / g.members.length }));
+  for (let merged = true; merged; ) {
+    merged = false;
+    outer: for (let a = 0; a < groups.length; a++) {
+      for (let b = a + 1; b < groups.length; b++) {
+        const A = groups[a]!;
+        const B = groups[b]!;
+        if (Math.hypot(A.x - B.x, A.y - B.y) >= (clusterSize(A.members.length) + clusterSize(B.members.length)) / 2 + 3) continue;
+        const n = A.members.length + B.members.length;
+        groups[a] = { members: [...A.members, ...B.members], x: (A.x * A.members.length + B.x * B.members.length) / n, y: (A.y * A.members.length + B.y * B.members.length) / n };
+        groups = groups.filter((_, i) => i !== b);
+        merged = true;
+        break outer;
+      }
+    }
+  }
+  if (avoid) {
+    for (const g of groups) {
+      const clear = clusterSize(g.members.length) / 2 + AVOID_PX;
+      const dx = g.x - avoid[0];
+      const dy = g.y - avoid[1];
+      const d = Math.hypot(dx, dy);
+      if (d >= clear) continue;
+      const ux = d > 0.5 ? dx / d : 0.7071;
+      const uy = d > 0.5 ? dy / d : -0.7071;
+      g.x = avoid[0] + ux * clear;
+      g.y = avoid[1] + uy * clear;
+    }
+  }
+  const clustered = new Set<number>();
+  for (const g of groups) for (const i of g.members) clustered.add(i);
+  return { groups, clustered };
+}
+
+export function clusterRect(g: SiteGroup): Rect {
+  const r = clusterSize(g.members.length) / 2;
+  return [g.x - r, g.y - r, g.x + r, g.y + r];
+}
+
+export function layoutClusters(host: HTMLElement, groups: readonly SiteGroup[], sites: readonly SiteEntry[]): void {
+  while (host.childElementCount < groups.length) {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "globe-cluster";
+    host.appendChild(el);
+  }
+  groups.forEach((g, i) => {
+    const el = host.children[i] as HTMLButtonElement;
+    const n = String(g.members.length);
+    if (el.textContent !== n) el.textContent = n;
+    const lead = sites[g.members[0]!]!;
+    const names = g.members.slice(0, 4).map((m) => siteLabel(sites[m]!.name));
+    const label = `${n} sites: ${names.join(", ")}${g.members.length > 4 ? ", …" : ""}`;
+    if (el.title !== label) {
+      el.title = label;
+      el.setAttribute("aria-label", label);
+    }
+    el.dataset["index"] = String(i);
+    const size = clusterSize(g.members.length);
+    el.style.display = "";
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+    el.style.setProperty("--tone", KIND_MARK[lead.kind].color);
+    el.style.transform = `translate(${Math.round(g.x - size / 2)}px, ${Math.round(g.y - size / 2)}px)`;
+  });
+  for (let i = groups.length; i < host.childElementCount; i++) (host.children[i] as HTMLElement).style.display = "none";
+}
+
+export function spreadOf(sites: ReadonlyArray<{ lat_deg: number; lon_deg: number }>): { lat_deg: number; lon_deg: number; radius_m: number } {
+  let x = 0;
+  let y = 0;
+  let z = 0;
+  for (const s of sites) {
+    const p = surfacePoint(s.lat_deg, s.lon_deg);
+    x += p[0];
+    y += p[1];
+    z += p[2];
+  }
+  const n = Math.hypot(x, y, z) || 1;
+  const c: [number, number, number] = [x / n, y / n, z / n];
+  let far = 0;
+  for (const s of sites) {
+    const p = surfacePoint(s.lat_deg, s.lon_deg);
+    far = Math.max(far, Math.acos(Math.min(1, p[0] * c[0] + p[1] * c[1] + p[2] * c[2])));
+  }
+  return { lat_deg: (Math.asin(Math.max(-1, Math.min(1, c[1]))) * 180) / Math.PI, lon_deg: (Math.atan2(-c[2], c[0]) * 180) / Math.PI, radius_m: far * MOON_R_M };
 }
