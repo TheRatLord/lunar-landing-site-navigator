@@ -1,4 +1,6 @@
-import { BoxGeometry, CapsuleGeometry, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, SphereGeometry, SpotLight, Vector3 } from "three";
+import { BoxGeometry, CapsuleGeometry, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, SphereGeometry, SpotLight, Vector3, type Object3D } from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import astronautUrl from "./models/improved_astronaut.glb?url";
 import { RAD } from "../geometry";
 import { clampRadius, pushOut, type Obstacle } from "./collide";
 import type { Drive } from "./walkInput";
@@ -32,13 +34,15 @@ export class Astronaut {
   atEdge = false;
   readonly lamp = new SpotLight(0xfff4e0, 0, 28, 0.5, 0.55, 0);
   private readonly body = new Group();
-  private readonly legL: Mesh;
-  private readonly legR: Mesh;
-  private readonly armL: Mesh;
-  private readonly armR: Mesh;
+  private readonly fallback = new Group();
+  private legL: Object3D;
+  private legR: Object3D;
+  private armL: Object3D;
+  private armR: Object3D;
   private vy = 0;
   private lift = 0;
   private phase = 0;
+  onModelReady: (() => void) | null = null;
 
   constructor() {
     const leg = new CapsuleGeometry(0.12, 0.55, 4, 10);
@@ -52,11 +56,37 @@ export class Astronaut {
     this.armR = part(arm, suit, 0.38, 1.1, 0);
     const helmet = part(new SphereGeometry(0.22, 20, 14), suit, 0, 1.66, 0);
     const face = part(new SphereGeometry(0.2, 20, 14, Math.PI * 1.1, Math.PI * 0.8, Math.PI * 0.28, Math.PI * 0.4), visor, 0, 1.66, -0.04);
-    this.body.add(this.legL, this.legR, torso, pack, panel, this.armL, this.armR, helmet, face);
+    this.fallback.add(this.legL, this.legR, torso, pack, panel, this.armL, this.armR, helmet, face);
+    this.body.add(this.fallback);
     this.lamp.position.set(0, 1.78, -0.12);
     this.lamp.target.position.set(0, 0, -9);
     this.object.add(this.body, this.lamp, this.lamp.target);
     this.reset();
+    this.loadModel();
+  }
+
+  private loadModel(): void {
+    void new GLTFLoader().loadAsync(astronautUrl).then(({ scene }) => {
+      const legL = scene.getObjectByName("Leg_L");
+      const legR = scene.getObjectByName("Leg_R");
+      const armL = scene.getObjectByName("Arm_L");
+      const armR = scene.getObjectByName("Arm_R");
+      if (!legL || !legR || !armL || !armR) throw new Error("Astronaut model is missing walking pivots");
+      this.legL = legL;
+      this.legR = legR;
+      this.armL = armL;
+      this.armR = armR;
+      scene.traverse((part) => {
+        if (part instanceof Mesh) {
+          part.castShadow = true;
+          part.receiveShadow = true;
+        }
+      });
+      this.body.add(scene);
+      this.fallback.visible = false;
+      this.pose(0, 0);
+      this.onModelReady?.();
+    }).catch((error: unknown) => console.warn("Astronaut model unavailable; using procedural fallback", error));
   }
 
   setLamp(on: boolean): void {
@@ -75,6 +105,16 @@ export class Astronaut {
 
   obstacle(): Obstacle {
     return { x: this.position.x, z: this.position.z, r: BODY_R };
+  }
+
+  placeAt(x: number, z: number, heading: number, terrain: WalkTerrain): void {
+    this.position.set(x, terrain.heightAt(x, z), z);
+    this.heading = heading;
+    this.kneeling = false;
+    this.vy = 0;
+    this.lift = 0;
+    this.phase = 0;
+    this.pose(0, 0);
   }
 
   step(dt: number, d: Drive, terrain: WalkTerrain, obs: Obstacle[], reduced: boolean): boolean {

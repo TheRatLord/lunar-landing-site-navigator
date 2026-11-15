@@ -1160,6 +1160,47 @@
   gap: 12px;
   min-width: 0;
 }
+.l-dock-collapse {
+  flex: none;
+  min-height: 42px;
+  padding: 0 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--l-fs-xs);
+  font-weight: 650;
+}
+.l-dock-collapse:hover,
+.l-dock-collapse:focus-visible {
+  background: var(--panel-hover);
+}
+.l-dock.is-compact {
+  left: 50%;
+  right: auto;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  width: max-content;
+  max-width: calc(100% - 16px);
+  gap: 10px;
+  padding: 5px 6px 5px 12px;
+  border-radius: var(--r-pill);
+  transform: translateX(-50%);
+}
+.l-dock-compact-place {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: var(--l-fs-xs);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.l-dock.is-compact .l-dock-collapse {
+  min-height: 34px;
+}
 .l-places {
   display: flex;
   flex: 1 1 auto;
@@ -1467,6 +1508,39 @@ button.l-lessons-label {
 .l-walk-edge {
   bottom: calc(var(--l-above) + 64px);
   padding: 10px 16px;
+}
+.l-walk-enter {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--l-above) + 64px);
+  transform: translateX(-50%);
+  padding: 6px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--l-fs-xs);
+  font-weight: 650;
+  cursor: pointer;
+}
+.l-walk-enter:hover,
+.l-walk-enter:focus-visible {
+  background: var(--panel-hover);
+}
+.l-walk-seat-hint {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--l-card);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: var(--l-fs-sm);
 }
 .l-walk-actions {
   position: absolute;
@@ -1832,6 +1906,10 @@ button.l-lessons-label {
   .l-dock-row {
     gap: 8px;
   }
+  .l-dock-row .l-dock-collapse {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
   .l-places {
     display: none;
   }
@@ -1893,6 +1971,9 @@ button.l-lessons-label {
   }
   .l-walk-edge {
     bottom: calc(var(--l-above) + 136px);
+  }
+  .l-walk-enter {
+    bottom: calc(var(--l-above) + 24px);
   }
   .l-walk-actions {
     flex-direction: column;

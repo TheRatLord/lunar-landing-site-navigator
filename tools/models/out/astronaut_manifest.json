@@ -1,0 +1,17 @@
+{
+  "current_astronaut": {
+    "glb": "current_astronaut.glb",
+    "triangles": 3604,
+    "bytes": 266312
+  },
+  "improved_astronaut": {
+    "glb": "improved_astronaut.glb",
+    "triangles": 5300,
+    "bytes": 334788
+  },
+  "astronaut_seated": {
+    "glb": "astronaut_seated.glb",
+    "triangles": 4832,
+    "bytes": 334716
+  }
+}

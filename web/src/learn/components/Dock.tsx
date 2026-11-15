@@ -18,9 +18,20 @@ const viewsAt = (id: SiteId): { value: ViewKind; label: string }[] => [
 export function Dock() {
   const siteId = useLearn((s) => s.siteId);
   const view = useLearn((s) => s.view);
+  const minimized = useLearn((s) => s.walkUiMinimized) && view === "walk";
   const places: SiteId[] = useLearn((s) => s.planPlace) ? [...PLACES, "plan"] : PLACES;
-  const { setSite, setView } = useLearn.getState();
+  const { setSite, setView, setWalkUiMinimized } = useLearn.getState();
   const views = viewsAt(siteId);
+  if (minimized) {
+    return (
+      <div className="l-dock is-compact" role="group" aria-label="Explore controls">
+        <span className="l-dock-compact-place">{SITES[siteId].name} · Free roam</span>
+        <button type="button" className="l-dock-collapse" aria-expanded={false} onClick={() => setWalkUiMinimized(false)}>
+          Show controls
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="l-dock" role="group" aria-label="Explore">
       <div className="l-dock-row">
@@ -61,6 +72,11 @@ export function Dock() {
             </option>
           ))}
         </select>
+        {view === "walk" && (
+          <button type="button" className="l-dock-collapse" aria-expanded={true} onClick={() => setWalkUiMinimized(true)}>
+            Minimize
+          </button>
+        )}
       </div>
       <div className="l-dock-time">
         <div className="l-dock-views">

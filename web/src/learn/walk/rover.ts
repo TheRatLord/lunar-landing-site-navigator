@@ -2,6 +2,7 @@ import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshLambertMaterial, MeshPh
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import roverUrl from "./models/improved_rover.glb?url";
 import cockpitUrl from "./models/improved_cockpit.glb?url";
+import seatedAstronautUrl from "./models/astronaut_seated.glb?url";
 import { clamp } from "../../lib/scale";
 import { RAD } from "../geometry";
 import { clampRadius, pushOut, type Obstacle } from "./collide";
@@ -39,6 +40,7 @@ export class Rover {
   atEdge = false;
   private readonly chassis = new Group();
   private readonly model = new Group();
+  private readonly driver = new Group();
   private readonly lights = new Group();
   private readonly wheels: Object3D[] = [];
   private readonly wheelRest: Quaternion[] = [];
@@ -48,12 +50,19 @@ export class Rover {
   private readonly modelMast: Object3D[] = [];
   private readonly lamps: SpotLight[] = [];
   private inside = false;
+  private driverHidden = false;
   onModelReady: (() => void) | null = null;
 
   setInside(on: boolean): void {
     this.inside = on;
     for (const m of this.mast) m.visible = !on;
     for (const m of this.modelMast) m.visible = !on;
+  }
+
+  setDriver(on: boolean, hideFromCamera: boolean): void {
+    this.driver.visible = on;
+    this.driverHidden = hideFromCamera;
+    this.driver.traverse((part) => part.layers.set(hideFromCamera ? 1 : 0));
   }
 
   setLights(on: boolean): void {
@@ -102,7 +111,7 @@ export class Rover {
       c.add(box(0.36, 0.06, 0.95, white, x, WHEEL_R + 0.48, z));
     }
     this.model.visible = false;
-    this.object.add(c, this.model, this.lights);
+    this.object.add(c, this.model, this.driver, this.lights);
     this.object.traverse((o) => {
       if (o instanceof Mesh) {
         o.castShadow = true;
@@ -116,6 +125,17 @@ export class Rover {
 
   private loadModels(): void {
     const loader = new GLTFLoader();
+    void loader.loadAsync(seatedAstronautUrl).then(({ scene }) => {
+      this.driver.add(scene);
+      scene.traverse((part) => {
+        if (part instanceof Mesh) {
+          part.castShadow = true;
+          part.receiveShadow = true;
+        }
+      });
+      this.setDriver(this.driver.visible, this.driverHidden);
+      this.onModelReady?.();
+    }).catch((error: unknown) => console.warn("Seated astronaut model unavailable", error));
     void Promise.all([loader.loadAsync(roverUrl), loader.loadAsync(cockpitUrl)]).then(([rover, cockpit]) => {
       const wheels: Object3D[] = [];
       for (const name of WHEEL_NAMES) {

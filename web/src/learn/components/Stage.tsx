@@ -120,10 +120,7 @@ export function Stage() {
     sceneRef.current = scene;
     scene.onLookChange = (heading, fov, pitch, vfov) => setLook({ heading, fov, pitch, vfov });
     scene.onCraterTerrain = (craterTerrain) => useLearn.setState({ craterTerrain });
-    scene.onWalkSwitch = () => {
-      const s = useLearn.getState();
-      s.setWalkBody(s.walkBody === "rover" ? "astronaut" : "rover");
-    };
+    scene.onWalkInteract = () => useLearn.getState().toggleRoverSeat();
     scene.onWalkPov = () => {
       const s = useLearn.getState();
       s.setWalkPov(s.walkPov === "first" ? "third" : "first");
@@ -132,6 +129,7 @@ export function Stage() {
     scene.onWalkEdge = (walkEdge) => useLearn.setState({ walkEdge });
     scene.onWalkNear = (nearProp) => useLearn.setState({ nearProp });
     scene.onWalkTarget = (missionM, missionSide) => useLearn.setState({ missionM, missionSide });
+    scene.onRoverNear = (nearRover) => useLearn.setState({ nearRover });
     scene.onWalkActive = () => {
       if (useLearn.getState().walkHint) useLearn.setState({ walkHint: false });
     };
@@ -185,7 +183,7 @@ export function Stage() {
         return;
       } else scene.update(f);
       shown = f.site.id;
-      scene.setWalkBody(s.walkBody);
+      scene.setWalkControl(s.walkControl);
       scene.setWalkPov(s.walkPov);
       scene.setWalkLights(s.walkLights);
       scene.setWalkTarget(missionTarget(s.mission, s.missionStep));
@@ -202,6 +200,7 @@ export function Stage() {
     });
     const unsubPanel = useLearn.subscribe((s, p) => {
       if (s.panel !== p.panel || s.chapter !== p.chapter || s.view !== p.view) layout();
+      if (s.walkUiMinimized !== p.walkUiMinimized) requestAnimationFrame(() => alive && layout());
     });
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     mq.addEventListener("change", push);

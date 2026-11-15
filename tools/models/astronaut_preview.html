@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Astronaut model review</title>
+  <style>
+    :root { color-scheme: dark; font: 15px/1.5 system-ui, sans-serif; background: #08111d; color: #eef4f9; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { padding: 28px clamp(20px, 4vw, 56px) 18px; border-bottom: 1px solid #23384e; background: linear-gradient(115deg, #14283b, #08111d 60%); }
+    .eyebrow { text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 800; color: #88c6d4; }
+    h1 { font-size: clamp(24px, 3vw, 38px); line-height: 1.15; margin: 8px 0; letter-spacing: -.035em; }
+    p { color: #afc3d3; margin: 6px 0 0; max-width: 78ch; }
+    main { padding: 20px clamp(20px, 4vw, 56px) 48px; max-width: 1800px; margin: auto; }
+    .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .group { display: flex; gap: 7px; flex-wrap: wrap; }
+    button { background: #182c40; color: #dce9f2; border: 1px solid #31506b; border-radius: 9px; padding: 9px 13px; font: inherit; cursor: pointer; }
+    button:hover, button:focus-visible { border-color: #8bc4d1; outline: none; }
+    button[aria-pressed="true"] { background: #a4d7dd; color: #0b2432; border-color: #a4d7dd; font-weight: 700; }
+    .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card { background: #111f2e; border: 1px solid #294056; border-radius: 14px; overflow: hidden; min-width: 0; }
+    .cardhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 16px; }
+    .cardhead strong { font-size: 17px; }
+    .cardhead span { font-size: 12px; color: #a0b5c5; text-align: right; }
+    .viewport { height: min(49vw, 490px); min-height: 320px; position: relative; background: radial-gradient(circle at 50% 38%, #293c50, #101a27 72%); }
+    .viewport canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    .hint { padding: 9px 16px 13px; color: #aabfce; font-size: 12px; }
+    h2 { font-size: 20px; margin: 28px 0 6px; }
+    .angles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    figure { margin: 0; background: #111f2e; border: 1px solid #294056; border-radius: 12px; overflow: hidden; }
+    figure img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; }
+    figcaption { padding: 8px 11px; color: #b5c6d4; text-transform: capitalize; font-size: 12px; }
+    .note { font-size: 12px; margin-top: 13px; }
+    @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } .viewport { height: 55vw; min-height: 290px; } .angles { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+  <script type="importmap">{"imports":{"three":"/web/node_modules/three/build/three.module.js","three/addons/":"/web/node_modules/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">NASA Space Apps · Part A model review</div>
+    <h1>Astronaut design and driver pose</h1>
+    <p>Drag to orbit; scroll to zoom. The current astronaut is reconstructed from the site's procedural geometry because it has no model file. The seated view shows the proposed driver against the existing rover and cockpit models.</p>
+  </header>
+  <main>
+    <div class="toolbar">
+      <div class="group" id="poseButtons">
+        <button data-pose="standing" aria-pressed="true">Standing comparison</button>
+        <button data-pose="seated" aria-pressed="false">Seated in rover</button>
+      </div>
+      <div class="group" id="angleButtons">
+        <button data-angle="three_quarter" aria-pressed="true">Three quarter</button>
+        <button data-angle="front" aria-pressed="false">Front</button>
+        <button data-angle="side" aria-pressed="false">Side</button>
+        <button data-angle="back" aria-pressed="false">Back</button>
+      </div>
+    </div>
+    <div class="pair">
+      <section class="card">
+        <div class="cardhead"><strong id="oldLabel">Current astronaut</strong><span id="oldStats">Loading…</span></div>
+        <div class="viewport" id="oldViewer"></div>
+        <div class="hint" id="oldHint">Reconstructed from current site code</div>
+      </section>
+      <section class="card">
+        <div class="cardhead"><strong id="newLabel">Proposed astronaut</strong><span id="newStats">Loading…</span></div>
+        <div class="viewport" id="newViewer"></div>
+        <div class="hint" id="newHint">Separate GLB; not installed in the site</div>
+      </section>
+    </div>
+    <h2 id="renderTitle">Matching standing renders</h2>
+    <p>Fixed camera positions make the current and proposed proportions easy to compare.</p>
+    <div class="angles" id="renders"></div>
+    <p class="note">This is a temporary review page. The site still uses its original procedural astronaut and no enter or exit behavior has been added.</p>
+  </main>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const base = '/tools/models/';
+    const manifest = await fetch(base + 'out/astronaut_manifest.json').then(r => r.json());
+    const loader = new GLTFLoader();
+    let pose = 'standing';
+    let angle = 'three_quarter';
+    let serial = 0;
+    const standingAngles = {front: [0, 1.8, -4], side: [4, 1.8, 0], back: [0, 1.8, 4], three_quarter: [3.2, 2.3, -3.3]};
+    const seatedAngles = {side: [-4.5, 2.2, 0], three_quarter: [-4.2, 3.1, -4.2]};
+
+    function viewer(id) {
+      const element = document.getElementById(id);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x182839);
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 100);
+      const renderer = new THREE.WebGLRenderer({antialias: true});
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      element.append(renderer.domElement);
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.minDistance = 0.3;
+      controls.maxDistance = 14;
+      scene.add(new THREE.HemisphereLight(0xc9e6ff, 0x4c5362, 2.4));
+      for (const [x, y, z, intensity] of [[-4, 7, -5, 110], [5, 5, 4, 75]]) {
+        const light = new THREE.PointLight(0xffffff, intensity);
+        light.position.set(x, y, z);
+        scene.add(light);
+      }
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({color: 0x415265, roughness: 1}));
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
+      new ResizeObserver(() => {
+        camera.aspect = element.clientWidth / element.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(element.clientWidth, element.clientHeight, false);
+      }).observe(element);
+      function tick() { controls.update(); renderer.render(scene, camera); requestAnimationFrame(tick); }
+      tick();
+      return {scene, camera, controls, floor, models: []};
+    }
+
+    const viewers = [viewer('oldViewer'), viewer('newViewer')];
+
+    function setCamera(v) {
+      const target = pose === 'standing' ? new THREE.Vector3(0, 0.95, 0) : new THREE.Vector3(-0.3, 1.25, -0.1);
+      const where = (pose === 'standing' ? standingAngles : seatedAngles)[angle];
+      v.camera.position.set(...where);
+      v.controls.target.copy(target);
+      v.controls.update();
+    }
+
+    async function load() {
+      const request = ++serial;
+      for (const [i, v] of viewers.entries()) {
+        for (const model of v.models) v.scene.remove(model);
+        v.models = [];
+        v.floor.position.y = pose === 'standing' ? -0.015 : -0.03;
+        setCamera(v);
+        const key = pose === 'standing' ? (i ? 'improved_astronaut' : 'current_astronaut') : i ? 'astronaut_seated' : null;
+        const stat = document.getElementById(i ? 'newStats' : 'oldStats');
+        stat.textContent = key ? `${manifest[key].triangles.toLocaleString()} triangles · ${(manifest[key].bytes / 1024).toFixed(0)} KB` : 'No seated astronaut yet';
+        const files = pose === 'standing' ? [manifest[key].glb] : ['improved_rover.glb', 'improved_cockpit.glb', ...(i ? [manifest.astronaut_seated.glb] : [])];
+        try {
+          const loaded = await Promise.all(files.map(file => loader.loadAsync(base + 'out/' + file)));
+          if (request !== serial) return;
+          for (const result of loaded) { v.models.push(result.scene); v.scene.add(result.scene); }
+        } catch (error) { stat.textContent = 'Could not load model'; console.error(error); }
+      }
+      const labels = pose === 'standing' ? ['current_astronaut', 'improved_astronaut'] : ['astronaut_seated_rover'];
+      const angles = pose === 'standing' ? ['front', 'side', 'back', 'three_quarter'] : ['side', 'three_quarter'];
+      document.getElementById('renders').replaceChildren(...angles.map(view => {
+        const card = document.createElement('figure');
+        card.innerHTML = pose === 'standing'
+          ? `<img loading="lazy" src="${base}previews/${labels[0]}_${view}.png" alt="Current astronaut ${view} view"><figcaption>Current · ${view.replace('_',' ')}</figcaption><img loading="lazy" src="${base}previews/${labels[1]}_${view}.png" alt="Proposed astronaut ${view} view"><figcaption>Proposed · ${view.replace('_',' ')}</figcaption>`
+          : `<img loading="lazy" src="${base}previews/${labels[0]}_${view}.png" alt="Seated astronaut in rover ${view} view"><figcaption>Seated in rover · ${view.replace('_',' ')}</figcaption>`;
+        return card;
+      }));
+      document.getElementById('oldLabel').textContent = pose === 'standing' ? 'Current astronaut' : 'Empty rover';
+      document.getElementById('newLabel').textContent = pose === 'standing' ? 'Proposed astronaut' : 'Proposed seated driver';
+      document.getElementById('oldHint').textContent = pose === 'standing' ? 'Reconstructed from current site code' : 'Current rover/cockpit geometry without driver';
+      document.getElementById('newHint').textContent = pose === 'standing' ? 'Separate GLB; not installed in the site' : 'Seated GLB at driver seat and controls';
+      document.getElementById('renderTitle').textContent = pose === 'standing' ? 'Matching standing renders' : 'Seated pose in rover';
+    }
+
+    function pressed(group, name, value) {
+      for (const button of document.querySelectorAll(`#${group} button`)) button.setAttribute('aria-pressed', String(button.dataset[name] === value));
+    }
+    document.getElementById('poseButtons').addEventListener('click', event => {
+      const next = event.target.closest('button')?.dataset.pose;
+      if (!next) return;
+      pose = next;
+      if (pose === 'seated' && !seatedAngles[angle]) angle = 'three_quarter';
+      for (const button of document.querySelectorAll('#angleButtons button')) button.hidden = pose === 'seated' && !seatedAngles[button.dataset.angle];
+      pressed('poseButtons', 'pose', pose);
+      pressed('angleButtons', 'angle', angle);
+      load();
+    });
+    document.getElementById('angleButtons').addEventListener('click', event => {
+      const next = event.target.closest('button')?.dataset.angle;
+      if (!next) return;
+      angle = next;
+      pressed('angleButtons', 'angle', angle);
+      for (const v of viewers) setCamera(v);
+    });
+    load();
+  </script>
+</body>
+</html>

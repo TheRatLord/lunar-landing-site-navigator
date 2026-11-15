@@ -16,7 +16,7 @@ export class WalkInput {
   private readonly down = new Set<string>();
   private stick = { x: 0, y: 0 };
   private jumpQueued = false;
-  onSwitch: (() => void) | null = null;
+  onInteract: (() => void) | null = null;
   onLights: (() => void) | null = null;
   onPov: (() => void) | null = null;
   onActive: (() => void) | null = null;
@@ -41,7 +41,7 @@ export class WalkInput {
     e.preventDefault();
     if (e.repeat) return;
     if (e.code === "Space") this.jumpQueued = true;
-    else if (e.code === "KeyE") this.onSwitch?.();
+    else if (e.code === "KeyE") this.onInteract?.();
     else if (e.code === "KeyL") this.onLights?.();
     else if (e.code === "KeyV") this.onPov?.();
     else this.down.add(e.code);

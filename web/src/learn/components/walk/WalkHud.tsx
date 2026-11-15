@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useLive } from "../../derive";
 import { useLearn } from "../../store";
 import { useIsTouch } from "../../touch";
@@ -13,7 +13,9 @@ const PAD = [
 ];
 
 export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) => void; onJump: () => void }) {
-  const body = useLearn((s) => s.walkBody);
+  const { body, seated } = useLearn((s) => s.walkControl);
+  const nearRover = useLearn((s) => s.nearRover);
+  const minimized = useLearn((s) => s.walkUiMinimized);
   const edge = useLearn((s) => s.walkEdge);
   const hint = useLearn((s) => s.walkHint);
   const setBody = useLearn((s) => s.setWalkBody);
@@ -25,6 +27,18 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
   const picker = useLearn((s) => s.missionPicker);
   const dark = useLive().sky.sunlight < 0.05;
   const held = useRef(new Map<number, { x: number; y: number }>());
+  const seatHintTimer = useRef(0);
+  const [seatHint, setSeatHint] = useState(false);
+  useEffect(() => () => window.clearTimeout(seatHintTimer.current), []);
+  const switchBody = () => {
+    if (!seated) {
+      setBody(body === "rover" ? "astronaut" : "rover");
+      return;
+    }
+    setSeatHint(true);
+    window.clearTimeout(seatHintTimer.current);
+    seatHintTimer.current = window.setTimeout(() => setSeatHint(false), 2400);
+  };
   const apply = () => {
     let x = 0;
     let y = 0;
@@ -52,7 +66,7 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
             <>Drag to look · ▲ to {body === "rover" ? "drive" : "walk"}</>
           ) : (
             <>
-              <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> {body === "rover" ? "drive" : "walk"} · drag look · <kbd>E</kbd> switch
+              <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> {body === "rover" ? "drive" : "walk"} · drag look
               {dark && <> · <kbd>L</kbd> lights</>}
             </>
           )}
@@ -61,6 +75,11 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
       <FactCard />
       <MissionPanel />
       {edge && <p className="l-walk-edge">Edge of the map. Turn back.</p>}
+      {(seated || (body === "astronaut" && nearRover)) && (
+        <button type="button" className="l-walk-enter" onClick={() => useLearn.getState().toggleRoverSeat()}>
+          {seated ? (touch ? "Exit rover" : "Press E to exit") : (touch ? "Enter rover" : "Press E to enter")}
+        </button>
+      )}
       {touch && (
         <div className="l-walk-pad" role="group" aria-label="Move">
           {PAD.map((b) => (
@@ -84,7 +103,7 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
           )}
         </div>
       )}
-      <div className="l-walk-actions">
+      {!minimized && <div className="l-walk-actions">
         {!mission && (
           <button type="button" className="l-btn l-walk-missions" aria-expanded={picker} onClick={() => useLearn.setState({ missionPicker: !picker })}>
             Rover missions
@@ -98,10 +117,11 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
         <button type="button" className="l-btn l-walk-pov" onClick={() => setPov(pov === "first" ? "third" : "first")}>
           {pov === "first" ? "Outside" : "Inside"}
         </button>
-        <button type="button" className="l-btn l-btn-primary l-walk-switch" onClick={() => setBody(body === "rover" ? "astronaut" : "rover")}>
+        {seatHint && seated && <span className="l-walk-seat-hint" role="status">Press E to exit.</span>}
+        <button type="button" className="l-btn l-btn-primary l-walk-switch" onClick={switchBody}>
           {body === "rover" ? "Be the astronaut" : "Drive the rover"}
         </button>
-      </div>
+      </div>}
     </div>
   );
 }

@@ -52,7 +52,7 @@ export function MissionPanel() {
   const found = useLearn((s) => s.missionFound);
   const metres = useLearn((s) => s.missionM);
   const side = useLearn((s) => s.missionSide);
-  const body = useLearn((s) => s.walkBody);
+  const body = useLearn((s) => s.walkControl.body);
   const m = missionById(id);
   const task = m?.tasks[step] ?? null;
   const near = metres !== null && metres <= NEAR_M && body === "rover";

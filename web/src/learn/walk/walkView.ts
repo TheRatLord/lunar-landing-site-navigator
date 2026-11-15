@@ -3,7 +3,7 @@ import { RAD } from "../geometry";
 import type { RealSite } from "../terrain";
 import type { SceneFrame, Shared } from "../scene/types";
 import { Astronaut } from "./astronaut";
-import type { Obstacle } from "./collide";
+import { pushOut, type Obstacle } from "./collide";
 import type { PropId } from "./facts";
 import { WalkCamera, type WalkPov } from "./walkCamera";
 import { PropSet } from "./props/propSet";
@@ -15,8 +15,11 @@ import { WalkSky } from "./walkSky";
 import { WalkTerrain } from "./walkTerrain";
 
 export type WalkBody = "astronaut" | "rover";
+export type WalkControl = { body: "astronaut"; seated: false } | { body: "rover"; seated: boolean };
 
 const SHADOW_HALF = 75;
+export const ENTER_ROVER_DISTANCE_M = 2.5;
+const EXIT_SIDE_M = -2.1;
 const IDLE: Drive = { forward: 0, turn: 0, jump: false };
 
 const lane = (): Obstacle[] =>
@@ -52,7 +55,9 @@ export class WalkView {
   private target: MissionSpot | null = null;
   private targetM: number | null = null;
   private targetSide = "";
-  private body: WalkBody = "astronaut";
+  onRoverNear: ((near: boolean) => void) | null = null;
+  private control: WalkControl = { body: "astronaut", seated: false };
+  private nearRover = false;
   private frame: SceneFrame | null = null;
   private siteId = "";
   private edge = false;
@@ -66,6 +71,8 @@ export class WalkView {
     this.marker.add(ring, beam);
     this.marker.visible = false;
     this.rover.onModelReady = () => this.onModelReady?.();
+    this.astronaut.onModelReady = () => this.onModelReady?.();
+    this.rover.setDriver(false, false);
     this.sky = new WalkSky(shared);
     this.light.castShadow = true;
     this.light.shadow.mapSize.set(2048, 2048);
@@ -103,15 +110,33 @@ export class WalkView {
     this.input.setEnabled(on);
   }
 
-  setBody(b: WalkBody): void {
-    if (b === this.body) return;
-    this.body = b;
+  setControl(control: WalkControl): void {
+    if (control.body === this.control.body && control.seated === this.control.seated) return;
+    if (this.control.seated && !control.seated && control.body === "astronaut") this.exitAstronaut();
+    this.control = control;
     this.input.clear();
-    if (b === "rover") this.astronaut.kneeling = false;
-    this.cam.setDistance(b === "rover" ? 10 : 7);
+    this.astronaut.kneeling = false;
+    if (!control.seated) this.astronaut.step(0, IDLE, this.terrain, [], true);
+    this.astronaut.object.visible = !control.seated;
+    this.cam.setDistance(control.body === "rover" ? 10 : 7);
     this.aim();
     this.applyLayers();
+    this.updateRoverNear();
     if (this.frame?.reducedMotion || this.cam.pov === "first") this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
+  }
+
+  private exitAstronaut(): void {
+    this.rover.object.updateMatrixWorld(true);
+    const side = this.rover.object.localToWorld(new Vector3(EXIT_SIDE_M, 0, 0));
+    const [x, z] = pushOut(side.x, side.z, 0.4, [...this.fixed, ...this.rover.obstacles()]);
+    this.astronaut.placeAt(x, z, this.rover.heading, this.terrain);
+  }
+
+  private updateRoverNear(): void {
+    const near = this.control.body === "astronaut" && Math.hypot(this.astronaut.position.x - this.rover.position.x, this.astronaut.position.z - this.rover.position.z) <= ENTER_ROVER_DISTANCE_M;
+    if (near === this.nearRover) return;
+    this.nearRover = near;
+    this.onRoverNear?.(near);
   }
 
   setPov(p: WalkPov): void {
@@ -124,10 +149,11 @@ export class WalkView {
   }
 
   private applyLayers(): void {
-    const hide = this.cam.pov === "first" && this.body === "astronaut";
+    const hide = this.cam.pov === "first" && this.control.body === "astronaut";
     this.astronaut.object.traverse((o) => o.layers.set(hide ? 1 : 0));
     this.astronaut.lamp.layers.set(0);
-    this.rover.setInside(this.cam.pov === "first" && this.body === "rover");
+    this.rover.setInside(this.cam.pov === "first" && this.control.body === "rover");
+    this.rover.setDriver(this.control.seated, this.cam.pov === "first" && this.control.body === "rover");
   }
 
   setLights(on: boolean): void {
@@ -137,7 +163,7 @@ export class WalkView {
 
   lookAt(azDeg: number, elDeg: number): void {
     if (this.cam.pov !== "first") return;
-    if (this.body === "astronaut") {
+    if (this.control.body === "astronaut") {
       this.astronaut.kneeling = false;
       this.astronaut.heading = azDeg;
     }
@@ -160,7 +186,9 @@ export class WalkView {
       this.onNear?.(null);
       this.astronaut.reset();
       this.rover.reset();
+      if (this.control.body === "rover") this.astronaut.kneeling = false;
       this.settle();
+      this.updateRoverNear();
     }
     this.props.place(this.terrain);
     this.rover.pose(this.terrain);
@@ -178,11 +206,11 @@ export class WalkView {
   }
 
   private heading(): number {
-    return this.body === "rover" ? this.rover.heading : this.astronaut.heading;
+    return this.control.body === "rover" ? this.rover.heading : this.astronaut.heading;
   }
 
   private aim(): void {
-    if (this.body === "rover") {
+    if (this.control.body === "rover") {
       this.focus.copy(this.rover.position).setY(this.rover.position.y + 1.6);
       this.rover.object.updateMatrixWorld();
       this.rover.object.localToWorld(this.eye.set(-0.38, 1.75, -0.1));
@@ -214,14 +242,15 @@ export class WalkView {
     const d = this.input.read();
     let moving: boolean;
     let edge: boolean;
-    if (this.body === "rover") {
-      moving = this.rover.step(dt, d, this.terrain, [...this.fixed, this.astronaut.obstacle()]);
-      this.astronaut.step(dt, IDLE, this.terrain, [], reduced);
+    if (this.control.body === "rover") {
+      moving = this.rover.step(dt, d, this.terrain, this.control.seated ? this.fixed : [...this.fixed, this.astronaut.obstacle()]);
+      if (!this.control.seated) this.astronaut.step(dt, IDLE, this.terrain, [], reduced);
       edge = this.rover.atEdge;
     } else {
       moving = this.astronaut.step(dt, d, this.terrain, [...this.fixed, ...this.rover.obstacles()], reduced);
       edge = this.astronaut.atEdge;
     }
+    this.updateRoverNear();
     if (edge !== this.edge) {
       this.edge = edge;
       this.onEdge?.(edge);
@@ -248,7 +277,7 @@ export class WalkView {
   }
 
   drag(dxDeg: number, dyDeg: number): void {
-    if (this.cam.pov === "first" && this.body === "astronaut") {
+    if (this.cam.pov === "first" && this.control.body === "astronaut") {
       this.astronaut.kneeling = false;
       this.astronaut.heading = (this.astronaut.heading - dxDeg + 360) % 360;
       this.cam.orbit(0, dyDeg, false);

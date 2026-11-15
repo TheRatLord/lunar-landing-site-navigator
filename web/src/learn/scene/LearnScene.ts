@@ -24,7 +24,7 @@ import earthMap from "./maps/earth.jpg";
 import moonMap from "./maps/moon.jpg";
 import { CameraTween } from "./tween";
 import { SPACE_BG, type SceneFrame, type Shared, type ViewKind } from "./types";
-import { WalkView, type WalkBody } from "../walk/walkView";
+import { WalkView, type WalkControl } from "../walk/walkView";
 import type { WalkPov } from "../walk/walkCamera";
 import type { PropId } from "../walk/facts";
 import type { MissionSpot } from "../walk/missions";
@@ -56,7 +56,7 @@ export class LearnScene {
   private ground!: GroundView;
   private crater: CraterView | null = null;
   private walk: WalkView | null = null;
-  private walkBody: WalkBody = "astronaut";
+  private walkControl: WalkControl = { body: "astronaut", seated: false };
   private walkPov: WalkPov = "third";
   private overlay!: Scene;
   private overlayCam!: OrthographicCamera;
@@ -90,10 +90,11 @@ export class LearnScene {
   onLookChange: ((headingDeg: number, fovDeg: number, pitchDeg: number, vfovDeg: number) => void) | null = null;
   onUserLook: (() => void) | null = null;
   onCraterTerrain: ((source: CraterSource) => void) | null = null;
-  onWalkSwitch: (() => void) | null = null;
+  onWalkInteract: (() => void) | null = null;
   onWalkPov: (() => void) | null = null;
   onWalkEdge: ((atEdge: boolean) => void) | null = null;
   onWalkNear: ((id: PropId | null) => void) | null = null;
+  onRoverNear: ((near: boolean) => void) | null = null;
   onWalkActive: (() => void) | null = null;
   onWalkLights: (() => void) | null = null;
   onWalkTarget: ((metres: number | null, side: string) => void) | null = null;
@@ -193,7 +194,7 @@ export class LearnScene {
         this.requestRender();
         this.onWalkActive?.();
       };
-      this.walk.input.onSwitch = () => this.onWalkSwitch?.();
+      this.walk.input.onInteract = () => this.onWalkInteract?.();
       this.walk.input.onPov = () => this.onWalkPov?.();
       this.walk.input.onLights = () => this.onWalkLights?.();
       this.walk.setLights(this.walkLights);
@@ -201,7 +202,8 @@ export class LearnScene {
       this.walk.onNear = (id) => this.onWalkNear?.(id);
       this.walk.onTarget = (m, side) => this.onWalkTarget?.(m, side);
       this.walk.setTarget(this.walkTarget);
-      this.walk.setBody(this.walkBody);
+      this.walk.onRoverNear = (near) => this.onRoverNear?.(near);
+      this.walk.setControl(this.walkControl);
       this.walk.setPov(this.walkPov);
       this.applyCamera(this.walk.camera);
     }
@@ -234,10 +236,10 @@ export class LearnScene {
     this.requestRender();
   }
 
-  setWalkBody(b: WalkBody) {
-    if (b === this.walkBody) return;
-    this.walkBody = b;
-    this.walk?.setBody(b);
+  setWalkControl(control: WalkControl) {
+    if (control.body === this.walkControl.body && control.seated === this.walkControl.seated) return;
+    this.walkControl = control;
+    this.walk?.setControl(control);
     this.requestRender();
   }
 
