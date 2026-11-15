@@ -1,22 +1,20 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "../../components/ui/Button";
-import { Icon, type IconName } from "../../components/ui/Icon";
+import { Icon } from "../../components/ui/Icon";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Popover } from "../../components/ui/Popover";
-import { Spinner } from "../../components/ui/Progress";
-import { ConstraintsSection } from "../../scenario/editor/ConstraintsSection";
 import { MISSION_SECTIONS, useEditorUi, type EditorTarget, type MissionSection } from "../../scenario/editor/editorUi";
 import { LanderSection } from "../../scenario/editor/LanderSection";
 import { ModelSection } from "../../scenario/editor/ModelSection";
 import { NetworkSection } from "../../scenario/editor/NetworkSection";
 import { useLiveValidation } from "../../scenario/editor/useLiveValidation";
+import { fieldErrorCount, useFieldErrors } from "../../scenario/fieldErrors";
 import { useScenario, type ValidationIssue } from "../../scenario/store";
 import { usePublishScreenContext } from "../../ask/screenContext";
 import "../../styles/mission.css";
 
 const BODIES: Record<MissionSection, () => ReactNode> = {
   lander: () => <LanderSection />,
-  constraints: () => <ConstraintsSection />,
   network: () => <NetworkSection />,
   model: () => <ModelSection />,
 };
@@ -28,7 +26,7 @@ const TARGET_OF_ROOT: Record<string, EditorTarget> = {
   profile: "lander",
   constraints: "constraints",
   network: "network",
-  transfer: "transfer",
+  transfer: "time",
   ellipse: "ellipse",
   terrain_error: "model",
   eclipse: "model",
@@ -67,28 +65,17 @@ function IssueList({ issues }: { issues: ValidationIssue[] }) {
   );
 }
 
-const CHECK: Partial<Record<string, { className: string; icon: IconName; text: string }>> = {
-  ok: { className: "sc-ok", icon: "check", text: "All inputs valid" },
-  invalid: { className: "sc-bad", icon: "alert", text: "Needs fixing" },
-  unavailable: { className: "faint", icon: "minus", text: "Not checked" },
-};
-
 function CheckState() {
   const issues = useScenario((s) => s.issues);
+  const local = useFieldErrors(fieldErrorCount);
   const validation = useLiveValidation();
   if (issues.length > 0) return <IssueList issues={issues} />;
-  if (validation.state === "checking")
-    return (
-      <span className="sc-foot-state">
-        <Spinner size={12} /> Checking
-      </span>
-    );
-  const c = CHECK[validation.state];
-  return c ? (
-    <span className={`sc-foot-state ${c.className}`}>
-      <Icon name={c.icon} size={14} /> {c.text}
+  if (local === 0 && validation.state !== "invalid") return null;
+  return (
+    <span className="sc-foot-state sc-bad" role="status">
+      <Icon name="alert" size={14} /> Needs fixing
     </span>
-  ) : null;
+  );
 }
 
 export function MissionWorkspace() {
@@ -97,7 +84,7 @@ export function MissionWorkspace() {
   const show = useEditorUi((s) => s.show);
   const issues = useScenario((s) => s.issues);
   const profileName = useScenario((s) => s.doc?.profile.name ?? "");
-  usePublishScreenContext({ where: "Mission setup", summary: profileName, lines: [] });
+  usePublishScreenContext({ where: "Setup", summary: profileName, lines: [] });
   const bodyRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState<MissionSection>(section);
 
@@ -132,13 +119,12 @@ export function MissionWorkspace() {
   }, []);
 
   return (
-    <div className="mission" aria-label="Mission setup page">
+    <div className="mission" aria-label="Setup page">
       <PageHeader actions={<CheckState />}>
-        <h1 className="mission-title">Mission setup</h1>
-        <span className="mission-sub">What stays the same while you try sites and dates. The site and the landing time are set in the plan panel on the left.</span>
+        <h1 className="mission-title">Setup</h1>
       </PageHeader>
       <div className="mission-grid">
-        <nav className="mission-index" aria-label="Mission sections">
+        <nav className="mission-index" aria-label="Setup sections">
           {MISSION_SECTIONS.map((s) => (
             <button
               key={s.id}
@@ -160,7 +146,7 @@ export function MissionWorkspace() {
                 <Icon name={s.icon} size={16} />
                 {s.label}
               </h2>
-              <p className="mission-sec-about">{s.about}</p>
+              {s.about && <p className="mission-sec-about">{s.about}</p>}
               {BODIES[s.id]()}
             </section>
           ))}

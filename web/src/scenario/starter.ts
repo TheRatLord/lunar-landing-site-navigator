@@ -1,7 +1,7 @@
 import { catalogApi } from "./api";
 import { buildScenario } from "./editor/newScenario";
 import { loadPresets } from "./editor/usePresets";
-import type { Scenario } from "./types";
+import type { Constraints, Scenario } from "./types";
 
 export const FEATURED_SITES = [
   { id: "poi-glaser-c1", name: "Shackleton connecting ridge", note: "Near-permanent sunlight, 89.4°S" },
@@ -20,18 +20,24 @@ const PROFILE_ID = "nova-c-polar";
 const CONSTRAINTS = "viper-polar";
 const NETWORK_ID = "dsn-all";
 const SURFACE_HOURS = 336;
+const SUN_AND_EARTH_MIN_H = 168;
 
 export async function starterScenario(): Promise<Scenario> {
   const [site, presets] = await Promise.all([catalogApi.site(SITE.id), loadPresets()]);
   const profile = presets.profiles.find((p) => p.id === PROFILE_ID) ?? presets.profiles[0];
   if (!profile) throw new Error("The engine offers no lander presets.");
+  const preset = presets.constraints.find((c) => c.name === CONSTRAINTS)?.constraints;
+  const constraints: Constraints | undefined = preset && {
+    ...preset,
+    min_total_sunlit_contact_h: { min: SUN_AND_EARTH_MIN_H, max: null, unit: "h", label: "Sunlight and Earth link together", origin: { basis: "user", label: "", source_url: null, note: "" }, margin_scale: 24 },
+  };
   return buildScenario({
-    name: SITE.name,
+    name: "Example plan",
     site: { ...site, name: SITE.name },
     landing_utc: LANDING_UTC,
     mission_duration_h: SURFACE_HOURS,
     profile: profile.profile,
-    constraints: presets.constraints.find((c) => c.name === CONSTRAINTS)?.constraints,
+    constraints,
     network: presets.networks.find((n) => n.id === NETWORK_ID)?.network,
   });
 }

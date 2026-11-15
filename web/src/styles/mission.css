@@ -9,14 +9,6 @@
   font-size: var(--fs-title);
   font-weight: var(--fw-medium);
 }
-.mission-sub {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-3);
-  font-size: var(--fs-sm);
-}
 .mission-grid {
   display: flex;
   flex: 1 1 0;
@@ -84,6 +76,9 @@
   font-size: var(--fs-xl);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-tight);
+}
+.mission-sec-title + :not(.mission-sec-about) {
+  margin-top: var(--sp-2);
 }
 .mission-sec-title > svg {
   color: var(--text-3);

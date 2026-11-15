@@ -1,5 +1,4 @@
 import { useId, useState } from "react";
-import { Icon } from "../../components/ui/Icon";
 import { Segmented } from "../../components/ui/Segmented";
 import { polarForward, type Hemisphere } from "../../lib/projection";
 import { useScenario } from "../store";
@@ -22,12 +21,10 @@ function unlinkChanges(site: SiteLink): Changes {
 
 export function SiteSection() {
   const site = useScenario((s) => s.doc?.site);
-  const edit = useScenario((s) => s.edit);
   const editMany = useScenario((s) => s.editMany);
   const [coordMode, setCoordMode] = useState<"geo" | "polar">("geo");
   if (!site) return null;
   const hemisphere: Hemisphere = site.lat_deg < 0 ? "south" : "north";
-  const moved = !site.catalog_id && (site.name ?? "").endsWith(MOVED);
 
   const unlink = () => {
     const changes = unlinkChanges(site);
@@ -38,22 +35,6 @@ export function SiteSection() {
     <div className="sc-section">
       <div className="sc-group">
         <TextField path={["site", "name"]} label="Name" placeholder="Site name" />
-        <Row label="Catalogue entry">
-          {site.catalog_id ? (
-            <span className="chip sc-linked">
-              <span className="num">{site.catalog_id}</span>
-              <button type="button" className="sc-chip-x" aria-label={`Unlink ${site.catalog_id}`} onClick={() => edit(["site", "catalog_id"], undefined)}>
-                <Icon name="close" size={10} />
-              </button>
-            </span>
-          ) : moved ? (
-            <span className="chip chip-marginal">
-              <Icon name="pin" size={12} /> Moved off its catalogue entry
-            </span>
-          ) : (
-            <span className="dim">None, a free point</span>
-          )}
-        </Row>
       </div>
       <div className="sc-group">
         <div className="sc-toolrow">

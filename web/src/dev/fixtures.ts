@@ -6,10 +6,8 @@ import type {
   Interval,
   IntervalRow,
   LineRow,
-  OpportunitySlot,
   StationMarker,
   TargetTrack,
-  Verdict,
 } from "../contract/types";
 import { discFractionAboveHorizon } from "../lib/disc";
 import { classify, marginOf } from "../lib/verdict";
@@ -319,23 +317,3 @@ export function makeConstraints(): ConstraintVerdict[] {
   ];
 }
 
-export function makeSlots(): { slots: OpportunitySlot[]; epochMs: number; slotMs: number } {
-  const epochMs = Date.UTC(2027, 0, 6);
-  const slotMs = MS_DAY;
-  const limiting = ["Sun elevation at landing", "Direct-to-Earth contact", "Longest dark span", "Minimum state of charge"];
-  const slots: OpportunitySlot[] = [];
-  for (let col = 0; col < 52; col++) {
-    for (let row = 0; row < 30; row++) {
-      const m = Math.sin(rad(row * 12 + col * 21)) + 0.5 * Math.sin(rad(col * 14.5)) - 0.2;
-      const verdict: Verdict = m > 0.35 ? "pass" : m > 0 ? "marginal" : "fail";
-      slots.push({
-        utc_ms: epochMs + col * MS_LUNATION + row * slotMs,
-        verdict,
-        limiting: limiting[(row + col) % limiting.length],
-        limiting_margin: `${m >= 0 ? "+" : "−"}${Math.abs(m * 6).toFixed(1)} h`,
-        margin_norm: clamp(m, -1, 1),
-      });
-    }
-  }
-  return { slots, epochMs, slotMs };
-}

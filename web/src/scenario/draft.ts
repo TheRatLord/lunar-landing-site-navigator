@@ -52,7 +52,7 @@ export function readDraftText(raw: string | null): DraftRead {
     draft: {
       doc: n.scenario,
       saved,
-      baseline: saved && typeof rec["baseline"] === "string" ? rec["baseline"] : null,
+      baseline: typeof rec["baseline"] === "string" ? rec["baseline"] : null,
       ...(typeof rec["tab"] === "string" ? { tab: rec["tab"] } : {}),
     },
   };

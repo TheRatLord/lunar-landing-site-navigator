@@ -6,7 +6,7 @@ import { Toggle } from "../../components/ui/Fields";
 import { formatUtc, parseUtc, toIsoUtc } from "../../lib/time";
 import type { Path } from "../path";
 import { BASIS_LABEL, UNPUBLISHED_BASES, type Basis, type Origin } from "../types";
-import { USER_ORIGIN, useField } from "./fieldState";
+import { USER_ORIGIN, useField, useReportFieldError } from "./fieldState";
 
 const CHIP_LABEL: Partial<Record<Basis, string>> = { "model-typed": "Unconfirmed" };
 const PUBLISHED_BASES: Partial<Record<Basis, true>> = { published: true, historical: true, "mission-specific": true };
@@ -53,7 +53,7 @@ export function OriginBadge({ origin }: { origin: Origin | undefined }) {
 
 /** The origin chip for headings and lists; user-entered values carry no mark. */
 export function OriginMark({ origin }: { origin: Origin | undefined }) {
-  return origin && origin.basis !== "user" ? <OriginBadge origin={origin} /> : null;
+  return origin && origin.basis !== "user" && origin.basis !== "default" ? <OriginBadge origin={origin} /> : null;
 }
 
 interface RowProps {
@@ -169,6 +169,7 @@ export function NumberField({ path, label, unit, min, max, exclusiveMin, step = 
   const id = useId();
   const { value, issue, set } = useField<number | null>(path);
   const [local, setLocal] = useState<string | null>(null);
+  useReportFieldError(id, local);
 
   const validate = (text: string): { ok: true; value: number | null } | { ok: false; error: string } => {
     const t = text.trim().replace(/,/g, ".");
@@ -274,6 +275,7 @@ export function UtcField({ path, label, actions }: { path: Path; label: ReactNod
   const { value, issue, set } = useField<string>(path);
   const ms = value ? parseUtc(value) : null;
   const [local, setLocal] = useState<string | null>(null);
+  useReportFieldError(id, local);
   const commit = (text: string) => {
     const t = parseUtc(text);
     if (t === null) return setLocal("Expected YYYY-MM-DD HH:MM[:SS].");
@@ -287,7 +289,7 @@ export function UtcField({ path, label, actions }: { path: Path; label: ReactNod
       <DraftInput
         id={id}
         unit="UTC"
-        external={ms === null ? (value ?? "") : formatUtc(ms, { seconds: ms % 60_000 !== 0 })}
+        external={ms === null ? (value ?? "") : formatUtc(ms, { seconds: ms % 60_000 !== 0 }).replace(/Z$/, "")}
         error={error}
         commit={commit}
         autoComplete="off"
@@ -314,22 +316,5 @@ export function GroupHead({ title, children }: { title: ReactNode; children?: Re
       <span className="grow" />
       {children}
     </div>
-  );
-}
-
-export function EstimatesChip({ rows }: { rows: ReadonlyArray<{ path: string; basis: string; label: string }> }) {
-  if (rows.length === 0) return null;
-  return (
-    <Popover label={`${rows.length} estimate${rows.length === 1 ? "" : "s"}`} icon="warn" tone="marginal" width={360}>
-      <ul className="sc-estimates">
-        {rows.map((r) => (
-          <li key={r.path}>
-            <code>{r.path}</code>
-            <span className="dim">{r.basis}</span>
-            {r.label && <span>{r.label}</span>}
-          </li>
-        ))}
-      </ul>
-    </Popover>
   );
 }

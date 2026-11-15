@@ -46,7 +46,7 @@ export function PlannerNav() {
   return (
     <nav className="tb-nav" aria-label="Pages">
       {VIEW_WORKSPACES.map((w) => (
-        <NavLink key={w.id} to={w.path} title={w.hotkey ? `${w.about} (Alt+${w.hotkey})` : w.about} className={({ isActive }) => `tb-tab${isActive ? " active" : ""}`} aria-keyshortcuts={w.hotkey ? `Alt+${w.hotkey}` : undefined}>
+        <NavLink key={w.id} to={w.path} title={w.hotkey ? `Alt+${w.hotkey}` : undefined} className={({ isActive }) => `tb-tab${isActive ? " active" : ""}`} aria-keyshortcuts={w.hotkey ? `Alt+${w.hotkey}` : undefined}>
           <Icon name={w.icon} size={14} />
           {w.label}
         </NavLink>
@@ -90,7 +90,7 @@ export function PlannerTools() {
   const askEnabled = useAsk((s) => s.enabled);
   return (
     <>
-      <NavLink to={EVIDENCE_WORKSPACE.path} title={EVIDENCE_WORKSPACE.about} className={({ isActive }) => `btn btn-sm btn-ghost tb-link${isActive ? " active" : ""}`}>
+      <NavLink to={EVIDENCE_WORKSPACE.path} className={({ isActive }) => `btn btn-sm btn-ghost tb-link${isActive ? " active" : ""}`}>
         <Icon name={EVIDENCE_WORKSPACE.icon} size={14} />
         {EVIDENCE_WORKSPACE.label}
       </NavLink>

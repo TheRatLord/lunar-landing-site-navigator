@@ -1,6 +1,5 @@
 import { Button, IconButton } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
-import { Popover } from "../components/ui/Popover";
 import { useScenario } from "../scenario/store";
 
 const MAX_LINES = 8;
@@ -8,23 +7,34 @@ const MAX_LINES = 8;
 export function DraftNotice() {
   const problem = useScenario((s) => s.draftProblem);
   const dropped = useScenario((s) => s.droppedFields);
-  const discardDraft = useScenario((s) => s.discardDraft);
-  const dismiss = useScenario((s) => s.dismissDroppedFields);
   const elsewhere = useScenario((s) => s.draftElsewhere);
   const conflict = useScenario((s) => s.conflictVersion);
   const saved = useScenario((s) => s.saved);
-  const name = useScenario((s) => s.doc?.name);
-  const { keepThisTab, takeOtherTabDraft, load, saveAsNew } = useScenario.getState();
-  if (!problem && !dropped && !elsewhere && (conflict === null || !saved)) return null;
+  const pendingLink = useScenario((s) => s.pendingLink);
+  const { keepThisTab, takeOtherTabDraft, load, saveAsNew, dismissDroppedFields, dismissDraftProblem } = useScenario.getState();
+  if (!problem && !dropped && !elsewhere && !pendingLink && (conflict === null || !saved)) return null;
   return (
     <>
+      {pendingLink && (
+        <div className="draft-notice" data-tone="marginal" role="alert">
+          <Icon name="link" size={14} />
+          <strong>This link opens another plan.</strong>
+          <span className="draft-notice-text">Your unsaved edits will be lost.</span>
+          <Button size="sm" onClick={() => void load(pendingLink)}>
+            Open it
+          </Button>
+          <Button size="sm" onClick={() => useScenario.setState({ pendingLink: null })}>
+            Keep mine
+          </Button>
+        </div>
+      )}
       {elsewhere && (
         <div className="draft-notice" data-tone="marginal" role="alert">
           <Icon name="warn" size={14} />
-          <strong>This plan was edited in another tab</strong>
-          <span className="draft-notice-text">Both tabs share one plan. Pick which edits to keep.</span>
+          <strong>Edited in another tab.</strong>
+          <span className="draft-notice-text" />
           <Button size="sm" onClick={takeOtherTabDraft}>
-            Use other tab's edits
+            Use theirs
           </Button>
           <Button size="sm" onClick={keepThisTab}>
             Keep mine
@@ -34,14 +44,12 @@ export function DraftNotice() {
       {conflict !== null && saved && (
         <div className="draft-notice" data-tone="marginal" role="alert">
           <Icon name="warn" size={14} />
-          <strong className="num">
-            v{conflict} was saved while you edited v{saved.version}
-          </strong>
+          <strong>Saved elsewhere while you edited.</strong>
           <span className="draft-notice-text" />
           <Button size="sm" onClick={() => void load(saved.id)}>
-            Open v{conflict}
+            Open theirs
           </Button>
-          <Button size="sm" onClick={() => void saveAsNew(`${name ?? "Plan"} (mine)`)}>
+          <Button size="sm" onClick={() => void saveAsNew()}>
             Save mine as a new plan
           </Button>
         </div>
@@ -49,36 +57,22 @@ export function DraftNotice() {
       {problem && (
         <div className="draft-notice" data-tone="fail" role="alert" data-testid="draft-problem">
           <Icon name="warn" size={14} />
-          <strong>Could not reopen your last plan</strong>
-          <span className="draft-notice-text" title={problem.summary}>
+          <strong>Your last plan could not be reopened.</strong>
+          <span className="draft-notice-text" title={[problem.summary, ...problem.details].join(" ")}>
             {problem.summary}
           </span>
-          {problem.details.length > 0 && (
-            <Popover label={`${problem.details.length} details`} align="end" width={420}>
-              <ul className="draft-notice-list">
-                {problem.details.slice(0, MAX_LINES).map((d) => (
-                  <li key={d}>
-                    <code>{d}</code>
-                  </li>
-                ))}
-                {problem.details.length > MAX_LINES && <li className="faint">+{problem.details.length - MAX_LINES}</li>}
-              </ul>
-            </Popover>
-          )}
-          <Button size="sm" onClick={discardDraft}>
-            Discard draft
-          </Button>
+          <IconButton icon="close" size="sm" label="Dismiss" onClick={dismissDraftProblem} />
         </div>
       )}
       {dropped && (
         <div className="draft-notice" role="status" data-testid="dropped-fields">
           <Icon name="info" size={14} />
           <strong>Some fields were ignored</strong>
-          <span className="draft-notice-text" title={`${dropped.source}: ${dropped.fields.join(", ")}`}>
-            {dropped.source}: {dropped.fields.slice(0, MAX_LINES).join(", ")}
+          <span className="draft-notice-text" title={dropped.fields.join(", ")}>
+            {dropped.fields.slice(0, MAX_LINES).join(", ")}
             {dropped.fields.length > MAX_LINES ? ` +${dropped.fields.length - MAX_LINES}` : ""}
           </span>
-          <IconButton icon="close" size="sm" label="Dismiss" onClick={dismiss} />
+          <IconButton icon="close" size="sm" label="Dismiss" onClick={dismissDroppedFields} />
         </div>
       )}
     </>

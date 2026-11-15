@@ -11,105 +11,96 @@ export interface Workspace {
   element: ReactElement;
   /** Alt+<hotkey> navigates here. */
   hotkey: string | null;
-  /** Whether the page at exactly `path` reads the shared selected time, analysis range or playback; the shell shows the time scrubber only there. */
+  /** Whether the page at exactly `path` reads the shared selected time or playback; the shell shows the time scrubber only there. */
   time: boolean;
-  about: string;
+  plan: boolean;
 }
 
 interface WorkspaceSpec {
   id: string;
   label: string;
   icon: IconName;
-  hotkey: string | null;
-  about: string;
+  hotkey?: string | null;
   usesDraft?: boolean;
   time?: boolean;
+  plan?: boolean;
   load: () => Promise<ComponentType>;
 }
 
-function workspace({ id, label, icon, hotkey, about, usesDraft = true, time = false, load }: WorkspaceSpec): Workspace {
+function workspace({ id, label, icon, hotkey = null, usesDraft = true, time = false, plan = true, load }: WorkspaceSpec): Workspace {
   const Lazy = lazy(() => load().then((c) => ({ default: c })));
   const element = (
     <WorkspaceBoundary key={label} workspace={label} usesDraft={usesDraft}>
-      <Suspense fallback={<p className="faint panel-pad"><Spinner size={12} /> Loading page…</p>}>
+      <Suspense fallback={<p className="faint panel-pad"><Spinner size={12} /> Loading</p>}>
         <Lazy />
       </Suspense>
     </WorkspaceBoundary>
   );
-  return { id, path: `/${id}`, label, icon, element, hotkey, time, about };
+  return { id, path: `/${id}`, label, icon, element, hotkey, time, plan };
 }
 
 const OVERVIEW = workspace({
   id: "overview",
   label: "Overview",
   icon: "target",
-  hotkey: "0",
-  about: "Is this site usable on this date? Sun, Earth and the year at a glance",
-  load: () => import("./home/HomeWorkspace").then((m) => m.HomeWorkspace),
-});
-const MAP = workspace({
-  id: "explore",
-  label: "Map",
-  icon: "map",
   hotkey: "1",
-  about: "Where else could it land? Browse the Moon, search a region for sites that pass",
-  load: () => import("./explore/ExploreWorkspace").then((m) => m.ExploreWorkspace),
+  load: () => import("./home/HomeWorkspace").then((m) => m.HomeWorkspace),
 });
 const SITE = workspace({
   id: "site",
   label: "Site",
   icon: "site",
   hotkey: "2",
-  about: "Does this site and date meet every requirement, and why? The full analysis",
   time: true,
   load: () => import("./site/SiteWorkspace").then((m) => m.SiteWorkspace),
 });
-const DATES = workspace({
-  id: "dates",
-  label: "Dates",
-  icon: "calendar",
+const MAP = workspace({
+  id: "map",
+  label: "Map",
+  icon: "map",
   hotkey: "3",
-  about: "When else can it land here? Every landing date in a year, scored",
-  load: () => import("./calendar/CalendarWorkspace").then((m) => m.CalendarWorkspace),
+  load: () => import("./explore/ExploreWorkspace").then((m) => m.ExploreWorkspace),
 });
 const COMPARE = workspace({
   id: "compare",
   label: "Compare",
   icon: "compare",
   hotkey: "4",
-  about: "Which site and date is best? Sites against dates, side by side",
   load: () => import("./compare/CompareWorkspace").then((m) => m.CompareWorkspace),
 });
-const MISSION = workspace({
+const SETUP = workspace({
   id: "mission",
-  label: "Mission setup",
+  label: "Setup",
   icon: "sliders",
-  hotkey: "5",
-  about: "Every setting of the lander, requirements, ground stations and model",
   load: () => import("./mission/MissionWorkspace").then((m) => m.MissionWorkspace),
 });
 const EVIDENCE = workspace({
   id: "evidence",
   label: "Evidence",
   icon: "evidence",
-  hotkey: null,
-  about: "How far to trust the numbers: validation reports and data versions",
   usesDraft: false,
+  plan: false,
   load: () => import("./evidence/EvidenceWorkspace").then((m) => m.EvidenceWorkspace),
 });
 
 export const HOME: Workspace = OVERVIEW;
-export const VIEW_WORKSPACES: Workspace[] = [OVERVIEW, MAP, SITE, DATES, COMPARE];
-export const SETUP_WORKSPACE: Workspace = MISSION;
+export const VIEW_WORKSPACES: Workspace[] = [OVERVIEW, SITE, MAP, COMPARE];
+export const SETUP_WORKSPACE: Workspace = SETUP;
 export const EVIDENCE_WORKSPACE: Workspace = EVIDENCE;
-export const WORKSPACES: Workspace[] = [...VIEW_WORKSPACES, MISSION, EVIDENCE];
+export const WORKSPACES: Workspace[] = [...VIEW_WORKSPACES, SETUP, EVIDENCE];
 
 export function isAt(w: Workspace, pathname: string): boolean {
   return pathname === w.path || pathname.startsWith(`${w.path}/`);
 }
 
+const trimmed = (pathname: string): string => (pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname);
+
 /** Whether the page at `pathname` reads the shared time. */
 export function usesTime(pathname: string): boolean {
-  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  const path = trimmed(pathname);
   return WORKSPACES.some((w) => w.time && w.path === path);
+}
+
+export function showsPlan(pathname: string): boolean {
+  return !WORKSPACES.some((w) => !w.plan && isAt(w, pathname));
 }

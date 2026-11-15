@@ -1,6 +1,6 @@
 import type { components } from "../api/generated/schema";
 import { getJson, request, sendJson, type Query } from "../api/client";
-import type { RevisionInfo, Scenario, ScenarioRecord, ScenarioSummary } from "./types";
+import type { Scenario, ScenarioRecord } from "./types";
 
 type Opts = { signal?: AbortSignal };
 
@@ -39,12 +39,8 @@ export const presetsApi = {
 };
 
 export const scenarioApi = {
-  list: (q: { q?: string; limit?: number; offset?: number } = {}, o: Opts = {}) => getJson<Page<ScenarioSummary>>("/scenarios", { query: q, ...o }),
   get: (id: string, o: Opts = {}) => getJson<ScenarioRecord>(`/scenarios/${encodeURIComponent(id)}`, o),
   create: (document: Scenario, o: Opts = {}) => sendJson<ScenarioRecord>("/scenarios", { document }, o),
   update: (id: string, expectedVersion: number, document: Scenario, o: Opts = {}) =>
     request(`/scenarios/${encodeURIComponent(id)}`, { method: "PUT", body: { expected_version: expectedVersion, document }, ...o }).then((r) => r.json() as Promise<ScenarioRecord>),
-  remove: (id: string, o: Opts = {}) => request(`/scenarios/${encodeURIComponent(id)}`, { method: "DELETE", ...o }).then(() => undefined),
-  revisions: (id: string, o: Opts = {}) => getJson<RevisionInfo[]>(`/scenarios/${encodeURIComponent(id)}/revisions`, o),
-  revision: (id: string, version: number, o: Opts = {}) => getJson<ScenarioRecord>(`/scenarios/${encodeURIComponent(id)}/revisions/${version}`, o),
 };

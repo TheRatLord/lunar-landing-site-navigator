@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { isAbort } from "../../api/client";
+import { useFieldErrors } from "../fieldErrors";
 import { getIn, type Path } from "../path";
 import { issuesAt, useScenario } from "../store";
 import type { Origin } from "../types";
@@ -45,4 +46,11 @@ export function useSearch<T>(query: string, load: (q: string, signal: AbortSigna
     };
   }, [query, load, delayMs, reload]);
   return state;
+}
+
+export function useReportFieldError(id: string, error: string | null): void {
+  useEffect(() => {
+    useFieldErrors.getState().report(id, error);
+  }, [id, error]);
+  useEffect(() => () => useFieldErrors.getState().report(id, null), [id]);
 }

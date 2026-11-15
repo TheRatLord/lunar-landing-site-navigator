@@ -35,7 +35,7 @@ export function TerrainStackControl() {
 
   return (
     <div className="sc-group">
-      <GroupHead title="Terrain stack">
+      <GroupHead title="Terrain">
         <Segmented
           label="Terrain stack"
           size="sm"
@@ -52,8 +52,9 @@ export function TerrainStackControl() {
           {error}
         </p>
       )}
-      {stores === null && !error && <Spinner size={14} />}
-      {rows.length > 0 && (
+      {!restricted && <p className="dim sc-summary">Best available at the site</p>}
+      {restricted && stores === null && !error && <Spinner size={14} />}
+      {restricted && rows.length > 0 && (
         <ol className="sc-stores" aria-label="Terrain stack DEMs, in precedence order">
           {rows.map((s, i) => {
             const on = !chosen || chosen.includes(s.dem_id);
@@ -87,7 +88,7 @@ export function TerrainStackControl() {
           })}
         </ol>
       )}
-      {rows.length > 0 && (
+      {restricted && rows.length > 0 && (
         <Disclosure title="Coverage" count={rows.length}>
           <ul className="sc-coverage">
             {rows.map((s) => (

@@ -2,11 +2,10 @@ import { Button, IconButton } from "../../components/ui/Button";
 import { Disclosure } from "../../components/ui/Disclosure";
 import { Toggle } from "../../components/ui/Fields";
 import { useScenario } from "../store";
-import { BASIS_LABEL, UNPUBLISHED_BASES, type LanderProfile, type PanelSpec } from "../types";
-import { EstimatesChip, GroupHead, NumberField, OriginMark, TextField } from "./controls";
+import type { LanderProfile, PanelSpec } from "../types";
+import { GroupHead, NumberField, OriginMark, TextField } from "./controls";
 import { USER_ORIGIN, editedOrigin } from "./fieldState";
 import { PANEL_FIELDS, PROFILE_ATTITUDE, PROFILE_BATTERY, PROFILE_HEIGHTS, PROFILE_LINK, PROFILE_LOADS, type NumSpec } from "./fieldSpecs";
-import { PresetBar, ProfileOptions } from "./PresetBar";
 
 function ProfileNumber({ spec }: { spec: NumSpec }) {
   const origin = useScenario((s) => s.doc?.profile.origins?.[spec.field]);
@@ -15,35 +14,6 @@ function ProfileNumber({ spec }: { spec: NumSpec }) {
     if (origin && origin.basis !== "user") edit(["profile", "origins", spec.field], editedOrigin(origin));
   };
   return <NumberField {...spec} path={["profile", ...spec.field.split(".")]} origin={origin ?? USER_ORIGIN} onCommit={relabel} />;
-}
-
-function ProfilePicker() {
-  const profile = useScenario((s) => s.doc?.profile);
-  const edit = useScenario((s) => s.edit);
-  if (!profile) return null;
-  const estimates = Object.entries(profile.origins ?? {})
-    .filter(([, o]) => UNPUBLISHED_BASES.has(o.basis))
-    .map(([path, o]) => ({ path, basis: BASIS_LABEL[o.basis], label: o.label }));
-
-  return (
-    <div className="sc-group">
-      <div className="sc-profile">
-        <b className="sc-profile-name">{profile.name}</b>
-        <span className="dim num">{profile.id}</span>
-        <EstimatesChip rows={estimates} />
-      </div>
-      <PresetBar
-        label="Lander preset"
-        what="Lander presets"
-        options={(data) => <ProfileOptions profiles={data.profiles} />}
-        onApply={(choice, data) => {
-          const p = data.profiles.find((x) => x.id === choice);
-          if (p) edit(["profile"], p.profile);
-        }}
-        extra={(choice, data) => <EstimatesChip rows={data.profiles.find((p) => p.id === choice)?.estimates ?? []} />}
-      />
-    </div>
-  );
 }
 
 function PanelsBlock() {
@@ -103,7 +73,6 @@ export function LanderSection() {
   if (!profile) return null;
   return (
     <div className="sc-section">
-      <ProfilePicker />
       <Group title="Observer heights" specs={PROFILE_HEIGHTS} />
       <PanelsBlock />
       <Group title="Attitude" specs={PROFILE_ATTITUDE} />

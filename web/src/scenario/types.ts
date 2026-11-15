@@ -36,7 +36,6 @@ export type ParameterKey = "sunlit_flux_fraction" | "antenna_terrain_margin_deg"
 
 export type ScenarioRecord = S["ScenarioRecord"];
 export type ScenarioSummary = S["ScenarioSummary"];
-export type RevisionInfo = S["RevisionInfo"];
 
 export const BASIS_LABEL: Record<Basis, string> = {
   published: "Published",

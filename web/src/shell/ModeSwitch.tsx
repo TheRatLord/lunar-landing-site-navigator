@@ -11,7 +11,6 @@ export function ModeSwitch() {
         to="/"
         className="mode-switch-opt"
         aria-current={learn ? undefined : "page"}
-        title="Planner: the full tool mission engineers use"
       >
         Planner
       </Link>
@@ -19,7 +18,6 @@ export function ModeSwitch() {
         to="/learn"
         className="mode-switch-opt"
         aria-current={learn ? "page" : undefined}
-        title="Explorer: walk the Moon and see why landing is hard"
         onPointerEnter={prefetch}
         onFocus={prefetch}
       >

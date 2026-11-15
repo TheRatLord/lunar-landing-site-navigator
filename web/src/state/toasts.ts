@@ -7,6 +7,8 @@ export interface Toast {
   kind: ToastKind;
   title: string;
   detail?: string;
+  action?: { label: string; run: () => void };
+  actions?: Array<{ label: string; run: () => void }>;
 }
 
 interface ToastState {

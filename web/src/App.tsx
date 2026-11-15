@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Spinner } from "./components/ui/Progress";
 import { LearnRoute } from "./learn/LearnRoute";
 import { AppShell } from "./shell/AppShell";
@@ -9,13 +9,27 @@ const Gallery = import.meta.env.DEV ? lazy(() => import("./dev/Gallery")) : null
 
 const HOME = HOME_WORKSPACE.path;
 
+const REDIRECTS: Array<[string, string]> = [
+  ["/explore/*", "/map"],
+  ["/dates/*", "/overview"],
+  ["/site/accuracy", "/site/ellipse"],
+];
+
+function Redirect({ to }: { to: string }) {
+  const { search, hash } = useLocation();
+  return <Navigate to={{ pathname: to, search, hash }} replace />;
+}
+
 export function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/learn/*" element={<LearnRoute />} />
         <Route element={<AppShell />}>
-          <Route index element={<Navigate to={HOME} replace />} />
+          <Route index element={<Redirect to={HOME} />} />
+          {REDIRECTS.map(([from, to]) => (
+            <Route key={from} path={from} element={<Redirect to={to} />} />
+          ))}
           {WORKSPACES.map((w) => (
             <Route key={w.id} path={`${w.path}/*`} element={w.element} />
           ))}
@@ -29,7 +43,7 @@ export function App() {
               }
             />
           )}
-          <Route path="*" element={<Navigate to={HOME} replace />} />
+          <Route path="*" element={<Redirect to={HOME} />} />
         </Route>
       </Routes>
     </BrowserRouter>

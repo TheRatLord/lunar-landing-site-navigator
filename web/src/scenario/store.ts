@@ -5,6 +5,8 @@ import { MS_DAY, MS_HOUR, parseUtc, MS_MIN, toIsoUtc } from "../lib/time";
 import { toast } from "../state/toasts";
 import { useApp } from "../state/store";
 import { scenarioApi } from "./api";
+import { fieldErrorCount, useFieldErrors } from "./fieldErrors";
+import { forgetPlan, rememberPlan } from "./myPlans";
 import { starterScenario } from "./starter";
 import { readDraftText, type Draft, type DraftProblem, type DraftRead, type SavedRef } from "./draft";
 import { formatProblems, normalizeScenario, schemaDefaults } from "./normalize";
@@ -35,20 +37,22 @@ export interface ScenarioStore {
   draftProblem: DraftProblem | null;
   droppedFields: DroppedFields | null;
   bootError: ApiError | null;
+  pendingLink: string | null;
 
   open(doc: Scenario, saved?: SavedRef | null, clean?: boolean): void;
   edit(path: Path, value: unknown): void;
   editMany(changes: Array<[Path, unknown]>): void;
   close(): void;
-  load(id: string, version?: number): Promise<void>;
+  load(id: string): Promise<void>;
   save(): Promise<boolean>;
-  saveAsNew(name?: string): Promise<boolean>;
+  saveAsNew(): Promise<boolean>;
   clearIssues(): void;
   importText(text: string): void;
   keepThisTab(): void;
   takeOtherTabDraft(): void;
   discardDraft(): void;
   dismissDroppedFields(): void;
+  dismissDraftProblem(): void;
   retryStart(): void;
 }
 
@@ -70,6 +74,7 @@ function draftTab(raw: string | null): string | undefined {
 
 const initial = readStorage();
 const initialDraft: Draft | null = initial.kind === "ok" ? initial.draft : null;
+if (initialDraft?.saved) rememberPlan(initialDraft.saved.id);
 
 const reset = (s: ScenarioStore, doc: Scenario | null, saved: SavedRef | null, baseline: string | null): Partial<ScenarioStore> => ({
   doc,
@@ -81,6 +86,7 @@ const reset = (s: ScenarioStore, doc: Scenario | null, saved: SavedRef | null, b
   session: s.session + 1,
   draftProblem: null,
   droppedFields: null,
+  pendingLink: null,
 });
 
 export const useScenario = create<ScenarioStore>((set, get) => ({
@@ -96,6 +102,7 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
   draftProblem: initial.kind === "bad" ? initial.problem : null,
   droppedFields: initial.kind === "ok" && initial.unknownFields.length ? { source: "The stored draft", fields: initial.unknownFields } : null,
   bootError: null,
+  pendingLink: null,
 
   open: (doc, saved = null, clean = false) =>
     set((s) => reset(s, doc, saved, saved || clean ? JSON.stringify(doc) : null)),
@@ -111,57 +118,21 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
   },
   close: () => set((s) => reset(s, null, null, null)),
 
-  load: async (id, version) => {
-    set({ phase: "loading", error: null });
+  load: async (id) => {
+    set({ phase: "loading", error: null, pendingLink: null });
     try {
-      if (version === undefined) adopt(await scenarioApi.get(id));
-      else {
-        const [rev, latest] = await Promise.all([scenarioApi.revision(id, version), scenarioApi.get(id)]);
-        const revDoc = intake(rev.document, `Revision ${version} of ${id}`);
-        const latestDoc = intake(latest.document, `Plan ${id}`);
-        if (!revDoc || !latestDoc) return set({ phase: "idle" });
-        set((s) => ({
-          ...reset(s, revDoc.scenario, { id, version: latest.version, updated_utc: latest.updated_utc }, JSON.stringify(latestDoc.scenario)),
-          phase: "idle",
-          droppedFields: droppedOf(revDoc),
-        }));
-      }
+      adopt(await scenarioApi.get(id));
     } catch (e) {
       set({ phase: "idle", error: e instanceof ApiError ? e : null });
-      reportError(e, "Could not load the plan");
+      if (e instanceof ApiError && e.notFound) {
+        forgetPlan(id);
+        toast({ kind: "error", title: "This plan link no longer works." });
+      } else reportError(e, "Could not open the plan");
     }
   },
 
-  save: async () => {
-    const { doc, saved, phase, session } = get();
-    if (!doc || phase === "saving") return false;
-    set({ phase: "saving", error: null, issues: [], conflictVersion: null });
-    try {
-      const rec = saved ? await scenarioApi.update(saved.id, saved.version, doc) : await scenarioApi.create(doc);
-      finishSave(rec, doc, session);
-      toast({ kind: "success", title: `Saved “${rec.name}”`, detail: `Version ${rec.version}` });
-      return true;
-    } catch (e) {
-      handleSaveError(e);
-      return false;
-    }
-  },
-
-  saveAsNew: async (name) => {
-    const { doc, phase, session } = get();
-    if (!doc || phase === "saving") return false;
-    const copy = name ? { ...doc, name } : doc;
-    set({ phase: "saving", error: null, issues: [], conflictVersion: null });
-    try {
-      const rec = await scenarioApi.create(copy);
-      finishSave(rec, copy, session);
-      toast({ kind: "success", title: `Saved “${rec.name}” as a new plan` });
-      return true;
-    } catch (e) {
-      handleSaveError(e);
-      return false;
-    }
-  },
+  save: () => saveDoc(false),
+  saveAsNew: () => saveDoc(true),
 
   clearIssues: () => set({ issues: [], error: null }),
 
@@ -175,7 +146,7 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
       if (!n) return;
       get().open(n.scenario, null);
       set({ droppedFields: droppedOf(n) });
-      toast({ kind: "info", title: "Plan imported", detail: "It is not saved yet; the engine validates it when you save." });
+      toast({ kind: "info", title: "Plan file opened" });
     } catch (e) {
       toast({ kind: "error", title: "Could not import the plan", detail: e instanceof Error ? e.message : String(e) });
     }
@@ -201,6 +172,7 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
     set({ draftElsewhere: false });
   },
   dismissDroppedFields: () => set({ droppedFields: null }),
+  dismissDraftProblem: () => set({ draftProblem: null }),
   retryStart: () => {
     set({ bootError: null });
     startPlan();
@@ -216,7 +188,10 @@ function startPlan(): void {
     (doc) => {
       starting = false;
       const now = useScenario.getState();
-      if (!now.doc && now.phase !== "loading") now.open(doc, null, true);
+      if (now.doc || now.phase === "loading") return;
+      const problem = now.draftProblem;
+      now.open(doc, null, true);
+      if (problem) useScenario.setState({ draftProblem: problem });
     },
     (e: unknown) => {
       starting = false;
@@ -243,16 +218,39 @@ function intake(raw: unknown, source: string, title = "Could not use the plan"):
 const droppedOf = (n: Intake): DroppedFields | null => (n.unknownFields.length ? { source: n.source, fields: n.unknownFields } : null);
 
 function adopt(rec: ScenarioRecord): void {
-  const n = intake(rec.document, `Plan ${rec.id}`);
+  const n = intake(rec.document, "The plan");
   if (!n) {
     useScenario.setState({ phase: "idle" });
     return;
   }
+  rememberPlan(rec.id);
   useScenario.setState((s) => ({
     ...reset(s, n.scenario, { id: rec.id, version: rec.version, updated_utc: rec.updated_utc }, JSON.stringify(n.scenario)),
     phase: "idle",
     droppedFields: droppedOf(n),
   }));
+}
+
+async function saveDoc(asNew: boolean): Promise<boolean> {
+  const { doc: current, saved, phase, session } = useScenario.getState();
+  if (!current || phase === "saving") return false;
+  if (fieldErrorCount(useFieldErrors.getState()) > 0) {
+    toast({ kind: "error", title: "Fix the marked fields first" });
+    return false;
+  }
+  if (!current.name.trim()) useScenario.getState().edit(["name"], "Untitled plan");
+  const doc = useScenario.getState().doc ?? current;
+  useScenario.setState({ phase: "saving", error: null, issues: [], conflictVersion: null });
+  try {
+    const rec = saved && !asNew ? await scenarioApi.update(saved.id, saved.version, doc) : await scenarioApi.create(doc);
+    rememberPlan(rec.id);
+    finishSave(rec, doc, session);
+    toast({ kind: "success", title: `Saved “${rec.name}”` });
+    return true;
+  } catch (e) {
+    handleSaveError(e);
+    return false;
+  }
 }
 
 function finishSave(rec: ScenarioRecord, sent: Scenario, session: number): void {
@@ -304,8 +302,8 @@ function handleSaveError(e: unknown): void {
     issues,
     conflictVersion: e.status === 409 && typeof current === "number" ? current : null,
   });
-  if (e.status === 422) toast({ kind: "error", title: "Engine rejected the plan", detail: `${issues.length} invalid field(s); they are marked on the Mission page.` });
-  else if (e.status === 409) toast({ kind: "warning", title: "Someone saved a newer version", detail: "Reload it, or save your edits as a copy." });
+  if (e.status === 422) toast({ kind: "error", title: "The engine rejected the plan", detail: `${issues.length} field${issues.length === 1 ? "" : "s"} to fix on Setup.` });
+  else if (e.status === 409) return;
   else reportError(e, "Could not save the plan");
 }
 
@@ -320,8 +318,6 @@ export function writePlanSite(lat_deg: number, lon_deg: number, name: string, ca
 
 export function movePlanSite(site: { lat_deg: number; lon_deg: number; name: string; catalog_id: string | null }): void {
   writePlanSite(site.lat_deg, site.lon_deg, site.name, site.catalog_id);
-  const s = useScenario.getState();
-  if (!s.saved) s.edit(["name"], site.name);
 }
 
 export function shiftPlanLanding(deltaMs: number): void {
@@ -374,11 +370,13 @@ if (typeof window !== "undefined" && typeof window.addEventListener === "functio
   window.addEventListener("storage", (e) => {
     if (e.key !== DRAFT_KEY || e.storageArea !== localStorage) return;
     if (draftTab(e.newValue) === TAB_ID) return;
-    if (!useScenario.getState().draftElsewhere) {
-      toast({ kind: "warning", title: "Another tab changed the plan", detail: "Both tabs share one plan: edits here would overwrite theirs. Choose which edits to keep." });
-    }
     useScenario.setState({ draftElsewhere: true });
   });
+}
+
+export function planStay(doc: Scenario): { start_ms: number; end_ms: number } | null {
+  const landing = parseUtc(doc.landing_utc);
+  return landing === null ? null : { start_ms: landing, end_ms: landing + doc.mission_duration_h * MS_HOUR };
 }
 
 function syncApp(s: ScenarioStore, prev: ScenarioStore | null): void {
@@ -390,7 +388,6 @@ function syncApp(s: ScenarioStore, prev: ScenarioStore | null): void {
     if (landing !== null) {
       const end = landing + doc.mission_duration_h * MS_HOUR;
       const oldLanding = prev?.doc ? parseUtc(prev.doc.landing_utc) : null;
-      app.setMetEpoch(landing);
       app.setBounds({ start_ms: landing - 90 * MS_DAY, end_ms: end + 90 * MS_DAY });
       app.setRange({ start_ms: landing, end_ms: end });
       app.setTime(!prev?.doc || app.timeMs === oldLanding ? landing : clamp(app.timeMs, landing, end));

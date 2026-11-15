@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { IconButton } from "../../components/ui/Button";
+import { Disclosure } from "../../components/ui/Disclosure";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Icon } from "../../components/ui/Icon";
 import { catalogApi, type StationEntry } from "../api";
@@ -31,20 +32,22 @@ function fromCatalogue(s: StationEntry): NetworkStation {
   };
 }
 
+const DIRECTION: Record<string, string> = { downlink: "downlink", uplink: "uplink", two_way: "two-way" };
+
 function NetworkHead() {
   const edit = useScenario((s) => s.edit);
+  const label = useScenario((s) => s.doc?.network.label ?? "");
+  const count = useScenario((s) => s.doc?.network.stations.length ?? 0);
+  const direction = useScenario((s) => s.doc?.network.direction ?? "");
   return (
     <div className="sc-group">
-      <TextField path={["network", "label"]} label="Label" placeholder="e.g. DSN 34 m" />
-      <ChoiceField
-        path={["network", "direction"]}
-        label="Direction"
-        options={[
-          { value: "downlink", label: "Downlink" },
-          { value: "uplink", label: "Uplink" },
-          { value: "two_way", label: "Two-way" },
-        ]}
-      />
+      <p className="sc-summary">
+        <b>{label || "Custom stations"}</b>
+        <span className="dim num">
+          {count} station{count === 1 ? "" : "s"}
+          {DIRECTION[direction] ? ` · ${DIRECTION[direction]}` : ""}
+        </span>
+      </p>
       <PresetBar
         label="Station set"
         what="Station sets"
@@ -114,34 +117,45 @@ export function NetworkSection() {
   return (
     <div className="sc-section">
       <NetworkHead />
-      <div className="sc-group">
-        <GroupHead title="Ground stations">
-          <span className="dim num">{stations.length}</span>
-        </GroupHead>
-        {stations.length === 0 ? (
-          <EmptyState icon="antenna" title="No ground stations" />
-        ) : (
-          stations.map((s, i) => (
-            <div key={`${s.id}-${i}`} className="sc-block">
-              <div className="row">
-                <span className="sc-station">
-                  <b>{s.name || s.id}</b>
-                  <span className="dim">{[s.network, s.id].filter(Boolean).join(" · ")}</span>
-                </span>
-                <span className="grow" />
-                <OriginMark origin={s.origin ?? USER_ORIGIN} />
-                <IconButton icon="trash" label={`Remove ${s.name || s.id}`} size="sm" onClick={() => edit(["network", "stations"], stations.filter((_, k) => k !== i))} />
+      <Disclosure title="Edit stations">
+        <div className="sc-group">
+          <TextField path={["network", "label"]} label="Label" placeholder="DSN 34 m" />
+          <ChoiceField
+            path={["network", "direction"]}
+            label="Direction"
+            options={[
+              { value: "downlink", label: "Downlink" },
+              { value: "uplink", label: "Uplink" },
+              { value: "two_way", label: "Two-way" },
+            ]}
+          />
+        </div>
+        <div className="sc-group">
+          {stations.length === 0 ? (
+            <EmptyState icon="antenna" title="No ground stations" />
+          ) : (
+            stations.map((s, i) => (
+              <div key={`${s.id}-${i}`} className="sc-block">
+                <div className="row">
+                  <span className="sc-station">
+                    <b>{s.name || s.id}</b>
+                    <span className="dim">{s.network}</span>
+                  </span>
+                  <span className="grow" />
+                  <OriginMark origin={s.origin ?? USER_ORIGIN} />
+                  <IconButton icon="trash" label={`Remove ${s.name || s.id}`} size="sm" onClick={() => edit(["network", "stations"], stations.filter((_, k) => k !== i))} />
+                </div>
+                <div className="sc-fields3">
+                  {STATION_FIELDS.map((f) => (
+                    <NumberField key={f.field} {...f} layout="stacked" path={["network", "stations", i, f.field]} />
+                  ))}
+                </div>
               </div>
-              <div className="sc-fields3">
-                {STATION_FIELDS.map((f) => (
-                  <NumberField key={f.field} {...f} layout="stacked" path={["network", "stations", i, f.field]} />
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      <AddStation have={have} />
+            ))
+          )}
+        </div>
+        <AddStation have={have} />
+      </Disclosure>
     </div>
   );
 }

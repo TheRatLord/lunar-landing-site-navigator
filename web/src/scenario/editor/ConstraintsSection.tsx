@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ServiceNotice } from "../../components/ServiceNotice";
 import { Button, IconButton } from "../../components/ui/Button";
-import { Popover } from "../../components/ui/Popover";
 import { Toggle } from "../../components/ui/Fields";
 import { Toolstrip } from "../../components/ui/Toolstrip";
 import { useScenario } from "../store";
@@ -11,6 +10,14 @@ import { USER_ORIGIN, editedOrigin } from "./fieldState";
 import { CONSTRAINT_META, PARAMETER_META, type ConstraintMeta } from "./fieldSpecs";
 import { usePresets } from "./usePresets";
 
+const ACRONYMS = new Set(["viper"]);
+
+function presetName(id: string): string {
+  const words = id.split("-").map((w) => (ACRONYMS.has(w) ? w.toUpperCase() : w));
+  const first = words[0] ?? "";
+  return [first.charAt(0).toUpperCase() + first.slice(1), ...words.slice(1)].join(" ");
+}
+
 function PresetPicker() {
   const edit = useScenario((s) => s.edit);
   const presets = usePresets();
@@ -18,19 +25,13 @@ function PresetPicker() {
   if (presets.status === "error") return <ServiceNotice error={presets.error} what="Requirement sets" />;
   return (
     <div className="sc-group">
-      <GroupHead title="Start from a published set">
-        <Popover label="About these" icon="info" align="end" width={320}>
-          <div className="origin-tip">
-            <span>Past missions’ values or a mission’s published plan, each with its source. None is a requirement of your mission.</span>
-          </div>
-        </Popover>
-      </GroupHead>
+      <GroupHead title="Start from a published set" />
       <ul className="sc-presets">
         {presets.data.constraints.map((p) => (
           <li key={p.name} className="sc-preset">
-            <span className="sc-preset-name num">{p.name}</span>
-            <span className="sc-preset-what">{p.description}</span>
-            <Button size="sm" title={`Replace every requirement with ${p.name}`} onClick={() => edit(["constraints"], p.constraints)}>
+            <span className="sc-preset-name">{presetName(p.name)}</span>
+            <span className="sc-preset-what">{p.description.replace(/ deg\b/g, "°")}</span>
+            <Button size="sm" aria-label={`Use ${presetName(p.name)}`} onClick={() => edit(["constraints"], p.constraints)}>
               Use
             </Button>
           </li>
@@ -84,6 +85,19 @@ function LimitRow({ meta }: { meta: ConstraintMeta }) {
   );
 }
 
+export function EvaluationSettings() {
+  const params = useScenario((s) => s.doc?.constraints);
+  if (!params) return null;
+  return (
+    <div className="sc-group">
+      <GroupHead title="Evaluation" />
+      {PARAMETER_META.map((m) => (
+        <NumberField key={m.key} path={["constraints", m.key, "value"]} label={m.title} unit={m.unit || undefined} min={m.min} max={m.max} step={m.step} origin={params[m.key].origin} />
+      ))}
+    </div>
+  );
+}
+
 export function ConstraintsSection() {
   const params = useScenario((s) => s.doc?.constraints);
   const active = useScenario((s) => CONSTRAINT_META.filter((m) => s.doc?.constraints[m.key]).length);
@@ -99,12 +113,6 @@ export function ConstraintsSection() {
         </GroupHead>
         {CONSTRAINT_META.map((m) => (
           <LimitRow key={m.key} meta={m} />
-        ))}
-      </div>
-      <div className="sc-group">
-        <GroupHead title="Evaluation settings" />
-        {PARAMETER_META.map((m) => (
-          <NumberField key={m.key} path={["constraints", m.key, "value"]} label={m.title} unit={m.unit || undefined} min={m.min} max={m.max} step={m.step} origin={params[m.key].origin} />
         ))}
       </div>
     </div>

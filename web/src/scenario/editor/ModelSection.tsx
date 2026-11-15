@@ -1,6 +1,7 @@
 import { useScenario } from "../store";
 import { CheckField, ChoiceField, GroupHead, NumberField, OriginMark } from "./controls";
 import { ECLIPSE_FIELDS, SAMPLING_FIELDS, TERRAIN_ERROR_FIELDS, type NumSpec } from "./fieldSpecs";
+import { EvaluationSettings } from "./ConstraintsSection";
 import { TerrainStackControl } from "./TerrainStackControl";
 
 function Fields({ base, specs }: { base: string; specs: NumSpec[] }) {
@@ -41,6 +42,7 @@ export function ModelSection() {
         />
         <Fields base="eclipse" specs={ECLIPSE_FIELDS} />
       </div>
+      <EvaluationSettings />
       <div className="sc-group">
         <GroupHead title="Sampling" />
         <Fields base="sampling" specs={SAMPLING_FIELDS} />

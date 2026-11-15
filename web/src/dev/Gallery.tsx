@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ConstraintPanel } from "../components/viz/ConstraintPanel";
 import { Countdown } from "../components/viz/Countdown";
 import { HorizonPanorama, type BlockerRequest } from "../components/viz/HorizonPanorama";
-import { LunationCalendar } from "../components/viz/LunationCalendar";
 import { Timeline } from "../components/viz/Timeline";
 import { Button, IconButton } from "../components/ui/Button";
 import { CommandPalette, type Command } from "../components/ui/CommandPalette";
@@ -26,7 +25,7 @@ import { cividis, cssGradient, diverging, viridis, type Colormap } from "../lib/
 import { formatNum } from "../lib/format";
 import { useApp } from "../state/store";
 import { toast } from "../state/toasts";
-import { FIXTURE_SPAN, FIXTURE_T0, makeConstraints, makeHorizon, makeSlots, makeStations, makeStress, makeTimeline, makeTracks } from "./fixtures";
+import { FIXTURE_SPAN, FIXTURE_T0, makeConstraints, makeHorizon, makeStations, makeStress, makeTimeline, makeTracks } from "./fixtures";
 
 function Section({ id, span, height, children }: { id: string; span: number; height?: number; children: ReactNode }) {
   return (
@@ -97,7 +96,6 @@ const ICONS: IconName[] = [
 
 export default function Gallery() {
   const timeMs = useApp((s) => s.timeMs);
-  const range = useApp((s) => s.range);
   const { setTime, setRange, setBounds } = useApp.getState();
   useApp((s) => s.theme);
 
@@ -106,7 +104,6 @@ export default function Gallery() {
     setBounds({ start_ms: FIXTURE_T0, end_ms: t1 });
     setRange({ start_ms: FIXTURE_T0, end_ms: t1 });
     setTime(FIXTURE_T0 + 11.3 * 86_400_000);
-    useApp.getState().setMetEpoch(FIXTURE_T0);
   }, [setBounds, setRange, setTime]);
 
   const horizon = useMemo(() => makeHorizon(), []);
@@ -114,12 +111,9 @@ export default function Gallery() {
   const timeline = useMemo(() => makeTimeline(), []);
   const stress = useMemo(() => makeStress(), []);
   const constraints = useMemo(() => makeConstraints(), []);
-  const calendar = useMemo(() => makeSlots(), []);
   const stations = useMemo(() => makeStations(timeMs), [timeMs]);
 
   const [marked, setMarked] = useState<number | null>(null);
-  const [selectedEpoch, setSelectedEpoch] = useState<number | null>(calendar.slots[420]!.utc_ms);
-  const [selConstraint, setSelConstraint] = useState<string | null>(null);
 
   const onBlocker = (r: BlockerRequest) => {
     setMarked(r.az_deg);
@@ -519,18 +513,14 @@ export default function Gallery() {
         </Section>
 
         <Section id="timeline" span={12}>
-          <Timeline rows={timeline.rows} extent={timeline.extent} timeMs={timeMs} onTimeChange={setTime} range={range} onRangeChange={setRange} />
+          <Timeline rows={timeline.rows} extent={timeline.extent} timeMs={timeMs} onTimeChange={setTime} />
         </Section>
 
         <Section id="countdown" span={5}>
           <Countdown events={timeline.events} timeMs={timeMs} />
         </Section>
         <Section id="constraints" span={7}>
-          <ConstraintPanel constraints={constraints} limitingId={null} overall={null} selectedId={selConstraint} onSelect={(c) => setSelConstraint(c.id)} />
-        </Section>
-
-        <Section id="calendar" span={12} height={420}>
-          <LunationCalendar slots={calendar.slots} epochMs={calendar.epochMs} slotMs={calendar.slotMs} selectedMs={selectedEpoch} onSelect={setSelectedEpoch} />
+          <ConstraintPanel constraints={constraints} limitingId={null} />
         </Section>
 
         <Section id="stress" span={12}>
@@ -540,8 +530,6 @@ export default function Gallery() {
             extent={stress.extent}
             timeMs={timeMs}
             onTimeChange={setTime}
-            range={range}
-            onRangeChange={setRange}
           />
         </Section>
       </div>

@@ -69,20 +69,19 @@ export function LanderPicker() {
       <div className="plan-pick-scroll">
         {presets.status === "loading" && (
           <p className="plan-empty">
-            <Spinner size={12} /> Loading landers
+            <Spinner size={12} /> Loading
           </p>
         )}
         {presets.status === "error" && <ServiceNotice error={presets.error} what="Lander presets" />}
         {!match && entries.length > 0 && (
           <p className="plan-empty">
-            <strong>{profile.name}</strong> is a custom lander: {landerFacts(profile)}.
+            Custom: <strong>{profile.name}</strong>
           </p>
         )}
         {group("Real landers", "catalog")}
-        {group("Generic layouts, every number an estimate", "generic")}
+        {group("Generic (estimates)", "generic")}
       </div>
-      <div className="plan-pop-foot">
-        <span className="faint">Picking one replaces every lander value.</span>
+      <div className="plan-pop-foot plan-pop-foot-end">
         <Button size="sm" icon="sliders" onClick={() => show("lander")}>
           Edit lander details
         </Button>
