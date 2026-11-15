@@ -87,6 +87,7 @@ Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/sup
 - [x] "About" card for each Explorer place: the Apollo 11 crew, first words and plaque, Blue Ghost's eclipse and sunset, Shackleton's light and ice, Chang'e 4's far-side firsts; plaque on Eagle's ladder leg
 - [x] Folded Explorer controls (hover, focus or tap to unfold); places grouped as past landings and south pole spots; light towers on Shackleton floor
 - [x] Pop-out controls with a spring animation; detailed GLB models for the solar panel, cockpit, Apollo 11 descent stage, Chang'e 4, Yutu-2 and Blue Ghost
+- [x] Lessons folded like Explorer: lesson title strip, Info, status and time pop-outs
 - [ ] Reduced-motion and low-end performance checks
 
 ## Integration check (2026-11-15)

@@ -181,11 +181,11 @@ export const useLearn = create<LearnState>()((set, get) => ({
       walkPov: "third",
       walkEdge: false,
       nearProp: null,
+      panel: explore,
       mission: null,
       missionStep: 0,
       missionFound: null,
       missionPicker: false,
-      panel: true,
     });
   },
   setT: (t) => {

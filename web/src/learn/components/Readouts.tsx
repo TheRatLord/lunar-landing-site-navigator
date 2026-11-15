@@ -62,28 +62,29 @@ function Battery() {
   );
 }
 
-function ExploreStatus({ walk }: { walk: boolean }) {
+function StatusPops({ sun: showSun, earth: showEarth, battery: showBattery, children }: { sun: boolean; earth: boolean; battery: boolean; children?: ReactNode }) {
   const { sky, battery } = useLive();
   const sun = sky.sunlight > 0.05;
   const earth = sky.earth.frac > 0.05;
   const seg = Number.isNaN(battery) || battery <= 0 ? 0 : Math.ceil(battery * 5 - 1e-6);
   return (
     <div className="l-readouts l-status" role="group" aria-label="Right now">
-      <Pop side="down" align="end" label={sun ? "Sun: up" : "Sun: not up"} summary={<span className={sun ? "tone-sun" : "is-off"}>{sun ? <SunIcon size={18} /> : <NightIcon size={18} />}</span>}>
+      {showSun && <Pop side="down" align="end" label={sun ? "Sun: up" : "Sun: not up"} summary={<span className={sun ? "tone-sun" : "is-off"}>{sun ? <SunIcon size={18} /> : <NightIcon size={18} />}</span>}>
         <p className="l-pop-title">The Sun</p>
         <SunChip />
         <p className="l-pop-note">{sun ? "Sunlight here means warmth and solar power." : "No sunlight here right now: cold, and no solar power."}</p>
-      </Pop>
-      <Pop side="down" align="end" label={earth ? "Earth: in the sky" : "Earth: not in the sky"} summary={<span className={earth ? "tone-earth" : "is-off"}><GlobeIcon size={18} hollow={!earth} /></span>}>
+      </Pop>}
+      {showEarth && <Pop side="down" align="end" label={earth ? "Earth: in the sky" : "Earth: not in the sky"} summary={<span className={earth ? "tone-earth" : "is-off"}><GlobeIcon size={18} hollow={!earth} /></span>}>
         <p className="l-pop-title">Earth</p>
         <EarthChip />
         <p className="l-pop-note">{earth ? "With Earth in the sky, a lander can talk straight to home." : "Earth is below the horizon, so there is no direct link home."}</p>
-      </Pop>
-      {walk && (
+      </Pop>}
+      {showBattery && (
         <Pop side="down" align="end" label={`Battery: ${seg} of 5`} summary={<span className="tone-power"><BatteryIcon segments={seg} size={28} height={18} /></span>}>
           <Battery />
         </Pop>
       )}
+      {children}
     </div>
   );
 }
@@ -93,15 +94,10 @@ export function Readouts() {
   const chips = chapterOf(useLearn((s) => s.chapter)).chips;
   const walk = useLearn((s) => s.view === "walk");
   const explore = useLearn((s) => s.chapter === "explore");
-  if (explore) return <ExploreStatus walk={walk} />;
+  const power = chips.includes("power");
   return (
-    <div className="l-readouts" role="group" aria-label="Right now">
-      <div className="l-chips">
-        {chips.includes("sun") && <SunChip />}
-        {chips.includes("earth") && <EarthChip />}
-      </div>
-      {(chips.includes("power") || walk) && <Battery />}
-      {note === "showing" && chips.includes("power") && (
+    <StatusPops sun={chips.includes("sun")} earth={chips.includes("earth")} battery={power || (explore && walk)}>
+      {note === "showing" && power && (
         <div className="l-note" role="note">
           <p>No sun, no power. India's Chandrayaan-3 never woke up after its first night.</p>
           <button type="button" className="l-note-close" aria-label="Close note" onClick={() => useLearn.setState({ note: "done" })}>
@@ -109,6 +105,6 @@ export function Readouts() {
           </button>
         </div>
       )}
-    </div>
+    </StatusPops>
   );
 }

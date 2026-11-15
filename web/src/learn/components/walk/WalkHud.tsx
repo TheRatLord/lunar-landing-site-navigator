@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useLive } from "../../derive";
 import { useLearn } from "../../store";
 import { useIsTouch } from "../../touch";
+import { Fold } from "../Fold";
 import { FactCard } from "./FactCard";
 import { MissionPanel } from "./MissionPanel";
 
@@ -112,10 +113,7 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
           )}
         </div>
       )}
-      <div className="l-walk-actions l-fold">
-        <button type="button" className="l-fold-sum l-walk-sum" aria-label="Show the walk controls">
-          <span aria-hidden>⋯</span> Controls
-        </button>
+      <Fold className="l-walk-actions" sumClass="l-walk-sum" label="Show the walk controls" summary={<><span aria-hidden>⋯</span> Controls</>}>
         {!mission && (
           <button type="button" className="l-btn l-walk-missions" aria-expanded={picker} onClick={() => useLearn.setState({ missionPicker: !picker })}>
             Rover missions
@@ -133,7 +131,7 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
         <button type="button" className="l-btn l-btn-primary l-walk-switch" onClick={switchBody}>
           {body === "rover" ? "Be the astronaut" : "Drive the rover"}
         </button>
-      </div>
+      </Fold>
     </div>
   );
 }

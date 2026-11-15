@@ -2285,13 +2285,20 @@ button.l-lessons-label {
   min-width: 0;
 }
 .l-fold > .l-fold-sum {
-  display: none;
-}
-.l-fold:not(:hover) > .l-fold-sum {
   display: inline-flex;
 }
-.l-fold:not(:hover, :focus-within, :has(.l-truth-pop, [aria-expanded="true"])) > :not(.l-fold-sum) {
-  display: none !important;
+.l-walk-actions > .l-fold-sum {
+  order: 99;
+}
+@media (hover: hover) {
+  .l-fold:not(:hover, :focus-within, .is-open, :has(.l-truth-pop, [aria-expanded="true"])) > :not(.l-fold-sum) {
+    display: none !important;
+  }
+}
+@media (hover: none) {
+  .l-fold:not(:focus-within, .is-open, :has(.l-truth-pop, [aria-expanded="true"])) > :not(.l-fold-sum) {
+    display: none !important;
+  }
 }
 .l-fold-sum {
   align-items: center;
@@ -2536,7 +2543,7 @@ button.l-lessons-label {
 .l-status .l-battery {
   pointer-events: auto;
 }
-.l-fold:is(:hover, :focus-within, :has(.l-truth-pop, [aria-expanded="true"])) > :not(.l-fold-sum) {
+.l-fold:is(:hover, :focus-within, .is-open, :has(.l-truth-pop, [aria-expanded="true"])) > :not(.l-fold-sum) {
   animation: l-pop-in 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   animation-timing-function: var(--spring);
 }
@@ -2600,5 +2607,87 @@ button.l-lessons-label {
 }
 .l-status .l-pop-btn span {
   display: inline-flex;
+}
+.l-lesson {
+  display: contents;
+}
+.l-lesson-sum {
+  position: absolute;
+  top: var(--l-gutter);
+  left: var(--l-gutter);
+  z-index: 5;
+  max-width: min(460px, calc(100% - 2 * var(--l-gutter)));
+  min-height: 52px;
+  padding: 8px 18px 8px 8px;
+  border-radius: var(--r-xl);
+  white-space: normal;
+  text-align: left;
+}
+.l-lesson-sum .l-title-n {
+  flex: none;
+}
+.l-lesson-sum-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.l-lesson-sum-text strong {
+  font-size: var(--l-fs-body);
+}
+.l-lesson-sum-text span {
+  color: var(--text-2);
+  font-size: var(--l-fs-xs);
+  font-weight: 500;
+}
+.l-lesson.l-fold > .l-story {
+  --pop-dy: 0px;
+  top: calc(var(--l-gutter) + 64px);
+  height: calc(100% - 2 * var(--l-gutter) - 64px);
+  transform-origin: top left;
+}
+.learn:not(.is-explore) .l-stage-top {
+  top: calc(var(--l-gutter) + 64px);
+}
+.l-pop-sub {
+  color: var(--text-2);
+  font-weight: 500;
+}
+@media (max-width: 759px) {
+  .l-lesson-sum {
+    top: 8px;
+    left: 8px;
+    max-width: calc(100% - 16px - 150px);
+  }
+  .l-lesson-sum-text strong,
+  .l-lesson-sum-text span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .learn:not(.is-explore) .l-stage-top {
+    top: 68px;
+  }
+  .l-lesson.l-fold .l-story {
+    position: fixed;
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    z-index: 25;
+    width: auto;
+    height: auto;
+    max-height: 62vh;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-xl);
+    background: var(--panel);
+    box-shadow: var(--shadow-popover);
+    overflow: auto;
+  }
+  .l-pop-sub {
+    display: none;
+  }
+}
+.l-stage-ui:has(.l-stage-top:is(:hover, :focus-within, .is-open)) .l-walk-hint {
+  visibility: hidden;
 }
 

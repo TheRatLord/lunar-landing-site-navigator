@@ -6,7 +6,6 @@ import { nextEvent } from "../timeline";
 import { ChapterControl } from "./ChapterControl";
 import { Check } from "./Check";
 import { ArrowLeftIcon, ArrowRightIcon } from "./icons";
-import { HidePanel } from "./PanelBar";
 import { RichText } from "./RichText";
 
 function SunnyDays() {
@@ -98,7 +97,6 @@ export function StoryCard({ c }: { c: Chapter }) {
             <span className="l-title-n">{c.n}</span>
             {c.title}
           </h1>
-          <HidePanel />
         </div>
         <p className="l-copy">
           <RichText text={c.copy} slug={c.slug} />

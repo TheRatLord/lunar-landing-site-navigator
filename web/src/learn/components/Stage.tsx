@@ -12,10 +12,10 @@ import { ensureTerrain, siteById } from "../terrain";
 import { sampleAt } from "../timeline";
 import { isPhoneLayout, prefersReducedMotion } from "../../lib/media";
 import { Compass } from "./Compass";
-import { ShowPanel } from "./PanelBar";
 import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon, CrosshairIcon, InfoIcon } from "./icons";
 import { SunPath } from "./SunPath";
 import { SiteStory } from "./SiteStory";
+import { Fold } from "./Fold";
 import { TruthNote } from "./TruthNote";
 
 function sentence(): string {
@@ -87,14 +87,13 @@ export function Stage() {
   const live = useRef<HTMLParagraphElement>(null);
   const sceneRef = useRef<LearnScene | null>(null);
   const [look, setLook] = useState<LookState>({ heading: 0, fov: 60, pitch: 0, vfov: 60 });
-  const { view, chapter, siteId, glFailed, craterTerrain, panel } = useLearn(
+  const { view, chapter, siteId, glFailed, craterTerrain } = useLearn(
     useShallow((s) => ({
       view: s.view,
       chapter: s.chapter,
       siteId: s.siteId,
       glFailed: s.glFailed,
       craterTerrain: s.craterTerrain,
-      panel: s.panel,
     })),
   );
   useEffect(() => ensureTerrain(siteId), [siteId]);
@@ -293,13 +292,7 @@ export function Stage() {
         )}
       </div>
       <div className="l-stage-ui">
-        <div className={`l-stage-top${chapter === "explore" ? " l-fold" : ""}`}>
-          {chapter === "explore" && (
-            <button type="button" className="l-fold-sum l-pill" aria-label="Show info and links">
-              <InfoIcon size={18} /> Info
-            </button>
-          )}
-          {!panel && <ShowPanel />}
+        <Fold className="l-stage-top" sumClass="l-pill" label="Show info and links" summary={<><InfoIcon size={18} /> Info</>}>
           <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} />
           {chapter === "explore" && <SiteStory key={siteId} site={siteId} />}
           {chapter === "explore" && siteId !== "custom" && (
@@ -307,7 +300,7 @@ export function Stage() {
               Analyse in Planner <ArrowRightIcon size={16} />
             </Link>
           )}
-        </div>
+        </Fold>
         {chapter === "pole" && (
           <div className="l-pole">
             <PoleDiagram />
