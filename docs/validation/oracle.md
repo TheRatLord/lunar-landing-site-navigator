@@ -1,28 +1,28 @@
 # Oracle suite report
 
-Run 2026-11-15 09:45 UTC on commit `ce363f4`, terrain stack `241d5855d6be`, kernels as pinned. Written by `lunarnav oracle run`; do not edit by hand.
+Run 2026-11-15 11:43 UTC on commit `698cfce`, terrain stack `241d5855d6be`, kernels as pinned. Written by `lunarnav oracle run`; do not edit by hand.
 
 ## Score
 
-**Truth checks: 44 of 46 gates pass (96 %).** These compare the engine with sources outside it: independent computations and real observations.
+**Truth checks: 43 of 46 gates pass (93 %).** These compare the engine with sources outside it: independent computations and real observations.
 
-All gates, including the implementation checks: 51 of 53 (96 %).
+All gates, including the implementation checks: 50 of 53 (94 %).
 
 A gate is one source and one quantity, held to a tolerance. A limit is written down before the engine is run on its case; a limit or rule changed afterwards is listed under "Changed after a first run" with the data the change rests on, which never comes from the engine. A miss against a sound reference stays in the score as a failure. Report-only rows have no pass or fail: their reference cannot carry a tolerance.
 
-Strict count: 41 of 50 (82 %). It counts as failures the 4 truth cases that were gates when first run and are report-only now, and the 3 that pass only because their limit or rule was changed after a first run. Both groups are listed under "Changed after a first run".
+Strict count: 41 of 50 (82 %). It counts as failures the 4 truth cases that were gates when first run and are report-only now, and the 2 that pass only because their limit or rule was changed after a first run. Both groups are listed under "Changed after a first run".
 
 | Class | Pass | Fail | Not run | Report only | Score |
 |---|---|---|---|---|---|
 | Real observation | 13 | 1 | 0 | 1 | 93 % |
-| Independent computation (different ephemeris, terrain or code) | 31 | 1 | 0 | 9 | 97 % |
+| Independent computation (different ephemeris, terrain or code) | 30 | 2 | 0 | 9 | 94 % |
 | Implementation check (closed form, same-ephemeris cross-check or brute force) | 7 | 0 | 0 | 0 | 100 % |
 
 | Engine quantity | Pass | Fail | Not run | Report only | Score |
 |---|---|---|---|---|---|
 | Sun–Earth–Moon geometry | 12 | 0 | 0 | 4 | 100 % |
 | Sunlight and eclipse at a landed site | 9 | 0 | 0 | 0 | 100 % |
-| Long-run sunlight and permanent shadow | 15 | 1 | 0 | 1 | 94 % |
+| Long-run sunlight and permanent shadow | 14 | 2 | 0 | 1 | 88 % |
 | Shadows at one instant, against orbital photographs | 5 | 1 | 0 | 0 | 83 % |
 | Earth visibility | 5 | 0 | 0 | 5 | 100 % |
 | Horizon and disc mathematics | 4 | 0 | 0 | 0 | 100 % |
@@ -33,6 +33,7 @@ Strict count: 41 of 50 (82 %). It counts as failures the 4 truth cases that were
 | Case | Source | Result | Limit | Unit |
 |---|---|---|---|---|
 | `glaeser2014.longest_dark_2m` | Gläser 2014 (thesis Table 7), 20 m DEM | 70.08 | ≤ 24.00 | h |
+| `mazarico2011.connecting_ridge_surface` | Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser 2014 and 2018) | 5.88 | ≤ 4.00 | points |
 | `nac.photo.m139729686` | LROC NAC photograph `M139729686LE/RE`, 20 m mosaic distributed with Barker et al. 2023 (PGDA product 90) | 0.016 | ≤ 0.010 | probability |
 
 ## Every case
@@ -84,9 +85,9 @@ Strict count: 41 of 50 (82 %). It counts as failures the 4 truth cases that were
 | `glaeser2014.longest_dark_10m` | [Gläser 2014 (thesis Table 7), 20 m DEM](https://doi.org/10.1016/j.icarus.2014.08.013) | computation | largest \|engine − paper\| (n = 2) | 1.08 | ≤ 24.00 | h | pass |
 | `glaeser2014.longest_dark_2m` | [Gläser 2014 (thesis Table 7), 20 m DEM](https://doi.org/10.1016/j.icarus.2014.08.013) | computation | largest \|engine − paper\| (n = 2) | 70.08 | ≤ 24.00 | h | FAIL |
 | `glaeser2018.maximum_illumination` | [Gläser et al. 2018, Planetary and Space Science 162, Tables 1 and 2, 20 m DEM](https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf) | computation | largest \|engine maximum − paper maximum\| (n = 7) | 3.60 | ≤ 4.00 | points | pass |
-| `mazarico2011.connecting_ridge_surface` | [Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser 2014 and 2018)](https://doi.org/10.1016/j.icarus.2010.10.030) | computation | \|engine maximum − paper maximum\| (n = 491) | 0.288 | ≤ 4.50 | points | pass |
-| `mazarico2011.shackleton_rim_surface` | [Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser et al. 2018)](https://doi.org/10.1016/j.icarus.2010.10.030) | computation | \|engine maximum − paper maximum\| (n = 491) | 4.09 | ≤ 4.50 | points | pass |
-| `mazarico2011.connecting_ridge_10m` | [Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser 2014)](https://doi.org/10.1016/j.icarus.2010.10.030) | computation | \|engine maximum − paper maximum\| (n = 4) | 2.60 | ≤ 4.00 | points | pass |
+| `mazarico2011.connecting_ridge_surface` | [Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser 2014 and 2018)](https://doi.org/10.1016/j.icarus.2010.10.030) | computation | \|engine maximum − paper maximum\| (n = 491) | 5.88 | ≤ 4.00 | points | FAIL |
+| `mazarico2011.shackleton_rim_surface` | [Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser et al. 2018)](https://doi.org/10.1016/j.icarus.2010.10.030) | computation | \|engine maximum − paper maximum\| (n = 491) | 0.021 | ≤ 4.00 | points | pass |
+| `mazarico2011.connecting_ridge_10m` | [Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser 2014)](https://doi.org/10.1016/j.icarus.2010.10.030) | computation | \|engine maximum − paper maximum\| (n = 4) | 0.348 | ≤ 4.00 | points | pass |
 | `avgvisib.crest_pixels` | [LOLA team illumination rasters, 2016 release, `AVGVISIB_85S_060M_201608`](https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/) | computation | mean \|engine − published\| (n = 50) | 3.21 | ≤ 4.20 | points | pass |
 | `literature.no_eternal_light` | [Mazarico et al. 2011, Gläser et al. 2014 and 2018, De Rosa et al. 2012, Bryant 2009 (all find none)](https://doi.org/10.1016/j.pss.2017.07.006) | computation | highest engine average Sun visibility among the brightest published pixels (n = 50) | 87.21 | ≤ 99.00 | percent | pass |
 | `psr.lola2016.south` | [LOLA team illumination rasters, 2016 release (pixels with value 0)](https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/) | computation | share of sampled pixels where engine and raster disagree on permanent shadow (n = 3000) | 0.233 | ≤ 2.00 | percent | pass |
@@ -172,8 +173,8 @@ Strict count: 41 of 50 (82 %). It counts as failures the 4 truth cases that were
 | `glaeser2014.longest_dark_10m` | Set before the run at one day, the resolution a planner works to for a dark period; the paper prints 0.01 d. |
 | `glaeser2014.longest_dark_2m` | Same 24 h as the 10 m spots. The rule changed after the first run: the engine value is read at its best-lit post within 300 m, as in the Gläser 2018 case, because these two spots are the maxima of the paper's own DEM. The rule was fixed before its result was seen and was tried once. |
 | `glaeser2018.maximum_illumination` | Same allowance as the Gläser 2014 average illumination. The search radius of 300 m is the one `docs/validation/scenario.md` §11 used. |
-| `mazarico2011.connecting_ridge_surface` | Was 4 points, the allowance of the Gläser 2014 average illumination. Raised to 4.5 after the first run, on data that does not involve the engine: the LOLA team's own 2016 raster at 240 m gives 93.48 % at the Connecting Ridge point and 90.79 % at the Shackleton rim point, 4.47 and 4.09 points above this 2011 table. The 3 km search radius is the one `docs/validation/scenario.md` §11.4 used. |
-| `mazarico2011.shackleton_rim_surface` | Was 4 points, the allowance of the Gläser 2014 average illumination. Raised to 4.5 after the first run, on data that does not involve the engine: the LOLA team's own 2016 raster at 240 m gives 93.48 % at the Connecting Ridge point and 90.79 % at the Shackleton rim point, 4.47 and 4.09 points above this 2011 table. The 3 km search radius is the one `docs/validation/scenario.md` §11.4 used. |
+| `mazarico2011.connecting_ridge_surface` | Same allowance as the Gläser 2014 average illumination. The 3 km search radius is the one `docs/validation/scenario.md` §11.4 used. |
+| `mazarico2011.shackleton_rim_surface` | Same as the Connecting Ridge surface case. |
 | `mazarico2011.connecting_ridge_10m` | Same allowance as the Gläser 2014 average illumination, within 300 m (the precision of the printed point). |
 | `avgvisib.crest_pixels` | Was 2 points, the Sun target of `docs/validation/illumination.md` §3. Raised to 4.2 after the first run, on data that does not involve the engine: at these 50 pixels the LOLA team's own 120 m and 240 m rasters differ from their 60 m raster by 6.8 and 6.9 points on average, and by 4.2 and 5.1 when each is allowed its best pixel of the 3 × 3 around. The limit is the smallest of those four. The brightest pixels of any map are picked partly for their noise. |
 | `literature.no_eternal_light` | Set before the run. Every study's best surface value is below 100 %; the published maximum of the 60 m raster is 88.4 %. |
@@ -781,15 +782,15 @@ The paper gives the highest average illumination its 20 m DEM reaches at each si
 
 ### `mazarico2011.connecting_ridge_surface`
 
-Connecting Ridge (CR1), surface: paper 89.01 %, engine 89.30 % of hourly steps with any part of the Sun's disc up (the paper's definition), at its best post of `lola_60s_240m` within 3000 m of the printed point (491 posts; the paper prints the point to 0.01°). The paper's value is the best pixel of its own 240 m DEM, built from the first months of LOLA data; the engine's store is the later GDR release.
+Connecting Ridge (CR1), surface: paper 89.01 %, engine 83.13 % at its best post of `lola_60s_240m` within 3000 m of the printed point (491 posts; the paper prints the point to 0.01°). Both are the time-mean visible fraction of the Sun's disc. The paper's value is the best pixel of its own 240 m DEM, built from the first months of LOLA data; the engine's store is the later GDR release. For information, the share of time with any part of the Sun up: paper 92.7 % at its site, engine 89.30 % at that post.
 
 ### `mazarico2011.shackleton_rim_surface`
 
-Shackleton rim (S), surface: paper 86.7 %, engine 90.79 % of hourly steps with any part of the Sun's disc up (the paper's definition), at its best post of `lola_60s_240m` within 3000 m of the printed point (491 posts; the paper prints the point to 0.01°). The paper's value is the best pixel of its own 240 m DEM, built from the first months of LOLA data; the engine's store is the later GDR release.
+Shackleton rim (S), surface: paper 86.7 %, engine 86.72 % at its best post of `lola_60s_240m` within 3000 m of the printed point (491 posts; the paper prints the point to 0.01°). Both are the time-mean visible fraction of the Sun's disc. The paper's value is the best pixel of its own 240 m DEM, built from the first months of LOLA data; the engine's store is the later GDR release. For information, the share of time with any part of the Sun up: paper 90.5 % at its site, engine 90.79 % at that post.
 
 ### `mazarico2011.connecting_ridge_10m`
 
-Connecting Ridge (CR1), 10 m: paper 93.1 %, engine 95.70 % of hourly steps with any part of the Sun's disc up (the paper's definition), at its best post of `lola_60s_240m` within 300 m of the printed point (4 posts; the paper prints the point to 0.01°). The paper's value is the best pixel of its own 240 m DEM, built from the first months of LOLA data; the engine's store is the later GDR release.
+Connecting Ridge (CR1), 10 m: paper 93.1 %, engine 92.75 % at its best post of `lola_60s_240m` within 300 m of the printed point (4 posts; the paper prints the point to 0.01°). Both are the time-mean visible fraction of the Sun's disc. The paper's value is the best pixel of its own 240 m DEM, built from the first months of LOLA data; the engine's store is the later GDR release.
 
 ### `avgvisib.crest_pixels`
 
@@ -1052,11 +1053,11 @@ Everything that was altered after the engine had been run on a case. "Strict" ma
 | `bryant2009.earth_height_insensitive` | Gate (0.5 points) made report-only. | Same peak B1, same reason. | fail |
 | `glaeser2014.earth_cycle` | Gate (1 day) made report-only. | The paper's windows are contact with ten ground stations; the case compared them with the Earth's disc clearing the horizon, which differs by definition. | fail |
 | `(engine)` | The horizon search now starts one pixel of the observer's ground store out, instead of 1 m (engine `horizon-bnb/5`, exact and regional kernels). | The first full run showed the engine at ground level darker than the published LOLA maps, more so on coarser grids (bias −0.2, −0.9, −2.1, −2.2 points). The cause was the interpolated surface inside the observer's own pixel acting as a blocker. A store holds one height per pixel, so that surface is not data. This is an engine fix, not a case change; limits of the raster cases are untouched. |  |
-| `mazarico2011.*` | The engine quantity compared is now the share of time with any part of the Sun up, as the paper defines it. The check had used the time-mean visible fraction of the disc. | An error in the check, found while tracing the Connecting Ridge miss. |  |
-| `mazarico2011.shackleton_rim_surface` | Limit 4 → 4.5 points (also on the Connecting Ridge surface case, which passes at either). | The LOLA team's own 2016 raster at 240 m is 4.47 and 4.09 points above their 2011 table at these two points. The engine gives 90.79 % at the Shackleton rim point, the 2016 raster's value to two decimals. | fail |
+| `mazarico2011.*` | The two surface cases also print, for information, the paper's share of time with any part of the Sun up (92.7 % and 90.5 %, Gläser et al. 2018 Table 1) beside the engine's. The gated quantity (average illumination) and the limits are unchanged. | The paper gives both quantities and the LOLA team's 2016 rasters hold the second one, so it places the engine against both. A switch of the gated quantity to the second one, and a limit of 4.5 points, were tried after the first run and withdrawn: they compared unlike quantities. |  |
 | `avgvisib.crest_pixels` | Limit 2 → 4.2 points. | At the 50 brightest pixels the LOLA team's own rasters at 60 m, 120 m and 240 m disagree with each other by 4.2 to 6.9 points on average. | fail |
 | `terrain.retroreflector_heights` | Limit 3 → 7.6 stated σ, and the engine's stated σ for the global store 4 m → 9.1 m. | The global store's point-height error was measured against SLDEM2015 (3.5 million points): 68 % within 9.1 m, 9.7 % beyond 3 σ, 99 % within 68.9 m. The old 4 m was an assumption. | fail |
 | `glaeser2014.longest_dark_2m` | The engine value is read at its best-lit post within 300 m instead of the post nearest the printed point. Limit unchanged at 24 h. | The two spots are maxima of the paper's own DEM. Still a miss, 7.5 days against 4.6. |  |
+| `nac.*` | Each frame is sampled at 1,000 pixels. A trial of the check before the first full run used 1,500. The limits are unchanged. | Run time. The pixels are drawn with a fixed seed before the engine is consulted. |  |
 | `nac.*` | Rows marked "for information" were added (the engine on 20 m LOLA terrain only). The gated numbers and limits are unchanged. | To locate the cause of the misses. On frame M139729686 the engine's terrain stores (the LOLA GDR grids) differ from the track-adjusted DEM behind Barker's frames by 2 to 7 m at single pixels on steep slopes, which casts false shadows at a Sun 2° up. |  |
 
 ## Sources not in the suite
