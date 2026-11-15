@@ -42,12 +42,15 @@ from lunarnav.api.errors import ApiProblem
 from lunarnav.api.eventlog import EventLog
 from lunarnav.api.jobworker import JobCancelled, KindSpec, init_worker, new_cancel_flags, run_job, warm_worker
 from lunarnav.api.json import dumps
+from lunarnav.api.replay import ReplayStore
 from lunarnav.api.settings import Settings
 from lunarnav.api.versions import data_versions, results_source_sha256, terrain_signature
 
 log = logging.getLogger("lunarnav.api.jobs")
 
 TERMINAL = frozenset({"done", "failed", "cancelled"})
+REPLAY_MAX = 96
+REPLAY_JOB_TIMEOUT_S = 900.0
 
 JOB_KINDS: dict[str, KindSpec] = {
     "ephemeris.tracks": KindSpec("lunarnav.api.compute.ephem:tracks_job", "1", "Sun/Earth/station tracks"),
@@ -224,6 +227,8 @@ class JobManager:
         self.settings = settings
         self.kinds = dict(kinds)
         self.cache = ResultCache(settings.cache_dir, settings.cache_max_bytes)
+        self.replay = ReplayStore(settings.service_dir / "replay")
+        self._replayed = False
         self._jobs: OrderedDict[str, Job] = OrderedDict()
         self._inflight: dict[str, Job] = {}
         self._slots: list[bool] = []
@@ -299,10 +304,56 @@ class JobManager:
         if self._warm["warm"] >= self._warm["workers"] and self._warm["state"] == "warming":
             self._warm.update(state="ready", seconds=round(time.monotonic() - self._warm_t0, 2))
             log.info("workers warm", extra={"seconds": self._warm["seconds"], "workers": self._warm["workers"]})
+            self._start_replay()
+
+    def _start_replay(self) -> None:
+        if self._replayed or self._closing:
+            return
+        self._replayed = True
+        task = asyncio.get_running_loop().create_task(self._replay())
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
+    async def _replay(self) -> None:
+        try:
+            entries = [e for e in self.replay.top(REPLAY_MAX) if e[0] in self.kinds]
+        except Exception:
+            log.exception("replay list unreadable")
+            return
+        entries.sort(key=lambda e: self.kinds[e[0]].long)
+        computed = failed = 0
+        t0 = time.monotonic()
+        for kind, request in entries:
+            while self._inflight and not self._closing:
+                await asyncio.sleep(1.0)
+            if self._closing:
+                return
+            try:
+                job = self.submit(kind, request, record=False)
+            except Exception:
+                failed += 1
+                continue
+            if job.cached:
+                continue
+            await job.settle(REPLAY_JOB_TIMEOUT_S)
+            if job.state not in TERMINAL:
+                try:
+                    self.cancel(job.id)
+                except ApiProblem:
+                    pass
+            if job.state == "done":
+                computed += 1
+            else:
+                failed += 1
+        log.info("replay finished", extra={"requests": len(entries), "computed": computed, "failed": failed, "seconds": round(time.monotonic() - t0, 1)})
 
     async def shutdown(self) -> None:
         """Cancel unfinished jobs, stop the workers, close the channels and release every semaphore."""
         self._closing = True
+        try:
+            self.replay.flush()
+        except OSError:
+            log.exception("replay flush failed")
         self._warm["state"] = "stopping" if self._warm["state"] == "warming" else self._warm["state"]
         for job in list(self._inflight.values()):
             self._flags[job.slot] = 1
@@ -365,7 +416,7 @@ class JobManager:
         job.raise_for_failure()
         return job
 
-    def submit(self, kind: str, request: dict[str, Any], label: str = "") -> Job:
+    def submit(self, kind: str, request: dict[str, Any], label: str = "", *, record: bool = True) -> Job:
         """Start `kind` on `request` (a JSON-ready dict) or return the cached/in-flight equivalent; `label` defaults to the
         kind's own.
 
@@ -375,6 +426,11 @@ class JobManager:
             raise ApiProblem(404, "Unknown job kind", kind)
         if self._closing:
             raise ApiProblem(503, "Service stopping", "The service is shutting down; retry when it is back.", kind="shutdown")
+        if record:
+            try:
+                self.replay.record(kind, request)
+            except Exception:
+                log.exception("replay record failed")
         key = self.cache_key(kind, request)
         existing = self._inflight.get(key)
         if existing is not None and not existing.cancel_requested:
