@@ -13,7 +13,7 @@ import { sampleAt } from "../timeline";
 import { isPhoneLayout, prefersReducedMotion } from "../../lib/media";
 import { Compass } from "./Compass";
 import { ShowPanel } from "./PanelBar";
-import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon, CrosshairIcon } from "./icons";
+import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon, CrosshairIcon, InfoIcon } from "./icons";
 import { SunPath } from "./SunPath";
 import { SiteStory } from "./SiteStory";
 import { TruthNote } from "./TruthNote";
@@ -200,7 +200,6 @@ export function Stage() {
     });
     const unsubPanel = useLearn.subscribe((s, p) => {
       if (s.panel !== p.panel || s.chapter !== p.chapter || s.view !== p.view) layout();
-      if (s.walkUiMinimized !== p.walkUiMinimized) requestAnimationFrame(() => alive && layout());
     });
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     mq.addEventListener("change", push);
@@ -294,7 +293,12 @@ export function Stage() {
         )}
       </div>
       <div className="l-stage-ui">
-        <div className="l-stage-top">
+        <div className={`l-stage-top${chapter === "explore" ? " l-fold" : ""}`}>
+          {chapter === "explore" && (
+            <button type="button" className="l-fold-sum l-pill" aria-label="Show info and links">
+              <InfoIcon size={18} /> Info
+            </button>
+          )}
           {!panel && <ShowPanel />}
           <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} />
           {chapter === "explore" && <SiteStory key={siteId} site={siteId} />}

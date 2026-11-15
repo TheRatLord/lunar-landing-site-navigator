@@ -15,7 +15,6 @@ const PAD = [
 export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) => void; onJump: () => void }) {
   const { body, seated } = useLearn((s) => s.walkControl);
   const nearRover = useLearn((s) => s.nearRover);
-  const minimized = useLearn((s) => s.walkUiMinimized);
   const edge = useLearn((s) => s.walkEdge);
   const hint = useLearn((s) => s.walkHint);
   const setBody = useLearn((s) => s.setWalkBody);
@@ -103,7 +102,10 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
           )}
         </div>
       )}
-      {!minimized && <div className="l-walk-actions">
+      <div className="l-walk-actions l-fold">
+        <button type="button" className="l-fold-sum l-walk-sum" aria-label="Show the walk controls">
+          <span aria-hidden>⋯</span> Controls
+        </button>
         {!mission && (
           <button type="button" className="l-btn l-walk-missions" aria-expanded={picker} onClick={() => useLearn.setState({ missionPicker: !picker })}>
             Rover missions
@@ -121,7 +123,7 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
         <button type="button" className="l-btn l-btn-primary l-walk-switch" onClick={switchBody}>
           {body === "rover" ? "Be the astronaut" : "Drive the rover"}
         </button>
-      </div>}
+      </div>
     </div>
   );
 }

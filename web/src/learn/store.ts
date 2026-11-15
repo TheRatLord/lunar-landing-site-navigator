@@ -43,8 +43,6 @@ export interface LearnState {
   setPanel(open: boolean): void;
   walkControl: WalkControl;
   nearRover: boolean;
-  walkUiMinimized: boolean;
-  setWalkUiMinimized(minimized: boolean): void;
   walkPov: WalkPov;
   setWalkPov(p: WalkPov): void;
   walkEdge: boolean;
@@ -124,8 +122,6 @@ export const useLearn = create<LearnState>()((set, get) => ({
   terrainRev: 0,
   walkControl: { body: "rover", seated: false },
   nearRover: false,
-  walkUiMinimized: false,
-  setWalkUiMinimized: (walkUiMinimized) => set({ walkUiMinimized, missionPicker: walkUiMinimized ? false : get().missionPicker }),
   walkPov: "third",
   setWalkPov: (walkPov) => set({ walkPov }),
   walkEdge: false,
@@ -182,7 +178,6 @@ export const useLearn = create<LearnState>()((set, get) => ({
       visited: get().visited || !explore,
       walkControl: { body: explore ? "rover" : "astronaut", seated: false },
       nearRover: false,
-      walkUiMinimized: false,
       walkPov: "third",
       walkEdge: false,
       nearProp: null,

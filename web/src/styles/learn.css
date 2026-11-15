@@ -2247,4 +2247,108 @@ button.l-lessons-label {
     max-height: calc(100% - 260px);
   }
 }
+.l-place-group {
+  display: grid;
+  flex: 3 1 0;
+  gap: 4px;
+  min-width: 0;
+}
+.l-place-group:nth-child(2) {
+  flex: 2 1 0;
+}
+.l-place-group:nth-child(3) {
+  flex: 1.2 1 0;
+}
+.l-place-group + .l-place-group {
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+.l-place-kind {
+  padding-left: 4px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.l-place-row {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+.l-fold > .l-fold-sum {
+  display: none;
+}
+.l-fold:not(:hover) > .l-fold-sum {
+  display: inline-flex;
+}
+.l-fold:not(:hover, :focus-within, :has(.l-truth-pop, [aria-expanded="true"])) > :not(.l-fold-sum) {
+  display: none !important;
+}
+.l-fold-sum {
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--l-card);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--l-fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.l-fold-sum:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.l-dock-sum span::before {
+  content: "·";
+  margin-right: 8px;
+  color: var(--text-3);
+}
+.l-dock-sum span {
+  color: var(--text-2);
+}
+.l-dock.l-fold:not(:hover, :focus-within, :has(.l-truth-pop, [aria-expanded="true"])) {
+  left: 50%;
+  right: auto;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  transform: translateX(-50%);
+}
+.l-readouts.l-fold:not(:hover, :focus-within, :has(.l-truth-pop, [aria-expanded="true"])) {
+  gap: 0;
+}
+.l-status-sum .is-off {
+  color: var(--text-3);
+}
+.l-status-sum .tone-sun {
+  color: var(--c-sun);
+}
+.l-status-sum .tone-earth {
+  color: var(--c-earth, #5aa8ff);
+}
+.l-status-sum .tone-power {
+  color: var(--c-power);
+}
+.l-status-sum span {
+  display: inline-flex;
+}
+.l-walk-sum span {
+  font-size: 18px;
+  line-height: 1;
+}
 

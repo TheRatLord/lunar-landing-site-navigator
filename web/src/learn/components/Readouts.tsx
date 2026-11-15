@@ -61,12 +61,35 @@ function Battery() {
   );
 }
 
+function StatusSum({ showBattery }: { showBattery: boolean }) {
+  const { sky, battery } = useLive();
+  const sun = sky.sunlight > 0.05;
+  const earth = sky.earth.frac > 0.05;
+  const seg = Number.isNaN(battery) || battery <= 0 ? 0 : Math.ceil(battery * 5 - 1e-6);
+  const say = `${sun ? "Sun up" : "No Sun"}, ${earth ? "Earth in the sky" : "no Earth"}${showBattery ? `, battery ${seg} of 5` : ""}. Show details`;
+  return (
+    <button type="button" className="l-fold-sum l-status-sum" aria-label={say}>
+      <span className={sun ? "is-on tone-sun" : "is-off"}>{sun ? <SunIcon size={16} /> : <NightIcon size={16} />}</span>
+      <span className={earth ? "is-on tone-earth" : "is-off"}>
+        <GlobeIcon size={16} hollow={!earth} />
+      </span>
+      {showBattery && (
+        <span className="tone-power">
+          <BatteryIcon segments={seg} size={26} height={16} />
+        </span>
+      )}
+    </button>
+  );
+}
+
 export function Readouts() {
   const note = useLearn((s) => s.note);
   const chips = chapterOf(useLearn((s) => s.chapter)).chips;
   const walk = useLearn((s) => s.view === "walk");
+  const explore = useLearn((s) => s.chapter === "explore");
   return (
-    <div className="l-readouts" role="group" aria-label="Right now">
+    <div className={`l-readouts${explore ? " l-fold" : ""}`} role="group" aria-label="Right now">
+      {explore && <StatusSum showBattery={walk} />}
       <div className="l-chips">
         {chips.includes("sun") && <SunChip />}
         {chips.includes("earth") && <EarthChip />}
