@@ -320,10 +320,10 @@ class JobManager:
         except Exception:
             log.exception("replay list unreadable")
             return
-        entries.sort(key=lambda e: self.kinds[e[0]].long)
+        entries.sort(key=lambda e: (not e[2], self.kinds[e[0]].long))
         computed = failed = 0
         t0 = time.monotonic()
-        for kind, request in entries:
+        for kind, request, _ in entries:
             while self._inflight and not self._closing:
                 await asyncio.sleep(1.0)
             if self._closing:
@@ -410,13 +410,13 @@ class JobManager:
         """True while a job of one of `kinds` is queued or running."""
         return any(j.kind in kinds for j in self._inflight.values())
 
-    async def run(self, kind: str, request: dict[str, Any], wait_s: float, label: str = "") -> Job:
-        job = self.submit(kind, request, label)
+    async def run(self, kind: str, request: dict[str, Any], wait_s: float, label: str = "", *, demo: bool = False) -> Job:
+        job = self.submit(kind, request, label, demo=demo)
         await job.settle(wait_s)
         job.raise_for_failure()
         return job
 
-    def submit(self, kind: str, request: dict[str, Any], label: str = "", *, record: bool = True) -> Job:
+    def submit(self, kind: str, request: dict[str, Any], label: str = "", *, record: bool = True, demo: bool = False) -> Job:
         """Start `kind` on `request` (a JSON-ready dict) or return the cached/in-flight equivalent; `label` defaults to the
         kind's own.
 
@@ -428,7 +428,7 @@ class JobManager:
             raise ApiProblem(503, "Service stopping", "The service is shutting down; retry when it is back.", kind="shutdown")
         if record:
             try:
-                self.replay.record(kind, request)
+                self.replay.record(kind, request, demo=demo)
             except Exception:
                 log.exception("replay record failed")
         key = self.cache_key(kind, request)

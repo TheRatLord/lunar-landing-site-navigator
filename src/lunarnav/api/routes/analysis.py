@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
 from lunarnav.api.compute.exports import MEDIA_TYPES
-from lunarnav.api.context import ServiceContext, get_ctx
+from lunarnav.api.context import ServiceContext, demo_request, get_ctx
 from lunarnav.api.docstore import NotFound
 from lunarnav.api.errors import PROBLEM_RESPONSES, ApiProblem
 from lunarnav.api.jobs import Job
@@ -70,6 +70,7 @@ router = APIRouter(
     },
 )
 Ctx = Annotated[ServiceContext, Depends(get_ctx)]
+Demo = Annotated[bool, Depends(demo_request)]
 
 
 def ok(model: type) -> dict[int | str, dict[str, Any]]:
@@ -135,8 +136,8 @@ def status_response(job: Job) -> Response:
                     headers={"Location": f"/api/v1/jobs/{job.id}", "X-Job-Id": job.id})
 
 
-async def run_analysis(ctx: ServiceContext, kind: str, request: dict[str, Any], wait_s: float) -> Response:
-    job = await ctx.jobs.run(kind, request, wait_s)
+async def run_analysis(ctx: ServiceContext, kind: str, request: dict[str, Any], wait_s: float, demo: bool = False) -> Response:
+    job = await ctx.jobs.run(kind, request, wait_s, demo=demo)
     if job.state != "done":
         return status_response(job)
     return Response(ctx.jobs.result(job.id), media_type="application/json", headers=job_headers(job))
@@ -159,53 +160,53 @@ async def run_with_files(
 
 
 @router.post("/analyses/evaluate", responses=ok(EvaluateResult), summary="Evaluate one scenario")
-async def evaluate(body: EvaluateRequest, ctx: Ctx) -> Response:
+async def evaluate(body: EvaluateRequest, ctx: Ctx, demo: Demo) -> Response:
     """Verdict with per-constraint margins, headline metrics, sunlit/dark/eclipse/contact intervals with edge
     ranges, next-event countdowns from `from_utc`, the horizons and the time series (decimated, extremes kept)."""
-    return await run_analysis(ctx, "analysis.evaluate", scenario_request(body, ctx), body.wait_s)
+    return await run_analysis(ctx, "analysis.evaluate", scenario_request(body, ctx), body.wait_s, demo)
 
 
 @router.post("/analyses/scan", responses=ok(ScanResult), summary="Landing opportunity scan and calendar")
-async def scan(body: ScanRequest, ctx: Ctx) -> Response:
+async def scan(body: ScanRequest, ctx: Ctx, demo: Demo) -> Response:
     """Every landing candidate between `start_utc` and `end_utc`: open windows (with PASS-only sub-runs), the
     lunation calendar, closing-constraint counts and the decimated candidate series."""
-    return await run_analysis(ctx, "analysis.scan", scenario_request(body, ctx), body.wait_s)
+    return await run_analysis(ctx, "analysis.scan", scenario_request(body, ctx), body.wait_s, demo)
 
 
 @router.post("/analyses/slip", responses=ok(SlipResult), summary="Slip analysis (landing or launch), alternative sites ranked")
-async def slip(body: SlipRequest, ctx: Ctx) -> Response:
+async def slip(body: SlipRequest, ctx: Ctx, demo: Demo) -> Response:
     """Verdict, closing constraint and next open window for each slip; with `alternative_sites` every site is
     analysed under the same slips and ranked."""
-    return await run_analysis(ctx, "analysis.slip", scenario_request(body, ctx), body.wait_s)
+    return await run_analysis(ctx, "analysis.slip", scenario_request(body, ctx), body.wait_s, demo)
 
 
 @router.post("/analyses/sensitivity/height", responses=ok(SensitivityResult), summary="Observer-height sensitivity")
-async def height_sensitivity(body: HeightSensitivityRequest, ctx: Ctx) -> Response:
-    return await run_analysis(ctx, "analysis.sensitivity-height", scenario_request(body, ctx), body.wait_s)
+async def height_sensitivity(body: HeightSensitivityRequest, ctx: Ctx, demo: Demo) -> Response:
+    return await run_analysis(ctx, "analysis.sensitivity-height", scenario_request(body, ctx), body.wait_s, demo)
 
 
 @router.post("/analyses/sensitivity/position", responses=ok(SensitivityResult), summary="Landing-position sensitivity")
-async def position_sensitivity(body: PositionSensitivityRequest, ctx: Ctx) -> Response:
+async def position_sensitivity(body: PositionSensitivityRequest, ctx: Ctx, demo: Demo) -> Response:
     """Shifts the landing point in eight directions at each distance (a terrain run is slow the first time)."""
-    return await run_analysis(ctx, "analysis.sensitivity-position", scenario_request(body, ctx), body.wait_s)
+    return await run_analysis(ctx, "analysis.sensitivity-position", scenario_request(body, ctx), body.wait_s, demo)
 
 
 @router.post("/analyses/attribution", responses=ok(AttributionResult), summary="Which terrain blocks an event or an azimuth")
-async def attribution(body: AttributionRequest, ctx: Ctx) -> Response:
-    return await run_analysis(ctx, "analysis.attribution", scenario_request(body, ctx), body.wait_s)
+async def attribution(body: AttributionRequest, ctx: Ctx, demo: Demo) -> Response:
+    return await run_analysis(ctx, "analysis.attribution", scenario_request(body, ctx), body.wait_s, demo)
 
 
 @router.post("/analyses/ellipse", responses=ok(EllipseResult), summary="Verdict statistics over the landing ellipse")
-async def ellipse(body: EllipseRequest, ctx: Ctx) -> Response:
+async def ellipse(body: EllipseRequest, ctx: Ctx, demo: Demo) -> Response:
     req = scenario_request(body, ctx)
     if req["scenario"].get("ellipse") is None:
         raise ApiProblem(422, "No landing ellipse", "The plan has no landing ellipse (`ellipse`). Set its semi-axes and azimuth first.")
-    return await run_analysis(ctx, "analysis.ellipse", req, body.wait_s)
+    return await run_analysis(ctx, "analysis.ellipse", req, body.wait_s, demo)
 
 
 @router.post("/analyses/search", responses=ok(SearchResult), summary="Search a region for sites that satisfy the constraints")
-async def search(body: SearchRequest, ctx: Ctx) -> Response:
-    return await run_analysis(ctx, "analysis.search", scenario_request(body, ctx), body.wait_s)
+async def search(body: SearchRequest, ctx: Ctx, demo: Demo) -> Response:
+    return await run_analysis(ctx, "analysis.search", scenario_request(body, ctx), body.wait_s, demo)
 
 
 @router.post("/analyses/regional", responses=ok(RegionalResult), summary="Gridded illumination and Earth-visibility layers")
@@ -221,7 +222,7 @@ async def regional(body: RegionalRequest, ctx: Ctx) -> Response:
 
 
 @router.post("/analyses/compare", responses=ok(CompareResult), summary="Comparison matrix of several scenarios")
-async def compare(body: CompareRequest, ctx: Ctx) -> Response:
+async def compare(body: CompareRequest, ctx: Ctx, demo: Demo) -> Response:
     mode, warnings = terrain_mode(body.terrain, ctx.settings.data_dir)
     docs = scenario_documents(body.items, mode, "items", ctx)
     require_common_stores(docs, "`items`")
@@ -233,11 +234,11 @@ async def compare(body: CompareRequest, ctx: Ctx) -> Response:
     names = [d["name"] for d in docs]
     if len(set(names)) != len(names):
         raise ApiProblem(422, "Duplicate plan names", "Plan names must be unique. Pass `names` to rename them.", names=names)
-    return await run_analysis(ctx, "analysis.compare", {"scenarios": docs, "terrain": mode, "warnings": warnings}, body.wait_s)
+    return await run_analysis(ctx, "analysis.compare", {"scenarios": docs, "terrain": mode, "warnings": warnings}, body.wait_s, demo)
 
 
 @router.post("/horizon", responses=ok(HorizonResult), summary="Horizon profile of a site and observer height")
-async def horizon(body: HorizonRequest, ctx: Ctx) -> Response:
+async def horizon(body: HorizonRequest, ctx: Ctx, demo: Demo) -> Response:
     """Nominal horizon with lower/upper bounds, blocker distances and the strongest peaks with their terrain
     coordinates; from the terrain stores or the smooth sphere (`terrain`). `terrain_stores` and `terrain_error` take the
     scenario's own settings, so with `apply_error_model` the horizon equals the one inside the evaluation of that scenario."""
@@ -245,7 +246,7 @@ async def horizon(body: HorizonRequest, ctx: Ctx) -> Response:
     check_terrain_stores({"terrain_stores": body.terrain_stores, "site": {"lat_deg": body.lat_deg, "lon_deg": body.lon_deg}},
                          mode, ctx.settings.data_dir, ["body"])
     req = {**body.model_dump(mode="json", exclude={"terrain", "wait_s"}), "terrain": mode, "warnings": warnings}
-    return await run_analysis(ctx, "analysis.horizon", req, body.wait_s)
+    return await run_analysis(ctx, "analysis.horizon", req, body.wait_s, demo)
 
 
 EXPORT_WAIT_DEFAULT = 20.0

@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from lunarnav.api.compute import ephem
-from lunarnav.api.context import ServiceContext, get_ctx
+from lunarnav.api.context import ServiceContext, demo_request, get_ctx
 from lunarnav.api.errors import PROBLEM_RESPONSES, ApiProblem
 from lunarnav.api.json import ORJSONResponse
 from lunarnav.api.schemas import JobStatus
@@ -55,10 +55,10 @@ async def _run_inline(ctx: ServiceContext, compute: Callable[[dict[str, Any]], d
     return ORJSONResponse(await _engine(ctx, _inline, compute, body.model_dump(mode="json"), ctx.settings.inline_max_points, jobs_path))
 
 
-async def _submit(ctx: ServiceContext, kind: str, body: BaseModel) -> JobStatus:
+async def _submit(ctx: ServiceContext, kind: str, body: BaseModel, demo: bool) -> JobStatus:
     req = body.model_dump(mode="json")
     await _engine(ctx, _plan, req, ctx.settings.job_max_points, "Too many samples", ". Shorten the time range or increase step_s.")
-    return JobStatus(**ctx.jobs.submit(kind, req).status())
+    return JobStatus(**ctx.jobs.submit(kind, req, demo=demo).status())
 
 
 @router.post(
@@ -78,10 +78,10 @@ async def tracks(body: TracksRequest, ctx: Annotated[ServiceContext, Depends(get
 
 
 @router.post("/ephemeris/tracks/jobs", status_code=202, response_model=JobStatus, summary="Submit a tracks computation as a job")
-async def tracks_job(body: TracksRequest, ctx: Annotated[ServiceContext, Depends(get_ctx)]) -> JobStatus:
+async def tracks_job(body: TracksRequest, ctx: Annotated[ServiceContext, Depends(get_ctx)], demo: Annotated[bool, Depends(demo_request)]) -> JobStatus:
     """Same body and result as `/ephemeris/tracks`, for large series. Identical requests return the cached
     result at once (``cached: true``) or join the job already running."""
-    return await _submit(ctx, "ephemeris.tracks", body)
+    return await _submit(ctx, "ephemeris.tracks", body, demo)
 
 
 @router.post(
@@ -96,8 +96,8 @@ async def subpoints(body: SubpointsRequest, ctx: Annotated[ServiceContext, Depen
 
 
 @router.post("/ephemeris/subpoints/jobs", status_code=202, response_model=JobStatus, summary="Submit a sub-point computation as a job")
-async def subpoints_job(body: SubpointsRequest, ctx: Annotated[ServiceContext, Depends(get_ctx)]) -> JobStatus:
-    return await _submit(ctx, "ephemeris.subpoints", body)
+async def subpoints_job(body: SubpointsRequest, ctx: Annotated[ServiceContext, Depends(get_ctx)], demo: Annotated[bool, Depends(demo_request)]) -> JobStatus:
+    return await _submit(ctx, "ephemeris.subpoints", body, demo)
 
 
 @router.post("/time/convert", response_model=TimeConvertResponse, summary="UTC <-> ET (TDB seconds past J2000)")

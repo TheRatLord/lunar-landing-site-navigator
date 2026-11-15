@@ -94,3 +94,7 @@ class ServiceContext:
 def get_ctx(request: Request) -> ServiceContext:
     """FastAPI dependency returning the context created by the app lifespan."""
     return request.app.state.ctx
+
+
+def demo_request(request: Request) -> bool:
+    return request.headers.get("x-lunarnav-demo") == "1"

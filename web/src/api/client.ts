@@ -63,6 +63,12 @@ export function apiUrl(path: string, query?: Query): string {
   return s ? `${url}?${s}` : url;
 }
 
+let demoRequests = false;
+
+export function setDemoRequests(on: boolean): void {
+  demoRequests = on;
+}
+
 function newRequestId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -91,6 +97,7 @@ export async function errorFromResponse(res: Response, sentRequestId: string): P
 export async function request(path: string, opts: RequestOptions = {}): Promise<Response> {
   const requestId = newRequestId();
   const headers: Record<string, string> = { Accept: opts.accept ?? "application/json", "X-Request-ID": requestId, ...opts.headers };
+  if (demoRequests) headers["X-Lunarnav-Demo"] = "1";
   let body: BodyInit | undefined;
   if (opts.body !== undefined) {
     if (typeof opts.body === "string" || opts.body instanceof FormData || opts.body instanceof Blob) body = opts.body;

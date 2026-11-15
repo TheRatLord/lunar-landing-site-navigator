@@ -1,6 +1,6 @@
 import { siteLabel } from "../lib/siteName";
 import { create } from "zustand";
-import { ApiError, reportError } from "../api/client";
+import { ApiError, reportError, setDemoRequests } from "../api/client";
 import { clamp } from "../lib/scale";
 import { MS_DAY, MS_HOUR, parseUtc, MS_MIN, toIsoUtc } from "../lib/time";
 import { toast } from "../state/toasts";
@@ -460,6 +460,8 @@ function writeDraft(s: ScenarioStore): void {
   } catch {
   }
 }
+setDemoRequests(useScenario.getState().demo);
+useScenario.subscribe((s) => setDemoRequests(s.demo));
 useScenario.subscribe((s, prev) => {
   if (s.demo && s.doc && s.doc !== prev.doc) writeDemo(s.doc);
   if (s.doc === prev.doc && s.saved === prev.saved && s.baseline === prev.baseline && s.demo === prev.demo) return;
