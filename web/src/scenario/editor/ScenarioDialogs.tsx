@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { ApiError } from "../../api/client";
 import { Button, IconButton } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Modal } from "../../components/ui/Modal";
 import { Spinner } from "../../components/ui/Progress";
 import { parseUtc } from "../../lib/time";
-import { scenarioApi } from "../api";
-import { forgetPlan, myPlanIds } from "../myPlans";
+import { forgetPlan, loadCreatedPlans } from "../myPlans";
 import { selectDirty, useScenario } from "../store";
 import type { ScenarioRecord } from "../types";
 import { whenText } from "../when";
@@ -20,17 +18,6 @@ export function ScenarioDialogs() {
   return null;
 }
 
-async function loadMine(): Promise<ScenarioRecord[]> {
-  const ids = myPlanIds();
-  const settled = await Promise.allSettled(ids.map((id) => scenarioApi.get(id)));
-  const out: ScenarioRecord[] = [];
-  settled.forEach((r, i) => {
-    if (r.status === "fulfilled") out.push(r.value);
-    else if (r.reason instanceof ApiError && r.reason.notFound) forgetPlan(ids[i] ?? "");
-  });
-  return out.sort((a, b) => (parseUtc(b.updated_utc) ?? 0) - (parseUtc(a.updated_utc) ?? 0));
-}
-
 function OpenDialog({ onClose }: { onClose: () => void }) {
   const load = useScenario((s) => s.load);
   const current = useScenario((s) => s.saved?.id);
@@ -41,7 +28,7 @@ function OpenDialog({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     let live = true;
-    void loadMine().then((p) => live && setPlans(p));
+    void loadCreatedPlans().then((p) => live && setPlans(p));
     return () => {
       live = false;
     };
@@ -59,7 +46,7 @@ function OpenDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal
-      title="Open plan"
+      title="Your plans"
       onClose={onClose}
       width={520}
     >

@@ -1,6 +1,13 @@
 import { Button, IconButton } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
-import { useScenario } from "../scenario/store";
+import { BLANK_LINK, DEMO_LINK, RESET_LINK, useScenario } from "../scenario/store";
+import { runPlanAction } from "./PlanSwitcher";
+
+const ACTION_TEXT: Record<string, string> = {
+  [DEMO_LINK]: "This opens the demo plan.",
+  [BLANK_LINK]: "This starts a blank plan.",
+  [RESET_LINK]: "This resets and opens the demo plan.",
+};
 
 const MAX_LINES = 8;
 
@@ -18,9 +25,9 @@ export function DraftNotice() {
       {pendingLink && (
         <div className="draft-notice" data-tone="marginal" role="alert">
           <Icon name="link" size={14} />
-          <strong>This link opens another plan.</strong>
+          <strong>{ACTION_TEXT[pendingLink] ?? "This link opens another plan."}</strong>
           <span className="draft-notice-text">Your unsaved edits will be lost.</span>
-          <Button size="sm" onClick={() => void load(pendingLink)}>
+          <Button size="sm" onClick={() => void (pendingLink === DEMO_LINK || pendingLink === BLANK_LINK || pendingLink === RESET_LINK ? runPlanAction(pendingLink) : load(pendingLink))}>
             Open it
           </Button>
           <Button size="sm" onClick={() => useScenario.setState({ pendingLink: null })}>

@@ -19,7 +19,6 @@ import { usePresets } from "../scenario/editor/usePresets";
 import { LanderPicker } from "./plan/LanderPicker";
 import { RequirementsPicker } from "./plan/RequirementsPicker";
 import { WindowControl, areaText, windowText } from "./plan/Widen";
-import { PlanFile } from "./PlanFile";
 import { formatLimit } from "../lib/requirements";
 
 const SitePicker = lazy(() => import("./plan/SitePicker").then((m) => ({ default: m.SitePicker })));
@@ -53,8 +52,6 @@ export function PlanPanel() {
 
   return (
     <aside className="plan-side" aria-label="Plan">
-      <PlanFile />
-
       <div className="plan-cards">
         <Card
           field="site"

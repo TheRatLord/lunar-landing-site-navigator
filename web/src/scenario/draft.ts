@@ -12,6 +12,7 @@ export interface Draft {
   saved: SavedRef | null;
   baseline: string | null;
   tab?: string;
+  demo?: boolean;
 }
 
 export interface DraftProblem {
@@ -54,6 +55,7 @@ export function readDraftText(raw: string | null): DraftRead {
       saved,
       baseline: typeof rec["baseline"] === "string" ? rec["baseline"] : null,
       ...(typeof rec["tab"] === "string" ? { tab: rec["tab"] } : {}),
+      ...(rec["demo"] === true ? { demo: true } : {}),
     },
   };
 }

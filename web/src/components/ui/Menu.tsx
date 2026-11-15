@@ -32,6 +32,7 @@ export interface MenuProps {
   /** Rendered under the list inside the panel (status rows). */
   footer?: ReactNode;
   disabled?: boolean;
+  onOpen?: () => void;
 }
 
 const ENABLED = "[role^=menuitem]:not(:disabled)";
@@ -91,7 +92,7 @@ function MenuList({ label, items, onClose, onSelect, footer }: { label: string; 
   );
 }
 
-export function Menu({ label, text, icon, iconOnly = false, align = "start", width = 200, items, footer, disabled }: MenuProps) {
+export function Menu({ label, text, icon, iconOnly = false, align = "start", width = 200, items, footer, disabled, onOpen }: MenuProps) {
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -106,6 +107,11 @@ export function Menu({ label, text, icon, iconOnly = false, align = "start", wid
     it.onSelect();
   };
 
+  const show = (next: boolean) => {
+    if (next && !open) onOpen?.();
+    setOpen(next);
+  };
+
   const triggerProps = {
     disabled,
     variant: "ghost" as const,
@@ -113,11 +119,11 @@ export function Menu({ label, text, icon, iconOnly = false, align = "start", wid
     "aria-haspopup": "menu" as const,
     "aria-expanded": open,
     "aria-controls": open ? menuId : undefined,
-    onClick: () => setOpen(!open),
+    onClick: () => show(!open),
     onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => {
       if (e.key === "ArrowDown" && !open) {
         e.preventDefault();
-        setOpen(true);
+        show(true);
       }
     },
   };

@@ -26,7 +26,7 @@ function AskButton() {
       onClick={toggle}
     >
       <Icon name="analyst" size={14} />
-      Ask
+      <span className="tb-label">Ask</span>
       {running && (
         <span className="tb-ask-badge" data-kind="running">
           <Spinner size={10} />
@@ -58,7 +58,7 @@ export function PlannerNav() {
   );
 }
 
-export function TopBar({ nav, tools, modes = true }: { nav?: ReactNode; tools?: ReactNode; modes?: boolean }) {
+export function TopBar({ nav, tools, plan, modes = true }: { nav?: ReactNode; tools?: ReactNode; plan?: ReactNode; modes?: boolean }) {
   const theme = useApp((s) => s.theme);
   const setTheme = useApp((s) => s.setTheme);
 
@@ -78,6 +78,7 @@ export function TopBar({ nav, tools, modes = true }: { nav?: ReactNode; tools?: 
       {nav ?? <span />}
 
       <div className="tb-side tb-side-end">
+        {plan}
         {tools}
         <button
           type="button"
@@ -97,9 +98,9 @@ export function PlannerTools() {
   const askEnabled = useAsk((s) => s.enabled);
   return (
     <>
-      <NavLink to={EVIDENCE_WORKSPACE.path} className={({ isActive }) => `btn btn-sm btn-ghost tb-link${isActive ? " active" : ""}`}>
+      <NavLink to={EVIDENCE_WORKSPACE.path} title={EVIDENCE_WORKSPACE.label} aria-label={EVIDENCE_WORKSPACE.label} className={({ isActive }) => `btn btn-sm btn-ghost tb-link${isActive ? " active" : ""}`}>
         <Icon name={EVIDENCE_WORKSPACE.icon} size={14} />
-        {EVIDENCE_WORKSPACE.label}
+        <span className="tb-label">{EVIDENCE_WORKSPACE.label}</span>
       </NavLink>
       {askEnabled && <AskButton />}
       <IconButton icon="command" label="Command palette" shortcut="Ctrl K" className="tb-palette" onClick={() => setPaletteOpen(true)} />

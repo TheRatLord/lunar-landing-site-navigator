@@ -14,6 +14,7 @@ import { ScenarioDialogs } from "../scenario/editor/ScenarioDialogs";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { PlanPanel } from "./PlanPanel";
 import { PlannerNav, PlannerTools, TopBar } from "./TopBar";
+import { PlanSwitcher } from "./PlanSwitcher";
 import { useArrivingSite } from "../scenario/arrivingSite";
 import { useScenarioUrl } from "../scenario/scenarioUrl";
 import { useCommands } from "./useCommands";
@@ -113,7 +114,7 @@ function Planner() {
       <a className="skip-link" href={ask === "full" ? "#ask-dock" : "#main"}>
         Skip to page
       </a>
-      <TopBar nav={<PlannerNav />} tools={<PlannerTools />} />
+      <TopBar nav={<PlannerNav />} tools={<PlannerTools />} plan={<PlanSwitcher />} />
       {plan && <PlanPanel />}
       <main id="main" className="main" tabIndex={-1} inert={ask === "full"}>
         {plan && <DraftNotice />}
@@ -121,7 +122,7 @@ function Planner() {
           <Outlet />
         ) : bootError ? (
           <div className="plan-gate" role="alert">
-            <ServiceNotice error={bootError} what="The example plan" onRetry={retryStart} />
+            <ServiceNotice error={bootError} what="The demo plan" onRetry={retryStart} />
           </div>
         ) : (
           <div className="plan-gate" role="status">

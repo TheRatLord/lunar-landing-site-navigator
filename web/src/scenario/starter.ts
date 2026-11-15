@@ -1,3 +1,4 @@
+import { MS_HOUR, toIsoUtc } from "../lib/time";
 import type { Candidate } from "./alternatives";
 import { catalogApi } from "./api";
 import { buildScenario } from "./editor/newScenario";
@@ -25,7 +26,7 @@ const SUN_AND_EARTH_MIN_H = 168;
 
 const COMPARED = [FEATURED_SITES[2], FEATURED_SITES[5]];
 
-export const EXAMPLE_NAME = "Example plan";
+export const DEMO_NAME = "Demo plan";
 
 export async function starterAlternatives(): Promise<Candidate[]> {
   const sites = await Promise.all(COMPARED.map((f) => catalogApi.site(f.id)));
@@ -42,7 +43,7 @@ export async function starterScenario(): Promise<Scenario> {
     min_total_sunlit_contact_h: { min: SUN_AND_EARTH_MIN_H, max: null, unit: "h", label: "Sunlight and Earth link together", origin: { basis: "user", label: "", source_url: null, note: "" }, margin_scale: 24 },
   };
   return buildScenario({
-    name: EXAMPLE_NAME,
+    name: DEMO_NAME,
     site: { ...site, name: SITE.name },
     landing_utc: LANDING_UTC,
     mission_duration_h: SURFACE_HOURS,
@@ -50,4 +51,18 @@ export async function starterScenario(): Promise<Scenario> {
     constraints,
     network: presets.networks.find((n) => n.id === NETWORK_ID)?.network,
   });
+}
+
+export async function blankScenario(): Promise<Scenario> {
+  const presets = await loadPresets();
+  const profile = presets.profiles[0];
+  if (!profile) throw new Error("The engine offers no lander presets.");
+  const doc = buildScenario({
+    name: "",
+    site: { id: "", name: "", lat_deg: -90, lon_deg: 0 },
+    landing_utc: toIsoUtc(Math.ceil(Date.now() / MS_HOUR) * MS_HOUR),
+    mission_duration_h: SURFACE_HOURS,
+    profile: profile.profile,
+  });
+  return { ...doc, site: { ...doc.site, catalog_id: null } };
 }

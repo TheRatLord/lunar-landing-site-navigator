@@ -122,7 +122,8 @@ function searchFromParams(p: URLSearchParams): Stored | null {
 const startParams = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
 const link = { id: startParams.get("scenario"), search: startParams.has("scenario") ? (searchFromParams(startParams) ?? DEFAULTS) : searchFromParams(startParams) };
 
-const planKey = (s: { saved: { id: string } | null }): string => s.saved?.id ?? DRAFT;
+const DEMO = "demo";
+const planKey = (s: { saved: { id: string } | null; demo: boolean }): string => (s.demo ? DEMO : (s.saved?.id ?? DRAFT));
 
 function settingsFor(key: string): Kept {
   if (link.search && (link.id === null || link.id === key)) {
@@ -181,6 +182,10 @@ export function importPlanFile(text: string): void {
 }
 
 export const selectSearchDirty = (s: PlanSearch): boolean => keyOf(s) !== s.base;
+
+export function forgetDemoSearch(): void {
+  writeFor(DEMO, null);
+}
 
 export function currentSearch(): Stored {
   const { radius_km, window, rankBy } = usePlanSearch.getState();

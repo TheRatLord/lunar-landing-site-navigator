@@ -14,6 +14,7 @@ const REDIRECTS: Array<[string, string]> = [
   ["/explore/*", "/map"],
   ["/dates/*", "/overview"],
   ["/site/accuracy", "/site/ellipse"],
+  ["/demo", "/overview"],
 ];
 
 function Redirect({ to }: { to: string }) {

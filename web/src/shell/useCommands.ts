@@ -4,10 +4,10 @@ import type { Command } from "../components/ui/CommandPalette";
 import { exportScenarioJson } from "../scenario/editor/scenarioActions";
 import { useEditorUi, type PlanField } from "../scenario/editor/editorUi";
 import { useAsk } from "../ask/askStore";
-import { useScenario } from "../scenario/store";
+import { BLANK_LINK, DEMO_LINK, RESET_LINK, useScenario } from "../scenario/store";
 import { useApp } from "../state/store";
 import { HOME, VIEW_WORKSPACES, WORKSPACES, showsPlan, usesTime } from "../workspaces/registry";
-import { copyPlanLink } from "./PlanFile";
+import { copyPlanLink, requestPlanAction } from "./PlanSwitcher";
 import { togglePlay } from "./TimeScrubber";
 
 const PLAN_FIELDS: Array<{ field: PlanField; title: string; icon: Command["icon"]; keywords: string }> = [
@@ -55,7 +55,20 @@ export function useCommands(): Command[] {
       });
     }
     list.push(
-      { id: "plan-open", title: "Open plan…", group: "Plan", icon: "folder", run: () => ui().setDialog("open") },
+      { id: "plan-open", title: "Your plans…", group: "Plan", icon: "folder", keywords: "open switch saved", run: () => ui().setDialog("open") },
+      { id: "plan-demo", title: "Open the demo plan", group: "Plan", icon: "rover", keywords: "example switch", run: () => void requestPlanAction(DEMO_LINK) },
+      { id: "plan-demo-reset", title: "Reset the demo plan", group: "Plan", icon: "reset", keywords: "example restore", run: () => void requestPlanAction(RESET_LINK) },
+      {
+        id: "plan-blank",
+        title: "Start a blank plan",
+        group: "Plan",
+        icon: "plus",
+        keywords: "new empty",
+        run: () => {
+          if (!plan) navigate(HOME.path);
+          void requestPlanAction(BLANK_LINK);
+        },
+      },
       { id: "plan-save", title: "Save plan", group: "Plan", icon: "check", shortcut: "Ctrl S", run: () => void sc().save() },
       { id: "plan-link", title: "Copy link", group: "Plan", icon: "link", run: () => void copyPlanLink() },
       { id: "plan-export", title: "Download plan file", group: "Plan", icon: "download", run: exportScenarioJson },

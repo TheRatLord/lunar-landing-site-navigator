@@ -16,8 +16,9 @@ landing-ellipse statistics, slip analysis and site search. Every number carries 
 Evidence shows how each part was checked. Explorer is for everyone else: drive a rover and walk around famous landing
 sites in 3D, with five short lessons on why sunlight and Earth in the sky decide where a lander can work.
 
-The same example every time: [lunar.cinne.dev/demo](https://lunar.cinne.dev/demo) resets this browser to the example
-plan with three south-pole sites compared.
+[lunar.cinne.dev/demo](https://lunar.cinne.dev/demo) opens the demo plan, with three south-pole sites compared. Each
+browser keeps its own editable copy; the Plans menu switches between it, a blank plan and your saved plans, and resets
+the demo.
 
 ![Overview](web/docs/screenshots/overview-dark.png)
 

@@ -5,11 +5,11 @@ import { clamp } from "../lib/scale";
 import { MS_DAY, MS_HOUR, parseUtc, MS_MIN, toIsoUtc } from "../lib/time";
 import { toast } from "../state/toasts";
 import { useApp } from "../state/store";
-import { seedAlternatives } from "./alternatives";
+import { seedAlternatives, useAlternatives } from "./alternatives";
 import { scenarioApi } from "./api";
 import { fieldErrorCount, useFieldErrors } from "./fieldErrors";
 import { createdHere, forgetPlan, markCreated, rememberPlan } from "./myPlans";
-import { EXAMPLE_NAME, starterAlternatives, starterScenario } from "./starter";
+import { DEMO_NAME, blankScenario, starterAlternatives, starterScenario } from "./starter";
 import { readDraftText, type Draft, type DraftProblem, type DraftRead, type SavedRef } from "./draft";
 import { CONSTRAINT_META } from "./editor/fieldSpecs";
 import { formatProblems, normalizeScenario, schemaDefaults } from "./normalize";
@@ -41,6 +41,7 @@ export interface ScenarioStore {
   droppedFields: DroppedFields | null;
   bootError: ApiError | null;
   pendingLink: string | null;
+  demo: boolean;
 
   open(doc: Scenario, saved?: SavedRef | null, clean?: boolean): void;
   edit(path: Path, value: unknown): void;
@@ -57,9 +58,16 @@ export interface ScenarioStore {
   dismissDroppedFields(): void;
   dismissDraftProblem(): void;
   retryStart(): void;
+  openDemo(fresh?: boolean): Promise<boolean>;
+  openBlank(): Promise<boolean>;
 }
 
+export const DEMO_LINK = "demo";
+export const BLANK_LINK = "blank";
+export const RESET_LINK = "demo-reset";
+
 const DRAFT_KEY = "lunarnav.scenario.draft";
+const DEMO_KEY = "lunarnav.demo";
 const TAB_ID = Math.random().toString(36).slice(2);
 
 function readStorage(): DraftRead {
@@ -85,9 +93,32 @@ function fillEmptyLimits(doc: Scenario): Scenario {
   return constraints === doc.constraints ? doc : { ...doc, constraints };
 }
 
+function readDemo(): Scenario | null {
+  try {
+    const raw = localStorage.getItem(DEMO_KEY);
+    if (!raw) return null;
+    const n = normalizeScenario(JSON.parse(raw));
+    return n.scenario ? fillEmptyLimits(n.scenario) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDemo(doc: Scenario): void {
+  try {
+    localStorage.setItem(DEMO_KEY, JSON.stringify(doc));
+  } catch {
+  }
+}
+
 const initial = readStorage();
 if (initial.kind === "ok") initial.draft.doc = fillEmptyLimits(initial.draft.doc);
 const initialDraft: Draft | null = initial.kind === "ok" ? initial.draft : null;
+if (initialDraft && !initialDraft.saved && !initialDraft.demo && initialDraft.doc.name === "Example plan" && initialDraft.baseline === JSON.stringify(initialDraft.doc)) {
+  initialDraft.demo = true;
+  initialDraft.doc = { ...initialDraft.doc, name: DEMO_NAME };
+  if (readDemo() === null) writeDemo(initialDraft.doc);
+}
 if (initialDraft?.saved) rememberPlan(initialDraft.saved.id);
 
 const reset = (s: ScenarioStore, doc: Scenario | null, saved: SavedRef | null, baseline: string | null): Partial<ScenarioStore> => ({
@@ -101,6 +132,7 @@ const reset = (s: ScenarioStore, doc: Scenario | null, saved: SavedRef | null, b
   draftProblem: null,
   droppedFields: null,
   pendingLink: null,
+  demo: false,
 });
 
 export const useScenario = create<ScenarioStore>((set, get) => ({
@@ -117,6 +149,7 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
   droppedFields: initial.kind === "ok" && initial.unknownFields.length ? { source: "The stored draft", fields: initial.unknownFields } : null,
   bootError: null,
   pendingLink: null,
+  demo: initialDraft?.demo === true,
 
   open: (doc, saved = null, clean = false) =>
     set((s) => reset(s, doc, saved, saved || clean ? JSON.stringify(doc) : null)),
@@ -172,7 +205,7 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
   takeOtherTabDraft: () => {
     const d = readStorage();
     if (d.kind === "ok") {
-      set((s) => ({ ...reset(s, d.draft.doc, d.draft.saved, d.draft.baseline), draftElsewhere: false }));
+      set((s) => ({ ...reset(s, d.draft.doc, d.draft.saved, d.draft.baseline), draftElsewhere: false, demo: d.draft.demo === true }));
       if (d.unknownFields.length) set({ droppedFields: { source: "The other tab's draft", fields: d.unknownFields } });
     } else {
       set({ draftElsewhere: false });
@@ -182,6 +215,7 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
   discardDraft: () => {
     try {
       localStorage.removeItem(DRAFT_KEY);
+      if (get().demo) localStorage.removeItem(DEMO_KEY);
     } catch {
     }
     get().close();
@@ -193,33 +227,67 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
     set({ bootError: null });
     startPlan();
   },
+  openDemo: (fresh = false) => openBuilt(fresh ? null : readDemo(), starterScenario, true, fresh),
+  openBlank: () => openBuilt(null, blankScenario, false, false),
 }));
 
-let starting = false;
+const asApiError = (e: unknown, title: string): ApiError =>
+  e instanceof ApiError ? e : new ApiError({ status: 0, title, detail: e instanceof Error ? e.message : String(e) });
+
+let building = 0;
+
+async function openBuilt(ready: Scenario | null, build: () => Promise<Scenario>, demo: boolean, fresh: boolean): Promise<boolean> {
+  const before = useScenario.getState();
+  const booting = before.doc === null;
+  const problem = before.draftProblem;
+  const show = (doc: Scenario) => {
+    useScenario.setState((s) => ({ ...reset(s, doc, null, demo ? null : JSON.stringify(doc)), phase: "idle", demo, ...(booting && problem ? { draftProblem: problem } : {}) }));
+  };
+  const mine = ++building;
+  if (ready) {
+    show(ready);
+    return true;
+  }
+  useScenario.setState({ phase: "loading", error: null, pendingLink: null });
+  const session = useScenario.getState().session;
+  const stale = () => {
+    if (building === mine && useScenario.getState().session === session) return false;
+    if (building === mine && useScenario.getState().phase === "loading") useScenario.setState({ phase: "idle" });
+    return true;
+  };
+  try {
+    const doc = await build();
+    if (stale()) return false;
+    if (demo) writeDemo(doc);
+    show(doc);
+    if (demo) {
+      starterAlternatives().then((items) => (fresh ? useAlternatives.setState({ items }) : seedAlternatives(items)), () => undefined);
+    }
+    return true;
+  } catch (e) {
+    if (stale()) return false;
+    useScenario.setState(booting ? { phase: "idle", bootError: asApiError(e, demo ? "Could not prepare the demo plan" : "Could not prepare a blank plan") } : { phase: "idle" });
+    if (!booting) reportError(e, demo ? "Could not open the demo" : "Could not start a blank plan");
+    return false;
+  }
+}
+
 function startPlan(): void {
   const s = useScenario.getState();
-  if (s.doc || s.phase === "loading" || s.bootError || starting) return;
-  starting = true;
-  starterScenario().then(
-    (doc) => {
-      starting = false;
-      const now = useScenario.getState();
-      if (now.doc || now.phase === "loading") return;
-      const problem = now.draftProblem;
-      now.open(doc, null, true);
-      if (problem) useScenario.setState({ draftProblem: problem });
-      starterAlternatives().then(seedAlternatives, () => undefined);
-    },
-    (e: unknown) => {
-      starting = false;
-      useScenario.setState({ bootError: e instanceof ApiError ? e : new ApiError({ status: 0, title: "Could not prepare a starting plan", detail: e instanceof Error ? e.message : String(e) }) });
-    },
-  );
+  if (s.doc || s.phase !== "idle" || s.bootError) return;
+  void s.openDemo();
 }
 useScenario.subscribe((s) => {
   if (!s.doc && s.phase === "idle") startPlan();
 });
-setTimeout(startPlan, 0);
+
+const demoLink = typeof window !== "undefined" && /^\/demo\/?$/.test(window.location.pathname);
+setTimeout(() => {
+  const s = useScenario.getState();
+  if (!demoLink || s.demo || s.phase !== "idle") return startPlan();
+  if (s.doc && selectDirty(s)) useScenario.setState({ pendingLink: DEMO_LINK });
+  else void s.openDemo();
+}, 0);
 
 function adoptNewerSaved(): void {
   const s = useScenario.getState();
@@ -264,7 +332,7 @@ function adopt(rec: ScenarioRecord): void {
 }
 
 async function saveDoc(asNew: boolean): Promise<boolean> {
-  const { doc: current, saved, phase, session } = useScenario.getState();
+  const { doc: current, saved, phase, session, demo } = useScenario.getState();
   if (!current || phase === "saving") return false;
   if (fieldErrorCount(useFieldErrors.getState()) > 0) {
     toast({ kind: "error", title: "Fix the marked fields first" });
@@ -273,16 +341,16 @@ async function saveDoc(asNew: boolean): Promise<boolean> {
   const inPlace = saved !== null && !asNew && createdHere(saved.id);
   const copyOfShared = saved !== null && !asNew && !inPlace;
   const name = current.name.trim();
-  if (!name) useScenario.getState().edit(["name"], "Untitled plan");
-  else if (!saved && name === EXAMPLE_NAME) useScenario.getState().edit(["name"], siteLabel(current.site.name) || name);
-  else if (asNew) useScenario.getState().edit(["name"], `${name} (copy)`);
-  const doc = useScenario.getState().doc ?? current;
+  const rename = !name ? siteLabel(current.site.name) || "Untitled plan" : !saved && name === DEMO_NAME ? siteLabel(current.site.name) || name : asNew ? `${name} (copy)` : null;
+  if (rename !== null && !demo) useScenario.getState().edit(["name"], rename);
+  const doc = demo ? (rename === null ? current : { ...current, name: rename }) : (useScenario.getState().doc ?? current);
+  const replaces = demo ? current : doc;
   useScenario.setState({ phase: "saving", error: null, issues: [], conflictVersion: null });
   try {
     const rec = inPlace ? await scenarioApi.update(saved.id, saved.version, doc) : await scenarioApi.create(doc);
     if (!inPlace) markCreated(rec.id);
     rememberPlan(rec.id);
-    finishSave(rec, doc, session);
+    finishSave(rec, doc, replaces, session);
     toast({ kind: "success", title: copyOfShared ? "Saved as your copy" : `Saved “${rec.name}”` });
     return true;
   } catch (e) {
@@ -291,7 +359,7 @@ async function saveDoc(asNew: boolean): Promise<boolean> {
   }
 }
 
-function finishSave(rec: ScenarioRecord, sent: Scenario, session: number): void {
+function finishSave(rec: ScenarioRecord, sent: Scenario, replaces: Scenario, session: number): void {
   const stored = rec.document ?? sent;
   const s = useScenario.getState();
   if (s.session !== session) {
@@ -299,8 +367,9 @@ function finishSave(rec: ScenarioRecord, sent: Scenario, session: number): void 
     return;
   }
   useScenario.setState({
-    doc: s.doc === sent ? stored : s.doc,
+    doc: s.doc === replaces ? stored : s.doc,
     saved: { id: rec.id, version: rec.version, updated_utc: rec.updated_utc },
+    demo: false,
     baseline: JSON.stringify(stored),
     phase: "idle",
     error: null,
@@ -374,7 +443,7 @@ export function addPlanEllipse(): void {
 }
 
 export function selectDirty(s: ScenarioStore): boolean {
-  return s.doc !== null && (s.baseline === null || JSON.stringify(s.doc) !== s.baseline);
+  return s.doc !== null && !s.demo && (s.baseline === null || JSON.stringify(s.doc) !== s.baseline);
 }
 
 export function issuesAt(s: ScenarioStore, path: Path): ValidationIssue[] {
@@ -385,13 +454,14 @@ export function issuesAt(s: ScenarioStore, path: Path): ValidationIssue[] {
 let draftTimer: ReturnType<typeof setTimeout> | undefined;
 function writeDraft(s: ScenarioStore): void {
   try {
-    if (s.doc) localStorage.setItem(DRAFT_KEY, JSON.stringify({ doc: s.doc, saved: s.saved, baseline: s.baseline, tab: TAB_ID } satisfies Draft));
+    if (s.doc) localStorage.setItem(DRAFT_KEY, JSON.stringify({ doc: s.doc, saved: s.saved, baseline: s.baseline, tab: TAB_ID, ...(s.demo ? { demo: true } : {}) } satisfies Draft));
     else localStorage.removeItem(DRAFT_KEY);
   } catch {
   }
 }
 useScenario.subscribe((s, prev) => {
-  if (s.doc === prev.doc && s.saved === prev.saved && s.baseline === prev.baseline) return;
+  if (s.demo && s.doc && s.doc !== prev.doc) writeDemo(s.doc);
+  if (s.doc === prev.doc && s.saved === prev.saved && s.baseline === prev.baseline && s.demo === prev.demo) return;
   clearTimeout(draftTimer);
   draftTimer = setTimeout(() => {
     draftTimer = undefined;
