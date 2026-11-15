@@ -1580,7 +1580,7 @@
 .learn.is-explore .l-control {
   display: inline-block;
   vertical-align: top;
-  width: min(100%, 370px);
+  width: min(100%, 470px);
   margin-right: 12px;
 }
 .learn.is-explore .l-explore-more {
@@ -1849,9 +1849,10 @@
   color: var(--text-2);
 }
 .learn.is-explore .l-fact-slot {
-  top: 262px;
-  right: 20px;
-  width: min(270px, calc(100% - 40px));
+  top: 116px;
+  left: 16px;
+  right: auto;
+  width: min(236px, calc(100% - 40px));
 }
 @media (max-width: 759px) {
   .learn.is-explore .l-fact-slot,

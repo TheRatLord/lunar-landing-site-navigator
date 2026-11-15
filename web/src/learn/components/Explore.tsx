@@ -64,7 +64,7 @@ export function ExploreCard() {
   const views = [
     { value: "space", label: "Space" },
     { value: "ground", label: "Ground" },
-    { value: "walk", label: "Rover" },
+    { value: "walk", label: "Walk & drive" },
     ...(polar ? [{ value: "crater", label: "Close-up" }] : []),
   ];
   return (
