@@ -1,5 +1,8 @@
 import { CylinderGeometry, Group, Mesh, MeshLambertMaterial, PlaneGeometry } from "three";
+import landerUrl from "../models/change4_lander.glb?url";
+import yutuUrl from "../models/yutu2.glb?url";
 import type { PropSpec } from "./index";
+import { swapIn } from "./model";
 import { box, cells, chinaFlag, darkGrey, foil, legs, mesh, silver } from "./parts";
 
 function lander(): Group {
@@ -18,7 +21,7 @@ function lander(): Group {
   flag.position.set(0, 1.85, 1.205);
   g.add(flag);
   g.add(mesh(new CylinderGeometry(0.6, 0.8, 0.5, 16, 1, true), darkGrey, 0, 0.9, 0));
-  return g;
+  return swapIn(g, landerUrl, [flag]);
 }
 
 function yutu2(): Group {
@@ -34,7 +37,7 @@ function yutu2(): Group {
   g.add(mesh(new CylinderGeometry(0.03, 0.03, 0.6, 6), silver, 0, 1.15, -0.5));
   g.add(box(0.35, 0.12, 0.12, silver, 0, 1.5, -0.5));
   g.rotation.y = 0.8;
-  return g;
+  return swapIn(g, yutuUrl);
 }
 
 export function change4(): PropSpec[] {

@@ -47,3 +47,15 @@ switches, belts, footrests, grab handles and an overhead console, and writes the
 ```sh
 cd web && bun scripts/models/cockpit.ts
 ```
+
+## Landers (three.js)
+
+`web/scripts/models/landers.ts` writes `apollo11_lm.glb`, `change4_lander.glb`, `yutu2.glb` and `blue_ghost.glb` to
+`web/src/learn/walk/models/` and `out/`:
+
+```sh
+cd web && bun scripts/models/landers.ts
+```
+
+The Explorer walk view shows the simple shapes first and swaps these in once they load. The Apollo 11 ladder faces
++X, as in `web/src/learn/walk/props/apollo11.ts`; the Chang'e 4 flag stays a separate textured plane.

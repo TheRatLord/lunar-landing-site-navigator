@@ -1,5 +1,7 @@
 import { CylinderGeometry, Group } from "three";
+import ghostUrl from "../models/blue_ghost.glb?url";
 import type { PropSpec } from "./index";
+import { swapIn } from "./model";
 import { box, cells, darkGrey, foil, legs, mesh, silver } from "./parts";
 
 export function blueGhostLander(): Group {
@@ -17,7 +19,7 @@ export function blueGhostLander(): Group {
   g.add(mesh(new CylinderGeometry(0.35, 0.05, 0.15, 16), silver, 0.6, 3.15, 0.3));
   g.add(box(0.4, 0.4, 0.4, darkGrey, -0.6, 2.45, -0.2));
   legs(g, 4, 1.4, 1.0, 0.32, 2.3, silver);
-  return g;
+  return swapIn(g, ghostUrl);
 }
 
 export function blueghost(): PropSpec[] {

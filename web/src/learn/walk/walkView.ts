@@ -6,6 +6,7 @@ import { Astronaut } from "./astronaut";
 import { pushOut, type Obstacle } from "./collide";
 import type { PropId } from "./facts";
 import { WalkCamera, type WalkPov } from "./walkCamera";
+import { propModels } from "./props/model";
 import { PropSet } from "./props/propSet";
 import { ROVER_HEADING, ROVER_HOME, Rover } from "./rover";
 import { MISSION_SPOTS, type MissionSpot } from "./missions";
@@ -72,6 +73,7 @@ export class WalkView {
     this.marker.visible = false;
     this.rover.onModelReady = () => this.onModelReady?.();
     this.panel.onModelReady = () => this.onModelReady?.();
+    propModels.onReady = () => this.onModelReady?.();
     this.astronaut.onModelReady = () => this.onModelReady?.();
     this.rover.setDriver(false, false);
     this.sky = new WalkSky(shared);

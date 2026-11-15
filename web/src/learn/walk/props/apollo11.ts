@@ -1,5 +1,7 @@
 import { CircleGeometry, ConeGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, PlaneGeometry } from "three";
+import lmUrl from "../models/apollo11_lm.glb?url";
 import type { PropSpec } from "./index";
+import { swapIn } from "./model";
 import { box, darkGrey, foil, legs, mesh, silver, strut, usFlag } from "./parts";
 
 const LM = { x: -12, z: -8 };
@@ -24,7 +26,7 @@ function descentStage(): Group {
   }
   g.add(box(1.0, 0.06, 0.9, silver, lx - 0.7, 2.25, 0));
   g.add(box(0.02, 0.24, 0.3, silver, lx - 0.15, 1.45, 0));
-  return g;
+  return swapIn(g, lmUrl);
 }
 
 function plantedFlag(): Group {
