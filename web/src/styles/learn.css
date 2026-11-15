@@ -1589,6 +1589,7 @@ button.l-lessons-label {
     --l-gutter: 12px;
   }
   .learn .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 4px;
     padding: 0 8px;
   }
@@ -1596,6 +1597,8 @@ button.l-lessons-label {
     display: none;
   }
   .l-lessons-nav {
+    justify-self: end;
+    min-width: 0;
     gap: 6px;
     margin-left: 2px;
   }
@@ -1930,5 +1933,10 @@ button.l-lessons-label {
 @media (min-width: 760px) {
   .learn > .topbar {
     padding: 0 calc(var(--gutter) + var(--sp-2));
+  }
+}
+@media (max-width: 479px) and (pointer: coarse) {
+  .l-lessons-nav ol {
+    display: none;
   }
 }

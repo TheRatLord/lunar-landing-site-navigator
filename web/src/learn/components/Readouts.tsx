@@ -64,13 +64,14 @@ function Battery() {
 export function Readouts() {
   const note = useLearn((s) => s.note);
   const chips = chapterOf(useLearn((s) => s.chapter)).chips;
+  const walk = useLearn((s) => s.view === "walk");
   return (
     <div className="l-readouts" role="group" aria-label="Right now">
       <div className="l-chips">
         {chips.includes("sun") && <SunChip />}
         {chips.includes("earth") && <EarthChip />}
       </div>
-      {chips.includes("power") && <Battery />}
+      {(chips.includes("power") || walk) && <Battery />}
       {note === "showing" && chips.includes("power") && (
         <div className="l-note" role="note">
           <p>No sun, no power. India's Chandrayaan-3 never woke up after its first night.</p>

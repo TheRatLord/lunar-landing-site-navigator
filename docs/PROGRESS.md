@@ -23,9 +23,10 @@ for this list unless it says so.
 
 ## Documentation in the house style ✅ (2026-11-14)
 
-- [x] `CLAUDE.md`: rules, stack, layout, spec of each part, conventions, checks
-- [x] `AGENTS.md` now reads "Follow CLAUDE.md". It used to say "do not ever write comments or tests"; that rule
-      is replaced by `CLAUDE.md` §12 (decision [0004](decisions/0004-docstrings-and-tests.md))
+- [x] `CLAUDE.md`: rules, stack, layout, spec of each part, conventions, checks. Deleted again in `772c744`
+- [x] `AGENTS.md` is the rule file again since `772c744`: no code comments or tests, push straight to `main`
+      after `git fetch` and a rebase, never force-push. Decision [0004](decisions/0004-docstrings-and-tests.md)
+      no longer applies
 - [x] `docs/SETUP.md`, `docs/OPEN_QUESTIONS.md`, `docs/decisions/`, `REFERENCES.md`, `FRICTION_LOG.md`,
       `AI_USAGE.md`
 - [x] README: "Where the numbers come from" and "Working on it" sections
@@ -34,6 +35,8 @@ for this list unless it says so.
       `web/node_modules` is empty (FRICTION_LOG)
 
 ## Next
+
+Tests are out: `AGENTS.md` forbids them, so the pytest, vitest and CI test items below are dropped.
 
 - [ ] Run the web checks on a machine with bun, or in the dev container, and record the result here
 - [ ] Set up pytest: add `pytest` to the `dev` dependency group, `tests/`, and one closed-form test per
@@ -62,6 +65,8 @@ for this list unless it says so.
 - [x] Checked in headless Chromium (SwiftShader) at De Rosa CR1: fly-down, Sun at 0.8° on the skyline as
       on the card, Face Earth, date change moves the Sun; no console errors. `typecheck`, `eslint` on the
       touched folders and `vite build` pass
+- [ ] Removed from the Overview in `c6e352d` (2026-11-15) together with the map's zoom-past-limit hook; the
+      code is in git history (`f8d1ab9`, `10c05cd`). Whether to bring it back is open
 - [ ] Not done: touch pinch past the limit (only wheel, keyboard and the button); far-terrain shadows
       beyond 50 km; a vitest for `groundMesh.ts` once vitest is set up
 
@@ -72,10 +77,24 @@ Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/sup
 - [x] Rename Learn to Explorer (visible text only; routes and code stay `learn`)
 - [x] Walk view: terrain, sky, sunlight and shadow
 - [x] Astronaut, follow camera, keyboard
-- [x] Solar panel and the Battery tile in Walk (panel taken out again in 32e82ce)
+- [x] Solar panel and the Battery tile in Walk (taken out in `32e82ce`, restored 2026-11-15)
 - [x] Rover and switching
 - [x] Hardware at the historical sites and fact cards
 - [x] First and third person views for the astronaut and the rover (V or a button)
 - [x] Touch controls, rover headlights and helmet lamp (L or a button in the dark), honesty notes for Walk
 - [x] View switch back in free exploration (Walk & drive, On the ground, In space, Close-up)
 - [ ] Reduced-motion and low-end performance checks
+
+## Integration check (2026-11-15)
+
+Commits on `main` since 2026-11-14 were checked against each other and against the live site.
+
+- [x] Planner on https://lunar.cinne.dev computes on Overview, Site and Compare; the evaluator, MCP server and
+      `/review-site` skill are untouched
+- [x] Planner tabs are now Overview, Site (with the landing ellipse), Map and Compare, plus Setup and
+      Evidence; the calendar became the Overview year strip, area analysis and the Sites tab were removed
+- [x] Explorer: view switch, Walk solar panel and Battery tile restored; phone top bar no longer overlaps
+- [ ] Overview ground view (Alex): removed, see Increment 1 above
+- [ ] `AI_USAGE.md` has no entries for the redesign rounds, the oracle suite and the service performance work
+      of 2026-11-15; their author should add them
+
