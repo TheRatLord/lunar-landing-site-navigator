@@ -11,7 +11,7 @@ export const TERMS: Record<TermId, { word: string; meaning: string }> = {
   "far-side": { word: "far side", meaning: "The half of the Moon that never faces Earth." },
   wobble: {
     word: "wobble",
-    meaning: "A slow rocking of the Moon that makes Earth sway a little in its sky. Scientists call it libration.",
+    meaning: "A slow rocking of the Moon that makes Earth sway a little in its sky.",
   },
   crater: { word: "crater", meaning: "A bowl punched into the ground by a space rock." },
   rim: { word: "rim", meaning: "The raised edge of a crater." },

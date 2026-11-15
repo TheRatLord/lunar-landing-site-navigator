@@ -90,6 +90,15 @@ export class LearnScene {
   onWalkEdge: ((atEdge: boolean) => void) | null = null;
   onWalkNear: ((id: PropId | null) => void) | null = null;
   onWalkActive: (() => void) | null = null;
+  onWalkLights: (() => void) | null = null;
+  private walkLights = false;
+
+  setWalkLights(on: boolean) {
+    if (on === this.walkLights) return;
+    this.walkLights = on;
+    this.walk?.setLights(on);
+    this.requestRender();
+  }
 
   constructor(canvas: HTMLCanvasElement, opts: { pixelRatioCap: number }) {
     this.canvas = canvas;
@@ -171,6 +180,8 @@ export class LearnScene {
       };
       this.walk.input.onSwitch = () => this.onWalkSwitch?.();
       this.walk.input.onPov = () => this.onWalkPov?.();
+      this.walk.input.onLights = () => this.onWalkLights?.();
+      this.walk.setLights(this.walkLights);
       this.walk.onEdge = (e) => this.onWalkEdge?.(e);
       this.walk.onNear = (id) => this.onWalkNear?.(id);
       this.walk.setBody(this.walkBody);
@@ -211,6 +222,11 @@ export class LearnScene {
     this.walkBody = b;
     this.walk?.setBody(b);
     this.requestRender();
+  }
+
+  walkJump() {
+    if (this.view !== "walk" || !this.walk) return;
+    this.walk.input.pressJump();
   }
 
   setWalkStick(x: number, y: number) {
@@ -339,6 +355,12 @@ export class LearnScene {
     const fitX = (l: Label) => Math.min(cx, this.w - 8 - l.widthPx / 2);
     this.insetTitle.fitPixels();
     this.insetLine.fitPixels();
+    if (this.phone) {
+      const left = (l: Label) => Math.max(8 + l.widthPx / 2, r.x - 8 - l.widthPx / 2);
+      this.insetTitle.sprite.position.set(left(this.insetTitle), r.y + 34, 1);
+      this.insetLine.sprite.position.set(left(this.insetLine), r.y + 12, 1);
+      return;
+    }
     this.insetTitle.sprite.position.set(fitX(this.insetTitle), r.y + r.size + 30, 1);
     this.insetLine.sprite.position.set(fitX(this.insetLine), r.y + r.size + 8, 1);
   }
@@ -452,7 +474,7 @@ export class LearnScene {
     if (frame.inset === "ground") {
       const site = frame.site.name;
       this.insetTitle.set(this.phone ? "Standing there" : `Standing at ${site}`);
-      this.insetLine.set(describeShort(frame.sky));
+      this.insetLine.set(describeShort(frame.sky, frame.site.id));
       this.placeCaption();
     }
     this.requestRender();
@@ -587,6 +609,11 @@ export class LearnScene {
   }
 
   lookAt(azDeg: number, elDeg = 10) {
+    if (this.view === "walk") {
+      this.walk?.lookAt(azDeg, elDeg);
+      this.requestRender();
+      return;
+    }
     if (this.view !== "ground") return;
     this.ground.turnTo(azDeg, elDeg);
     this.onUserLook?.();

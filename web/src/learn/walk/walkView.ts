@@ -38,6 +38,7 @@ export class WalkView {
   private readonly sunDir = new Vector3(0, 1, 0);
   private readonly focus = new Vector3();
   private readonly eye = new Vector3();
+  private readonly look = new Vector3();
   private fixed: Obstacle[] = [];
   private readonly props = new PropSet();
   private near: PropId | null = null;
@@ -106,6 +107,23 @@ export class WalkView {
   private applyLayers(): void {
     const hide = this.cam.pov === "first" && this.body === "astronaut";
     this.astronaut.object.traverse((o) => o.layers.set(hide ? 1 : 0));
+    this.rover.setInside(this.cam.pov === "first" && this.body === "rover");
+  }
+
+  setLights(on: boolean): void {
+    this.rover.setLights(on);
+  }
+
+  lookAt(azDeg: number, elDeg: number): void {
+    if (this.cam.pov !== "first") return;
+    if (this.body === "astronaut") {
+      this.astronaut.kneeling = false;
+      this.astronaut.heading = azDeg;
+    }
+    this.aim();
+    this.cam.aim(azDeg, elDeg, this.heading());
+    this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
+    this.sky.group.position.copy(this.camera.position);
   }
 
   update(f: SceneFrame): void {
@@ -114,7 +132,7 @@ export class WalkView {
     if (f.site.id !== this.siteId) {
       this.siteId = f.site.id;
       this.input.clear();
-      this.fixed = this.props.build(f.site.id, this.terrain, [{ x: 0, z: 0, r: 4 }, ...lane()]);
+      this.fixed = this.props.build(f.site.id, this.terrain, [{ x: 0, z: 0, r: 4 }, ...lane()], ROVER_HOME);
       this.near = null;
       this.onNear?.(null);
       this.astronaut.reset();
@@ -185,7 +203,15 @@ export class WalkView {
       this.onEdge?.(edge);
     }
     this.aim();
-    const near = this.props.nearest(this.focus.x, this.focus.z, 8);
+    const cp = this.camera.position;
+    this.camera.getWorldDirection(this.look);
+    const near = this.props.nearest(this.focus.x, this.focus.z, 9, (px, pz) => {
+      const dx = px - cp.x;
+      const dz = pz - cp.z;
+      const n = Math.hypot(dx, dz);
+      const m = Math.hypot(this.look.x, this.look.z);
+      return n > 0 && m > 0 && (dx * this.look.x + dz * this.look.z) / (n * m) > Math.cos(35 * RAD);
+    });
     if (near !== this.near) {
       this.near = near;
       this.onNear?.(near);

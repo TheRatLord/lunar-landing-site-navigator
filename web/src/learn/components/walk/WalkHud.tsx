@@ -1,4 +1,5 @@
-import type { PointerEvent } from "react";
+import { useRef, type PointerEvent } from "react";
+import { useLive } from "../../derive";
 import { useLearn } from "../../store";
 import { useIsTouch } from "../../touch";
 import { FactCard } from "./FactCard";
@@ -10,7 +11,7 @@ const PAD = [
   { label: "Turn right", x: 1, y: 0, glyph: "▶", cls: "is-right" },
 ];
 
-export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }) {
+export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) => void; onJump: () => void }) {
   const body = useLearn((s) => s.walkBody);
   const edge = useLearn((s) => s.walkEdge);
   const hint = useLearn((s) => s.walkHint);
@@ -18,11 +19,27 @@ export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }
   const pov = useLearn((s) => s.walkPov);
   const setPov = useLearn((s) => s.setWalkPov);
   const touch = useIsTouch();
+  const lights = useLearn((s) => s.walkLights);
+  const dark = useLive().sky.sunlight < 0.05;
+  const held = useRef(new Map<number, { x: number; y: number }>());
+  const apply = () => {
+    let x = 0;
+    let y = 0;
+    for (const v of held.current.values()) {
+      x += v.x;
+      y += v.y;
+    }
+    onStick(Math.max(-1, Math.min(1, x)), Math.max(-1, Math.min(1, y)));
+  };
   const start = (e: PointerEvent<HTMLButtonElement>, x: number, y: number) => {
     e.currentTarget.setPointerCapture(e.pointerId);
-    onStick(x, y);
+    held.current.set(e.pointerId, { x, y });
+    apply();
   };
-  const stop = () => onStick(0, 0);
+  const stop = (e: PointerEvent<HTMLButtonElement>) => {
+    held.current.delete(e.pointerId);
+    apply();
+  };
   return (
     <div className="l-walk-hud">
       {pov === "first" && body === "astronaut" && <div className="l-walk-visor" aria-hidden="true" />}
@@ -55,9 +72,19 @@ export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }
               {b.glyph}
             </button>
           ))}
+          {body === "astronaut" && (
+            <button type="button" className="is-jump" onPointerDown={onJump} onContextMenu={(e) => e.preventDefault()}>
+              Jump
+            </button>
+          )}
         </div>
       )}
       <div className="l-walk-actions">
+        {body === "rover" && (dark || lights) && (
+          <button type="button" className="l-btn l-walk-lights" aria-pressed={lights} onClick={() => useLearn.setState({ walkLights: !lights })}>
+            Lights
+          </button>
+        )}
         <button type="button" className="l-btn l-walk-pov" onClick={() => setPov(pov === "first" ? "third" : "first")}>
           {pov === "first" ? "Outside" : "Inside"}
         </button>

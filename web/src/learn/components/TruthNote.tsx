@@ -56,11 +56,11 @@ export function TruthNote({
       <button type="button" className="l-pill" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
         <InfoIcon size={18} />
         <span>
-          How true<span className="l-wide"> is this picture</span>?
+          Is this real?
         </span>
       </button>
       {open && (
-        <div id={id} className="l-truth-pop" role="dialog" aria-label="How true is this picture?">
+        <div id={id} className="l-truth-pop" role="dialog" aria-label="Is this real?">
           <button type="button" className="l-truth-close" aria-label="Close" onClick={() => setOpen(false)}>
             <CloseIcon size={18} />
           </button>

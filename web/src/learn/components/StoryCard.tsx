@@ -68,6 +68,9 @@ function ChapterNav({ c }: { c: Chapter }) {
   const next = STORY[i + 1];
   return (
     <nav className="l-nav l-panel-foot" aria-label="Lesson">
+      <Link className="l-btn l-btn-quiet l-nav-drive" to={learnPath("explore")}>
+        Drive
+      </Link>
       {prev && (
         <Link className="l-btn l-btn-quiet" to={learnPath(prev.slug)}>
           <ArrowLeftIcon size={18} /> Back
@@ -106,8 +109,8 @@ export function StoryCard({ c }: { c: Chapter }) {
           </p>
           <ChapterControl kind={c.control} />
         </div>
-        <BigNumber c={c} />
         {c.check && <Check slug={c.slug} check={c.check} />}
+        <BigNumber c={c} />
       </div>
       <ChapterNav c={c} />
     </article>

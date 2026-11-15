@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { useLive } from "../derive";
+import { latArg, useLive } from "../derive";
+import { skyAt } from "../geometry";
 import { chapterOf, useLearn } from "../store";
 import { powerWord } from "../timeline";
 import { BatteryIcon, CloseIcon, BehindHillIcon, EclipseIcon, GlobeIcon, NightIcon, PeekIcon, SunIcon } from "./icons";
@@ -15,11 +16,14 @@ function Chip({ tone, on, icon, label }: { tone: string; on: boolean; icon: Reac
 
 function SunChip() {
   const { sky, site } = useLive();
+  const d = useLearn((s) => chapterOf(s.chapter).epochD + s.t);
+  const lat = useLearn(latArg);
+  const setting = skyAt(site, d + 0.05, lat).sun.el < sky.sun.el;
   switch (sky.sun.status) {
     case "up":
       return <Chip tone="sun" on icon={<SunIcon size={16} />} label="Sun up" />;
     case "peeking":
-      return <Chip tone="sun" on icon={<PeekIcon size={16} />} label="Sunrise" />;
+      return <Chip tone="sun" on icon={<PeekIcon size={16} />} label={setting ? "Sunset" : "Sunrise"} />;
     case "eclipse":
       return <Chip tone="eclipse" on icon={<EclipseIcon size={16} />} label="Eclipse" />;
     case "behindHill":
@@ -32,7 +36,10 @@ function SunChip() {
 function EarthChip() {
   const { sky } = useLive();
   return sky.earth.visible ? (
-    <Chip tone="earth" on icon={<GlobeIcon size={16} />} label="Earth in sky" />
+    <button type="button" className="l-chip tone-earth is-on l-chip-btn" onClick={() => useLearn.setState((s) => ({ lookEarth: s.lookEarth + 1 }))}>
+      <GlobeIcon size={16} />
+      Earth in sky
+    </button>
   ) : (
     <Chip tone="earth" on={false} icon={<GlobeIcon size={16} hollow />} label="No Earth" />
   );

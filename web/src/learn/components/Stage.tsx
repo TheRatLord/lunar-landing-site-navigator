@@ -138,6 +138,7 @@ export function Stage() {
       const s = useLearn.getState();
       s.setWalkPov(s.walkPov === "first" ? "third" : "first");
     };
+    scene.onWalkLights = () => useLearn.setState({ walkLights: !useLearn.getState().walkLights });
     scene.onWalkEdge = (walkEdge) => useLearn.setState({ walkEdge });
     scene.onWalkNear = (nearProp) => useLearn.setState({ nearProp });
     scene.onWalkActive = () => {
@@ -195,11 +196,18 @@ export function Stage() {
       shown = f.site.id;
       scene.setWalkBody(s.walkBody);
       scene.setWalkPov(s.walkPov);
+      scene.setWalkLights(s.walkLights);
       canvas.style.touchAction = s.view === "ground" ? "pan-y" : "none";
     };
     push();
     if (!building) scene.afterRender(() => alive && setLoading(false));
     const unsub = useLearn.subscribe(push);
+    const unsubLook = useLearn.subscribe((s, p) => {
+      if (s.lookEarth === p.lookEarth) return;
+      const { sky } = frameFrom(s, false);
+      if (s.view === "walk" && s.walkPov !== "first") s.setWalkPov("first");
+      scene.lookAt(sky.earth.az, sky.earth.el);
+    });
     const unsubPanel = useLearn.subscribe((s, p) => {
       if (s.panel !== p.panel || s.chapter !== p.chapter || s.view !== p.view) layout();
     });
@@ -222,6 +230,7 @@ export function Stage() {
       window.clearInterval(iv);
       unsub();
       unsubPanel();
+      unsubLook();
       mq.removeEventListener("change", push);
       ro?.disconnect();
       scene.dispose();
@@ -271,7 +280,7 @@ export function Stage() {
 
   const onLook = (az: number, el: number) => sceneRef.current?.lookAt(az, el);
   return (
-    <div className={`l-stage view-${view}`}>
+    <div className={`l-stage view-${view} ${loading && view === "walk" ? "is-building" : ""}`}>
       <div className="l-canvas-host" ref={host}>
         {glFailed && (
           <div className="l-fallback">
@@ -295,7 +304,7 @@ export function Stage() {
           </p>
         )}
         {view === "ground" && <GroundUi look={look} onLook={onLook} />}
-        {view === "walk" && !loading && <WalkHud onStick={(x, y) => sceneRef.current?.setWalkStick(x, y)} />}
+        {view === "walk" && !loading && <WalkHud onStick={(x, y) => sceneRef.current?.setWalkStick(x, y)} onJump={() => sceneRef.current?.walkJump()} />}
       </div>
       <p className="sr-only" ref={live} />
     </div>

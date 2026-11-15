@@ -83,6 +83,9 @@
   inset: 0;
   background: var(--l-space);
 }
+.l-stage.is-building .l-canvas {
+  visibility: hidden;
+}
 .l-canvas {
   display: block;
   width: 100%;
@@ -422,6 +425,16 @@
 .l-chip svg {
   color: var(--text-3);
 }
+.l-chip-btn {
+  font-family: inherit;
+  cursor: pointer;
+}
+.l-walk-lights[aria-pressed="true"],
+.l-walk-lights[aria-pressed="true"]:hover {
+  border-color: var(--c-sun);
+  background: var(--c-sun);
+  color: #1a1b1e;
+}
 .l-chip.is-on.tone-sun {
   border-color: color-mix(in srgb, var(--c-sun) 55%, transparent);
   color: var(--text);
@@ -562,13 +575,13 @@
   text-wrap: balance;
 }
 .l-copy {
-  margin: 0 0 20px;
+  margin: 0 0 14px;
   color: var(--text);
   line-height: 1.6;
 }
 .l-try {
-  margin: 0 0 24px;
-  padding: 16px;
+  margin: 0;
+  padding: 14px 16px;
   border-radius: var(--r-xl);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
   background: var(--accent-bg);
@@ -835,12 +848,12 @@
 }
 
 .l-check {
-  margin-top: 24px;
-  padding-top: 20px;
+  margin: 14px 0 20px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 .l-check-q {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   font-size: var(--l-fs-body);
   font-weight: 650;
   line-height: 1.35;
@@ -854,8 +867,8 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 48px;
-  padding: 10px 14px;
+  min-height: 42px;
+  padding: 7px 14px;
   border-radius: var(--r-lg);
   border: 1px solid var(--border);
   background: transparent;
@@ -1205,9 +1218,55 @@
   margin-left: var(--sp-3);
 }
 .l-lessons-label {
-  color: var(--text-2);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--c-sun);
+  background: color-mix(in srgb, var(--c-sun) 18%, transparent);
+  color: var(--text);
   font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.l-lessons-nav {
+  position: relative;
+}
+button.l-lessons-label {
+  font-family: inherit;
+  cursor: pointer;
+}
+.l-lessons-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  gap: 2px;
+  min-width: 250px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-popover);
+}
+.l-lessons-list a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-size: var(--l-fs-sm);
   font-weight: 600;
+  text-decoration: none;
+}
+.l-lessons-list a[aria-current] {
+  background: var(--accent-bg);
+}
+.l-lessons-list .l-title-n {
+  margin-right: 0;
 }
 .l-lessons-nav ol {
   display: flex;
@@ -1237,6 +1296,11 @@
   border-color: var(--c-pass);
   background: var(--c-pass-bg);
   color: var(--c-pass);
+}
+.l-lesson-pill.is-start {
+  border-color: var(--c-sun);
+  background: var(--c-sun);
+  color: #1a1b1e;
 }
 .l-lesson-pill.is-here {
   border-color: var(--accent-strong);
@@ -1398,12 +1462,14 @@
   display: flex;
   gap: 8px;
 }
-.l-walk-pov {
+.l-walk-pov,
+.l-walk-lights {
   border-color: var(--border-strong);
   background: var(--panel);
   color: var(--text);
 }
-.l-walk-pov:hover {
+.l-walk-pov:hover,
+.l-walk-lights:hover {
   background: var(--panel-hover);
 }
 .l-walk-pad {
@@ -1414,7 +1480,7 @@
   grid-template-columns: repeat(3, 58px);
   grid-template-rows: repeat(2, 58px);
   grid-template-areas:
-    ". up ."
+    ". up jump"
     "left down right";
   gap: 6px;
 }
@@ -1438,6 +1504,15 @@
 }
 .l-walk-pad .is-up {
   grid-area: up;
+}
+.l-walk-pad .is-jump {
+  grid-area: jump;
+  font-size: 14px;
+  font-weight: 600;
+}
+.l-main:has(.l-finale-wrap) .l-walk-pad,
+.l-stage-ui:has(.l-truth-pop) .l-walk-hint {
+  visibility: hidden;
 }
 .l-walk-pad .is-left {
   grid-area: left;
@@ -1504,8 +1579,7 @@
     gap: 4px;
     padding: 0 8px;
   }
-  .learn .brand,
-  .l-wide {
+  .learn .brand {
     display: none;
   }
   .l-lessons-nav {
@@ -1514,6 +1588,13 @@
   }
   .l-lessons-label {
     font-size: 11px;
+  }
+  .l-lessons-list {
+    position: fixed;
+    top: 52px;
+    left: 8px;
+    right: 8px;
+    min-width: 0;
   }
   .l-lessons-nav ol {
     gap: 2px;
@@ -1528,7 +1609,7 @@
   }
   .l-main {
     display: grid;
-    grid-template-rows: minmax(200px, 36dvh) minmax(0, 1fr) auto;
+    grid-template-rows: minmax(200px, 32dvh) minmax(0, 1fr) auto;
     background: var(--bg);
   }
   .learn.panel-hidden .l-main {
@@ -1644,6 +1725,10 @@
   }
   .l-story-scroll {
     padding: 14px 16px 16px;
+    background:
+      linear-gradient(transparent, var(--bg) 70%) 0 100% / 100% 32px no-repeat local,
+      radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--text) 28%, transparent), transparent) 0 100% / 100% 14px
+        no-repeat scroll;
   }
   .l-story-head {
     margin-right: -8px;
@@ -1656,8 +1741,26 @@
     margin-bottom: 14px;
   }
   .l-try {
-    margin-bottom: 16px;
     padding: 12px;
+  }
+  .l-check {
+    margin-top: 12px;
+  }
+  .l-check-opts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .l-opt {
+    width: auto;
+    min-height: 38px;
+    padding: 6px 12px 6px 8px;
+    gap: 8px;
+    border-radius: var(--r-pill);
+  }
+  .l-opt-mark {
+    width: 18px;
+    height: 18px;
   }
   .l-try-text {
     margin-bottom: 10px;

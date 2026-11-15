@@ -41,10 +41,10 @@ export function describe(site: Site, lat: number, day: number, sky: SkyState, ba
   return parts.join(" ");
 }
 
-export function describeShort(sky: SkyState): string {
+export function describeShort(sky: SkyState, siteId: string): string {
   const s = sky.sun;
   if (s.status === "night") return "Night: the Sun is down";
-  if (s.status === "behindHill") return "The Sun is hidden by the wall";
+  if (s.status === "behindHill") return siteId === "floor" ? "The Sun is hidden by the wall" : "The Sun is behind a hill";
   if (s.status === "eclipse") return "Earth is blocking the Sun";
   const h = heightWord(s.el - s.horizonEl);
   if (h === "high overhead") return "Sun high overhead";

@@ -94,7 +94,7 @@ function bootprints(): Group {
 export function apollo11(): PropSpec[] {
   return [
     { id: "lm-descent", object: descentStage(), x: LM.x, z: LM.z, r: 3.2 },
-    { id: "us-flag", object: fallenFlag(), x: FLAG.x, z: FLAG.z, r: 0.3, walkOver: true },
+    { id: "us-flag", object: fallenFlag(), x: FLAG.x, z: FLAG.z, r: 0.8 },
     { id: "easep", object: easep(), x: EASEP.x, z: EASEP.z, r: 1.1 },
     { id: "lrrr", object: lrrr(), x: LRRR.x, z: LRRR.z, r: 0.4 },
     { id: null, object: bootprints(), x: 0, z: 0, r: 0, walkOver: true, decal: true },

@@ -1,22 +1,15 @@
-import { chapterBySlug, type ViewKind } from "../chapters";
+import { chapterBySlug } from "../chapters";
 import { SITES, type SiteId } from "../sites";
 import { useLearn } from "../store";
 import { TimeBar } from "./TimeBar";
-import { Toggle } from "./Toggle";
 
 const EXPLORE = chapterBySlug("explore")!;
 
 const PLACES: SiteId[] = ["apollo11", "blueghost", "rim", "floor", "change4"];
 
-const VIEWS = [
-  { value: "walk", label: "Walk & drive" },
-  { value: "space", label: "Space" },
-];
-
 export function Dock() {
   const siteId = useLearn((s) => s.siteId);
-  const view = useLearn((s) => s.view);
-  const { setSite, setView } = useLearn.getState();
+  const { setSite } = useLearn.getState();
   return (
     <div className="l-dock" role="group" aria-label="Explore">
       <div className="l-dock-row">
@@ -42,7 +35,6 @@ export function Dock() {
             </option>
           ))}
         </select>
-        <Toggle label="View" value={view} options={VIEWS} onChange={(v) => setView(v as ViewKind)} />
       </div>
       <TimeBar c={EXPLORE} />
     </div>

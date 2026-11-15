@@ -102,6 +102,12 @@ export class SpaceView {
     this.pin.add(this.pinHead, this.pinCore);
     this.pinLabel.sprite.position.y = MOON_DRAWN_RADIUS * 0.5;
     this.pin.add(this.pinLabel.sprite);
+    this.pinLabel.sprite.material.depthTest = false;
+    this.pinLabel.sprite.renderOrder = 10;
+    this.pinLabel.sprite.onBeforeRender = () => {
+      const facing = this.pinWorld().sub(this.moon.position).dot(this.camera.position.clone().sub(this.moon.position)) > 0;
+      this.pinLabel.sprite.material.opacity = facing ? 1 : 0;
+    };
     this.moon.add(this.pin);
 
     this.orbitGeo.setAttribute("position", new BufferAttribute(new Float32Array(ORBIT_SAMPLES * 3), 3));

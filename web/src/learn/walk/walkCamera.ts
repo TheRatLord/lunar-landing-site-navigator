@@ -41,7 +41,12 @@ export class WalkCamera {
       return;
     }
     if (freeYaw) this.yaw = clamp(this.yaw - dxDeg, -LOOK_LIMIT, LOOK_LIMIT);
-    this.pitch = clamp(this.pitch - dyDeg, -60, 60);
+    this.pitch = clamp(this.pitch - dyDeg, -80, 60);
+  }
+
+  aim(azDeg: number, elDeg: number, heading: number): void {
+    this.yaw = clamp(((azDeg - heading + 540) % 360) - 180, -LOOK_LIMIT, LOOK_LIMIT);
+    this.pitch = clamp(-elDeg, -80, 60);
   }
 
   snap(focus: Vector3, eye: Vector3, heading: number, ground: Ground): void {

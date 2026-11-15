@@ -13,7 +13,7 @@ import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 /**
  * Procedural surface detail for the ground view: what the 5 m elevation maps cannot resolve. Small craters
  * and regolith roughness on the mesh, a tiling bump texture below the mesh spacing, and boulder shapes.
- * All of it is decoration on top of the real terrain and is labelled so in the "How true" note.
+ * All of it is decoration on top of the real terrain and is labelled so in the "Is this real?" note.
  */
 
 function hash2(x: number, y: number, seed: number): number {

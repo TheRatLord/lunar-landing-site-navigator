@@ -1,4 +1,4 @@
-import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, SphereGeometry, SpotLight, Vector3 } from "three";
 import { clamp } from "../../lib/scale";
 import { RAD } from "../geometry";
 import { clampRadius, pushOut, type Obstacle } from "./collide";
@@ -36,6 +36,16 @@ export class Rover {
   private readonly wheels: Mesh[] = [];
   private speed = 0;
   private roll = 0;
+  private readonly mast: Mesh[] = [];
+  private readonly lamps: SpotLight[] = [];
+
+  setInside(on: boolean): void {
+    for (const m of this.mast) m.visible = !on;
+  }
+
+  setLights(on: boolean): void {
+    for (const l of this.lamps) l.intensity = on ? 2.2 : 0;
+  }
 
   constructor() {
     const c = this.chassis;
@@ -56,6 +66,14 @@ export class Rover {
     const dishPole = new Mesh(new CylinderGeometry(0.03, 0.03, 0.9, 8), grey);
     dishPole.position.set(-0.45, 1.25, 1.0);
     c.add(mast, cam, dish, dishPole);
+    this.mast.push(mast, cam);
+    for (const x of [-0.5, 0.5]) {
+      const lamp = new SpotLight(0xfff2dc, 0, 45, 0.55, 0.6, 0);
+      lamp.position.set(x, 0.9, -1.5);
+      lamp.target.position.set(x * 3, 0, -16);
+      c.add(lamp, lamp.target);
+      this.lamps.push(lamp);
+    }
     const wheelGeo = new CylinderGeometry(WHEEL_R, WHEEL_R, 0.3, 20).rotateZ(Math.PI / 2);
     for (const [x, z] of [
       [-HALF_TRACK, -HALF_BASE],
@@ -108,7 +126,11 @@ export class Rover {
     let z = this.position.z - Math.cos(this.heading * RAD) * this.speed * dt;
     const [px, pz] = pushOut(x, z, 1.5, obs);
     const into = ((px - x) * Math.sin(this.heading * RAD) - (pz - z) * Math.cos(this.heading * RAD)) * Math.sign(this.speed);
-    if (into < -1e-4) this.speed *= 0.5;
+    const len = Math.abs(this.speed * dt);
+    if (into < -1e-4 && len > 1e-6) {
+      const cap = TOP_SPEED * Math.sqrt(clamp(1 + into / len, 0, 1));
+      this.speed = Math.sign(this.speed) * Math.min(Math.abs(this.speed), cap);
+    }
     let edge: boolean;
     [x, z, edge] = clampRadius(px, pz, WALK_RADIUS_M);
     this.atEdge = edge;

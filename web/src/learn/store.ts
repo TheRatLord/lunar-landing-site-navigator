@@ -28,6 +28,7 @@ export interface LearnState {
   view: ViewKind;
   follow: Follow;
   answers: Partial<Record<ChapterSlug, Answer>>;
+  visited: boolean;
   termHome: Partial<Record<TermId, ChapterSlug>>;
   note: "never" | "showing" | "done";
   glFailed: boolean;
@@ -44,6 +45,8 @@ export interface LearnState {
   setWalkPov(p: WalkPov): void;
   walkEdge: boolean;
   walkHint: boolean;
+  walkLights: boolean;
+  lookEarth: number;
   nearProp: PropId | null;
   setWalkBody(b: WalkBody): void;
   enterChapter(slug: ChapterKey, reducedMotion: boolean): void;
@@ -54,7 +57,6 @@ export interface LearnState {
   setSite(id: SiteId): void;
   setLat(v: number): void;
   setLanding(o: Landing): void;
-  setView(v: ViewKind): void;
   setFollow(f: Follow): void;
   answer(slug: ChapterSlug, i: number, correct: boolean): void;
 }
@@ -65,6 +67,16 @@ export const landingOf = (s: Pick<LearnState, "chapter" | "landingOffset">): num
   s.chapter === "timing" ? landingT(s.landingOffset) : null;
 
 const LAST_KEY = "lunarnav.learn.last";
+const ANSWERS_KEY = "lunarnav.learn.answers";
+
+function stored<T>(key: string, fallback: T): T {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : (JSON.parse(v) as T);
+  } catch {
+    return fallback;
+  }
+}
 
 const exploreSpeed = (view: ViewKind, fast: boolean): number => (view === "walk" ? 0.05 : 1.5) * (fast ? 10 : 1);
 
@@ -72,7 +84,8 @@ function morning(siteId: SiteId, from: number, force: boolean): number {
   const c = chapterOf("explore");
   const tl = buildTimeline(SITES[siteId], 0, c.epochD, c.spanDays, null);
   const lit = (t: number) => (tl.sun[Math.round(t / tl.stepD)] ?? 0) > 0.5;
-  if (!force && lit(from)) return from;
+  const set = tl.events.find((e) => e.kind === "sunset" && e.t > from);
+  if (!force && lit(from) && (!set || set.t - from >= 3)) return from;
   const rises = tl.events.filter((e) => e.kind === "sunrise");
   const rise = rises.find((e) => e.t > from) ?? rises[0];
   if (!rise) return from;
@@ -90,7 +103,8 @@ export const useLearn = create<LearnState>()((set, get) => ({
   landingOffset: 0,
   view: "space",
   follow: "sun",
-  answers: {},
+  answers: stored<Partial<Record<ChapterSlug, Answer>>>(ANSWERS_KEY, {}),
+  visited: stored<string | null>(LAST_KEY, null) !== null,
   termHome: {},
   note: "never",
   glFailed: false,
@@ -100,6 +114,8 @@ export const useLearn = create<LearnState>()((set, get) => ({
   setWalkPov: (walkPov) => set({ walkPov }),
   walkEdge: false,
   walkHint: true,
+  walkLights: false,
+  lookEarth: 0,
   nearProp: null,
   setWalkBody: (walkBody) => set({ walkBody }),
   craterTerrain: "real",
@@ -115,7 +131,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
     if (slug !== "explore") {
       for (const id of termsIn(`${c.copy} ${c.prompt}`)) termHome[id] ??= c.slug;
       try {
-        localStorage.setItem(LAST_KEY, slug);
+        localStorage.setItem(LAST_KEY, JSON.stringify(slug));
       } catch {}
     }
     const explore = slug === "explore";
@@ -131,6 +147,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
       view: c.view,
       follow: c.follow,
       termHome,
+      visited: get().visited || !explore,
       walkBody: explore ? "rover" : "astronaut",
       walkPov: "third",
       walkEdge: false,
@@ -164,17 +181,12 @@ export const useLearn = create<LearnState>()((set, get) => ({
     const t = landingT(o) - 0.5;
     set({ landingOffset: o, t, playing: get().playing });
   },
-  setView: (view) => {
-    const s = get();
-    const explore = s.chapter === "explore";
-    set({
-      view,
-      follow: s.follow === "free" ? "sun" : s.follow,
-      ...(explore ? { speed: exploreSpeed(view, s.fast) } : {}),
-      ...(explore && view === "walk" ? { t: morning(s.siteId, s.t, false) } : {}),
-    });
-  },
   setFollow: (follow) => set({ follow }),
-  answer: (slug, i, correct) =>
-    set((s) => ({ answers: { ...s.answers, [slug]: { picked: i, correct: s.answers[slug]?.correct || correct } } })),
+  answer: (slug, i, correct) => {
+    const answers = { ...get().answers, [slug]: { picked: i, correct: get().answers[slug]?.correct || correct } };
+    set({ answers });
+    try {
+      localStorage.setItem(ANSWERS_KEY, JSON.stringify(answers));
+    } catch {}
+  },
 }));
