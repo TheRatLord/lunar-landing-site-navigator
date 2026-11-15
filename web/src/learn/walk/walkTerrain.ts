@@ -39,6 +39,7 @@ export class WalkTerrain {
   private readonly rocks: InstancedMesh[] = [];
   private readonly rockSpots: { x: number; z: number; s: number; y: number; rot: number; tilt: number }[] = [];
   private key = "";
+  private clearings: { x: number; z: number; r: number }[] = [];
   real = false;
 
   constructor() {
@@ -104,6 +105,15 @@ export class WalkTerrain {
     this.placeRocks();
   }
 
+  setClearings(c: { x: number; z: number; r: number }[]): void {
+    this.clearings = c;
+    this.placeRocks();
+  }
+
+  private cleared(x: number, z: number): boolean {
+    return this.clearings.some((c) => Math.hypot(x - c.x, z - c.z) < c.r + 2);
+  }
+
   private placeRocks(): void {
     const m = new Matrix4();
     const q = new Quaternion();
@@ -113,7 +123,8 @@ export class WalkTerrain {
       const im = this.rocks[i % N_ROCK_SHAPES]!;
       o.rotation.set(rk.tilt, rk.rot, rk.tilt * 0.6);
       q.copy(o.quaternion);
-      s.set(rk.s, rk.s * 0.6, rk.s * 0.9);
+      const k = this.cleared(rk.x, rk.z) ? 0 : 1;
+      s.set(rk.s * k, rk.s * 0.6 * k, rk.s * 0.9 * k);
       m.compose(new Vector3(rk.x, this.heightAt(rk.x, rk.z) + rk.s * 0.12, rk.z), q, s);
       im.setMatrixAt(Math.floor(i / N_ROCK_SHAPES), m);
     });
@@ -124,7 +135,7 @@ export class WalkTerrain {
   }
 
   rockObstacles(): { x: number; z: number; r: number }[] {
-    return this.rockSpots.filter((rk) => rk.s > 0.6).map((rk) => ({ x: rk.x, z: rk.z, r: rk.s * 0.8 }));
+    return this.rockSpots.filter((rk) => rk.s > 0.6 && !this.cleared(rk.x, rk.z)).map((rk) => ({ x: rk.x, z: rk.z, r: rk.s * 0.8 }));
   }
 
   heightAt(x: number, z: number): number {

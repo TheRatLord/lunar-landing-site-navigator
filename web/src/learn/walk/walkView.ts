@@ -1,10 +1,13 @@
-import { AmbientLight, DirectionalLight, HemisphereLight, Scene, Vector3 } from "three";
+import { AmbientLight, DirectionalLight, Group, HemisphereLight, Scene, Vector3 } from "three";
+import { disposeTree } from "../../lib/three";
 import { RAD } from "../geometry";
 import type { RealSite } from "../terrain";
 import type { SceneFrame, Shared } from "../scene/types";
 import { Astronaut } from "./astronaut";
 import type { Obstacle } from "./collide";
+import type { PropId } from "./facts";
 import { FollowCamera } from "./followCamera";
+import { propsFor, type PropSpec } from "./props";
 import { Rover } from "./rover";
 import { SolarPanel } from "./solarPanel";
 import { WalkInput, type Drive } from "./walkInput";
@@ -31,6 +34,10 @@ export class WalkView {
   private readonly sunDir = new Vector3(0, 1, 0);
   private readonly focus = new Vector3();
   private fixed: Obstacle[] = [];
+  private readonly propGroup = new Group();
+  private props: PropSpec[] = [];
+  private near: PropId | null = null;
+  onNear: ((id: PropId | null) => void) | null = null;
   private body: WalkBody = "astronaut";
   private frame: SceneFrame | null = null;
   private siteId = "";
@@ -56,6 +63,7 @@ export class WalkView {
       this.astronaut.object,
       this.rover.object,
       this.panel.object,
+      this.propGroup,
       this.light,
       this.light.target,
       this.ambient,
@@ -88,11 +96,12 @@ export class WalkView {
     if (f.site.id !== this.siteId) {
       this.siteId = f.site.id;
       this.input.clear();
-      this.fixed = [...this.terrain.rockObstacles(), this.panel.obstacle];
+      this.buildProps(f.site.id);
       this.astronaut.reset();
       this.rover.reset();
       this.settle();
     }
+    this.placeProps();
     this.rover.pose(this.terrain);
     this.sky.update(f.sky, f.site, f.d);
     this.sky.sunDir(this.sunDir);
@@ -105,6 +114,45 @@ export class WalkView {
     this.panel.update(this.sunDir, sky.sunlight > 0.5);
     this.bounce.intensity = 0.9 * sky.sunlight * (0.25 + Math.max(0, Math.sin(sky.sun.el * RAD)));
     this.placeLight();
+  }
+
+  private buildProps(id: SceneFrame["site"]["id"]): void {
+    for (const c of [...this.propGroup.children]) {
+      this.propGroup.remove(c);
+      disposeTree(c);
+    }
+    this.props = propsFor(id);
+    for (const p of this.props) this.propGroup.add(p.object);
+    const solid = this.props.filter((p) => !p.walkOver);
+    this.terrain.setClearings([{ x: 0, z: 0, r: 4 }, this.panel.obstacle, ...solid]);
+    this.fixed = [...this.terrain.rockObstacles(), this.panel.obstacle, ...solid.map((p) => ({ x: p.x, z: p.z, r: p.r }))];
+    this.near = null;
+    this.onNear?.(null);
+  }
+
+  private placeProps(): void {
+    for (const p of this.props) {
+      if (p.decal) {
+        for (const c of p.object.children) c.position.y = this.terrain.heightAt(c.position.x, c.position.z) + 0.02;
+      } else p.object.position.set(p.x, this.terrain.heightAt(p.x, p.z), p.z);
+    }
+  }
+
+  private checkNear(x: number, z: number): void {
+    let best: PropId | null = null;
+    let bestD = Infinity;
+    for (const p of this.props) {
+      if (!p.id) continue;
+      const d = Math.hypot(x - p.x, z - p.z) - p.r;
+      if (d <= 8 && d < bestD) {
+        best = p.id;
+        bestD = d;
+      }
+    }
+    if (best !== this.near) {
+      this.near = best;
+      this.onNear?.(best);
+    }
   }
 
   private heading(): number {
@@ -142,7 +190,7 @@ export class WalkView {
       this.astronaut.step(dt, IDLE, this.terrain, [], reduced);
       edge = this.rover.atEdge;
     } else {
-      moving = this.astronaut.step(dt, d, this.terrain, [...this.fixed, this.rover.obstacle()], reduced);
+      moving = this.astronaut.step(dt, d, this.terrain, [...this.fixed, ...this.rover.obstacles()], reduced);
       edge = this.astronaut.atEdge;
     }
     if (edge !== this.edge) {
@@ -150,6 +198,7 @@ export class WalkView {
       this.onEdge?.(edge);
     }
     this.aim();
+    this.checkNear(this.focus.x, this.focus.z);
     this.follow.step(dt, this.focus, this.heading(), reduced, this.ground);
     this.sky.group.position.copy(this.camera.position);
     this.placeLight();

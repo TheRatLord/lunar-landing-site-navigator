@@ -2,8 +2,8 @@ import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshLambertMaterial, MeshPh
 import type { Obstacle } from "./collide";
 import type { WalkTerrain } from "./walkTerrain";
 
-const X = -2.5;
-const Z = 5.5;
+const X = 3.5;
+const Z = -3.5;
 const MAST = 1.6;
 
 export class SolarPanel {

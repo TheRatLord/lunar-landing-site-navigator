@@ -87,8 +87,15 @@ export class Rover {
     this.atEdge = false;
   }
 
-  obstacle(): Obstacle {
-    return { x: this.position.x, z: this.position.z, r: 1.5 };
+  obstacles(): Obstacle[] {
+    const h = this.heading * RAD;
+    const fx = Math.sin(h) * 0.75;
+    const fz = -Math.cos(h) * 0.75;
+    const p = this.position;
+    return [
+      { x: p.x + fx, z: p.z + fz, r: 1.0 },
+      { x: p.x - fx, z: p.z - fz, r: 1.0 },
+    ];
   }
 
   step(dt: number, d: Drive, terrain: WalkTerrain, obs: Obstacle[]): boolean {

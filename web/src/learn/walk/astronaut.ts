@@ -10,7 +10,7 @@ const TURN = 110;
 const G_MOON = 1.62;
 const JUMP_V = 1.3;
 const BODY_R = 0.4;
-const HOME = new Vector3(1.4, 0, 0.9);
+const HOME = new Vector3(0.76, 0, 0.49);
 
 const suit = new MeshLambertMaterial({ color: 0xeeeeea });
 const dark = new MeshLambertMaterial({ color: 0x55575c });
@@ -27,7 +27,7 @@ function part(geo: CapsuleGeometry | BoxGeometry | SphereGeometry, mat: MeshLamb
 export class Astronaut {
   readonly object = new Group();
   readonly position = new Vector3();
-  heading = 250;
+  heading = 340;
   kneeling = true;
   atEdge = false;
   private readonly body = new Group();
@@ -58,7 +58,7 @@ export class Astronaut {
 
   reset(): void {
     this.position.copy(HOME);
-    this.heading = 250;
+    this.heading = 340;
     this.kneeling = true;
     this.vy = 0;
     this.lift = 0;

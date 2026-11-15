@@ -124,6 +124,7 @@ export function Stage() {
       s.setWalkBody(s.walkBody === "rover" ? "astronaut" : "rover");
     };
     scene.onWalkEdge = (walkEdge) => useLearn.setState({ walkEdge });
+    scene.onWalkNear = (nearProp) => useLearn.setState({ nearProp });
     scene.onUserLook = () => {
       if (useLearn.getState().follow !== "free") useLearn.getState().setFollow("free");
     };

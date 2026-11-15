@@ -56,6 +56,21 @@ cite the English Wikipedia article for each mission or vehicle (CC BY-SA 4.0), r
 Causes and lessons are paraphrased facts, not copied text; the labels await team review
 (`docs/superpowers/specs/2026-11-14-history-labels-review.md`).
 
+## Explorer walk: fact cards
+
+The fact cards in the Explorer Walk view (`web/src/learn/walk/facts.ts`) paraphrase these pages, each read 2026-11-14.
+The 3D hardware is built from simple shapes by this repo; its layout at Apollo 11 follows the NSSDCA page (EASEP about
+17 m south of the LM, the laser reflector about 5 m NNW of it) and the flag article (flag about 8.2 m from the LM).
+
+| Card | Source | License / terms |
+| --- | --- | --- |
+| Eagle's descent stage, moonquake detector | NASA NSSDCA, Apollo 11 Lunar Module / EASEP (1969-059C), https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1969-059C | US Government work, public domain |
+| The Apollo 11 flag | Wikipedia, Lunar Flag Assembly, https://en.wikipedia.org/wiki/Lunar_Flag_Assembly | CC BY-SA 4.0 |
+| Laser mirror | Wikipedia, Lunar Laser Ranging experiments, https://en.wikipedia.org/wiki/Lunar_Laser_Ranging_experiments | CC BY-SA 4.0 |
+| Chang'e 4 lander, Yutu-2 rover | The Planetary Society, Chang'e-4, https://www.planetary.org/space-missions/change-4 | facts paraphrased |
+| Blue Ghost lander | Firefly Aerospace, Blue Ghost Mission 1, https://fireflyspace.com/missions/blue-ghost-mission-1/ | facts paraphrased |
+| Shackleton crater | Wikipedia, Shackleton (crater), https://en.wikipedia.org/wiki/Shackleton_(crater) | CC BY-SA 4.0 |
+
 ## Images
 
 | Name | Source | License / terms | Used for |

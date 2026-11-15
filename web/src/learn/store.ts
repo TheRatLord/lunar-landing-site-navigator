@@ -5,6 +5,7 @@ import type { CraterSource } from "./scene/craterView";
 import { termsIn, type TermId } from "./glossary";
 import { SITES, type SiteId } from "./sites";
 import type { WalkBody } from "./walk/walkView";
+import type { PropId } from "./walk/facts";
 
 export type Landing = 0 | 7 | 14;
 export type ChapterKey = ChapterSlug;
@@ -37,6 +38,7 @@ export interface LearnState {
   walkBody: WalkBody;
   walkEdge: boolean;
   walkHint: boolean;
+  nearProp: PropId | null;
   setWalkBody(b: WalkBody): void;
   enterChapter(slug: ChapterKey, reducedMotion: boolean): void;
   setT(t: number): void;
@@ -78,6 +80,7 @@ export const useLearn = create<LearnState>()((set, get) => ({
   walkBody: "astronaut",
   walkEdge: false,
   walkHint: true,
+  nearProp: null,
   setWalkBody: (walkBody) => set({ walkBody, interacted: true }),
   craterTerrain: "real",
   panel: true,

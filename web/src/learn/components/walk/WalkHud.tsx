@@ -1,6 +1,7 @@
 import type { PointerEvent } from "react";
 import { useLearn } from "../../store";
 import { CloseIcon } from "../icons";
+import { FactCard } from "./FactCard";
 
 export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }) {
   const body = useLearn((s) => s.walkBody);
@@ -32,6 +33,7 @@ export function WalkHud({ onStick }: { onStick: (x: number, y: number) => void }
           </button>
         </div>
       )}
+      <FactCard />
       {edge && <p className="l-walk-edge">This is as far as the map goes. Turn back to explore more.</p>}
       <div className="l-walk-actions">
         {chapter === "explore" && <div className="l-walk-drive" role="group" aria-label="Movement controls">

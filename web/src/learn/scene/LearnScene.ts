@@ -23,6 +23,7 @@ import moonMap from "./maps/moon.jpg";
 import { CameraTween } from "./tween";
 import { SPACE_BG, type SceneFrame, type Shared, type ViewKind } from "./types";
 import { WalkView, type WalkBody } from "../walk/walkView";
+import type { PropId } from "../walk/facts";
 
 type Phase = "fly" | "out" | "in";
 
@@ -83,6 +84,7 @@ export class LearnScene {
   onCraterTerrain: ((source: CraterSource) => void) | null = null;
   onWalkSwitch: (() => void) | null = null;
   onWalkEdge: ((atEdge: boolean) => void) | null = null;
+  onWalkNear: ((id: PropId | null) => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement, opts: { pixelRatioCap: number }) {
     this.canvas = canvas;
@@ -161,6 +163,7 @@ export class LearnScene {
       this.walk.input.onActive = this.requestRender;
       this.walk.input.onSwitch = () => this.onWalkSwitch?.();
       this.walk.onEdge = (e) => this.onWalkEdge?.(e);
+      this.walk.onNear = (id) => this.onWalkNear?.(id);
       this.walk.setBody(this.walkBody);
       this.applyCamera(this.walk.camera);
     }
