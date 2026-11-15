@@ -76,6 +76,7 @@ start() {
       -e HOME=/data/home
       -e LUNARNAV_API_AGENT_ENABLED=1
       -e LUNARNAV_API_AGENT_CODES="$codes"
+      -e LUNARNAV_API_AGENT_TOTAL_BUDGET_USD="$(meta instance/attributes/lunarnav-agent-budget 2>/dev/null || echo 60)"
       -e LUNARNAV_AGENT_API_KEY_FILE=/data/agent-key/key
       -e LUNARNAV_AGENT_CONFIG=/data/agent.yaml
     )

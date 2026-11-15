@@ -18,7 +18,7 @@ import mimetypes
 import os
 import threading
 import time
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -58,6 +58,8 @@ RESULT_LIMIT_BYTES = 262_144
 HUB_QUEUE_MAX = 10_000
 MAX_STREAMS_PER_RUN = 8
 """Concurrent event-stream connections one run accepts (the next is `429`); each holds a queue of up to HUB_QUEUE_MAX events."""
+CODE_FAILURE_WINDOW_S = 60.0
+CODE_FAILURES_PER_WINDOW = 30
 INLINE_TYPES = frozenset(
     {"image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf", "application/json", "text/plain", "text/csv"}
 )
@@ -183,6 +185,7 @@ class AgentService:
         self._upload_locks: dict[str, asyncio.Lock] = {}
         self._lock = asyncio.Lock()
         self._sandbox_probe: dict[str, Any] | None = None
+        self._code_failures: deque[float] = deque()
 
 
     def config(self, model: str | None = None, budget_usd: float | None = None) -> AgentConfig:
@@ -251,6 +254,30 @@ class AgentService:
         except OSError:
             return None
 
+    def check_code_rate(self) -> None:
+        now = time.monotonic()
+        while self._code_failures and now - self._code_failures[0] > CODE_FAILURE_WINDOW_S:
+            self._code_failures.popleft()
+        if len(self._code_failures) >= CODE_FAILURES_PER_WINDOW:
+            raise ApiProblem(429, "Too many attempts", "Too many wrong access codes were tried just now. Wait a minute and try again.",
+                             kind="code-attempts")
+
+    def note_code_failure(self) -> None:
+        self._code_failures.append(time.monotonic())
+
+    def total_spent(self) -> float:
+        return sum(float(m.get("cost_usd") or 0.0) for m in list_runs(self.runs_dir))
+
+    def _budget_room(self) -> float | None:
+        cap = self.settings.agent_total_budget_usd
+        if cap is None:
+            return None
+        left = cap - self.total_spent()
+        if left < 0.05:
+            raise ApiProblem(409, "Assistant budget spent", f"The assistant has used the {cap:.2f} USD set aside for it on this server.",
+                             kind="total-budget-spent", budget_usd=cap)
+        return left
+
     def check_owner(self, run_id: str, owner: str) -> None:
         if self._owner_of(run_id) != owner:
             raise ApiProblem(404, "Run not found", f"No run {run_id!r}.")
@@ -267,6 +294,9 @@ class AgentService:
     async def start_run(self, prompt: str, model: str | None, budget_usd: float | None = None, owner: str | None = None) -> dict[str, Any]:
         """Create a run, connect its session and start the first turn; `owner` records the access code it was started under."""
         self.check_budget(budget_usd)
+        room = await asyncio.to_thread(self._budget_room)
+        if room is not None:
+            budget_usd = min(room, budget_usd or self.settings.agent_max_budget_usd or room)
         async with self._lock:
             await self._make_room()
             try:
@@ -286,12 +316,15 @@ class AgentService:
         if cap is not None and spent is not None and spent >= cap:
             raise ApiProblem(409, "Run budget spent", f"This run has spent {spent:.2f} of its {cap:.2f} USD cap (cost as of its last "
                              "completed turn); start a new run.", kind="budget-spent", budget_usd=cap, cost_usd=spent)
+        room = await asyncio.to_thread(self._budget_room)
         async with self._lock:
             live = self._live.get(run_id)
             if live is None:
                 await self._make_room()
                 try:
-                    session = await self._resume(run_id, self.config(), self._scenarios)
+                    config = self.config() if room is None else self.config(
+                        budget_usd=min(cap or self.settings.agent_max_budget_usd or room, (spent or 0.0) + room))
+                    session = await self._resume(run_id, config, self._scenarios)
                 except (RuntimeError, FileNotFoundError) as exc:
                     raise ApiProblem(409, "Run cannot be resumed", str(exc), kind="agent-unavailable") from exc
                 live = self._attach(session)

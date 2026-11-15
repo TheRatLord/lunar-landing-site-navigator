@@ -90,11 +90,14 @@ async def access(request: Request, ctx: Ctx) -> AccessState:
 
 
 @router.post("/access", response_model=AccessState, summary="Unlock the agent with an access code",
-             responses={403: {"description": "The code is not recognised."}})
+             responses={403: {"description": "The code is not recognised."}, 429: {"description": "Too many wrong codes in the last minute."}})
 async def unlock(body: AccessCode, request: Request, response: Response, ctx: Ctx) -> AccessState:
     code = body.code.strip()
-    if ctx.settings.agent_codes and not _known_code(code, ctx.settings.agent_codes):
-        raise ApiProblem(403, "Code not recognised", "Check the access code and try again.", kind="code-wrong")
+    if ctx.settings.agent_codes:
+        ctx.agents.check_code_rate()
+        if not _known_code(code, ctx.settings.agent_codes):
+            ctx.agents.note_code_failure()
+            raise ApiProblem(403, "Code not recognised", "Check the access code and try again.", kind="code-wrong")
     https = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
     response.set_cookie(CODE_COOKIE, code, max_age=CODE_COOKIE_MAX_AGE_S, path=CODE_COOKIE_PATH,
                         httponly=True, secure=https, samesite="strict")

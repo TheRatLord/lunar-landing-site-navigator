@@ -20,7 +20,8 @@ export function AccessGate() {
     try {
       useAsk.getState().setAccess(await agentApi.unlock(code.trim()));
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 403 ? "That code isn't recognised." : "Could not check the code. Try again.");
+      const status = err instanceof ApiError ? err.status : 0;
+      setError(status === 403 ? "That code isn't recognised." : status === 429 ? "Too many tries. Wait a minute and try again." : "Could not check the code. Try again.");
     } finally {
       setBusy(false);
     }

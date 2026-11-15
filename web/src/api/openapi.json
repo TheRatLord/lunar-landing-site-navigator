@@ -2551,6 +2551,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many wrong codes in the last minute.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {

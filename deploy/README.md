@@ -34,13 +34,15 @@ The app is live at https://lunar.cinne.dev and runs on Google Cloud (project `lu
 
 The assistant runs only when Secret Manager holds both of these:
 
-- `anthropic-api-key`: the API key the assistant bills to. Put the spending limit on the key itself, in the Anthropic Console.
+- `anthropic-api-key`: the API key the assistant bills to.
 - `agent-codes`: the access codes, one per line (commas also work). Each code sees only the threads started with it.
 
 ```sh
 printf '%s' 'sk-ant-...' | gcloud secrets create anthropic-api-key --data-file=- --project lunarnav-1114-19887
 openssl rand -hex 12 | gcloud secrets create agent-codes --data-file=- --project lunarnav-1114-19887
 ```
+
+The service stops starting or continuing threads once all threads together have cost 60 USD (instance metadata `lunarnav-agent-budget` changes the amount). Each new thread's cap is cut to what is left, so the total can overshoot only by what threads already running spend in their current turn.
 
 Change the codes with `gcloud secrets versions add agent-codes --data-file=codes.txt`. The VM's service account needs `roles/secretmanager.secretAccessor` on both secrets.
 
