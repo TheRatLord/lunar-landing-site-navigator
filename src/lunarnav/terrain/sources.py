@@ -188,9 +188,18 @@ def _gdr_measured(dem_id: str) -> ProductError:
     )
 
 
+_GLOBAL_MEASURED = ProductError(
+    9.1, ASSUMED_ERROR.sigma_xy_m, "measured", "assumed", "docs/validation/oracle.md (terrain.retroreflector_heights); " + _RESEARCH,
+    "sigma_z measured: pooled 68 % half-width of the difference between this store's bilinear surface and SLDEM2015 at 512 pixels per "
+    "degree (4 windows of 50 km radius, 3,484,367 samples at 118 m spacing): 4.3 m on mare, 24.7 m in rough highlands. It is the error of "
+    "a point height read from the 474 m grid, sub-pixel relief included, and it is heavy-tailed: 95 % of points are within 38.7 m and "
+    "99 % within 68.9 m, so three sigma does not bound it. sigma_xy is NOT measured and stays the ASSUMED global 10 m",
+)  # fmt: skip
+
 PRODUCT_ERRORS: dict[str, ProductError] = {
     **{p.dem_id: (_PGDA_PUBLISHED if p.dem_id in _PGDA_PUBLISHED_TILES else _pgda_method(p.dem_id)) for p in PGDA},
-    **{p.dem_id: (_gdr_measured(p.dem_id) if p.dem_id in _GDR_MEASURED_Z_M else _GDR_UNSTATED) for p in (GLOBAL, *SOUTH, *NORTH)},
+    **{p.dem_id: (_gdr_measured(p.dem_id) if p.dem_id in _GDR_MEASURED_Z_M else _GDR_UNSTATED) for p in (*SOUTH, *NORTH)},
+    GLOBAL.dem_id: _GLOBAL_MEASURED,
     "ldem_512": ProductError(
         ASSUMED_ERROR.sigma_z_m, ASSUMED_ERROR.sigma_xy_m, "assumed", "assumed", _RESEARCH + " Sec. 1 (PDS label, V3.0)",
         "LOLA-only LDEM_512 (V3.0): no accuracy figure published; the pessimistic global budget applies",

@@ -1,0 +1,15 @@
+note: >-
+  Retroreflector coordinates are Table 1 of Park et al. 2021 (The JPL Planetary and Lunar Ephemerides DE440 and DE441,
+  Astronomical Journal 161:105), DE440 principal-axis frame, metres. Station positions and velocities are read from the
+  ILRS file SLRF2014_POS+VEL_2030.0_200428.snx (epoch 2010.0). The MINI record layout is the one printed on the Paris
+  Observatory Lunar Analysis Center data page (http://polac.obspm.fr/llrdatae.html).
+reflectors_de440_pa_m:
+  "0": {name: Apollo 11, xyz: [1591967.049, 690698.573, 21004.461]}
+  "1": {name: Lunokhod 1, xyz: [1114291.452, -781299.273, 1076059.049]}
+  "2": {name: Apollo 14, xyz: [1652689.369, -520998.431, -109729.869]}
+  "3": {name: Apollo 15, xyz: [1554678.104, 98094.498, 765005.863]}
+  "4": {name: Lunokhod 2, xyz: [1339363.598, 801870.995, 756359.260]}
+stations:
+  grasse: {name: Grasse MeO, file: llr_grasse, mini_code: "01910", slrf_code: "7845", solution: "1"}
+  matera: {name: Matera MLRO, file: llr_matera, mini_code: "07941", slrf_code: "7941", solution: "1"}
+min_elevation_deg: 20

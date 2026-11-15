@@ -1,0 +1,67 @@
+note: >-
+  Values as extracted in docs/research/literature.md, which names the copy of each paper that was read. Longitudes are east,
+  as printed. Mazarico et al. 2011 Table 3 could not be opened; its values are the ones Gläser quotes.
+glaeser2014:
+  source: "Gläser, PhD thesis 2014 (TU Berlin), Table 7; same work as Gläser et al. 2014, Icarus 243, 78–90"
+  url: https://doi.org/10.1016/j.icarus.2014.08.013
+  period: ["2015-12-24T00:00:00Z", "2034-12-24T00:00:00Z"]
+  stores: [lola_80s_20m, lola_60s_240m]
+  best_post_radius_m: 300
+  spots:
+    - {name: "CR1 spot 1", lat: -89.4395, lon: 222.8066, mast_m: 2, avg_illum: 88.12, sunlit: 92.00, longest_dark_d: 4.58, longest_light_d: 233.87}
+    - {name: "CR1 spot 2", lat: -89.4399, lon: 222.8524, mast_m: 2, avg_illum: 87.93, sunlit: 92.27, longest_dark_d: 4.62, longest_light_d: 233.87}
+    - {name: "CR1 spot 3", lat: -89.4516, lon: 222.7581, mast_m: 10, avg_illum: 92.55, sunlit: 95.61, longest_dark_d: 3.08, longest_light_d: 262.42}
+    - {name: "CR1 spot 4", lat: -89.4544, lon: 222.8445, mast_m: 10, avg_illum: 91.94, sunlit: 95.65, longest_dark_d: 3.17, longest_light_d: 262.42}
+  earth_cycle:
+    note: "Thesis §7.3, Fig. 72: at spot 4, visibility windows of about 14.45 d followed by about 12.8 d of radio silence (19 years, ten ESA stations)."
+    spot: "CR1 spot 4"
+    window_d: 14.45
+    silence_d: 12.8
+glaeser2018:
+  source: "Gläser et al. 2018, Planetary and Space Science 162, 170–178, Tables 1 and 2 (maxima over a 20 m DEM)"
+  url: https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf
+  period: ["2017-01-01T00:00:00Z", "2037-01-01T00:00:00Z"]
+  stores: [lola_80s_20m, lola_60s_240m]
+  radius_m: 300
+  rows:
+    - {name: "C1, surface", lat: -89.4505, lon: 222.84, mast_m: 0, max_avg_illum: 76.0}
+    - {name: "C2, surface", lat: -89.3157, lon: 245.94, mast_m: 0, max_avg_illum: 75.6}
+    - {name: "S, surface", lat: -89.7849, lon: 203.97, mast_m: 0, max_avg_illum: 81.0}
+    - {name: "C1, 2 m", lat: -89.4398, lon: 222.83, mast_m: 2, max_avg_illum: 88.0}
+    - {name: "C2, 2 m", lat: -89.3130, lon: 245.98, mast_m: 2, max_avg_illum: 78.1}
+    - {name: "S (S0), 2 m", lat: -89.6866, lon: 197.19, mast_m: 2, max_avg_illum: 85.5}
+    - {name: "S (S1), 2 m", lat: -89.7815, lon: 204.70, mast_m: 2, max_avg_illum: 82.1}
+mazarico2011:
+  source: "Mazarico et al. 2011, Icarus 211, 1066–1081, Table 3, as quoted by Gläser 2014 Table 7 and Gläser et al. 2018 Table 1 (240 m DEM, one 18.6-year cycle)"
+  url: https://doi.org/10.1016/j.icarus.2010.10.030
+  period: ["2020-01-01T00:00:00Z", "2038-08-07T00:00:00Z"]
+  stores: [lola_60s_240m]
+  rows:
+    - {id: connecting_ridge_surface, name: "Connecting Ridge (CR1), surface", lat: -89.45, lon: 222.69, mast_m: 0, radius_m: 3000, max_avg_illum: 89.01}
+    - {id: shackleton_rim_surface, name: "Shackleton rim (S), surface", lat: -89.78, lon: 204.27, mast_m: 0, radius_m: 3000, max_avg_illum: 86.7}
+    - {id: connecting_ridge_10m, name: "Connecting Ridge (CR1), 10 m", lat: -89.45, lon: 222.69, mast_m: 10, radius_m: 300, max_avg_illum: 93.10}
+bryant2009:
+  source: "Bryant 2009, JPL IPN Progress Report 42-176, Tables 3, 4 and 6 (Goldstone radar DEM, 2 m observer)"
+  url: https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf
+  period: ["2009-01-01T00:00:00Z", "2028-01-01T00:00:00Z"]
+  step_s: 21600
+  stores: [lola_80s_20m, lola_60s_240m]
+  mast_m: 2
+  rim_peaks_earth_range: [62.0, 71.0]
+  rim_peaks:
+    - {name: A1, lat: -89.633, lon: -160.388, sun_any: 93.46, earth_any: 62.20}
+    - {name: A2, lat: -89.723, lon: -153.925, sun_any: 92.98, earth_any: 63.90}
+    - {name: A3, lat: -89.861, lon: -148.285, sun_any: 85.36, earth_any: 63.41}
+    - {name: A4, lat: -89.861, lon: 62.700, sun_any: 87.83, earth_any: 63.97}
+    - {name: B1, lat: -89.388, lon: -137.810, sun_any: 97.01, earth_any: 65.16}
+    - {name: B3, lat: -89.260, lon: -116.703, sun_any: 83.84, earth_any: 65.60}
+    - {name: H, lat: -89.302, lon: 128.371, sun_any: 77.53, earth_any: 62.02}
+    - {name: C1, lat: -88.657, lon: -70.688, sun_any: 90.01, earth_any: 70.97}
+    - {name: F, lat: -88.813, lon: 126.601, sun_any: 89.28, earth_any: 67.30}
+  massifs:
+    - {name: "Malapert α", lat: -86.037, lon: 1.704, sun_any: 82.08, earth_any: 100.0}
+    - {name: "Leibnitz β", lat: -84.722, lon: 39.470, sun_any: 79.06, earth_any: 100.0}
+  height:
+    peak: B1
+    earth_any_2m: 63.47
+    earth_any_32m: 63.54

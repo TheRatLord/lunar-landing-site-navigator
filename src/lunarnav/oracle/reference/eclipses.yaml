@@ -1,0 +1,35 @@
+source: NASA GSFC Five Millennium Catalog of Lunar Eclipses (F. Espenak), per-eclipse figures
+catalogue_url: https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html
+figure_url: https://eclipse.gsfc.nasa.gov/LEplot/LEplot2001/LE{id}.pdf
+ephemeris: VSOP87/ELP2000-85
+shadow_rule: CdT (Danjon)
+time_scale: contacts are UT; TT = UT + delta_t_s as printed on each figure; greatest_td is from the catalogue
+transcribed: 2026-11-14, read from the 27 figures; each row was checked against the durations printed on the same figure
+eclipses:
+  - {id: 2024Mar25N, date: 2024-03-25, greatest_td: "07:13:59", delta_t_s: 74, P1: "04:53:11", P4: "09:32:18"}
+  - {id: 2024Sep18P, date: 2024-09-18, greatest_td: "02:45:25", delta_t_s: 74, P1: "00:41:02", U1: "02:12:48", U4: "03:15:35", P4: "04:47:18"}
+  - {id: 2025Mar14T, date: 2025-03-14, greatest_td: "06:59:56", delta_t_s: 75, P1: "03:57:24", U1: "05:09:33", U2: "06:25:59", U3: "07:31:23", U4: "08:47:48", P4: "10:00:01"}
+  - {id: 2025Sep07T, date: 2025-09-07, greatest_td: "18:12:58", delta_t_s: 75, P1: "15:28:21", U1: "16:27:02", U2: "17:30:41", U3: "18:52:47", U4: "19:56:26", P4: "20:55:00"}
+  - {id: 2026Mar03T, date: 2026-03-03, greatest_td: "11:34:52", delta_t_s: 75, P1: "08:44:22", U1: "09:50:00", U2: "11:04:26", U3: "12:02:45", U4: "13:17:10", P4: "14:22:59"}
+  - {id: 2026Aug28P, date: 2026-08-28, greatest_td: "04:14:04", delta_t_s: 75, P1: "01:23:55", U1: "02:33:48", U4: "05:51:55", P4: "07:01:41"}
+  - {id: 2027Feb20N, date: 2027-02-20, greatest_td: "23:14:06", delta_t_s: 76, P1: "21:12:20", P4: "01:13:19"}
+  - {id: 2027Jul18N, date: 2027-07-18, greatest_td: "16:04:09", delta_t_s: 76, P1: "15:56:57", P4: "16:08:45"}
+  - {id: 2027Aug17N, date: 2027-08-17, greatest_td: "07:14:59", delta_t_s: 76, P1: "05:24:29", P4: "09:03:03"}
+  - {id: 2028Jan12P, date: 2028-01-12, greatest_td: "04:14:13", delta_t_s: 76, P1: "02:07:37", U1: "03:45:00", U4: "04:41:00", P4: "06:18:18"}
+  - {id: 2028Jul06P, date: 2028-07-06, greatest_td: "18:20:57", delta_t_s: 77, P1: "15:44:21", U1: "17:08:51", U4: "19:30:21", P4: "20:54:59"}
+  - {id: 2028Dec31T, date: 2028-12-31, greatest_td: "16:53:15", delta_t_s: 77, P1: "14:03:49", U1: "15:07:35", U2: "16:16:19", U3: "17:27:40", U4: "18:36:24", P4: "19:40:02"}
+  - {id: 2029Jun26T, date: 2029-06-26, greatest_td: "03:23:22", delta_t_s: 77, P1: "00:34:34", U1: "01:32:18", U2: "02:31:08", U3: "04:13:01", U4: "05:11:50", P4: "06:09:42"}
+  - {id: 2029Dec20T, date: 2029-12-20, greatest_td: "22:43:12", delta_t_s: 78, P1: "19:42:53", U1: "20:55:17", U2: "22:15:05", U3: "23:08:45", U4: "00:28:34", P4: "01:40:51"}
+  - {id: 2030Jun15P, date: 2030-06-15, greatest_td: "18:34:34", delta_t_s: 78, P1: "16:14:09", U1: "17:21:03", U4: "19:45:25", P4: "20:52:23"}
+  - {id: 2030Dec09N, date: 2030-12-09, greatest_td: "22:28:51", delta_t_s: 78, P1: "20:07:56", P4: "00:47:09"}
+  - {id: 2031May07N, date: 2031-05-07, greatest_td: "03:52:02", delta_t_s: 78, P1: "01:52:06", P4: "05:49:27"}
+  - {id: 2031Jun05N, date: 2031-06-05, greatest_td: "11:45:17", delta_t_s: 78, P1: "10:56:16", P4: "12:31:49"}
+  - {id: 2031Oct30N, date: 2031-10-30, greatest_td: "07:46:45", delta_t_s: 79, P1: "05:49:29", P4: "09:41:15"}
+  - {id: 2032Apr25T, date: 2032-04-25, greatest_td: "15:14:51", delta_t_s: 79, P1: "12:22:16", U1: "13:27:58", U2: "14:40:47", U3: "15:46:19", U4: "16:59:09", P4: "18:04:42"}
+  - {id: 2032Oct18T, date: 2032-10-18, greatest_td: "19:03:40", delta_t_s: 79, P1: "16:24:41", U1: "17:24:22", U2: "18:38:46", U3: "19:25:53", U4: "20:40:17", P4: "21:40:05"}
+  - {id: 2033Apr14T, date: 2033-04-14, greatest_td: "19:13:51", delta_t_s: 80, P1: "16:11:54", U1: "17:25:03", U2: "18:47:56", U3: "19:37:09", U4: "21:00:02", P4: "22:13:05"}
+  - {id: 2033Oct08T, date: 2033-10-08, greatest_td: "10:56:23", delta_t_s: 80, P1: "08:18:44", U1: "09:13:50", U2: "10:15:38", U3: "11:34:27", U4: "12:36:15", P4: "13:31:21"}
+  - {id: 2034Apr03N, date: 2034-04-03, greatest_td: "19:06:59", delta_t_s: 80, P1: "16:52:54", P4: "21:18:19"}
+  - {id: 2034Sep28P, date: 2034-09-28, greatest_td: "02:47:37", delta_t_s: 81, P1: "00:41:57", U1: "02:33:00", U4: "02:59:42", P4: "04:50:38"}
+  - {id: 2035Feb22N, date: 2035-02-22, greatest_td: "09:06:12", delta_t_s: 81, P1: "06:56:59", P4: "11:12:39"}
+  - {id: 2035Aug19P, date: 2035-08-19, greatest_td: "01:12:15", delta_t_s: 81, P1: "22:46:00", U1: "00:32:43", U4: "01:49:15", P4: "03:35:51"}

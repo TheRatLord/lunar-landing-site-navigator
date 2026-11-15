@@ -172,8 +172,14 @@ Earlier figures (182 s polar, 14 s mid-latitude, 1.6 s single site under load; 6
 ### 2.5 `min_range_m`: excluding the immediate footprint
 
 `horizon_arrays(..., min_range_m=0.0)`, `compute_horizons(..., min_range_m=0.0)` and `compute_horizon(..., min_range_m=...)`
-ignore terrain closer than `min_range_m` to the observer (the search starts at `max(min_range_m, 1 m)`); the default 0 leaves
-results unchanged. It is part of the cache key and of `provenance["min_range_m"]`. Use it to ask "what does the horizon look
+ignore terrain closer than `min_range_m` to the observer. Since engine `horizon-bnb/5` the search never starts closer than one
+pixel of the store that supplies the observer's ground (`near_field_start_m`, recorded as `provenance["near_field_start_m"]`):
+a store holds one height per pixel, so the surface inside the observer's own pixel is interpolation, not data. Before that
+change the search started 1 m out, and a ground-level observer was shadowed by the interpolated surface of its own cell; the
+oracle suite measured the effect against the published LOLA illumination maps (`docs/validation/oracle.md`, the `avgvisib`
+cases: 95th percentile 7.8 points at 240 m before, under 2 after). `min_range_m` is part of the cache key and of
+`provenance["min_range_m"]`. The table below was measured with the 1 m start; on 5 m data its rows for 0 and 5 m are now the
+same computation. Use it to ask "what does the horizon look
 like if the lander footprint (its own pad, plume-disturbed ground) is ignored". Check:
 a 300 m cone 30 m from the observer is a 20°+ horizon at 0 and a
 few degrees at 50 m. Sensitivity at the nine Shackleton sites of section 2.2 (rim, floor; 360 azimuths, 2 m mast,
@@ -219,7 +225,7 @@ is set by terrain 169.8 km away (−84.716°, 16.488°E, 2 723 m); at azimuth 0�
   `elev`, for conservative statements.
 * Terrain within a few metres of the observer on a slope is the ground the lander stands on; it sets the horizon at
   many azimuths for rim sites (blocker distance of tens of metres). `min_range_m` (2.5) excludes the immediate footprint
-  on request; it is off by default.
+  beyond the observer's own pixel on request.
 * Non-polar sites rely on LDEM_64 (474 m): near-field horizon there is pixel-scale smooth (one-pixel shift gives
   0.49° RMS, up to 2.5°).
 * Throughput: whole-region precompute at 5–10 m spacing is slow (see 2.4); the engine is designed for the
@@ -228,4 +234,4 @@ is set by terrain 169.8 km away (−84.716°, 16.488°E, 2 723 m); at azimuth 0�
 * The terrain model is the bilinear composite; rigour of `hi` is relative to that model and to the Lipschitz tightening
   at leaf nodes (gradient bound from the four cell corners). 20 520 bins (R1) and 1 854 bins (R2) found no violation, which is
   evidence, not proof.
-* Cache keys include the engine version string (`horizon-bnb/4`: provenance gained `ground_store`, `ground_error`, `near_field_seam`, `store_order`; the numerics are those of `/3`); change it whenever kernel behaviour changes.
+* Cache keys include the engine version string (`horizon-bnb/5`: the search starts one pixel of the ground store out, see 2.5; `/4`: provenance gained `ground_store`, `ground_error`, `near_field_seam`, `store_order`; the numerics are those of `/3`); change it whenever kernel behaviour changes.

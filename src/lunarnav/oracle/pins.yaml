@@ -1,0 +1,78 @@
+stack_hash: 241d5855d6bea91306a85a5855128106e24c662652672b0ad42847c6fe5106bd
+store_meta_sha256:
+  ldem_512_n18.562_e061.810_r50km: b56129a5250319d272087092024888a2f765189b08920837e1ff6b0eafa7cb31
+  ldem_512_s13.316_e025.251_r50km: b3c49617cc5728d3c0ccb045dc2780265aa5ee39a923f8518d3f51702f994b70
+  ldem_512_s69.373_e032.319_r50km: 08aeeb5a3d1a41529dacbda1f5344e55458f55382bdb87603c7b29287323ac88
+  lola_60n_240m: c7c46d42882f0b654a18f4727d5eac07ac2ef929ad29f20cca63d7848a9ab766
+  lola_60s_240m: 039d9df2e625aa8a2bebfbcffab7c666f8886a00e65032f9566cdec71797d070
+  lola_75s_120m: f32028457afa6d4910d6308c12c8438c8f623bca8308f3aaee8aa79eddc6ea9f
+  lola_75s_60m: 77b041eebd6adb1bc8ca752dfa425a7a6884b65dd67734672e906e02089955ca
+  lola_80n_20m: 3b88ff2f1efcb53caff4e08e3fe9976f8962021cf38fa0fc7534c51b7c0b9a38
+  lola_80s_20m: bbd9c4745536b9fbf5478e1c1c756fcb39c6ce3f32638669e677eabc2f89a5aa
+  lola_85n_10m: 75857ced53b4f96e681380dd483565b6efb69a3a5561f58cc484690139359590
+  lola_85s_10m: 0c832b805238f9447acae32dd098d7bdae4488535368865454b6237c9052b708
+  lola_875s_5m: 70e4186de9c957ecbd104a26ba9b0b103e45ebcf76e1ee6c9f8e3e03607bf234
+  lola_global_64ppd: 53afdce474ff55ab3ae5846e025d5ecddd3d68e4768414a405b6c478e18771c0
+  pgda78_dm1_5m: c22844889fe477d8555dc6ae15c8cdff834802beb77cc192c7adea6b64c128c2
+  pgda78_dm2_5m: 092de4a574108fda40ee754da1e7bc1989032814ade877c70cb2d8c0b69bba56
+  pgda78_haworth_5m: b1ff42f98e8efc18bad6195a137b6bba5e55b2459168ba6d0093abe01275f6fb
+  pgda78_lm1_5m: 73a3c0afbeda76fb13ea89b38926684480e8a2974fa9217a727994e6f7f5b34d
+  pgda78_lm2_5m: 4e17176f1f0b9c7426f82fa4161f079d1d95c473d8ba77fa80166f24e88ba202
+  pgda78_lm3_5m: c40a7e2454744830a1180e4d2f99ae631d66830ac737773392822ccc28687d93
+  pgda78_lm4_5m: ffa8462ffefa6c69cc70d1acac376381c7f628ced72d1ac8d90c5aa2d724517a
+  pgda78_lm5_5m: 3b0c9334ee76019edfa3abab1803c679ab32db3dd05e87e7ed08046d0fd2efe5
+  pgda78_lm6_5m: f4c24a602ceeab16cd7f24157f41a00d58516d0fca4ab76d7d08934a8b0b9eff
+  pgda78_lm7_5m: 525695dc90f3f84a6b289fe8c40bcc7a8d77f3799610ac71f0e3921f5da68b65
+  pgda78_lm8_5m: 5c5188b58a3dd2c42474434c5bf0198f7ebb28e2c7bf6b025395315e5da8f943
+  pgda78_npa_5m: 10d43ad43d8891dca3a03d7cf3feaed012a6b4ddb4131ea9cc171b794ee244d7
+  pgda78_npb_5m: 829d05776ec4b8b3a923cbd0431370fea7d571c8ef298f03471ba0a82da3ca52
+  pgda78_npc_5m: 17e88bc3cb9afb6940d556c48ea3e114a636e15711267d32c61a5c9d7dbc1397
+  pgda78_npd_5m: b4a1e95ca4f949d9e9186500b3e25af7d5349a7e6d8b82dafb044a2e654a4c17
+  pgda78_shoemaker_5m: 67f4e6e763c7d999c3a791184852b9fdc5318a3de80529b81e138a6399870437
+  pgda78_site01_5m: 09e8b68fea6714d501c2110ca4eacdb7c17f5b9a8c2437fd5df0b3a9ccd508a1
+  pgda78_site04_5m: 6cdd4e546fee2dd65eabd7898cda0273ebdd867957734a32d03089fd6e7da86b
+  pgda78_site06_5m: ea680e4d6d2b55ad8bacd82e1e39b51463c3ed1b07f5c6439d4825bd55f13857
+  pgda78_site07_5m: 1509b241315ef3f1177544b05cf6224c43b34fbc5b7659ec654e5bcf09cfb62c
+  pgda78_site11_5m: 273d5dbd18daba8b9d7496a5565f90b977e508d989294d7260e04da1d52a0dad
+  pgda78_site20v2_5m: c300857768b5ab37384e6945d5acc31dc1d1f7d382282f4414dab2f25748b380
+  pgda78_site23_5m: 3a9eefce1ae0b149ae0c03bbe4a1c53b08a35f947cb708959053db7ff05ed955
+  pgda78_site42_5m: 830fcdd583e1f07878855e6a8379716b5de6dd3b4efdea347d620358c476bb2b
+  pgda78_sl2_5m: 8516521a9f71bacfa7d761ee0004795ddf6ebe45c802cc31d87364753ce6d63f
+  pgda78_sl3_5m: 7dcd25ff33588d38e70929d4f464ea1967206fe10aebff33aff92714bfa05f7f
+  sldem2015_512_n18.562_e061.810_r50km: 1bdda7bbe4f76d24d711ad5df0584ad7b2a40d4bdbf7d548ca15cf882bfc176b
+  sldem2015_512_s13.316_e025.251_r50km: dbc533169bdb3c0be296d62a6588ca1f1d02343eabefef63f13ced34518a58d9
+  sldem2015_512_s41.639_e206.015_r50km: 8e0af17fba5dc1735e7629fc47fedfed08ebdefd04ac23bda891430ff6427955
+  sldem2015_512_s45.456_e177.589_r50km: c43fe23ae62334627cd17bd5cc2031183310059977a6ef0cf72d54e4635080d6
+downloads:
+  avgvisib_65n_240m_img:
+    url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_65N_240M_201608.IMG
+    path: oracle/lola_illumination_2016_north/AVGVISIB_65N_240M_201608.IMG
+    sha256: 4d96400a8609cfb87004010cc3affbefcb2064c4434750945a93bddc6c64254c
+  avgvisib_65n_240m_lbl:
+    url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_65N_240M_201608.LBL
+    path: oracle/lola_illumination_2016_north/AVGVISIB_65N_240M_201608.LBL
+    sha256: ac839d42ea50ec34314d0c68bc3553d74a2719c88acca1ac7cf3b572a1742d71
+  avgvisib_65n_240m_earth_img:
+    url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_65N_240M_201608_EARTH.IMG
+    path: oracle/lola_illumination_2016_north/AVGVISIB_65N_240M_201608_EARTH.IMG
+    sha256: 7a91fcd75cad7fd5dbcb79b3ffb5577edb0048f0bc6c0dd8fb54ad4041e77185
+  avgvisib_65n_240m_earth_lbl:
+    url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_65N_240M_201608_EARTH.LBL
+    path: oracle/lola_illumination_2016_north/AVGVISIB_65N_240M_201608_EARTH.LBL
+    sha256: 31fe6cb62853d076d0aac190dc2d886204211e658b783be243dd4cdd90bedb82
+  inpop21a_spice:
+    url: https://ftp.imcce.fr/pub/ephem/planets/inpop21a/inpop21a_TDB_m100_p100_spice.tar.gz
+    path: oracle/inpop21a/inpop21a_TDB_m100_p100_spice.tar.gz
+    sha256: 63502ef870a173e6573ad41a85d946d2d9e23a73fb66ca51bab1410aac9e7673
+  llr_grasse:
+    url: http://polac.obspm.fr/observations/OGRA0924.DAT
+    path: oracle/llr/OGRA0924.DAT
+    sha256: fbdbd4898f6e361bdcb7981218d1d082f7c52ad7a07020cd210b6ed057927a5d
+  llr_matera:
+    url: http://polac.obspm.fr/observations/OMAT0324.DAT
+    path: oracle/llr/OMAT0324.DAT
+    sha256: 280b10fed5a1f508fcb44e174f7750d3c6f76811569eddfd881732693b30de13
+  slrf2014:
+    url: https://ilrs.gsfc.nasa.gov/docs/2020/SLRF2014_POS+VEL_2030.0_200428.snx
+    path: oracle/llr/SLRF2014_POS+VEL_2030.0_200428.snx
+    sha256: ed4c0826e247c0430689c2bc5f521128ac38e60276d1d90730f5daaeffb9a599

@@ -1,7 +1,7 @@
 """Regional horizons: a tiered, shared-node ray sweep.
 
 For a set of cells the horizon is the maximum over *tiers* of distance.  Tier 0 (cell distances up to ``A_1``)
-is marched per cell.  Tier ``t >= 1`` (cell distances ``[A_t, A_t+1)``, ``A_t = q m_t``) is marched once per node of
+is marched per cell, from the engine's near-field start (one pixel of the cell's ground store).  Tier ``t >= 1`` (cell distances ``[A_t, A_t+1)``, ``A_t = q m_t``) is marched once per node of
 a coarser grid (stride ``S_t`` cells) over node distances ``[A_t - m_t, A_(t+1) + m_t]`` and interpolated to
 each cell bilinearly in the map plane (at the node azimuth with the same map direction, linearly in observer
 radius over the ``K`` radii that bracket the cells using the node).  ``m_t = 1.5 S_t`` cell spacings bounds
@@ -20,7 +20,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from lunarnav.constants import R_MOON_M
-from lunarnav.horizon.engine import observer_frames
+from lunarnav.horizon.engine import near_field_start_m, observer_frames
 from lunarnav.regional import _kernels as K
 from lunarnav.regional.grid import Method, RegionSpec
 from lunarnav.terrain.stack import PackedStack, TerrainStack, mutual_visibility_range_m, unit_vector
@@ -125,16 +125,25 @@ def tile_horizons(
     gamma_cell = spec.meridian_gamma_deg(lon)
     hz = np.full((len(rows), n_az), -90.0)
     for tier in plan_tiers(spec, method, range_m):
+        if tier.stride == 1:
+            up, north, east = _frames(lat, lon)
+            out = np.empty((len(rows), 1, n_az))
+            start = near_field_start_m(stack, lat, lon)
+            for s0 in np.unique(start):
+                m = start == s0
+                d, st = ladder(max(tier.node_lo_m, float(s0)), tier.node_hi_m, floor_m, method.kappa)
+                th = d / R_MOON_M
+                part = np.empty((int(m.sum()), 1, n_az))
+                _march(pk, pxs, np.ascontiguousarray(up[m]), np.ascontiguousarray(north[m]), np.ascontiguousarray(east[m]),
+                       np.ascontiguousarray(ro_cell[m, None]), caz, saz, np.ascontiguousarray(np.cos(th)),
+                       np.ascontiguousarray(np.sin(th)), np.ascontiguousarray(st), part, check)  # fmt: skip
+                out[m] = part
+            np.maximum(hz, np.degrees(out[:, 0, :]), out=hz)
+            continue
         d, st = ladder(tier.node_lo_m, tier.node_hi_m, floor_m, method.kappa)
         th = d / R_MOON_M
         ct, sth = np.ascontiguousarray(np.cos(th)), np.ascontiguousarray(np.sin(th))
         preq = np.ascontiguousarray(st)
-        if tier.stride == 1:
-            up, north, east = _frames(lat, lon)
-            out = np.empty((len(rows), 1, n_az))
-            _march(pk, pxs, up, north, east, np.ascontiguousarray(ro_cell[:, None]), caz, saz, ct, sth, preq, out, check)
-            np.maximum(hz, np.degrees(out[:, 0, :]), out=hz)
-            continue
         S = tier.stride
         I0, J0 = rows // S, cols // S
         fi, fj = (rows - I0 * S) / S, (cols - J0 * S) / S

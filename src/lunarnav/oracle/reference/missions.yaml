@@ -1,0 +1,66 @@
+blue_ghost:
+  site: {lat_deg: 18.5623, lon_deg: 61.8103}
+  site_source: "LROC, Blue Ghost landing site, https://lroc.im-ldi.com/images/1407"
+  source: "Firefly Aerospace, Blue Ghost Mission 1 live updates"
+  url: https://fireflyspace.com/news/blue-ghost-mission-1-live-updates
+  opened: 2026-11-14
+  landing_utc: "2025-03-02T08:34:00Z"
+  predicted_eclipse:
+    note: >-
+      Post of 13 March 2025: "The eclipse will last nearly 5 hours starting at 12 am CST through 4:52 am CST" and
+      "approximately 2 hours and 16 minutes of totality, starting at 1:18 am CST". Daylight time began on 9 March, so the
+      labels are read as CDT (UTC−5); read as CST the eclipse would end after the last penumbral contact.
+    partial_start_utc: "2025-03-14T05:00:00Z"
+    total_start_utc: "2025-03-14T06:18:00Z"
+    total_end_utc: "2025-03-14T08:34:00Z"
+    partial_end_utc: "2025-03-14T09:52:00Z"
+  observed_eclipse:
+    note: >-
+      Posts of 14 March 2025: first look at the eclipse "around 12:30 am CDT"; red-surface image "captured around 2:30 am
+      CDT during the totality"; diamond ring as the Sun emerged "around 3:30 am CDT".
+    in_partial_utc: "2025-03-14T05:30:00Z"
+    in_totality_utc: "2025-03-14T07:30:00Z"
+    totality_end_utc: "2025-03-14T08:30:00Z"
+  sunset:
+    note: >-
+      "more than 14 days of surface operations (346 hours of daylight)" and "just over 5 hours into the lunar night with the
+      final data received around 6:15 pm CDT on March 16". 346 h after landing is 18:34 UTC; five to five and a quarter
+      hours before 23:15 UTC is 18:00 to 18:15 UTC. The window below is the one `docs/validation/scenario.md` §3.1 fixed.
+    window_start_utc: "2025-03-16T18:00:00Z"
+    window_end_utc: "2025-03-16T18:30:00Z"
+    last_data_utc: "2025-03-16T23:15:00Z"
+slim:
+  site: {lat_deg: -13.316, lon_deg: 25.251}
+  site_source: "LROC, JAXA SLIM Landing, https://lroc.im-ldi.com/images/1358"
+  source: "ISAS/JAXA, SLIM operation status"
+  url: https://www.isas.jaxa.jp/home/slim/SLIM/operation_status/index.html
+  opened: 2026-11-14
+  note: >-
+    The page gives each period of surface operations as a range of dates (Japan time), with no time of day. The lander ran
+    on solar power with its panels facing west, so it worked from local afternoon to sunset and each range ends at the
+    lunar sunset.
+  operations_jst:
+    - {start: 2024-01-28, end: 2024-01-31}
+    - {start: 2024-02-25, end: 2024-03-01}
+    - {start: 2024-03-27, end: 2024-03-30}
+    - {start: 2024-04-23, end: 2024-04-29}
+chandrayaan_3:
+  site: {lat_deg: -69.3741, lon_deg: 32.32}
+  site_source: "LROC, Chandrayaan-3 Landing Site, https://lroc.im-ldi.com/images/1314"
+  source: "ChaSTE (Chandra's Surface Thermophysical Experiment) event table, as recorded in docs/validation/scenario.md §3.2"
+  opened: "not reopened on 2026-11-14; values copied from the earlier validation record"
+  local_time_labels:
+    - {utc: "2023-08-21T10:26:00Z", local: "06:14", event: sunrise}
+    - {utc: "2023-08-23T12:34:00Z", local: "07:56", event: landing}
+    - {utc: "2023-08-28T12:30:00Z", local: "12:00", event: noon}
+    - {utc: "2023-09-04T21:42:00Z", local: "18:00", event: sunset}
+  asleep:
+    source: "ISRO statement of 4 September 2023: Vikram lander set into sleep mode around 08:00 IST"
+    lander_sleep_utc: "2023-09-04T02:30:00Z"
+far_side:
+  note: >-
+    Chang'e 4 and Chang'e 6 landed on the far side and talked to Earth only through the Queqiao relay satellites, because
+    the Earth is never above their horizon.
+  missions:
+    - {id: change-4, days: 62}
+    - {id: change-6, days: 62}

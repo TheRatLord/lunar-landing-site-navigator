@@ -37,7 +37,7 @@ from lunarnav.terrain.paths import horizon_cache_dir
 from lunarnav.terrain.stack import TerrainStack, angular_distance, mutual_visibility_range_m
 from lunarnav.types import HorizonProfile, Site
 
-ENGINE_VERSION = "horizon-bnb/4"
+ENGINE_VERSION = "horizon-bnb/5"
 DEFAULT_TOL_DEG = 0.01
 DEFAULT_RAY_TOL_DEG = 0.005
 DEFAULT_LEAF_DIV = 256.0
@@ -74,19 +74,31 @@ def observer_frames(lat_deg: np.ndarray, lon_deg: np.ndarray) -> tuple[np.ndarra
     return np.ascontiguousarray(up), np.ascontiguousarray(north), np.ascontiguousarray(east)
 
 
+def near_field_start_m(stack: TerrainStack, lat_deg, lon_deg, min_range_m: float = 0.0) -> np.ndarray:
+    """Distance (m) from each observer at which the horizon search starts.
+
+    A terrain store holds one height per pixel, so the shape of the surface inside the observer's own pixel is
+    interpolation, not data: nothing closer than one pixel of the store that supplies the observer's ground is
+    treated as a blocker.  The local slope still enters, at the pixel scale, through the neighbouring posts.
+    ``min_range_m`` raises the start further; ``NEAR_FIELD_START_M`` is the floor.
+    """
+    _, ground_store = stack.height_and_store(lat_deg, lon_deg)
+    own_pixel_m = np.array([s.pixel_size_m for s in stack.stores] + [0.0])[ground_store]
+    return np.maximum(max(float(min_range_m), NEAR_FIELD_START_M), own_pixel_m)
+
+
 def _solve(
     lat, lon, mast, stack: TerrainStack, az_rad: np.ndarray, hw_rad: float, max_range_km, tol_deg, ray_tol_deg, leaf_div,
     min_range_m, n_seed,
 ) -> dict[str, np.ndarray]:  # fmt: skip
     """Shared batch driver: ``az_rad`` is ``(n_sites, k)``; the wedge half width is ``hw_rad`` (0: rays only)."""
-    ns = len(lat)
     hg = stack.height(lat, lon)
     if not np.all(np.isfinite(hg)):
         bad = np.flatnonzero(~np.isfinite(hg))[0]
         raise ValueError(f"site ({lat[bad]:.5f}, {lon[bad]:.5f}) is not covered by the terrain stack")
     ro = R_MOON_M + hg + mast
     up, north, east = observer_frames(lat, lon)
-    th_start = np.full(ns, max(float(min_range_m), NEAR_FIELD_START_M) / R_MOON_M)
+    th_start = near_field_start_m(stack, lat, lon, min_range_m) / R_MOON_M
     rng = np.array([mutual_visibility_range_m(h, stack.height_min_m, stack.height_max_m) for h in hg + mast])
     if max_range_km is not None:
         rng = np.minimum(rng, max_range_km * 1000.0)
@@ -145,8 +157,8 @@ def horizon_arrays(
 
     Keys: ``elev_deg``, ``elev_lo_deg``, ``elev_hi_deg``, ``blocker_dist_m`` (NaN where the terrain has no
     data), ``nodes`` (work counter), ``nodata`` (nodes with no terrain data) and per-site ``ground_height_m``,
-    ``max_range_m``.  Raises ``ValueError`` if a site is not covered by the stack.  Terrain closer than
-    ``min_range_m`` to the observer is ignored (default 0: the search starts ``NEAR_FIELD_START_M`` out).
+    ``max_range_m``.  Raises ``ValueError`` if a site is not covered by the stack.  Terrain closer than one pixel
+    of the observer's ground store, or than ``min_range_m`` if that is larger, is ignored (``near_field_start_m``).
     ``n_seed`` exact samples along each ray seed the lower bound (pruning only; the bracket is unaffected).
     """
     lat, lon, mast = _site_arrays(lat_deg, lon_deg, mast_height_m)
@@ -203,6 +215,7 @@ def _provenance(stack: TerrainStack, site: Site, n_az, max_range_km, tol_deg, ra
         "ray_tol_deg": ray_tol_deg,
         "leaf_div": leaf_div,
         "min_range_m": float(min_range_m),
+        "near_field_start_m": float(near_field_start_m(stack, site.lat_deg, site.lon_deg, min_range_m)[0]),
         "n_seed": int(n_seed),
         "stack_hash": stack.stack_hash,
         "terrain_hashes": {s.dem_id: s.meta_hash for s in stack.stores},
@@ -288,8 +301,8 @@ def compute_horizons(
     """Horizon profiles for many sites (parallel Numba; cached on disk by site, parameters and terrain hashes).
 
     ``max_range_km`` caps the search range; by default the mutual-visibility distance for the stack's
-    height range is used (``mutual_visibility_range_m``).  ``min_range_m`` excludes the terrain closer than that
-    to the observer (the lander's immediate footprint); the default 0 searches from ``NEAR_FIELD_START_M``.
+    height range is used (``mutual_visibility_range_m``).  The search starts one pixel of the observer's ground
+    store out (``near_field_start_m``); ``min_range_m`` excludes more (the lander's immediate footprint).
     """
     cache = (Path(cache_dir) if cache_dir else horizon_cache_dir()) if use_cache else None
     keys = [_cache_key(s, stack, n_az, max_range_km, tol_deg, ray_tol_deg, leaf_div, min_range_m, n_seed) for s in sites]

@@ -1,4 +1,4 @@
-"""``lunarnav`` command line: serve the API, export its OpenAPI schema, manage kernels, run the agent, compute regional layers."""
+"""``lunarnav`` command line: serve the API, export its OpenAPI schema, manage kernels, run the agent, compute regional layers, run the oracle suite."""
 
 from __future__ import annotations
 
@@ -23,6 +23,17 @@ def agent(ctx: typer.Context) -> None:
     from lunarnav.agent.cli import app as agent_app
 
     agent_app(args=list(ctx.args), prog_name="lunarnav agent")
+
+
+@app.command(
+    "oracle",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": []},
+    help="Oracle suite: check the engine against sources outside it (run, fetch, list).",
+)
+def oracle(ctx: typer.Context) -> None:
+    from lunarnav.oracle.cli import app as oracle_app
+
+    oracle_app(args=list(ctx.args), prog_name="lunarnav oracle")
 
 
 @app.command()

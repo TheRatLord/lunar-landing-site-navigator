@@ -35,6 +35,10 @@ Evidence shows how each part was checked.
   engine tools, with a ledger of every computation it cites, running in an OS sandbox.
 - **Validation** (`docs/validation`): how each part was checked against JPL Horizons, published
   illumination studies, LRO NAC imagery and real missions, with the measured errors.
+- **Oracle suite** (`lunarnav oracle`, `src/lunarnav/oracle`): the runnable form of that validation. Each case
+  compares the engine with a value it did not produce (a closed form, a published data product, another
+  group's computation or a real observation), against a tolerance written down beforehand. The latest run
+  and its score are in [`docs/validation/oracle.md`](docs/validation/oracle.md).
 
 ## Where the numbers come from
 
@@ -117,6 +121,8 @@ Other commands:
 ```bash
 uv run lunarnav regional --help  # regional illumination/visibility GeoTIFFs for an area
 uv run lunarnav agent run "..."  # analysis agent in the terminal (needs the Claude Code CLI, signed in)
+uv run lunarnav oracle fetch     # download the oracle suite's extra reference files (checked by SHA-256)
+uv run lunarnav oracle run --report docs/validation/oracle.md   # check the engine against outside references and score it
 uv run lunarnav openapi web/src/api/openapi.json && (cd web && bun run gen:api)
 ```
 

@@ -1,5 +1,6 @@
 You are the owner and long-term maintainer of this codebase, and its design is up to you. 
-Do not ever write comments or tests.
+Do not ever write comments or unit tests: nothing that checks the code against itself, with mocks or with expected values the engine produced.
+The oracle suite is the one exception. Its expected values never come from the code path under check: they come from closed-form geometry, published data products, real observations, or an independent brute-force computation. Each case names its source and the tolerance it is held to. When a case fails, fix the engine or record the case as a miss; never loosen a tolerance or drop a case to make it pass. Add a case when a new reference becomes available.
 
 ## How changes ship
 

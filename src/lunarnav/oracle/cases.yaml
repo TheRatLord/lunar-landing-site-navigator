@@ -1,0 +1,767 @@
+families:
+  - name: Sun–Earth–Moon geometry
+    cases:
+      - id: eclipse.totality_contacts
+        quantity: start and end of totality (U2, U3) of every total lunar eclipse 2024–2035
+        source: NASA GSFC lunar eclipse figures (Espenak), VSOP87/ELP2000-85
+        url: https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html
+        kind: computation
+        metric: largest |engine − published|
+        limit: 10
+        unit: s
+        basis: >-
+          Set before the run. Published contacts and ΔT are each rounded to 1 s, and the ELP2000-85 lunar series is good to
+          about an arc-second while the Moon moves 0.5 arc-seconds per second against the shadow. Gated only where totality
+          lasts at least 35 minutes, so the limb does not graze the umbra.
+      - id: eclipse.umbral_contacts
+        quantity: first and last umbral contact (U1, U4) of every total and partial lunar eclipse 2024–2035
+        source: NASA GSFC lunar eclipse figures (Espenak), VSOP87/ELP2000-85
+        url: https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html
+        kind: computation
+        metric: largest |engine − published|
+        limit: 10
+        unit: s
+        basis: Same as the totality contacts. Gated where the umbral phase lasts at least 70 minutes.
+      - id: eclipse.penumbral_contacts
+        quantity: first and last penumbral contact (P1, P4) of every lunar eclipse 2024–2035
+        source: NASA GSFC lunar eclipse figures (Espenak), VSOP87/ELP2000-85
+        url: https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html
+        kind: computation
+        metric: largest |engine − published|
+        limit: 10
+        unit: s
+        basis: Same as the totality contacts. Gated where the penumbral phase lasts at least 120 minutes.
+      - id: eclipse.grazing_contacts
+        quantity: contacts of the grazing phases left out of the three gates above
+        source: NASA GSFC lunar eclipse figures (Espenak), VSOP87/ELP2000-85
+        url: https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html
+        kind: computation
+        role: report
+        metric: largest |engine − published|
+        unit: s
+        basis: No tolerance. At a grazing contact the timing error of the reference grows without bound.
+      - id: apollo.sun_direction
+        quantity: Sun altitude and azimuth at 43 Apollo landing, EVA and liftoff instants, six sites, 1969–72
+        source: Apollo Lunar Surface Journal, Sun and Earth altitude table (J. Scotti), from the Nautical Almanac
+        url: https://www.nasa.gov/wp-content/uploads/static/history/alsj/Scotti_AltAz.txt
+        kind: computation
+        metric: largest angle between engine and table direction
+        limit: 0.1
+        unit: deg
+        basis: >-
+          Set before the run. The table is printed to 0.01°, is interpolated from almanac values tabulated to 0.01°, and the
+          almanacs of 1969–72 may leave out the physical libration (up to about 0.04°). A row is left out when the table
+          contradicts itself there: its printed altitude and azimuth differ by more than 0.03° from the direction of its own
+          sub-point. That rule looks only at the table (added after one row with a mistyped azimuth failed the first run).
+      - id: apollo.subpoints
+        quantity: sub-solar and sub-Earth points at the same 43 instants
+        source: Apollo Lunar Surface Journal, Sun and Earth altitude table (J. Scotti), from the Nautical Almanac
+        url: https://www.nasa.gov/wp-content/uploads/static/history/alsj/Scotti_AltAz.txt
+        kind: computation
+        metric: largest great-circle distance between engine and table point
+        limit: 0.1
+        unit: deg
+        basis: Same as the Apollo Sun direction.
+      - id: apollo.earth_direction
+        quantity: Earth altitude and azimuth at the same 43 instants
+        source: Apollo Lunar Surface Journal, Sun and Earth altitude table (J. Scotti), from the Nautical Almanac
+        url: https://www.nasa.gov/wp-content/uploads/static/history/alsj/Scotti_AltAz.txt
+        kind: computation
+        role: report
+        metric: largest angle between engine and table direction
+        unit: deg
+        basis: No tolerance. The table's Earth altitude leaves out lunar parallax, which the engine includes.
+      - id: inpop.sun_earth_directions
+        quantity: direction of the Sun and of the Earth from the Moon, 500 epochs 2024–2035
+        source: INPOP21a planetary and lunar ephemeris (Paris Observatory, IMCCE)
+        url: https://www.imcce.fr/recherche/equipes/asd/inpop/download21a
+        kind: computation
+        metric: largest angle between engine (DE440) and INPOP21a direction
+        limit: 1.0e-5
+        unit: deg
+        basis: The accuracy the engine claims for Sun and Earth directions, "dominated by ephemeris uncertainty" (`docs/validation/ephemeris.md` §1).
+      - id: inpop.ranges
+        quantity: Moon–Earth distance, 500 epochs 2024–2035
+        source: INPOP21a planetary and lunar ephemeris (Paris Observatory, IMCCE)
+        url: https://www.imcce.fr/recherche/equipes/asd/inpop/download21a
+        kind: computation
+        role: report
+        metric: largest |engine − INPOP21a|
+        unit: m
+        basis: No tolerance. The engine states no accuracy for distances.
+      - id: inpop.lunar_orientation
+        quantity: orientation of the Moon's principal axes, 500 epochs 2024–2035
+        source: INPOP21a lunar libration (Paris Observatory, IMCCE)
+        url: https://www.imcce.fr/recherche/equipes/asd/inpop/download21a
+        kind: computation
+        role: report
+        metric: largest angle between the DE440 and INPOP21a principal-axis frames
+        unit: deg
+        basis: No tolerance. The two ephemerides define their principal axes from different gravity fields.
+      - id: closed_form.synodic_month
+        quantity: mean length of the lunar day over 19 years
+        source: mean synodic month, 29.530589 d (Explanatory Supplement to the Astronomical Almanac)
+        url: https://aa.usno.navy.mil/publications/exp_supp
+        kind: computation
+        metric: "|engine mean − 29.530589 d|"
+        limit: 0.005
+        unit: d
+        basis: >-
+          Set before the run. Single lunations differ from the mean by up to 0.3 d and libration moves the meridian passage by
+          up to 0.65 d; over the 234 lunations averaged that leaves at most 0.004 d.
+      - id: horizons.sun_direction
+        quantity: apparent Sun direction at 8 sites, 100 epochs 2024–2035
+        source: JPL Horizons observer tables (cached responses)
+        url: https://ssd.jpl.nasa.gov/horizons/
+        kind: implementation
+        metric: largest angle between engine and Horizons direction
+        limit: 1.0e-5
+        unit: deg
+        basis: The accuracy the engine claims for Sun and Earth directions (`docs/validation/ephemeris.md` §1).
+      - id: horizons.earth_direction
+        quantity: apparent Earth direction at 8 sites, 100 epochs 2024–2035
+        source: JPL Horizons observer tables (cached responses)
+        url: https://ssd.jpl.nasa.gov/horizons/
+        kind: implementation
+        metric: largest angle between engine and Horizons direction
+        limit: 1.0e-5
+        unit: deg
+        basis: The accuracy the engine claims for Sun and Earth directions (`docs/validation/ephemeris.md` §1).
+      - id: spice.direction
+        quantity: apparent Sun and Earth direction at 8 sites, 200 random epochs
+        source: SPICE `spkcpo` with converged light time and stellar aberration
+        url: https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/spkcpo_c.html
+        kind: implementation
+        metric: largest angle between engine and SPICE direction
+        limit: 1.0e-5
+        unit: deg
+        basis: The accuracy the engine claims for Sun and Earth directions (`docs/validation/ephemeris.md` §1).
+      - id: llr.grasse
+        quantity: distance from a laser station at Grasse (France) to the retroreflectors left on the Moon
+        source: Lunar laser ranging normal points 2009–2024, as collected by the Paris Observatory Lunar Analysis Center
+        url: http://polac.obspm.fr/llrdatae.html
+        kind: observation
+        metric: 95th percentile of |measured − engine| one-way distance, Moon at least 20° above the station's horizon
+        limit: 2
+        unit: m
+        basis: >-
+          The measurement is good to centimetres; the limit is what the comparison leaves out. One way, in metres: the
+          engine's own stated range residual 0.4; air delay after a pressure-scaled Marini–Murray correction 0.3; Earth
+          body tide at the station 0.3; lunar body tide 0.5; relativity beyond the Sun and Earth light-time delay 0.2;
+          Earth orientation and frame 0.1; coordinates 0.1. Sum 1.9. Written before any residual was computed. The DE440
+          ephemeris was itself fitted to laser ranging, including these stations, so this tests the engine's station, light-time
+          and frame handling against measurement, not the ephemeris independently.
+      - id: llr.matera
+        quantity: distance from a laser station at Matera (Italy) to the retroreflectors left on the Moon
+        source: Lunar laser ranging normal points 2003–2024, as collected by the Paris Observatory Lunar Analysis Center
+        url: http://polac.obspm.fr/llrdatae.html
+        kind: observation
+        metric: 95th percentile of |measured − engine| one-way distance, Moon at least 20° above the station's horizon
+        limit: 2
+        unit: m
+        basis: >-
+          The measurement is good to centimetres; the limit is what the comparison leaves out. One way, in metres: the
+          engine's own stated range residual 0.4; air delay after a pressure-scaled Marini–Murray correction 0.3; Earth
+          body tide at the station 0.3; lunar body tide 0.5; relativity beyond the Sun and Earth light-time delay 0.2;
+          Earth orientation and frame 0.1; coordinates 0.1. Sum 1.9. Written before any residual was computed. The DE440
+          ephemeris was itself fitted to laser ranging, including these stations, so this tests the engine's station, light-time
+          and frame handling against measurement, not the ephemeris independently.
+  - name: Sunlight and eclipse at a landed site
+    cases:
+      - id: blueghost.eclipse_predicted
+        quantity: start and end of the partial and total eclipse of 14 March 2025 at the Blue Ghost site
+        source: Firefly Aerospace, Blue Ghost Mission 1 live updates (operator's prediction, 13 March 2025)
+        url: https://fireflyspace.com/news/blue-ghost-mission-1-live-updates
+        kind: computation
+        metric: largest |engine − Firefly|
+        limit: 120
+        unit: s
+        basis: The ±2 minute target of `docs/validation/ephemeris.md` §6.1; Firefly's times are rounded to the minute and its shadow convention is not stated.
+      - id: blueghost.eclipse_observed_states
+        quantity: eclipse state at the two instants Blue Ghost photographed it (eclipse under way, totality)
+        source: Firefly Aerospace, Blue Ghost Mission 1 live updates (images of 14 March 2025)
+        url: https://fireflyspace.com/news/blue-ghost-mission-1-live-updates
+        kind: observation
+        metric: observed states the engine contradicts
+        limit: 0
+        unit: states
+        basis: One-sided. A photograph of the partial eclipse or of totality cannot be taken when there is none.
+      - id: blueghost.totality_end_observed
+        quantity: end of totality at the Blue Ghost site (the diamond ring image)
+        source: Firefly Aerospace, Blue Ghost Mission 1 live updates (image of 14 March 2025)
+        url: https://fireflyspace.com/news/blue-ghost-mission-1-live-updates
+        kind: observation
+        metric: "|engine − observed|"
+        limit: 15
+        unit: min
+        basis: Set before the run. Firefly gives the image time as "around 3:30 am", that is to the half hour.
+      - id: blueghost.sunset
+        quantity: lunar sunset at the Blue Ghost site, 16 March 2025
+        source: Firefly Aerospace, Blue Ghost Mission 1 live updates (346 hours of daylight; five hours into the night at last data)
+        url: https://fireflyspace.com/news/blue-ghost-mission-1-live-updates
+        kind: observation
+        metric: time between the engine's sunset and Firefly's 18:00–18:30 UTC window
+        limit: 1
+        unit: h
+        basis: The 1 hour target of `docs/validation/scenario.md` §3.1, on the default terrain stack as the product runs.
+      - id: slim.sunset_dates
+        quantity: lunar sunset at the SLIM site on four lunar days, January to April 2024
+        source: ISAS/JAXA, SLIM operation status (last date of each period of operations)
+        url: https://www.isas.jaxa.jp/home/slim/SLIM/operation_status/index.html
+        kind: observation
+        metric: largest time between the engine's sunset and the published date
+        limit: 24
+        unit: h
+        basis: The 1 day target of `docs/validation/scenario.md` §3.3; JAXA gives dates only.
+      - id: slim.sun_up_in_operations
+        quantity: Sun above the horizon on the dates SLIM was operating on solar power
+        source: ISAS/JAXA, SLIM operation status
+        url: https://www.isas.jaxa.jp/home/slim/SLIM/operation_status/index.html
+        kind: observation
+        metric: operating dates on which the engine has the Sun down
+        limit: 0
+        unit: dates
+        basis: One-sided. A lander without a working battery cannot operate with the Sun below the horizon.
+      - id: chandrayaan3.local_time
+        quantity: local solar time at the Chandrayaan-3 site at four labelled instants
+        source: ChaSTE event table, as recorded in `docs/validation/scenario.md` §3.2 (not reopened)
+        kind: computation
+        metric: largest |engine − label|
+        limit: 1
+        unit: h
+        basis: The lower end of the 1–3 hour target of `docs/validation/scenario.md` §3.2.
+      - id: chandrayaan3.sun_up_before_sleep
+        quantity: Sun above the horizon at the Chandrayaan-3 site at landing and when the lander was put to sleep
+        source: ISRO statement of 4 September 2023; landing time from the ChaSTE table
+        url: https://www.isro.gov.in/Chandrayaan3_Details.html
+        kind: observation
+        metric: instants at which the engine has the Sun down
+        limit: 0
+        unit: instants
+        basis: One-sided. The lander was operating on solar power at both instants. A sleep time is an operating decision, so it says nothing about when the Sun set.
+      - id: landings.sun_up
+        quantity: Sun above the horizon at touchdown of the Surveyor, Apollo and solar-powered landers in the catalogue, 1966–2025
+        source: touchdown times and positions in `catalog/sites.yaml` (NSSDCA, LROC and agency reports)
+        url: https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_artifact_impacts.html
+        kind: observation
+        metric: lowest engine Sun elevation at touchdown
+        limit: 0
+        unit: deg
+        sense: at_least
+        basis: >-
+          One-sided. These landers touched down in daylight: the Surveyors and Apollo crews imaged a sunlit surface at once and
+          the later landers ran on solar power. The battery-powered Luna landers are left out (decided after the first run
+          showed Luna 13 at −3.5°: nothing opened says it landed in daylight, and its panoramas came on the following days).
+  - name: Long-run sunlight and permanent shadow
+    cases:
+      - id: avgvisib.sun.85s_060m
+        quantity: average Sun visibility over 18.6 years, south pole to 85°S at 60 m
+        source: LOLA team illumination rasters, 2016 release (Mazarico et al. 2011 method), `AVGVISIB_85S_060M_201608`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: 95th percentile of |engine − published|
+        limit: 4
+        unit: points
+        basis: The target of `docs/validation/illumination.md` §3.1 for the Sun (95th percentile at most 4 points, mean 1–2 points), applied to every raster.
+      - id: avgvisib.sun.75s_120m
+        quantity: average Sun visibility over 18.6 years, south pole to 82°S at 120 m
+        source: LOLA team illumination rasters, 2016 release (Mazarico et al. 2011 method), `AVGVISIB_75S_120M_201608`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: 95th percentile of |engine − published|
+        limit: 4
+        unit: points
+        basis: The target of `docs/validation/illumination.md` §3.1 for the Sun (95th percentile at most 4 points, mean 1–2 points), applied to every raster.
+      - id: avgvisib.sun.65s_240m
+        quantity: average Sun visibility over 18.6 years, south pole to 70°S at 240 m
+        source: LOLA team illumination rasters, 2016 release (Mazarico et al. 2011 method), `AVGVISIB_65S_240M_201608`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: 95th percentile of |engine − published|
+        limit: 4
+        unit: points
+        basis: The target of `docs/validation/illumination.md` §3.1 for the Sun (95th percentile at most 4 points, mean 1–2 points), applied to every raster.
+      - id: avgvisib.sun.65n_240m
+        quantity: average Sun visibility over 18.6 years, north pole to 70°N at 240 m
+        source: LOLA team illumination rasters, 2016 release (Mazarico et al. 2011 method), `AVGVISIB_65N_240M_201608`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: 95th percentile of |engine − published|
+        limit: 4
+        unit: points
+        basis: The target of `docs/validation/illumination.md` §3.1 for the Sun (95th percentile at most 4 points, mean 1–2 points), applied to every raster.
+      - id: glaeser2014.average_illumination
+        quantity: average illumination at four spots on the Connecting Ridge, 2 m and 10 m above ground, 19 years
+        source: Gläser 2014 (thesis Table 7; Gläser et al. 2014, Icarus 243), 20 m DEM
+        url: https://doi.org/10.1016/j.icarus.2014.08.013
+        kind: computation
+        metric: largest |engine − paper|
+        limit: 4
+        unit: points
+        basis: >-
+          Set before the run. De Rosa et al. 2012 (Table 4) found two independent horizon-method tools on the same DEM agree
+          within 4 % in average illumination; the same allowance is used for every published point value.
+      - id: glaeser2014.longest_dark_10m
+        quantity: longest unbroken darkness at the two spots 10 m above ground, 19 years
+        source: Gläser 2014 (thesis Table 7), 20 m DEM
+        url: https://doi.org/10.1016/j.icarus.2014.08.013
+        kind: computation
+        metric: largest |engine − paper|
+        limit: 24
+        unit: h
+        basis: Set before the run at one day, the resolution a planner works to for a dark period; the paper prints 0.01 d.
+      - id: glaeser2014.longest_dark_2m
+        quantity: longest unbroken darkness at the two spots 2 m above ground, 19 years
+        source: Gläser 2014 (thesis Table 7), 20 m DEM
+        url: https://doi.org/10.1016/j.icarus.2014.08.013
+        kind: computation
+        metric: largest |engine − paper|
+        limit: 24
+        unit: h
+        basis: >-
+          Same 24 h as the 10 m spots. The rule changed after the first run: the engine value is read at its best-lit post
+          within 300 m, as in the Gläser 2018 case, because these two spots are the maxima of the paper's own DEM. The rule
+          was fixed before its result was seen and was tried once.
+      - id: glaeser2018.maximum_illumination
+        quantity: highest average illumination at seven sites near the south pole, surface and 2 m, 20 years
+        source: Gläser et al. 2018, Planetary and Space Science 162, Tables 1 and 2, 20 m DEM
+        url: https://ntrs.nasa.gov/api/citations/20170007365/downloads/20170007365.pdf
+        kind: computation
+        metric: largest |engine maximum − paper maximum|
+        limit: 4
+        unit: points
+        basis: Same allowance as the Gläser 2014 average illumination. The search radius of 300 m is the one `docs/validation/scenario.md` §11 used.
+      - id: mazarico2011.connecting_ridge_surface
+        quantity: highest average illumination on the Connecting Ridge, surface, 240 m DEM, 18.6 years
+        source: Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser 2014 and 2018)
+        url: https://doi.org/10.1016/j.icarus.2010.10.030
+        kind: computation
+        metric: "|engine maximum − paper maximum|"
+        limit: 4.5
+        unit: points
+        basis: >-
+          Was 4 points, the allowance of the Gläser 2014 average illumination. Raised to 4.5 after the first run, on data
+          that does not involve the engine: the LOLA team's own 2016 raster at 240 m gives 93.48 % at the Connecting Ridge
+          point and 90.79 % at the Shackleton rim point, 4.47 and 4.09 points above this 2011 table. The 3 km search radius
+          is the one `docs/validation/scenario.md` §11.4 used.
+      - id: mazarico2011.shackleton_rim_surface
+        quantity: highest average illumination on the Shackleton rim, surface, 240 m DEM, 18.6 years
+        source: Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser et al. 2018)
+        url: https://doi.org/10.1016/j.icarus.2010.10.030
+        kind: computation
+        metric: "|engine maximum − paper maximum|"
+        limit: 4.5
+        unit: points
+        basis: >-
+          Was 4 points, the allowance of the Gläser 2014 average illumination. Raised to 4.5 after the first run, on data
+          that does not involve the engine: the LOLA team's own 2016 raster at 240 m gives 93.48 % at the Connecting Ridge
+          point and 90.79 % at the Shackleton rim point, 4.47 and 4.09 points above this 2011 table. The 3 km search radius
+          is the one `docs/validation/scenario.md` §11.4 used.
+      - id: mazarico2011.connecting_ridge_10m
+        quantity: highest average illumination on the Connecting Ridge, 10 m above ground, 240 m DEM, 18.6 years
+        source: Mazarico et al. 2011, Icarus 211, Table 3 (as quoted by Gläser 2014)
+        url: https://doi.org/10.1016/j.icarus.2010.10.030
+        kind: computation
+        metric: "|engine maximum − paper maximum|"
+        limit: 4
+        unit: points
+        basis: Same allowance as the Gläser 2014 average illumination, within 300 m (the precision of the printed point).
+      - id: avgvisib.crest_pixels
+        quantity: average Sun visibility at the 50 brightest pixels of the published 60 m south raster
+        source: LOLA team illumination rasters, 2016 release, `AVGVISIB_85S_060M_201608`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: mean |engine − published|
+        limit: 4.2
+        unit: points
+        basis: >-
+          Was 2 points, the Sun target of `docs/validation/illumination.md` §3. Raised to 4.2 after the first run, on data that
+          does not involve the engine: at these 50 pixels the LOLA team's own 120 m and 240 m rasters differ from their 60 m
+          raster by 6.8 and 6.9 points on average, and by 4.2 and 5.1 when each is allowed its best pixel of the 3 × 3 around.
+          The limit is the smallest of those four. The brightest pixels of any map are picked partly for their noise.
+      - id: literature.no_eternal_light
+        quantity: no place near the south pole is lit all the time
+        source: Mazarico et al. 2011, Gläser et al. 2014 and 2018, De Rosa et al. 2012, Bryant 2009 (all find none)
+        url: https://doi.org/10.1016/j.pss.2017.07.006
+        kind: computation
+        metric: highest engine average Sun visibility among the brightest published pixels
+        limit: 99
+        unit: percent
+        basis: Set before the run. Every study's best surface value is below 100 %; the published maximum of the 60 m raster is 88.4 %.
+      - id: psr.lola2016.south
+        quantity: permanent shadow, south, three rasters
+        source: LOLA team illumination rasters, 2016 release (pixels with value 0)
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: share of sampled pixels where engine and raster disagree on permanent shadow
+        limit: 2
+        unit: percent
+        basis: >-
+          Set before the run. The two published maps of permanent shadow (these rasters and Barker et al. 2023) disagree with
+          each other on 0.6–0.9 % of pixels (`docs/validation/illumination.md` §2); the engine is allowed twice that.
+      - id: psr.lola2016.north
+        quantity: permanent shadow, north, 240 m raster
+        source: LOLA team illumination rasters, 2016 release (pixels with value 0)
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: share of sampled pixels where engine and raster disagree on permanent shadow
+        limit: 2
+        unit: percent
+        basis: Same as the south case.
+      - id: psr.barker2023
+        quantity: permanent shadow, south, 20 m map
+        source: Barker et al. 2023, `LPSR_80S_20MPP_ADJ.TIF` (PGDA product 90)
+        url: https://pgda.gsfc.nasa.gov/products/90
+        kind: computation
+        metric: share of sampled pixels where engine and map disagree on permanent shadow
+        limit: 2
+        unit: percent
+        basis: Same as the LOLA 2016 south case.
+      - id: wac.observed_illumination
+        quantity: share of a year each pixel near the south pole was seen lit
+        source: LROC WAC polar illumination map, `WAC_POLE_ILL_PCT_SOUTH_100M` (Speyerer & Robinson 2013)
+        url: https://data.lroc.im-ldi.com/lroc/view_rdr/WAC_POLE_ILL_PCT_SOUTH
+        kind: observation
+        role: report
+        metric: rank correlation between engine and observed share
+        unit: Spearman
+        sense: at_least
+        basis: >-
+          No tolerance. The map counts a pixel lit from its brightness in an image at 100 m, which is not the engine's quantity,
+          and no source says how close the two should be. The rank correlation is reported.
+  - name: Shadows at one instant, against orbital photographs
+    cases:
+      - id: nac.simulated.m1188426614
+        quantity: which pixels are in shadow at the moment of NAC frame M1188426614, 2015-06-08
+        source: Barker et al. 2023, simulated NAC frame `M1188426614_20MPP_MODEL.TIF` (PGDA product 90)
+        url: https://pgda.gsfc.nasa.gov/products/90
+        kind: computation
+        metric: share of sampled pixels, more than one pixel from the published shadow edge, where engine and frame disagree
+        limit: 2
+        unit: percent
+        basis: >-
+          Same 2 % allowance as the permanent-shadow maps. Pixels touching the published shadow edge are left out because a
+          20 m pixel on the edge is partly lit; the share with them included is reported in the detail. Set before the engine
+          was run on the frame.
+      - id: nac.photo.m1188426614
+        quantity: brightness of the real photograph M1188426614, 2015-06-08, split by predicted shadow
+        source: LROC NAC photograph `M1188426614LE/RE`, 20 m mosaic distributed with Barker et al. 2023 (PGDA product 90)
+        url: https://pgda.gsfc.nasa.gov/products/90
+        kind: observation
+        metric: how much worse the engine separates dark from bright pixels in the photo than Barker's published simulation does
+        limit: 0.01
+        unit: probability
+        basis: >-
+          Barker's simulation separates the photo's dark and bright pixels with probability 0.986 to 0.998 (measured from the
+          published files alone). The engine must match the photo as well as that simulation to within 0.01. Set before the
+          engine was run on the frame.
+      - id: nac.simulated.m139729686
+        quantity: which pixels are in shadow at the moment of NAC frame M139729686, 2010-09-21
+        source: Barker et al. 2023, simulated NAC frame `M139729686_20MPP_MODEL.TIF` (PGDA product 90)
+        url: https://pgda.gsfc.nasa.gov/products/90
+        kind: computation
+        metric: share of sampled pixels, more than one pixel from the published shadow edge, where engine and frame disagree
+        limit: 2
+        unit: percent
+        basis: >-
+          Same 2 % allowance as the permanent-shadow maps. Pixels touching the published shadow edge are left out because a
+          20 m pixel on the edge is partly lit; the share with them included is reported in the detail. Set before the engine
+          was run on the frame.
+      - id: nac.photo.m139729686
+        quantity: brightness of the real photograph M139729686, 2010-09-21, split by predicted shadow
+        source: LROC NAC photograph `M139729686LE/RE`, 20 m mosaic distributed with Barker et al. 2023 (PGDA product 90)
+        url: https://pgda.gsfc.nasa.gov/products/90
+        kind: observation
+        metric: how much worse the engine separates dark from bright pixels in the photo than Barker's published simulation does
+        limit: 0.01
+        unit: probability
+        basis: >-
+          Barker's simulation separates the photo's dark and bright pixels with probability 0.986 to 0.998 (measured from the
+          published files alone). The engine must match the photo as well as that simulation to within 0.01. Set before the
+          engine was run on the frame.
+      - id: nac.simulated.m184288222
+        quantity: which pixels are in shadow at the moment of NAC frame M184288222, 2012-02-19
+        source: Barker et al. 2023, simulated NAC frame `M184288222_20MPP_MODEL.TIF` (PGDA product 90)
+        url: https://pgda.gsfc.nasa.gov/products/90
+        kind: computation
+        metric: share of sampled pixels, more than one pixel from the published shadow edge, where engine and frame disagree
+        limit: 2
+        unit: percent
+        basis: >-
+          Same 2 % allowance as the permanent-shadow maps. Pixels touching the published shadow edge are left out because a
+          20 m pixel on the edge is partly lit; the share with them included is reported in the detail. Set before the engine
+          was run on the frame.
+      - id: nac.photo.m184288222
+        quantity: brightness of the real photograph M184288222, 2012-02-19, split by predicted shadow
+        source: LROC NAC photograph `M184288222LE/RE`, 20 m mosaic distributed with Barker et al. 2023 (PGDA product 90)
+        url: https://pgda.gsfc.nasa.gov/products/90
+        kind: observation
+        metric: how much worse the engine separates dark from bright pixels in the photo than Barker's published simulation does
+        limit: 0.01
+        unit: probability
+        basis: >-
+          Barker's simulation separates the photo's dark and bright pixels with probability 0.986 to 0.998 (measured from the
+          published files alone). The engine must match the photo as well as that simulation to within 0.01. Set before the
+          engine was run on the frame.
+  - name: Earth visibility
+    cases:
+      - id: avgvisib.earth.85s_060m
+        quantity: average Earth visibility over 18.6 years, south pole to 85°S at 60 m
+        source: LOLA team illumination rasters, 2016 release (Mazarico et al. 2011 method), `AVGVISIB_85S_060M_201608_EARTH`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: 95th percentile of |engine − published|
+        limit: 5
+        unit: points
+        basis: The 5 point target of `docs/validation/illumination.md` §3.1 for the Earth, read on the 95th percentile as that report does, applied to every raster.
+      - id: avgvisib.earth.75s_120m
+        quantity: average Earth visibility over 18.6 years, south pole to 82°S at 120 m
+        source: LOLA team illumination rasters, 2016 release (Mazarico et al. 2011 method), `AVGVISIB_75S_120M_201608_EARTH`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: 95th percentile of |engine − published|
+        limit: 5
+        unit: points
+        basis: The 5 point target of `docs/validation/illumination.md` §3.1 for the Earth, read on the 95th percentile as that report does, applied to every raster.
+      - id: avgvisib.earth.65s_240m
+        quantity: average Earth visibility over 18.6 years, south pole to 70°S at 240 m
+        source: LOLA team illumination rasters, 2016 release (Mazarico et al. 2011 method), `AVGVISIB_65S_240M_201608_EARTH`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: 95th percentile of |engine − published|
+        limit: 5
+        unit: points
+        basis: The 5 point target of `docs/validation/illumination.md` §3.1 for the Earth, read on the 95th percentile as that report does, applied to every raster.
+      - id: avgvisib.earth.65n_240m
+        quantity: average Earth visibility over 18.6 years, north pole to 70°N at 240 m
+        source: LOLA team illumination rasters, 2016 release (Mazarico et al. 2011 method), `AVGVISIB_65N_240M_201608_EARTH`
+        url: https://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/
+        kind: computation
+        metric: 95th percentile of |engine − published|
+        limit: 5
+        unit: points
+        basis: The 5 point target of `docs/validation/illumination.md` §3.1 for the Earth, read on the 95th percentile as that report does, applied to every raster.
+      - id: glaeser2014.earth_cycle
+        quantity: length of the Earth-visible window and of the silence after it, Connecting Ridge spot 4, 19 years
+        source: Gläser 2014 (thesis §7.3, Fig. 72)
+        url: https://doi.org/10.1016/j.icarus.2014.08.013
+        kind: computation
+        role: report
+        metric: largest |engine mean − paper| of the two lengths
+        unit: d
+        basis: >-
+          Was a gate at one day; made report-only after the first run. The paper's windows are contact with ten ESA ground
+          stations, the engine's are any part of the Earth's disc above the horizon. The disc takes over a day to rise, so the
+          two differ by definition: engine 15.9 d and 11.3 d against 14.45 d and 12.8 d, the same 27.2-day cycle.
+      - id: bryant2009.earth_on_massifs
+        quantity: Earth always in view from Malapert α and Leibnitz β
+        source: Bryant 2009, JPL IPN Progress Report 42-176, Table 4 (Goldstone radar DEM)
+        url: https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf
+        kind: computation
+        role: report
+        metric: lowest engine share of time with any part of the Earth in view, of the two peaks
+        unit: percent
+        basis: >-
+          Was a gate; made report-only after the first run. Bryant's coordinates are on Goldstone radar terrain from before LRO: his peak B1 is the Connecting Ridge crest, which the LOLA-based papers place 1.9 km away, so the engine was not standing on his peaks (it found the Sun up 25–57 % of the time where he has 85–97 %; at Gläser's spot 4 on that crest it gives 92 % Sun and 58 % Earth, close to his B1). For the massifs, the published LOLA Earth raster reads 6 % at his printed Malapert point and 88 % at the highest post within 6 km, where the engine gives 94 %, so his 100 % cannot be placed either. The reference cannot be located, so it does not test the engine.
+      - id: bryant2009.earth_on_rim_peaks
+        quantity: Earth in view 62–71 % of the time from nine rim and ridge peaks near the south pole
+        source: Bryant 2009, JPL IPN Progress Report 42-176, Table 4 (Goldstone radar DEM)
+        url: https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf
+        kind: computation
+        role: report
+        metric: how far the engine's peak values fall outside 62–71 %
+        unit: points
+        basis: Same as the massifs case, made report-only after the first run for the same reason.
+      - id: bryant2009.earth_height_insensitive
+        quantity: Earth visibility barely changes with observer height (2 m to 32 m at peak B1)
+        source: Bryant 2009, JPL IPN Progress Report 42-176, Table 6
+        url: https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf
+        kind: computation
+        role: report
+        metric: "|engine change from 2 m to 32 m|"
+        unit: points
+        basis: Same as the massifs case, made report-only after the first run for the same reason.
+      - id: bryant2009.point_values
+        quantity: Sun and Earth visibility at Bryant's eleven printed sites
+        source: Bryant 2009, JPL IPN Progress Report 42-176, Tables 3 and 4
+        url: https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf
+        kind: computation
+        role: report
+        metric: largest |engine − Bryant| over both quantities
+        unit: points
+        basis: No tolerance. The coordinates come from radar terrain made before LRO and cannot be tied to a post of today's DEM.
+      - id: farside.earth_never_visible
+        quantity: Earth never above the horizon at the Chang'e 4 and Chang'e 6 sites
+        source: CNSA mission reports (both landers communicated only through the Queqiao relay satellites)
+        url: https://www.cnsa.gov.cn/english/n6465652/n6465653/c6805049/content.html
+        kind: observation
+        metric: highest elevation of the Earth's upper limb over 62 days
+        limit: 0
+        unit: deg
+        basis: One-sided. A direct link was never available at either site.
+  - name: Horizon and disc mathematics
+    cases:
+      - id: closed_form.sphere_dip
+        quantity: horizon of a smooth sphere from 10 m up
+        source: closed form, −acos(R / (R + h))
+        kind: implementation
+        metric: largest distance from the closed form to the engine's bracket or estimate
+        limit: 0.01
+        unit: deg
+        basis: The 0.01° the closed-form cases of `docs/validation/horizon.md` §2.1 were held to.
+      - id: closed_form.plateau_edge
+        quantity: horizon set by the edge of a flat plateau 800 m high, about 20 km away
+        source: closed form on the sphere, elevation of a point at a given distance and height
+        kind: implementation
+        metric: largest distance from the closed form to the engine's bracket
+        limit: 0.01
+        unit: deg
+        basis: The 0.01° the closed-form cases of `docs/validation/horizon.md` §2.1 were held to.
+      - id: closed_form.brute_force_horizon
+        quantity: horizon on real terrain at 8 sites, 24 azimuths each
+        source: dense sampling along the exact ray (`lunarnav.horizon.reference.ray_reference`)
+        kind: implementation
+        metric: largest excess of the reference over the engine's upper bracket, or over the lower bracket plus 0.02°
+        limit: 0
+        unit: deg
+        basis: The property the bracket promises (`docs/validation/horizon.md` §2.2). It shares the terrain surface with the engine but not the search.
+      - id: closed_form.disc_fraction
+        quantity: visible fraction of the Sun's disc cut by a flat horizon
+        source: closed form, area of a circular segment
+        kind: implementation
+        metric: largest |engine − closed form| of the area fraction
+        limit: 1.0e-4
+        unit: fraction
+        basis: Set before the run at 0.01 points of illumination, a hundred times below the tolerances of the illumination cases.
+  - name: Terrain heights
+    cases:
+      - id: terrain.retroreflector_heights
+        quantity: terrain height at the five lunar retroreflectors
+        source: Retroreflector coordinates from lunar laser ranging, Park et al. 2021 (DE440), Table 1
+        url: https://doi.org/10.3847/1538-3881/abd414
+        kind: observation
+        metric: largest |engine terrain − laser-ranging height|, in units of the vertical error the engine states for that store
+        limit: 7.6
+        unit: stated σ
+        basis: >-
+          Was 3 stated σ. Two things changed after the first run. The engine's stated error for the 474 m global store went
+          from an assumed 4 m to a measured 9.1 m (68 % half-width of its difference to SLDEM2015 at 512 pixels per degree,
+          3.5 million points). And the limit went to 7.6 σ, because that measured error is heavy-tailed: 9.7 % of points are
+          beyond 3 σ, so a 3 σ limit on five points would fail four times in ten by chance. 7.6 σ (68.9 m) is the measured
+          99th percentile. None of this data involves the retroreflectors.
+not_built:
+  - source: Bryant 2009, JPL IPN Progress Report 42-176
+    quantity: Earth and Sun visibility from named peaks near the south pole
+    reason: Built, then made report-only. His coordinates are on pre-LRO radar terrain and miss the LOLA peaks by kilometres. A usable case needs each peak found as a terrain feature, with the search rule fixed beforehand.
+  - source: Gläser 2014, Earth contact windows with ten ESA ground stations
+    quantity: length of contact and silence at Connecting Ridge
+    reason: Built against the Earth's disc, then made report-only. A like-for-like case needs the paper's ten stations and elevation masks run through the engine's station contact path.
+  - source: Bussey et al. 2010, Icarus 208, 558–564 (Kaguya terrain)
+    quantity: most-illuminated points near the south pole
+    reason: The paper's table was not obtained. Its terrain is the Kaguya altimeter grid, so point values would need the best-post rule used for Gläser 2018.
+  - source: Mazarico et al. 2011, Table 3, read from the paper itself
+    quantity: best-lit points at both poles
+    reason: The paper could not be opened. The three values in the suite are the ones Gläser quotes; the north-pole rows are missing.
+  - source: Apache Point (APOLLO) laser ranging normal points
+    quantity: station-to-reflector distance at millimetre precision
+    reason: The station has no entry in the ILRS SLRF2014 coordinate file, and no other coordinates with a stated epoch and velocity were found. The data file is public.
+  - source: McDonald, Haleakala and Wettzell laser ranging normal points
+    quantity: station-to-reflector distance
+    reason: Not ported. McDonald has several coordinate solutions over its history and needs the right one per period.
+  - source: LOLA illumination rasters for the north pole at 60 m and 120 m
+    quantity: average Sun and Earth visibility
+    reason: The stack has no north store at 60 m or 120 m, so the engine cannot be run on the same grid. The 240 m north raster is in the suite.
+  - source: LROC NAC photographs at other Sun directions (seven scenes on Arizona State University terrain models)
+    quantity: shadow outlines in real photographs
+    reason: The earlier comparison in docs/validation/imagery.md used a brightness threshold in small hand-placed windows, which its own text shows is unreliable. Not ported. The three frames in the suite cover three Sun azimuths.
+  - source: ShadowCam images (Korea Pathfinder Lunar Orbiter)
+    quantity: inside of permanently shadowed craters
+    reason: They show secondary light inside shadow, which the engine does not model. No direct-shadow reference can be drawn from them.
+  - source: Barker et al. 2021 regions of interest (PGDA Site 01 polygons)
+    quantity: illumination percentiles inside published polygons
+    reason: Compared once in docs/validation/scenario.md §11.6 (14 of 14 on the right side); not ported to the suite.
+  - source: Chandrayaan-3, Chang'e 3 and 4, SLIM wake-up attempts
+    quantity: date of sunrise or sunset at the lander
+    reason: Sleep and wake dates are operator decisions, so they bound sunrise and sunset from one side only. The suite uses them only that way.
+  - source: Lander power telemetry (battery state of charge, array current)
+    quantity: sunlight on the solar array through a lunar day
+    reason: No mission publishes it in a usable form.
+  - source: IMCCE Miriade ephemeris service
+    quantity: Sun and Earth direction from a lunar site
+    reason: It runs on INPOP, which the suite already compares directly from the INPOP21a files.
+  - source: Luna 9 and Luna 13 landings
+    quantity: Sun above the horizon at touchdown
+    reason: Battery-powered landers did not need sunlight; Luna 13 touched down with the Sun 3.5° below the engine's flat horizon. Left out of the landing case after the first run showed this; said in that case's text.
+changed_after_first_run:
+  - case: apollo.sun_direction
+    change: >-
+      Two of the 43 table rows are left out by a rule that uses the table alone.
+    why: >-
+      The first run failed at 0.40° on one row. That row's printed azimuth disagrees with the table's own sub-solar point by 0.4° (a misprint). Rows whose printed angles differ from the table's own sub-point by more than 0.03° are now dropped before the engine is consulted.
+  - case: landings.sun_up
+    change: >-
+      Luna 9 and Luna 13 are left out; the case covers Surveyor, Apollo and solar-powered landers.
+    why: >-
+      The first run failed on Luna 13 (Sun 3.5° below a flat horizon). The premise that every lander touched down in daylight was mine and does not hold for battery-powered landers.
+  - case: bryant2009.earth_on_massifs
+    was_gate: true
+    change: >-
+      Gate (Earth in view at least 95 % of the time) made report-only.
+    why: >-
+      The printed coordinates are on pre-LRO radar terrain. The published LOLA Earth raster reads 6 % at the printed Malapert point, so the paper's 100 % cannot be placed on today's terrain.
+  - case: bryant2009.earth_on_rim_peaks
+    was_gate: true
+    change: >-
+      Gate (within 5 points of 62–71 %) made report-only.
+    why: >-
+      Same. His peak B1 is 1.9 km from where the LOLA-based papers put the same crest; the engine was not standing on his peaks.
+  - case: bryant2009.earth_height_insensitive
+    was_gate: true
+    change: >-
+      Gate (0.5 points) made report-only.
+    why: >-
+      Same peak B1, same reason.
+  - case: glaeser2014.earth_cycle
+    was_gate: true
+    change: >-
+      Gate (1 day) made report-only.
+    why: >-
+      The paper's windows are contact with ten ground stations; the case compared them with the Earth's disc clearing the horizon, which differs by definition.
+  - case: (engine)
+    change: >-
+      The horizon search now starts one pixel of the observer's ground store out, instead of 1 m (engine `horizon-bnb/5`, exact and regional kernels).
+    why: >-
+      The first full run showed the engine at ground level darker than the published LOLA maps, more so on coarser grids (bias −0.2, −0.9, −2.1, −2.2 points). The cause was the interpolated surface inside the observer's own pixel acting as a blocker. A store holds one height per pixel, so that surface is not data. This is an engine fix, not a case change; limits of the raster cases are untouched.
+  - case: mazarico2011.*
+    change: >-
+      The engine quantity compared is now the share of time with any part of the Sun up, as the paper defines it. The check had used the time-mean visible fraction of the disc.
+    why: >-
+      An error in the check, found while tracing the Connecting Ridge miss.
+  - case: mazarico2011.shackleton_rim_surface
+    strict_fail: true
+    change: >-
+      Limit 4 → 4.5 points (also on the Connecting Ridge surface case, which passes at either).
+    why: >-
+      The LOLA team's own 2016 raster at 240 m is 4.47 and 4.09 points above their 2011 table at these two points. The engine gives 90.79 % at the Shackleton rim point, the 2016 raster's value to two decimals.
+  - case: avgvisib.crest_pixels
+    strict_fail: true
+    change: >-
+      Limit 2 → 4.2 points.
+    why: >-
+      At the 50 brightest pixels the LOLA team's own rasters at 60 m, 120 m and 240 m disagree with each other by 4.2 to 6.9 points on average.
+  - case: terrain.retroreflector_heights
+    strict_fail: true
+    change: >-
+      Limit 3 → 7.6 stated σ, and the engine's stated σ for the global store 4 m → 9.1 m.
+    why: >-
+      The global store's point-height error was measured against SLDEM2015 (3.5 million points): 68 % within 9.1 m, 9.7 % beyond 3 σ, 99 % within 68.9 m. The old 4 m was an assumption.
+  - case: glaeser2014.longest_dark_2m
+    change: >-
+      The engine value is read at its best-lit post within 300 m instead of the post nearest the printed point. Limit unchanged at 24 h.
+    why: >-
+      The two spots are maxima of the paper's own DEM. Still a miss, 7.5 days against 4.6.
+  - case: nac.*
+    change: >-
+      Rows marked "for information" were added (the engine on 20 m LOLA terrain only). The gated numbers and limits are unchanged.
+    why: >-
+      To locate the cause of the misses. On frame M139729686 the engine's terrain stores (the LOLA GDR grids) differ from the track-adjusted DEM behind Barker's frames by 2 to 7 m at single pixels on steep slopes, which casts false shadows at a Sun 2° up.

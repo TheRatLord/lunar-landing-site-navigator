@@ -21,7 +21,7 @@ from numba import njit, prange
 
 from lunarnav.constants import R_MOON_M
 from lunarnav.horizon._march import elev
-from lunarnav.horizon.engine import observer_frames
+from lunarnav.horizon.engine import near_field_start_m, observer_frames
 from lunarnav.terrain._kernels import composite_height_rc
 from lunarnav.terrain.stack import TerrainStack, destination
 
@@ -57,10 +57,12 @@ def ray_reference(
     step_floor_m: float = 1.25,
     step_rel: float = 1e-3,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """R1: exact-ray dense sampling.  Step = ``max(step_floor_m, d * step_rel)``.  Returns (elev_deg, dist_m)."""
+    """R1: exact-ray dense sampling from the engine's near-field start.  Step = ``max(step_floor_m, d * step_rel)``.
+
+    Returns (elev_deg, dist_m)."""
     hg = float(stack.height(lat_deg, lon_deg)[0])
     ro = R_MOON_M + hg + mast_height_m
-    d = [step_floor_m]
+    d = [max(step_floor_m, float(near_field_start_m(stack, lat_deg, lon_deg)[0]))]
     while d[-1] < max_range_m:
         d.append(d[-1] + max(step_floor_m, d[-1] * step_rel))
     th = np.array(d) / R_MOON_M
@@ -96,6 +98,7 @@ def pixel_reference(
     up, north, east = up[0], north[0], east[0]
     pk = stack.pack(lat_deg, lon_deg, max_range_m * 1.05)
     th_max = max_range_m / R_MOON_M
+    th_min = float(near_field_start_m(stack, lat_deg, lon_deg)[0]) / R_MOON_M
     best = np.full(n_az, -90.0)
     ring = np.linspace(0, 360, 361)
     for dem_id in pk.dem_ids:
@@ -120,7 +123,7 @@ def pixel_reference(
             v = np.stack(np.broadcast_arrays(*(np.atleast_1d(x) for x in _vec(la, lo))), axis=-1)
             cos_t = np.clip(v @ up, -1, 1)
             th = np.arccos(cos_t)
-            ok = (th > 0) & (th <= th_max)
+            ok = (th >= th_min) & (th <= th_max)
             if not ok.any():
                 continue
             v = np.ascontiguousarray(v[ok])
