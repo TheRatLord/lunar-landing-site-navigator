@@ -27,14 +27,14 @@ def _posts(stack, dem_id: str, lat: float, lon: float, radius_m: float) -> tuple
     return np.asarray(la, float), np.asarray(lo, float)
 
 
-def _maximum(stack, dem_id: str, row: dict, period: list[str], radius_m: float, keep: int = 8, rank: str = "average_illumination") -> dict:
+def _maximum(stack, dem_id: str, row: dict, period: list[str], radius_m: float, keep: int = 8) -> dict:
     lat, lon = _posts(stack, dem_id, row["lat"], _lon(row["lon"]), radius_m)
     if lat.size > keep:
         coarse = illum.series(stack, lat, lon, row["mast_m"], illum.table(period[0], period[1], 43200.0), earth=False)
-        top = np.argsort(np.nan_to_num(getattr(coarse, rank), nan=-1.0))[-keep:]
+        top = np.argsort(np.nan_to_num(coarse.average_illumination, nan=-1.0))[-keep:]
         lat, lon = lat[top], lon[top]
     fine = illum.series(stack, lat, lon, row["mast_m"], illum.table(period[0], period[1], 3600.0), earth=False)
-    k = int(np.nanargmax(getattr(fine, rank)))
+    k = int(np.nanargmax(fine.average_illumination))
     return {"avg": float(fine.average_illumination[k]) * 100.0, "sunlit": float(fine.sunlit_fraction[k]) * 100.0,
             "dark_h": float(fine.longest_dark_h[k]), "posts": int(_posts(stack, dem_id, row["lat"], _lon(row["lon"]), radius_m)[0].size)}  # fmt: skip
 
@@ -106,13 +106,14 @@ def mazarico2011(ctx) -> dict[str, Outcome]:
     stack = ctx.stack(g["stores"])
     out = {}
     for row in g["rows"]:
-        m = _maximum(stack, g["stores"][0], row, g["period"], float(row["radius_m"]), rank="sunlit_fraction")
+        m = _maximum(stack, g["stores"][0], row, g["period"], float(row["radius_m"]))
+        also = (f" For information, the share of time with any part of the Sun up: paper {row['sunlit']} % at its site, "
+                f"engine {m['sunlit']:.2f} % at that post.") if "sunlit" in row else ""  # fmt: skip
         out[f"mazarico2011.{row['id']}"] = Outcome(
-            abs(m["sunlit"] - row["max_avg_illum"]), f"{row['name']}: paper {row['max_avg_illum']} %, engine {m['sunlit']:.2f} % of hourly "
-            "steps with any part of the Sun's disc up (the paper's definition), at its best post of "
+            abs(m["avg"] - row["max_avg_illum"]), f"{row['name']}: paper {row['max_avg_illum']} %, engine {m['avg']:.2f} % at its best post of "
             f"`{g['stores'][0]}` within {row['radius_m']} m of the printed point ({m['posts']} posts; the paper prints the point to 0.01°). "
-            "The paper's value is the best pixel of its own 240 m DEM, built from the first months of LOLA data; the engine's store is "
-            "the later GDR release.", n=m["posts"])  # fmt: skip
+            "Both are the time-mean visible fraction of the Sun's disc. The paper's value is the best pixel of its own 240 m DEM, built "
+            "from the first months of LOLA data; the engine's store is the later GDR release." + also, n=m["posts"])  # fmt: skip
     return out
 
 

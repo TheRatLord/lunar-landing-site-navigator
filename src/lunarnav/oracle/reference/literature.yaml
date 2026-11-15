@@ -37,8 +37,8 @@ mazarico2011:
   period: ["2020-01-01T00:00:00Z", "2038-08-07T00:00:00Z"]
   stores: [lola_60s_240m]
   rows:
-    - {id: connecting_ridge_surface, name: "Connecting Ridge (CR1), surface", lat: -89.45, lon: 222.69, mast_m: 0, radius_m: 3000, max_avg_illum: 89.01}
-    - {id: shackleton_rim_surface, name: "Shackleton rim (S), surface", lat: -89.78, lon: 204.27, mast_m: 0, radius_m: 3000, max_avg_illum: 86.7}
+    - {id: connecting_ridge_surface, name: "Connecting Ridge (CR1), surface", lat: -89.45, lon: 222.69, mast_m: 0, radius_m: 3000, max_avg_illum: 89.01, sunlit: 92.7}
+    - {id: shackleton_rim_surface, name: "Shackleton rim (S), surface", lat: -89.78, lon: 204.27, mast_m: 0, radius_m: 3000, max_avg_illum: 86.7, sunlit: 90.5}
     - {id: connecting_ridge_10m, name: "Connecting Ridge (CR1), 10 m", lat: -89.45, lon: 222.69, mast_m: 10, radius_m: 300, max_avg_illum: 93.10}
 bryant2009:
   source: "Bryant 2009, JPL IPN Progress Report 42-176, Tables 3, 4 and 6 (Goldstone radar DEM, 2 m observer)"

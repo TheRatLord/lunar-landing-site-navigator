@@ -75,13 +75,6 @@ def observer_frames(lat_deg: np.ndarray, lon_deg: np.ndarray) -> tuple[np.ndarra
 
 
 def near_field_start_m(stack: TerrainStack, lat_deg, lon_deg, min_range_m: float = 0.0) -> np.ndarray:
-    """Distance (m) from each observer at which the horizon search starts.
-
-    A terrain store holds one height per pixel, so the shape of the surface inside the observer's own pixel is
-    interpolation, not data: nothing closer than one pixel of the store that supplies the observer's ground is
-    treated as a blocker.  The local slope still enters, at the pixel scale, through the neighbouring posts.
-    ``min_range_m`` raises the start further; ``NEAR_FIELD_START_M`` is the floor.
-    """
     _, ground_store = stack.height_and_store(lat_deg, lon_deg)
     own_pixel_m = np.array([s.pixel_size_m for s in stack.stores] + [0.0])[ground_store]
     return np.maximum(max(float(min_range_m), NEAR_FIELD_START_M), own_pixel_m)
