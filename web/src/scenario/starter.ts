@@ -1,3 +1,4 @@
+import type { Candidate } from "./alternatives";
 import { catalogApi } from "./api";
 import { buildScenario } from "./editor/newScenario";
 import { loadPresets } from "./editor/usePresets";
@@ -22,7 +23,14 @@ const NETWORK_ID = "dsn-all";
 const SURFACE_HOURS = 336;
 const SUN_AND_EARTH_MIN_H = 168;
 
+const COMPARED = [FEATURED_SITES[2], FEATURED_SITES[5]];
+
 export const EXAMPLE_NAME = "Example plan";
+
+export async function starterAlternatives(): Promise<Candidate[]> {
+  const sites = await Promise.all(COMPARED.map((f) => catalogApi.site(f.id)));
+  return sites.map((s, i) => ({ id: s.id, name: COMPARED[i]!.name, lat_deg: s.lat_deg, lon_deg: s.lon_deg, catalog_id: s.id }));
+}
 
 export async function starterScenario(): Promise<Scenario> {
   const [site, presets] = await Promise.all([catalogApi.site(SITE.id), loadPresets()]);

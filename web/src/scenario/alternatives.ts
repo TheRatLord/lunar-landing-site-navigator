@@ -42,6 +42,15 @@ export const useAlternatives = create<AlternativesStore>((set) => ({
   clear: () => set({ items: [] }),
 }));
 
+export function seedAlternatives(items: Candidate[]): void {
+  try {
+    if (localStorage.getItem(KEY) !== null) return;
+  } catch {
+    return;
+  }
+  if (useAlternatives.getState().items.length === 0) useAlternatives.setState({ items });
+}
+
 useAlternatives.subscribe((s) => {
   try {
     localStorage.setItem(KEY, JSON.stringify(s.items));

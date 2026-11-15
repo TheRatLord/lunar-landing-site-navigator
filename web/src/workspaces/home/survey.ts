@@ -237,6 +237,32 @@ export function skyFacts(s: Survey, t: number): SkyFacts {
   return facts("Dark, no Earth link", "fail");
 }
 
+export interface NextChange {
+  ms: number;
+  label: string;
+}
+
+export function nextChange(s: Survey, t: number): NextChange | null {
+  const sun = stateAt(s.sun, t, s);
+  const earth = stateAt(s.earth, t, s);
+  const out: NextChange[] = [];
+  if (sun.change_ms !== null) out.push({ ms: sun.change_ms, label: sun.up ? "until sunset" : "until sunrise" });
+  if (earth.change_ms !== null) out.push({ ms: earth.change_ms, label: earth.up ? "until Earthset" : "until Earthrise" });
+  return out.reduce<NextChange | null>((a, b) => (!a || b.ms < a.ms ? b : a), null);
+}
+
+export function elevationAt(track: TargetTrack | null, t: number): number | null {
+  if (!track || track.utc_ms.length === 0) return null;
+  const n = track.utc_ms.length;
+  const i = lowerBound(track.utc_ms, t);
+  if (i <= 0) return t === track.utc_ms[0] ? track.el_deg[0]! : null;
+  if (i >= n) return null;
+  const t0 = track.utc_ms[i - 1]!;
+  const t1 = track.utc_ms[i]!;
+  const f = t1 > t0 ? (t - t0) / (t1 - t0) : 0;
+  return track.el_deg[i - 1]! + f * (track.el_deg[i]! - track.el_deg[i - 1]!);
+}
+
 export function dayTimeText(ms: number): string {
   const d = new Date(ms);
   const hh = String(d.getUTCHours()).padStart(2, "0");

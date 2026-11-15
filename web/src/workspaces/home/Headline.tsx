@@ -10,7 +10,9 @@ import { VERDICT_LABEL } from "../../lib/verdict";
 import { useScenario } from "../../scenario/store";
 import { batteryNote, batteryRisk, type VerdictSummary } from "../site/adapt";
 import { nextPass, scanAt, type BestLanding, type YearScan } from "./scan";
-import { dayText, skyFacts, type Survey } from "./survey";
+import { spanText } from "../../components/viz/units";
+import { formatDeg } from "../../lib/format";
+import { dayText, elevationAt, nextChange, skyFacts, type Survey } from "./survey";
 
 interface HeadlineProps {
   subject: string;
@@ -62,6 +64,8 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
   const showTop = top && dayText(top.t_ms) !== dayText(timeMs) && (next === null || dayText(top.t_ms) !== dayText(next));
   const failing = summary !== null && (summary.overall === "fail" || summary.overall === "marginal");
   const skyLine = sky ? [sky.text, sky.events].filter(Boolean).join(" · ") : null;
+  const change = survey ? nextChange(survey, timeMs) : null;
+  const sunElevation = survey ? elevationAt(survey.sunTrack, timeMs) : null;
 
   return (
     <>
@@ -103,13 +107,21 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
             <Spinner size={12} /> Computing the year
           </p>
         ) : null}
+        {survey && (
+          <p className="home-source">
+            {survey.smooth ? "Computed from NASA SPICE ephemerides" : "Computed from NASA SPICE ephemerides and LOLA terrain"} ·{" "}
+            <Link to="/evidence">checked against JPL Horizons</Link>
+          </p>
+        )}
       </section>
 
-      {scan && (
+      {(scan || change || sunElevation !== null) && (
         <dl className="home-figures">
-          <Figure label={scan.passFraction > 0 ? "of landing dates this year work" : "No date this year works"} value={`${Math.round(scan.passFraction * 100)}%`} />
-          {next !== null && <Figure label="Next date that works" value={dayText(next)} onClick={() => onJump(next)} />}
-          {showTop && <Figure label={top.verdict === "marginal" ? "Best date (marginal)" : "Best date this year"} value={dayText(top.t_ms)} onClick={() => onJump(top.t_ms)} />}
+          {change && change.ms > timeMs && <Figure label={change.label} value={spanText(change.ms - timeMs)} />}
+          {sunElevation !== null && <Figure label="Sun elevation" value={formatDeg(sunElevation, 1)} extra />}
+          {scan && <Figure label={scan.passFraction > 0 ? "of landing dates this year work" : "No date this year works"} value={`${Math.round(scan.passFraction * 100)}%`} />}
+          {scan && next !== null && <Figure label="Next date that works" value={dayText(next)} onClick={() => onJump(next)} />}
+          {scan && showTop && !(failing && next !== null) && <Figure label={top.verdict === "marginal" ? "Best date (marginal)" : "Best date this year"} value={dayText(top.t_ms)} onClick={() => onJump(top.t_ms)} />}
         </dl>
       )}
 
@@ -137,9 +149,9 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
   );
 }
 
-function Figure({ label, value, onClick }: { label: string; value: ReactNode; onClick?: () => void }) {
+function Figure({ label, value, onClick, extra }: { label: string; value: ReactNode; onClick?: () => void; extra?: boolean }) {
   return (
-    <div className="home-figure">
+    <div className={extra ? "home-figure home-figure-extra" : "home-figure"}>
       <dd>
         {onClick ? (
           <button type="button" className="home-jump" title="Move the landing to this date" onClick={onClick}>

@@ -14,6 +14,12 @@
 .evi-glance-scroll { min-height: 0; overflow: auto; padding: var(--sp-4) var(--sp-5); }
 .evi-glance { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--sp-3); }
 .evi-glance-head h1 { margin: 0; font-size: var(--fs-display); font-weight: var(--fw-medium); line-height: 1.06; letter-spacing: -0.03em; }
+.evi-leads { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-6); margin: var(--sp-4) 0 var(--sp-2); }
+.evi-lead { display: flex; flex-direction: column; gap: 2px; min-width: 0; max-width: 300px; color: inherit; text-decoration: none; }
+.evi-lead strong { font-size: 34px; font-weight: var(--fw-medium); line-height: 1.1; letter-spacing: -0.03em; white-space: nowrap; }
+.evi-lead span { font-size: var(--fs-sm); color: var(--text-2); }
+.evi-lead:hover span { color: var(--text); }
+.evi-lead:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: 4px; border-radius: var(--r-xs); }
 .evi-glance-sum { margin: var(--sp-2) 0 var(--sp-2); color: var(--text-2); font-size: var(--fs-lg); }
 
 .evi-checks-wrap { border: 0; border-radius: var(--r-xl); background: var(--panel); box-shadow: var(--shadow-card); overflow: hidden; }

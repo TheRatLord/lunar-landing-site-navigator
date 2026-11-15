@@ -7,6 +7,7 @@ export interface Check {
   status: CheckStatus;
   doc: string;
   section: string;
+  lead?: { value: string; label: string };
 }
 
 export const CHECKS: readonly Check[] = [
@@ -17,6 +18,7 @@ export const CHECKS: readonly Check[] = [
     status: "Measured",
     doc: "validation/ephemeris",
     section: "1",
+    lead: { value: "3.6 × 10⁻⁸°", label: "Sun position against JPL Horizons" },
   },
   {
     check: "Terrain horizon",
@@ -25,6 +27,7 @@ export const CHECKS: readonly Check[] = [
     status: "Met",
     doc: "validation/horizon",
     section: "2.2",
+    lead: { value: "0 of 20,520", label: "horizon bins above the engine's upper bound, 57 sites" },
   },
   {
     check: "Terrain heights",
@@ -145,6 +148,7 @@ export const CHECKS: readonly Check[] = [
     status: "Met",
     doc: "validation/scenario",
     section: "11.9",
+    lead: { value: "26 of 26", label: "published values inside the engine's range" },
   },
 ];
 

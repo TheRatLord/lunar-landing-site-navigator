@@ -5,10 +5,11 @@ import { clamp } from "../lib/scale";
 import { MS_DAY, MS_HOUR, parseUtc, MS_MIN, toIsoUtc } from "../lib/time";
 import { toast } from "../state/toasts";
 import { useApp } from "../state/store";
+import { seedAlternatives } from "./alternatives";
 import { scenarioApi } from "./api";
 import { fieldErrorCount, useFieldErrors } from "./fieldErrors";
 import { createdHere, forgetPlan, markCreated, rememberPlan } from "./myPlans";
-import { EXAMPLE_NAME, starterScenario } from "./starter";
+import { EXAMPLE_NAME, starterAlternatives, starterScenario } from "./starter";
 import { readDraftText, type Draft, type DraftProblem, type DraftRead, type SavedRef } from "./draft";
 import { CONSTRAINT_META } from "./editor/fieldSpecs";
 import { formatProblems, normalizeScenario, schemaDefaults } from "./normalize";
@@ -207,6 +208,7 @@ function startPlan(): void {
       const problem = now.draftProblem;
       now.open(doc, null, true);
       if (problem) useScenario.setState({ draftProblem: problem });
+      starterAlternatives().then(seedAlternatives, () => undefined);
     },
     (e: unknown) => {
       starting = false;

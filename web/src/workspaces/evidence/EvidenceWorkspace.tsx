@@ -190,8 +190,22 @@ function Glance() {
       <div className="evi-glance">
         <header className="evi-glance-head">
           <h1>At a glance</h1>
+          <ul className="evi-leads">
+            {CHECKS.flatMap((c) =>
+              c.lead
+                ? [
+                    <li key={c.check}>
+                      <Link className="evi-lead" to={evidenceHref(c.doc, c.section)}>
+                        <strong className="num">{c.lead.value}</strong>
+                        <span>{c.lead.label}</span>
+                      </Link>
+                    </li>,
+                  ]
+                : [],
+            )}
+          </ul>
           <p className="evi-glance-sum">
-            {CHECKS.length} checks against independent references:{" "}
+            {CHECKS.length} checks against independent references, each published with its result, misses included:{" "}
             {COUNTS.map(([s, n], i) => (
               <span key={s}>
                 {i > 0 && ", "}
