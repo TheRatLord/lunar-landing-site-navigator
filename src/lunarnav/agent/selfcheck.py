@@ -9,6 +9,7 @@ from each command's own output. It costs a fraction of a cent (small model, one 
 from __future__ import annotations
 
 import dataclasses
+import http.server
 import os
 import shutil
 import tempfile
@@ -33,6 +34,7 @@ from claude_agent_sdk import (
 )
 
 from . import fsafe
+from .allowlist import internal_host
 from .cli_env import cli_launch
 from .config import AgentConfig
 from .sandbox import sandbox_settings
@@ -73,7 +75,8 @@ FILE_CANARY_VALUE = "canary-file-value-91bc"
 
 
 def build_probes(
-    config: AgentConfig, paths: RunPaths, decoy: Path, home_canary: Path, link_target: Path, tmp_canary: Path
+    config: AgentConfig, paths: RunPaths, decoy: Path, home_canary: Path, link_target: Path, tmp_canary: Path,
+    local_port: int,
 ) -> list[Probe]:
     """The probe list for this configuration (paths and the network expectation come from ``config``).
 
@@ -182,6 +185,15 @@ def build_probes(
             lambda o: "import-ok" in o,
         ),
     ]
+    probes.append(
+        Probe(
+            "internal addresses unreachable",
+            f"curl -sS -m 10 http://127.0.0.1:{local_port}/; echo rc=$?; curl -sS -m 10 http://localhost:{local_port}/; echo rc=$?; "
+            "curl -sS -m 10 -H 'Metadata-Flavor: Google' http://169.254.169.254/computeMetadata/v1/; echo rc=$?",
+            "a service on this machine's loopback and the cloud metadata server are both refused",
+            lambda o: FILE_CANARY_VALUE not in o and "instance/" not in o,
+        )
+    )
     if config.api_key_file is not None:
         probes.append(
             Probe(
@@ -236,6 +248,24 @@ def build_probes(
     return probes
 
 
+class _CanaryHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self) -> None:
+        body = FILE_CANARY_VALUE.encode()
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *_args: Any) -> None:
+        pass
+
+
+def _canary_server() -> http.server.ThreadingHTTPServer:
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _CanaryHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+
 async def run_sandbox_check(config: AgentConfig) -> list[ProbeResult]:
     """Run every probe through the real CLI sandbox and return one result per probe.
 
@@ -248,6 +278,7 @@ async def run_sandbox_check(config: AgentConfig) -> list[ProbeResult]:
     link_target = Path(tempfile.mkdtemp(prefix="lunarnav-link-target-"))
     tmp_canary = Path(tempfile.gettempdir()) / f"lunarnav-canary-{uuid.uuid4().hex}"
     previous = os.environ.get(ENV_CANARY)
+    local = _canary_server()
     try:
         fsafe.write_new(decoy.workspace / "secret.txt", FILE_CANARY_VALUE.encode())
         fsafe.write_new(home_canary, FILE_CANARY_VALUE.encode())
@@ -255,11 +286,13 @@ async def run_sandbox_check(config: AgentConfig) -> list[ProbeResult]:
         os.environ[ENV_CANARY] = ENV_CANARY_VALUE
         settings, _ = sandbox_settings("require", config, paths)
         env, cli_path = cli_launch(paths, config)
-        probes = build_probes(config, paths, decoy.workspace, home_canary, link_target, tmp_canary)
+        probes = build_probes(config, paths, decoy.workspace, home_canary, link_target, tmp_canary, local.server_port)
         seen: dict[str, str] = {}
         outputs: dict[str, str] = {}
 
         async def can_use_tool(name: str, tool_input: dict[str, Any], _ctx: Any) -> Any:
+            if name == "SandboxNetworkAccess" and internal_host(str(tool_input.get("host") or "")):
+                return PermissionResultDeny(message="internal address")
             if name == "Bash" or (name == "SandboxNetworkAccess" and config.allowed_domains is None):
                 return PermissionResultAllow()
             return PermissionResultDeny(message=f"{name} is not part of the sandbox check")
@@ -315,6 +348,8 @@ async def run_sandbox_check(config: AgentConfig) -> list[ProbeResult]:
             )
         return results
     finally:
+        local.shutdown()
+        local.server_close()
         if previous is None:
             os.environ.pop(ENV_CANARY, None)
         else:

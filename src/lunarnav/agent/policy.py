@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .allowlist import HostAllowlist, UrlNotAllowed
+from .allowlist import HostAllowlist, UrlNotAllowed, internal_host
 from .config import AgentConfig
 from .fsafe import resolve_under
 
@@ -124,7 +124,7 @@ class PermissionPolicy:
                 "requires_sandbox": "Bash is denied when the OS sandbox is off or unavailable",
                 "sandbox_active": self.sandboxed,
             },
-            "network": "any https host (fetch_data, WebFetch, WebSearch, and sandboxed commands)"
+            "network": "any https host except private, loopback and link-local addresses (fetch_data, WebFetch, WebSearch, and sandboxed commands)"
             if domains is None
             else "only these domains and their subdomains (fetch_data, WebFetch, sandboxed commands; no WebSearch): "
             + ", ".join(domains),
@@ -199,12 +199,15 @@ class PermissionPolicy:
 
     def _sandbox_network(self, tool_input: dict[str, Any]) -> Decision:
         """The sandbox proxy asks (as a tool call named ``SandboxNetworkAccess``) before it connects to a host that is
-        not on its ``allowedDomains`` list. With no list configured every host is asked about and every host is
-        allowed; with a list, a host outside it is refused."""
+        not on its ``allowedDomains`` list. A host that resolves to a private, loopback or link-local address (this
+        machine's services, the cloud metadata server) is always refused. Otherwise, with no list configured every
+        host is asked about and allowed; with a list, a host outside it is refused."""
         domains = self.config.allowed_domains
+        host = str(tool_input.get("host") or "").rstrip(".").lower()
+        if internal_host(host):
+            return deny("network-host-internal", f"{host or 'that host'} is a private, loopback or link-local address")
         if domains is None:
             return ALLOW
-        host = str(tool_input.get("host") or "").rstrip(".").lower()
         if host and HostAllowlist(domains).admits(host):
             return ALLOW
         return deny("network-host-not-allowed", f"{host or 'that host'} is not on the operator's domain list")

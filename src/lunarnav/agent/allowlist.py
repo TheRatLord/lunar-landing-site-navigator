@@ -3,8 +3,20 @@
 from __future__ import annotations
 
 import ipaddress
+import socket
 from dataclasses import dataclass
 from urllib.parse import SplitResult, urlsplit
+
+
+def internal_host(host: str) -> bool:
+    name = host.strip().strip("[]").rstrip(".").lower()
+    if not name:
+        return True
+    try:
+        infos = socket.getaddrinfo(name, None)
+    except (OSError, UnicodeError):
+        return False
+    return any(not ipaddress.ip_address(str(info[4][0]).split("%")[0]).is_global for info in infos)
 
 
 class UrlNotAllowed(ValueError):
@@ -17,7 +29,8 @@ class HostAllowlist:
 
     ``domains`` is ``None`` for any host (the default). A listed domain admits itself and its subdomains.
     Matching is on whole DNS labels, so ``nasa.gov.evil.example`` and ``evilnasa.gov`` do not match
-    ``nasa.gov``. Userinfo, IP literals and non-default ports are refused regardless of the host.
+    ``nasa.gov``. Userinfo, IP literals, non-default ports and hosts that resolve to a private, loopback or
+    link-local address are refused regardless of the list.
     """
 
     domains: tuple[str, ...] | None = None
@@ -53,6 +66,8 @@ class HostAllowlist:
             raise UrlNotAllowed(f"port {port} not allowed")
         if not self.admits(host):
             raise UrlNotAllowed(f"host {host!r} is not on the allowlist")
+        if internal_host(host):
+            raise UrlNotAllowed(f"host {host!r} resolves to a private, loopback or link-local address")
         return parts
 
     def admits(self, host: str) -> bool:
