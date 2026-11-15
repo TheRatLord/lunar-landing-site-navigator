@@ -7,6 +7,7 @@ import { SITES, type SiteId } from "./sites";
 import type { WalkBody } from "./walk/walkView";
 import type { WalkPov } from "./walk/walkCamera";
 import type { PropId } from "./walk/facts";
+import type { MissionId } from "./walk/missions";
 import { buildTimeline } from "./timeline";
 
 export type Landing = 0 | 7 | 14;
@@ -49,6 +50,12 @@ export interface LearnState {
   lookEarth: number;
   nearProp: PropId | null;
   planPlace: boolean;
+  mission: MissionId | null;
+  missionStep: number;
+  missionFound: string | null;
+  missionM: number | null;
+  missionSide: string;
+  missionPicker: boolean;
   setWalkBody(b: WalkBody): void;
   enterChapter(slug: ChapterKey, reducedMotion: boolean): void;
   setT(t: number): void;
@@ -120,6 +127,12 @@ export const useLearn = create<LearnState>()((set, get) => ({
   lookEarth: 0,
   nearProp: null,
   planPlace: false,
+  mission: null,
+  missionStep: 0,
+  missionFound: null,
+  missionM: null,
+  missionSide: "",
+  missionPicker: false,
   setWalkBody: (walkBody) => set({ walkBody }),
   craterTerrain: "real",
   fast: false,
@@ -156,6 +169,10 @@ export const useLearn = create<LearnState>()((set, get) => ({
       walkPov: "third",
       walkEdge: false,
       nearProp: null,
+      mission: null,
+      missionStep: 0,
+      missionFound: null,
+      missionPicker: false,
       panel: true,
     });
   },

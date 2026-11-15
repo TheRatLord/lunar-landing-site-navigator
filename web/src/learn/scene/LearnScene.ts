@@ -27,6 +27,7 @@ import { SPACE_BG, type SceneFrame, type Shared, type ViewKind } from "./types";
 import { WalkView, type WalkBody } from "../walk/walkView";
 import type { WalkPov } from "../walk/walkCamera";
 import type { PropId } from "../walk/facts";
+import type { MissionSpot } from "../walk/missions";
 
 type Phase = "fly" | "out" | "in";
 
@@ -95,6 +96,15 @@ export class LearnScene {
   onWalkNear: ((id: PropId | null) => void) | null = null;
   onWalkActive: (() => void) | null = null;
   onWalkLights: (() => void) | null = null;
+  onWalkTarget: ((metres: number | null, side: string) => void) | null = null;
+  private walkTarget: MissionSpot | null = null;
+
+  setWalkTarget(t: MissionSpot | null) {
+    if (t?.x === this.walkTarget?.x && t?.z === this.walkTarget?.z) return;
+    this.walkTarget = t;
+    this.walk?.setTarget(t);
+    this.requestRender();
+  }
   private walkLights = false;
 
   setWalkLights(on: boolean) {
@@ -189,6 +199,8 @@ export class LearnScene {
       this.walk.setLights(this.walkLights);
       this.walk.onEdge = (e) => this.onWalkEdge?.(e);
       this.walk.onNear = (id) => this.onWalkNear?.(id);
+      this.walk.onTarget = (m, side) => this.onWalkTarget?.(m, side);
+      this.walk.setTarget(this.walkTarget);
       this.walk.setBody(this.walkBody);
       this.walk.setPov(this.walkPov);
       this.applyCamera(this.walk.camera);

@@ -1,4 +1,4 @@
-import { AmbientLight, DirectionalLight, HemisphereLight, Scene, Vector3 } from "three";
+import { AmbientLight, CylinderGeometry, DirectionalLight, Group, HemisphereLight, Mesh, MeshBasicMaterial, RingGeometry, Scene, Vector3 } from "three";
 import { RAD } from "../geometry";
 import type { RealSite } from "../terrain";
 import type { SceneFrame, Shared } from "../scene/types";
@@ -8,6 +8,7 @@ import type { PropId } from "./facts";
 import { WalkCamera, type WalkPov } from "./walkCamera";
 import { PropSet } from "./props/propSet";
 import { ROVER_HEADING, ROVER_HOME, Rover } from "./rover";
+import { MISSION_SPOTS, type MissionSpot } from "./missions";
 import { SolarPanel } from "./solarPanel";
 import { WalkInput, type Drive } from "./walkInput";
 import { WalkSky } from "./walkSky";
@@ -46,6 +47,11 @@ export class WalkView {
   private near: PropId | null = null;
   onNear: ((id: PropId | null) => void) | null = null;
   onModelReady: (() => void) | null = null;
+  onTarget: ((metres: number | null, side: string) => void) | null = null;
+  private readonly marker = new Group();
+  private target: MissionSpot | null = null;
+  private targetM: number | null = null;
+  private targetSide = "";
   private body: WalkBody = "astronaut";
   private frame: SceneFrame | null = null;
   private siteId = "";
@@ -53,6 +59,12 @@ export class WalkView {
   onEdge: ((atEdge: boolean) => void) | null = null;
 
   constructor(shared: Shared) {
+    const glow = new MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.9, depthWrite: false });
+    const ring = new Mesh(new RingGeometry(1.7, 2.3, 48).rotateX(-Math.PI / 2), glow);
+    const beam = new Mesh(new CylinderGeometry(0.12, 0.12, 40, 8), new MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.35, depthWrite: false }));
+    beam.position.y = 20;
+    this.marker.add(ring, beam);
+    this.marker.visible = false;
     this.rover.onModelReady = () => this.onModelReady?.();
     this.sky = new WalkSky(shared);
     this.light.castShadow = true;
@@ -75,6 +87,7 @@ export class WalkView {
       this.rover.object,
       this.panel.object,
       this.props.group,
+      this.marker,
       this.light,
       this.light.target,
       this.ambient,
@@ -142,7 +155,7 @@ export class WalkView {
     if (placeKey !== this.siteId) {
       this.siteId = placeKey;
       this.input.clear();
-      this.fixed = [...this.props.build(f.site.id, this.terrain, [{ x: 0, z: 0, r: 4 }, this.panel.obstacle, ...lane()], ROVER_HOME), this.panel.obstacle];
+      this.fixed = [...this.props.build(f.site.id, this.terrain, [{ x: 0, z: 0, r: 4 }, this.panel.obstacle, ...lane(), ...MISSION_SPOTS.map((p) => ({ ...p, r: 4 }))], ROVER_HOME), this.panel.obstacle];
       this.near = null;
       this.onNear?.(null);
       this.astronaut.reset();
@@ -230,6 +243,7 @@ export class WalkView {
     this.cam.step(dt, this.focus, this.eye, this.heading(), reduced, this.ground);
     this.sky.group.position.copy(this.camera.position);
     this.placeLight();
+    this.trackTarget();
     return moving || this.cam.settling;
   }
 
@@ -239,6 +253,33 @@ export class WalkView {
       this.astronaut.heading = (this.astronaut.heading - dxDeg + 360) % 360;
       this.cam.orbit(0, dyDeg, false);
     } else this.cam.orbit(dxDeg, dyDeg, true);
+  }
+
+  setTarget(t: MissionSpot | null): void {
+    this.target = t;
+    this.marker.visible = t !== null;
+    this.targetM = null;
+    this.trackTarget();
+  }
+
+  private trackTarget(): void {
+    const t = this.target;
+    if (!t) {
+      if (this.targetM !== null) this.onTarget?.(null, "");
+      this.targetM = null;
+      return;
+    }
+    this.marker.position.set(t.x, this.terrain.heightAt(t.x, t.z) + 0.05, t.z);
+    const dx = t.x - this.rover.position.x;
+    const dz = t.z - this.rover.position.z;
+    const m = Math.round(Math.hypot(dx, dz));
+    const rel = (((Math.atan2(dx, -dz) / RAD - this.rover.heading) % 360) + 540) % 360 - 180;
+    const side = Math.abs(rel) < 35 ? "ahead" : Math.abs(rel) > 145 ? "behind you" : rel > 0 ? "to your right" : "to your left";
+    if (m !== this.targetM || side !== this.targetSide) {
+      this.targetM = m;
+      this.targetSide = side;
+      this.onTarget?.(m, side);
+    }
   }
 
   dispose(): void {

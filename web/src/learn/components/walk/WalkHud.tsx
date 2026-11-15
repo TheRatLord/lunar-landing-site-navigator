@@ -3,6 +3,7 @@ import { useLive } from "../../derive";
 import { useLearn } from "../../store";
 import { useIsTouch } from "../../touch";
 import { FactCard } from "./FactCard";
+import { MissionPanel } from "./MissionPanel";
 
 const PAD = [
   { label: "Turn left", x: -1, y: 0, glyph: "◀", cls: "is-left" },
@@ -20,6 +21,8 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
   const setPov = useLearn((s) => s.setWalkPov);
   const touch = useIsTouch();
   const lights = useLearn((s) => s.walkLights);
+  const mission = useLearn((s) => s.mission);
+  const picker = useLearn((s) => s.missionPicker);
   const dark = useLive().sky.sunlight < 0.05;
   const held = useRef(new Map<number, { x: number; y: number }>());
   const apply = () => {
@@ -56,6 +59,7 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
         </p>
       )}
       <FactCard />
+      <MissionPanel />
       {edge && <p className="l-walk-edge">Edge of the map. Turn back.</p>}
       {touch && (
         <div className="l-walk-pad" role="group" aria-label="Move">
@@ -81,6 +85,11 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
         </div>
       )}
       <div className="l-walk-actions">
+        {!mission && (
+          <button type="button" className="l-btn l-walk-missions" aria-expanded={picker} onClick={() => useLearn.setState({ missionPicker: !picker })}>
+            Rover missions
+          </button>
+        )}
         {(dark || lights) && (
           <button type="button" className="l-btn l-walk-lights" aria-pressed={lights} onClick={() => useLearn.setState({ walkLights: !lights })}>
             Lights

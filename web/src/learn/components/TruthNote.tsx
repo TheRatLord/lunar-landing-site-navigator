@@ -2,8 +2,9 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { ViewKind } from "../chapters";
 import type { CraterSource } from "../scene/craterView";
 import type { SiteId } from "../sites";
-import type { ChapterKey } from "../store";
 import { siteById } from "../terrain";
+import { useLearn, type ChapterKey } from "../store";
+import { missionById } from "../walk/missions";
 import { CloseIcon, InfoIcon } from "./icons";
 
 function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: CraterSource): string[] {
@@ -32,6 +33,8 @@ function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: Crater
     if (site === "apollo11" || site === "change4" || site === "blueghost")
       out.push(`The spacecraft and gear on the ground are really here, drawn as simple models about where they stand.${site === "change4" ? " Yutu-2 has since driven away." : ""}`);
     out.push("The lamps are pretend. With them off, the dark is real.");
+    const m = missionById(useLearn.getState().mission);
+    if (m) out.push(`The ${m.rover} mission is played here with this rover. The real ${m.rover} was smaller and ${m.where}; the markers are made up.`);
     out.push("The glow around the Sun and the faint stars by day are what a camera sees. The Moon has no air to make a glow.");
     out.push("The battery is pretend. Its panel follows the site's sunlight, not the exact shadow on it.");
   }

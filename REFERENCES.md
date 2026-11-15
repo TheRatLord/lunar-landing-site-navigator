@@ -132,3 +132,20 @@ installed packages.
 | zod (evaluator) | 4.6.7 | MIT |
 | promptfoo (evaluator, dev) | 0.125.1 | MIT |
 | Claude Code CLI (evaluator runs `claude -p`; not bundled) | 2.1.x | Anthropic commercial terms |
+
+## Explorer walk: rover missions
+
+The five playable missions in the walk view (`web/src/learn/walk/missions.ts`) follow the last five rovers that
+worked on the Moon's surface as of November 2026. IM-2's MAPP was never deployed after Athena tipped over, ispace's
+Tenacious was lost with its lander in 2025, and Chang'e 7 slipped to 2027.
+
+- Yutu (Chang'e 3): Wikipedia, "Yutu (rover)", https://en.wikipedia.org/wiki/Yutu_(rover); Spaceflight101 on the
+  end of mobility, https://spaceflight101.com/?p=19833
+- Yutu-2 (Chang'e 4): Wikipedia, "Yutu-2", https://en.wikipedia.org/wiki/Yutu-2
+- Pragyan (Chandrayaan-3): Spectroscopy, LIBS and APXS results,
+  https://www.spectroscopyonline.com/view/new-discoveries-from-india-s-chandrayaan-3-rover-at-the-lunar-south-pole-using-libs-and-apxs-spectroscopy;
+  Wikipedia, "Chandrayaan-3", https://en.wikipedia.org/wiki/Chandrayaan-3
+- SORA-Q / LEV-2 (SLIM): Live Science,
+  https://www.livescience.com/space/space-exploration/see-the-crawling-ball-shaped-rover-that-rolled-around-the-moon-during-japans-historic-first-landing
+- Jinchan (Chang'e 6): Space.com, https://www.space.com/china-change-6-moon-far-side-minirover
+- Chang'e 7 delay: CNN, https://www.cnn.com/2026/08/23/science/change-7-china-moon-mission-launch-postponed

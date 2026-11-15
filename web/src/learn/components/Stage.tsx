@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 import { describe } from "../describe";
 import { frameFrom, timelineFor, useLive } from "../derive";
 import { plannerHref } from "../planPlace";
+import { missionTarget } from "./walk/MissionPanel";
 import { LearnScene } from "../scene/LearnScene";
 import { WalkHud } from "./walk/WalkHud";
 import { chapterOf, useLearn } from "../store";
@@ -129,6 +130,7 @@ export function Stage() {
     scene.onWalkLights = () => useLearn.setState({ walkLights: !useLearn.getState().walkLights });
     scene.onWalkEdge = (walkEdge) => useLearn.setState({ walkEdge });
     scene.onWalkNear = (nearProp) => useLearn.setState({ nearProp });
+    scene.onWalkTarget = (missionM, missionSide) => useLearn.setState({ missionM, missionSide });
     scene.onWalkActive = () => {
       if (useLearn.getState().walkHint) useLearn.setState({ walkHint: false });
     };
@@ -185,6 +187,7 @@ export function Stage() {
       scene.setWalkBody(s.walkBody);
       scene.setWalkPov(s.walkPov);
       scene.setWalkLights(s.walkLights);
+      scene.setWalkTarget(missionTarget(s.mission, s.missionStep));
       canvas.style.touchAction = s.view === "ground" ? "pan-y" : "none";
     };
     push();

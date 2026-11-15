@@ -1948,3 +1948,151 @@ button.l-lessons-label {
     display: none;
   }
 }
+.l-mission {
+  position: absolute;
+  left: var(--l-gutter);
+  bottom: var(--l-above);
+  z-index: 2;
+  display: grid;
+  gap: 10px;
+  width: min(330px, calc(100% - 2 * var(--l-gutter)));
+  max-height: calc(100% - var(--l-above) - 140px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--l-card);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+  pointer-events: auto;
+}
+.l-mission-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.l-mission-head h2 {
+  margin: 0;
+  font-size: var(--l-fs-body);
+  font-weight: 700;
+}
+.l-mission-head h2 span {
+  display: block;
+  font-size: var(--l-fs-xs);
+  font-weight: 600;
+  color: var(--text-2);
+}
+.l-mission-head .l-note-close {
+  position: static;
+}
+.l-mission-lead,
+.l-mission-found,
+.l-mission-end p,
+.l-mission-now p {
+  margin: 0;
+  font-size: var(--l-fs-sm);
+  line-height: 1.4;
+}
+.l-mission-lead,
+.l-mission-now p,
+.l-mission-where {
+  color: var(--text-2);
+}
+.l-mission-found {
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--c-sun) 14%, transparent);
+}
+.l-mission-list,
+.l-mission-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.l-mission-list button {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--l-fs-sm);
+  cursor: pointer;
+  text-align: left;
+}
+.l-mission-list button:hover {
+  background: var(--panel-hover);
+}
+.l-mission-list span {
+  color: var(--text-2);
+  font-size: var(--l-fs-xs);
+}
+.l-mission-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--l-fs-sm);
+  color: var(--text-2);
+}
+.l-mission-steps li.is-now {
+  color: var(--text);
+  font-weight: 650;
+}
+.l-mission-n {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  font-size: 11px;
+}
+.l-mission-steps li.is-now .l-mission-n {
+  border-color: var(--c-sun);
+  color: var(--c-sun);
+}
+.l-mission-steps li.is-done .l-mission-n {
+  border-color: var(--c-power);
+  background: var(--c-power);
+  color: #0b0c0e;
+}
+.l-mission-now .l-btn,
+.l-mission-end .l-btn {
+  width: 100%;
+}
+.l-mission-end {
+  display: grid;
+  gap: 8px;
+}
+.l-walk-missions {
+  border-color: var(--border-strong);
+  background: var(--panel);
+  color: var(--text);
+}
+@media (max-width: 759px) {
+  .l-mission {
+    top: 52px;
+    bottom: auto;
+    left: 8px;
+    width: calc(100% - 16px);
+    max-height: 45%;
+  }
+  .l-walk-hud:has(.l-mission) .l-fact-slot {
+    display: none;
+  }
+  .learn:has(.l-mission) .l-battery {
+    display: none;
+  }
+}
+

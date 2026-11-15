@@ -83,6 +83,7 @@ Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/sup
 - [x] First and third person views for the astronaut and the rover (V or a button)
 - [x] Touch controls, rover headlights and helmet lamp (L or a button in the dark), honesty notes for Walk
 - [x] View switch back in free exploration (Walk & drive, On the ground, In space, Close-up)
+- [x] Rover missions: five playable missions after the last five rovers on the Moon (Yutu, Yutu-2, Pragyan, SORA-Q, Jinchan), three marked tasks each, sources in `REFERENCES.md`
 - [ ] Reduced-motion and low-end performance checks
 
 ## Integration check (2026-11-15)
