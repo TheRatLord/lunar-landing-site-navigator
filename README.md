@@ -4,15 +4,17 @@ A planning tool for lunar landing sites and dates, built for the NASA Space Apps
 [Lunar Landing Site Navigator](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/)
 challenge ([problem statement](problem-statement.md)).
 
-The first screen answers one question: if the landing site or the landing date moves, is the mission still
-viable, and where is the nearest alternative? Click the map to move the site, drag the year timeline to move
+The home page offers two ways in. The Planner is for mission teams: its first screen, Overview, answers one
+question: if the landing site or the landing date moves, is the mission still viable, and where is the nearest
+alternative? Click the map to move the site, drag the year timeline to move
 the date, and pin a site to keep its row while you try another. For the chosen site and date it shows the Sun
 and Earth against the terrain horizon, when the Sun and Earth next set, and every window in the year with
 both sunlight and a direct Earth link, computed from SPICE ephemerides and LOLA terrain.
 
-Behind it, the other pages add power and battery survival through dark spans, ground-station contact,
+Behind it, the other Planner pages add power and battery survival through dark spans, ground-station contact,
 landing-ellipse statistics, slip analysis and site search. Every number carries its terrain uncertainty, and
-Evidence shows how each part was checked.
+Evidence shows how each part was checked. Explorer is for everyone else: drive a rover and walk around famous landing
+sites in 3D, with five short lessons on why sunlight and Earth in the sky decide where a lander can work.
 
 The same example every time: [lunar.cinne.dev/demo](https://lunar.cinne.dev/demo) resets this browser to the example
 plan with three south-pole sites compared.

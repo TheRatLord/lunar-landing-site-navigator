@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Spinner } from "./components/ui/Progress";
+import { FrontDoor } from "./front/FrontDoor";
 import { LearnRoute } from "./learn/LearnRoute";
 import { AppShell } from "./shell/AppShell";
 import { HOME as HOME_WORKSPACE, WORKSPACES } from "./workspaces/registry";
@@ -24,9 +25,9 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route index element={<FrontDoor />} />
         <Route path="/learn/*" element={<LearnRoute />} />
         <Route element={<AppShell />}>
-          <Route index element={<Redirect to={HOME} />} />
           {REDIRECTS.map(([from, to]) => (
             <Route key={from} path={from} element={<Redirect to={to} />} />
           ))}

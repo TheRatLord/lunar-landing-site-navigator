@@ -68,6 +68,7 @@ const PATHS = {
   terrain: "M1.5 13.5 5.5 6l3 5 2-3 4 5.5z",
   lander: "M5.5 3h5L12 8H4zM4.6 8l-2 5M11.4 8l2 5M1.2 13h2.8M12 13h2.8M6.8 8l-.8 2.4h4L9.2 8",
   checklist: "M2 4.2l1.2 1.2 2-2.4M7.5 4.2H14M2 8.8l1.2 1.2 2-2.4M7.5 8.8H14M3.4 13.2h.01M7.5 13.2H14",
+  rover: "M2.5 6.5h11v3.5h-11zM5 6.5V3.5h3.5M8.5 2.5v2M3 12.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0zM6.5 12.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0zM10 12.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0z",
 } as const;
 
 export type IconName = keyof typeof PATHS;

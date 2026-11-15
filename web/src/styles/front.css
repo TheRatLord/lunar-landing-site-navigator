@@ -1,0 +1,207 @@
+.front {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--text);
+}
+.front > .topbar {
+  flex: none;
+  min-height: var(--topbar-h);
+  padding: 0 calc(var(--gutter) + var(--sp-2));
+}
+.front-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-5);
+}
+.front-main:focus {
+  outline: none;
+}
+.front-head {
+  max-width: 720px;
+}
+.front-head h1 {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-display);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-display);
+}
+.front-head p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-body);
+}
+.front-doors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-5);
+}
+.front-door {
+  --door: var(--text);
+  --door-bg: var(--fill);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--panel);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease-out);
+}
+.front-door[data-mode="explorer"] {
+  --door: var(--c-sun);
+  --door-bg: color-mix(in srgb, var(--c-sun) 16%, transparent);
+}
+.front-door:hover {
+  border-color: color-mix(in srgb, var(--door) 55%, transparent);
+  transform: translateY(-2px);
+}
+.front-door:focus-visible {
+  outline: var(--focus-w) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+.front-shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  object-position: 50% 0;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+}
+.front-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+}
+.front-for {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1-5);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--door-bg);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+.front-for > svg {
+  color: var(--door);
+}
+.front-body h2 {
+  margin: 0;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+.front-body p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-md);
+}
+.front-points {
+  display: grid;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.front-points li::before {
+  content: "";
+  display: inline-block;
+  width: var(--dot);
+  height: var(--dot);
+  margin: 0 var(--sp-2) 1px 0;
+  border-radius: 50%;
+  background: var(--door);
+}
+.front-go {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: auto;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+}
+.front-door[data-mode="explorer"] .front-go {
+  background: var(--c-sun-fill);
+  color: #000;
+}
+.front-wide {
+  display: none;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.front-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.front-foot a {
+  color: var(--text-2);
+  text-underline-offset: var(--underline-offset);
+}
+
+.front-door[data-mode="explorer"] .front-shot {
+  object-position: 50% 70%;
+}
+
+@media (max-width: 1023.98px) {
+  .front-wide {
+    display: block;
+  }
+}
+@media (max-width: 759.98px) {
+  .front > .topbar {
+    padding: 0 var(--sp-2);
+  }
+  .front-main {
+    gap: var(--sp-5);
+    padding: var(--sp-4) var(--sp-4) var(--sp-5);
+  }
+  .front-head p {
+    font-size: var(--fs-md);
+  }
+  .front-doors {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4);
+  }
+  .front-door[data-mode="explorer"] {
+    order: -1;
+  }
+  .front-body {
+    padding: var(--sp-4);
+  }
+  .front-body h2 {
+    font-size: var(--fs-xl);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .front-door,
+  .front-door:hover {
+    transition: none;
+    transform: none;
+  }
+}

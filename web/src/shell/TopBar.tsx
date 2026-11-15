@@ -6,7 +6,7 @@ import { Icon } from "../components/ui/Icon";
 import { IconButton } from "../components/ui/Button";
 import { Spinner } from "../components/ui/Progress";
 import { useApp } from "../state/store";
-import { EVIDENCE_WORKSPACE, HOME, VIEW_WORKSPACES } from "../workspaces/registry";
+import { EVIDENCE_WORKSPACE, VIEW_WORKSPACES } from "../workspaces/registry";
 import { ModeSwitch } from "./ModeSwitch";
 
 function AskButton() {
@@ -58,24 +58,24 @@ export function PlannerNav() {
   );
 }
 
-export function TopBar({ nav, tools }: { nav: ReactNode; tools?: ReactNode }) {
+export function TopBar({ nav, tools, modes = true }: { nav?: ReactNode; tools?: ReactNode; modes?: boolean }) {
   const theme = useApp((s) => s.theme);
   const setTheme = useApp((s) => s.setTheme);
 
   return (
     <header className="topbar">
       <div className="tb-side">
-        <Link to={HOME.path} className="brand" aria-label="Lunar Landing Site Navigator, home">
+        <Link to="/" className="brand" aria-label="Lunar Landing Site Navigator, home">
           <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
             <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2" />
             <path d="M3.5 19Q9 14 14 18T28.5 16" fill="none" stroke="var(--c-sun)" strokeWidth="2.6" />
           </svg>
           <span className="brand-text">Lunar Navigator</span>
         </Link>
-        <ModeSwitch />
+        {modes && <ModeSwitch />}
       </div>
 
-      {nav}
+      {nav ?? <span />}
 
       <div className="tb-side tb-side-end">
         {tools}
@@ -102,7 +102,7 @@ export function PlannerTools() {
         {EVIDENCE_WORKSPACE.label}
       </NavLink>
       {askEnabled && <AskButton />}
-      <IconButton icon="command" label="Command palette" shortcut="Ctrl K" onClick={() => setPaletteOpen(true)} />
+      <IconButton icon="command" label="Command palette" shortcut="Ctrl K" className="tb-palette" onClick={() => setPaletteOpen(true)} />
     </>
   );
 }

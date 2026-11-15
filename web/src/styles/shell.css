@@ -744,30 +744,79 @@
   display: inline-flex;
   align-items: stretch;
   gap: 0;
-  height: var(--control-h-sm);
+  height: var(--control-h);
   padding: 2px;
   border-radius: var(--r-pill);
   background: var(--fill);
+}
+.mode-switch[data-mode="explorer"] {
+  --thumb-bg: var(--c-sun-fill);
 }
 .mode-switch-opt {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--sp-1-5);
   padding: 0 var(--sp-3);
   border-radius: var(--r-pill);
   color: var(--text-2);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease), background var(--dur) var(--ease);
 }
+.mode-switch-opt[data-mode="explorer"] > svg {
+  color: var(--c-sun);
+}
 .mode-switch-opt:hover { color: var(--text); }
 .mode-switch-opt[aria-current="page"] { color: var(--text); }
+.mode-switch-opt[data-mode="explorer"][aria-current="page"],
+.mode-switch-opt[data-mode="explorer"][aria-current="page"] > svg {
+  color: #000;
+}
 .mode-switch-opt:focus-visible {
   outline: var(--focus-w) solid var(--focus);
   outline-offset: var(--focus-offset);
+}
+.mode-switch-for {
+  color: var(--text-3);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-regular);
+}
+.mode-switch-opt[aria-current="page"] .mode-switch-for {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 1023.98px) {
+  .shell .mode-switch-for {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 1099.98px) {
+  .learn .mode-switch-for {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 1279.98px) {
+  .shell .brand-text {
+    display: none;
+  }
 }
 
 .plan-card-widen {
@@ -828,6 +877,18 @@
   .shell[data-plan="none"] .tb-nav,
   .shell[data-plan="none"] .brand-text {
     display: none;
+  }
+  .shell[data-plan="none"] > .topbar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+@media (max-width: 479.98px) {
+  .shell .mode-switch-opt > svg,
+  .shell .tb-palette {
+    display: none;
+  }
+  .shell .mode-switch-opt {
+    padding: 0 var(--sp-2);
   }
 }
 .tb-tab.active { color: var(--on-accent); }
