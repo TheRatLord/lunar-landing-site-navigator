@@ -178,6 +178,7 @@ const TAN = Math.tan(((FOV / 2) * Math.PI) / 180);
 const MIN_ALT = 1.5 / (MOON_R_M / 1000);
 const MAX_ALT = 4;
 const SETTLE_MS = 220;
+const FLY_MS = 1600;
 const FADE_MS = 300;
 const ORIGIN = new Vector3();
 const UNIT = new Sphere(ORIGIN, 1);
@@ -486,8 +487,9 @@ export class MoonScene {
     const q1 = Math.abs(dir.y) < 0.97 ? orientFor(dir) : new Quaternion().setFromUnitVectors(cur, dir).multiply(this.q);
     const angle = cur.angleTo(dir);
     const arc = Math.max(0, Math.min(1.8, angle * 0.9) - Math.max(this.alt, a1));
-    this.tween = { q0: this.q.clone(), q1, a0: this.alt, a1, t0: performance.now(), dur: 900 + Math.min(900, angle * 600), arc };
+    this.tween = { q0: this.q.clone(), q1, a0: this.alt, a1, t0: performance.now(), dur: FLY_MS + Math.min(FLY_MS, angle * 900), arc };
     this.dirty = true;
+    this.onSettle(this.infoFor(dir, a1));
   }
 
   zoomBy(factor: number): void {
@@ -520,16 +522,19 @@ export class MoonScene {
   }
 
   private viewInfo(): ViewInfo {
-    const dir = this.camera.position.clone().normalize();
+    return this.infoFor(this.camera.position.clone().normalize(), this.alt);
+  }
+
+  private infoFor(dir: Vector3, alt: number): ViewInfo {
     const widen = 1 + (2 * this.shift) / this.w;
     const aspect = Math.max(1, this.w / this.h);
     const dpr = this.renderer.getPixelRatio();
     return {
       lat_deg: (Math.asin(Math.max(-1, Math.min(1, dir.y))) * 180) / Math.PI,
       lon_deg: (Math.atan2(-dir.z, dir.x) * 180) / Math.PI,
-      alt: this.alt,
-      half_m: this.alt * MOON_R_M * TAN * aspect * widen * 1.15,
-      px: Math.min(3072, Math.ceil(Math.max(this.w, this.h) * widen * 1.15 * dpr)),
+      alt,
+      half_m: alt * MOON_R_M * TAN * aspect * widen * 1.1,
+      px: Math.min(2048, Math.ceil(Math.max(this.w, this.h) * widen * 1.1 * Math.min(dpr, 1.5))),
     };
   }
 

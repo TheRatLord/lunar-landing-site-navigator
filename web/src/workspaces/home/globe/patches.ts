@@ -98,7 +98,7 @@ export async function polarCap(kind: "south" | "north", tilesets: readonly Tiles
   if (!basis.tileset) return null;
   const edge = Math.abs(basis.proj.forward(kind === "south" ? -68 : 68, 0)[1]);
   const b: [number, number, number, number] = [-edge, -edge, edge, edge];
-  const z = levelFor(basis.grid, 2 * edge, 2048);
+  const z = levelFor(basis.grid, 2 * edge, 1024);
   const canvas = await draw(basis.tileset, renderVersion, basis.grid, b, z, 0, 0, signal);
   return mesh(basis.proj, b, true, canvas, 4e-5);
 }

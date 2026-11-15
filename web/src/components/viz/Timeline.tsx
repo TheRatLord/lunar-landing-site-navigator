@@ -94,6 +94,64 @@ function drawIntervals(
   }
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function pillText(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function drawPill(ctx: CanvasRenderingContext2D, text: string, x: number, minX: number, maxX: number, fill: string, ink: string, weight: number): void {
+  ctx.save();
+  ctx.font = `${weight} 11px ${SANS}`;
+  const w = ctx.measureText(text).width + 14;
+  const h = 18;
+  const left = clamp(x - w / 2, minX, Math.max(minX, maxX - w));
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.roundRect(left, 2, w, h, h / 2);
+  ctx.fill();
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, left + w / 2, 2 + h / 2 + 0.5);
+  ctx.restore();
+}
+
+function drawKey(ctx: CanvasRenderingContext2D, token: string, c: ThemeColors, x: number, y: number): void {
+  ctx.save();
+  if (token === "c-sun") {
+    ctx.strokeStyle = c.get("c-sun");
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * 5, y + Math.sin(a) * 5);
+      ctx.lineTo(x + Math.cos(a) * 6.5, y + Math.sin(a) * 6.5);
+      ctx.stroke();
+    }
+  } else if (token === "c-earth") {
+    ctx.strokeStyle = c.get("c-earth");
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+    ctx.moveTo(x - 5.5, y);
+    ctx.lineTo(x + 5.5, y);
+    ctx.moveTo(x + 2.5, y);
+    ctx.ellipse(x, y, 2.5, 5.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = fillOf(c, token);
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 const MARK_R = 5;
 function markY(world: string, top: number, bottom: number): number {
   return world === "optimistic" ? top + MARK_R + 1 : world === "pessimistic" ? bottom - MARK_R - 1 : (top + bottom) / 2;
@@ -137,6 +195,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
   const [size, setSize] = useState<Size>({ w: 0, h: 0 });
   const [view, setView] = useState<Range>(extent);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
+  const [scrubbing, setScrubbing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const extentKey = `${extent[0]}:${extent[1]}`;
@@ -219,10 +278,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
         ctx.fillStyle = c.get("text");
         const labelY = row.kind === "line" ? y + 8 : y + h / 2;
         ctx.fillText(fitText(ctx, row.label, GUTTER - 28 - 8), 28, labelY);
-        ctx.fillStyle = fillOf(c, row.color);
-        ctx.beginPath();
-        ctx.arc(16, row.kind === "line" ? y + 15 : y + h / 2, 4, 0, Math.PI * 2);
-        ctx.fill();
+        drawKey(ctx, row.color, c, 16, row.kind === "line" ? y + 15 : y + h / 2);
 
         ctx.save();
         ctx.beginPath();
@@ -231,7 +287,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
 
         if (row.kind === "intervals") {
           const color = fillOf(c, row.color);
-          const bh = 10;
+          const bh = 8;
           const by = y + (h - bh) / 2;
           ctx.fillStyle = c.get("c-neutral-bg");
           ctx.beginPath();
@@ -365,28 +421,28 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
       ctx.strokeStyle = c.get("text");
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(cx, AXIS_H - 6);
+      ctx.moveTo(cx, AXIS_H - 4);
       ctx.lineTo(cx, plotBottom);
       ctx.stroke();
       ctx.restore();
-      ctx.fillStyle = c.get("text");
-      ctx.beginPath();
-      ctx.moveTo(cx - 5, AXIS_H - 8);
-      ctx.lineTo(cx + 5, AXIS_H - 8);
-      ctx.lineTo(cx, AXIS_H - 1);
-      ctx.closePath();
-      if (cx >= plotX0 - 5 && cx <= plotX1 + 5) ctx.fill();
 
-      if (hovering) {
+      if (hovering && !scrubbing) {
         const t = tFromX(hover.x);
+        ctx.save();
         ctx.strokeStyle = c.get("text-3");
         ctx.lineWidth = 1;
-        ctx.globalAlpha = 0.6;
+        ctx.setLineDash([3, 3]);
         ctx.beginPath();
-        ctx.moveTo(hover.x + 0.5, plotTop);
+        ctx.moveTo(hover.x + 0.5, AXIS_H - 4);
         ctx.lineTo(hover.x + 0.5, plotBottom);
         ctx.stroke();
-        ctx.globalAlpha = 1;
+        ctx.restore();
+        drawPill(ctx, pillText(t), hover.x, plotX0 - 30, plotX1 + PAD_R, c.get("panel-2"), c.get("text-2"), 500);
+      }
+      if (cx >= plotX0 - 5 && cx <= plotX1 + 5) drawPill(ctx, pillText(timeMs), cx, plotX0 - 30, plotX1 + PAD_R, c.get("text"), c.get("bg"), 600);
+
+      if (hovering && !scrubbing) {
+        const t = tFromX(hover.x);
         const lines: Array<[string, string]> = [["Time", whenText(t)]];
         for (const r of rows) {
           if (r.kind === "intervals") lines.push([r.label, describeInterval(r, t)]);
@@ -395,21 +451,25 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
         drawReadout(ctx, lines, hover.x, hover.y, sz, c);
       }
     },
-    [colors, view, rows, rowsH, plotW, plotX0, plotX1, tx, tFromX, timeMs, hover, lineExtents, rowsTop],
+    [colors, view, rows, rowsH, plotW, plotX0, plotX1, tx, tFromX, timeMs, hover, lineExtents, rowsTop, scrubbing],
   );
 
-  type Drag = { kind: "pan"; x: number; view: Range; moved: number };
+  type Drag = { kind: "pan" | "scrub"; x: number; view: Range; moved: number };
   const drag = useRef<Drag | null>(null);
+  const timeAt = (x: number) => clamp(tFromX(clamp(x, plotX0, plotX1)), extent[0], extent[1]);
 
   const onPointerDown = (e: PointerEvent<HTMLCanvasElement>) => {
     const p = localPoint(e, e.currentTarget);
-    if (p.x < plotX0 || p.x > plotX1) return;
+    if (p.x < plotX0 - 6 || p.x > plotX1 + 6) return;
+    if (e.button !== 0 && e.button !== 1) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    if (p.y < rowsTop) {
-      onTimeChange(tFromX(p.x));
-      return;
+    const pan = e.shiftKey || e.button === 1;
+    drag.current = { kind: pan ? "pan" : "scrub", x: p.x, view, moved: 0 };
+    if (!pan) {
+      setScrubbing(true);
+      const hit = markAt(p.x, p.y);
+      onTimeChange(hit ? hit.t_ms : timeAt(p.x));
     }
-    drag.current = { kind: "pan", x: p.x, view, moved: 0 };
   };
 
   const onPointerMove = (e: PointerEvent<HTMLCanvasElement>) => {
@@ -418,18 +478,14 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
     const d = drag.current;
     if (!d) return;
     d.moved = Math.max(d.moved, Math.abs(p.x - d.x));
-    if (d.moved >= 4) setView(panDomain(d.view, -((p.x - d.x) / plotW) * (d.view[1] - d.view[0]), extent));
+    if (d.kind === "pan") {
+      if (d.moved >= 4) setView(panDomain(d.view, -((p.x - d.x) / plotW) * (d.view[1] - d.view[0]), extent));
+    } else if (d.moved >= 2) onTimeChange(timeAt(p.x));
   };
 
-  const onPointerUp = (e: PointerEvent<HTMLCanvasElement>) => {
-    const d = drag.current;
+  const onPointerUp = () => {
     drag.current = null;
-    if (!d) return;
-    if (d.moved < 4) {
-      const p = localPoint(e, e.currentTarget);
-      const hit = markAt(p.x, p.y);
-      onTimeChange(hit ? hit.t_ms : clamp(tFromX(p.x), extent[0], extent[1]));
-    }
+    setScrubbing(false);
   };
 
   const zoom = useCallback(
@@ -457,8 +513,11 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
 
   const onKey = (e: KeyboardEvent) => {
     const span = view[1] - view[0];
-    if (e.key === "ArrowLeft") setView((v) => panDomain(v, -span * 0.1, extent));
-    else if (e.key === "ArrowRight") setView((v) => panDomain(v, span * 0.1, extent));
+    const step = e.shiftKey ? 3_600_000 : Math.max(60_000, span / 100);
+    if (e.key === "ArrowLeft") onTimeChange(clamp(timeMs - step, extent[0], extent[1]));
+    else if (e.key === "ArrowRight") onTimeChange(clamp(timeMs + step, extent[0], extent[1]));
+    else if (e.key === "PageUp") setView((v) => panDomain(v, -span * 0.1, extent));
+    else if (e.key === "PageDown") setView((v) => panDomain(v, span * 0.1, extent));
     else if (e.key === "+" || e.key === "=") zoom(1.5);
     else if (e.key === "-") zoom(1 / 1.5);
     else if (e.key === "Home") setView([extent[0], extent[1]]);
@@ -466,7 +525,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
     e.preventDefault();
   };
 
-  const summary = `Timeline of ${rows.map((r) => r.label).join(", ")} from ${formatUtc(view[0], { seconds: false })} to ${formatUtc(view[1], { seconds: false })}. Click to move the time; arrow keys pan, plus and minus zoom, Home shows everything.`;
+  const summary = `Timeline of ${rows.map((r) => r.label).join(", ")} from ${formatUtc(view[0], { seconds: false })} to ${formatUtc(view[1], { seconds: false })}. Click or drag to move the time; arrow keys step the time, Page Up and Page Down pan, Shift-drag or the wheel with Shift pans, plus and minus zoom, Home shows everything.`;
 
   return (
     <Panel
@@ -497,6 +556,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
           onPointerLeave={() => setHover(null)}
           onKeyDown={onKey}
           onDoubleClick={() => setView([extent[0], extent[1]])}

@@ -56,7 +56,7 @@
   flex: none !important;
 }
 .timeline-canvas > canvas {
-  cursor: grab;
+  cursor: ew-resize;
 }
 .calendar-canvas > canvas {
   cursor: pointer;

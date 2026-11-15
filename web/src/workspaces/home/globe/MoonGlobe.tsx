@@ -49,6 +49,10 @@ interface MoonGlobeProps {
 }
 
 const WHOLE = null;
+type CapKind = "south" | "north";
+const CAP_DEG = 22;
+const sameView = (a: ViewInfo, b: ViewInfo): boolean =>
+  Math.abs(a.lat_deg - b.lat_deg) < 0.02 && Math.abs(((a.lon_deg - b.lon_deg + 540) % 360) - 180) < 0.05 && Math.abs(a.half_m / b.half_m - 1) < 0.05 && a.px === b.px;
 const MAX_DETAIL_M = 700_000;
 const contextView = (r: number | null): number => Math.max(20_000, (r ?? 0) * 4);
 const tightView = (r: number): number => Math.max(3_000, r * 1.35);
@@ -101,7 +105,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
     }
     const p = latest.current;
     s.flyTo(p.site.lat_deg, p.site.lon_deg, WHOLE, true);
-    const intro = window.setTimeout(() => s.flyTo(latest.current.site.lat_deg, latest.current.site.lon_deg, contextView(latest.current.areaRadius_m)), 500);
+    const intro = window.setTimeout(() => s.flyTo(latest.current.site.lat_deg, latest.current.site.lon_deg, contextView(latest.current.areaRadius_m)), 700);
     setScene(s);
     return () => {
       window.clearTimeout(intro);
@@ -259,22 +263,40 @@ export function MoonGlobe(props: MoonGlobeProps) {
     scene?.setRing(ringCentre.r ? circle(ringCentre.lat, ringCentre.lon, ringCentre.r) : null);
   }, [scene, ringCentre.lat, ringCentre.lon, ringCentre.r]);
 
-  useEffect(() => {
-    if (!scene || !tilesetList) return;
-    const ctl = new AbortController();
-    for (const kind of ["south", "north"] as const) {
-      polarCap(kind, tilesetList, renderVersion, ctl.signal).then(
-        (p) => scene.setPatch(kind, p),
-        () => undefined,
-      );
-    }
-    return () => ctl.abort();
-  }, [scene, tilesetList, renderVersion]);
-
   const [view, setView] = useState<ViewInfo | null>(null);
   useEffect(() => {
-    scene?.setHandlers({ settle: setView });
+    scene?.setHandlers({ settle: (v) => setView((prev) => (prev && sameView(prev, v) ? prev : v)) });
   }, [scene]);
+
+  const home: CapKind = site.lat_deg < 0 ? "south" : "north";
+  const other: CapKind = home === "south" ? "north" : "south";
+  const showOther = view !== null && 90 + (other === "north" ? -view.lat_deg : view.lat_deg) - CAP_DEG < (Math.acos(1 / (1 + view.alt)) * 180) / Math.PI;
+  const capLoad = useRef<{ ctl: AbortController; done: Set<CapKind> } | null>(null);
+
+  useEffect(() => {
+    if (!scene || !tilesetList) return;
+    const run = { ctl: new AbortController(), done: new Set<CapKind>() };
+    capLoad.current = run;
+    return () => {
+      run.ctl.abort();
+      if (capLoad.current === run) capLoad.current = null;
+    };
+  }, [scene, tilesetList, renderVersion]);
+
+  useEffect(() => {
+    const run = capLoad.current;
+    if (!scene || !tilesetList || !run) return;
+    for (const kind of showOther ? [home, other] : [home]) {
+      if (run.done.has(kind)) continue;
+      run.done.add(kind);
+      polarCap(kind, tilesetList, renderVersion, run.ctl.signal).then(
+        (p) => {
+          if (!run.ctl.signal.aborted) scene.setPatch(kind, p);
+        },
+        () => run.done.delete(kind),
+      );
+    }
+  }, [scene, tilesetList, renderVersion, home, other, showOther]);
   useEffect(() => {
     if (!scene || !tilesetList || !view) return;
     if (view.half_m > MAX_DETAIL_M) {

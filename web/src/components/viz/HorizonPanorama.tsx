@@ -42,6 +42,7 @@ export interface HorizonPanoramaProps {
 }
 
 const COMPACT_R = 9;
+const SITE_R = 7;
 
 interface Plot {
   left: number;
@@ -387,6 +388,7 @@ function drawInset(
   y: number,
   c: ThemeColors,
   lit = 1,
+  phase: Phase | null = null,
 ): void {
   const W = INSET_W;
   const H = INSET_H;
@@ -438,7 +440,8 @@ function drawInset(
   ctx.lineTo(x, y - 4);
   ctx.closePath();
   ctx.clip();
-  litDisc(ctx, cx, cy, R, style, lit);
+  if (style.name === "Earth") drawEarthGlyph(ctx, cx, cy, R, style, null, phase);
+  else litDisc(ctx, cx, cy, R, style, lit, 18);
   ctx.restore();
 
   for (const elev of [h.elev_lo_deg, h.elev_hi_deg]) {
@@ -730,13 +733,14 @@ export function HorizonPanorama({
         const a = p.az_deg + Math.round((L.azCenter - p.az_deg) / 360) * 360;
         const cx = toX(L, a);
         const cy = toY(L, p.el_deg);
-        const rx = compact ? COMPACT_R : p.ang_radius_deg * L.pxX;
-        if (!compact) drawDisc(ctx, cx, cy, rx, p.ang_radius_deg * L.pxY, style, clipAbove, 10);
+        const real = p.ang_radius_deg * L.pxX;
+        const rx = compact ? COMPACT_R : Math.max(SITE_R, real);
+        if (!compact && real > SITE_R * 2) drawDisc(ctx, cx, cy, real, p.ang_radius_deg * L.pxY, style, clipAbove, 10);
         else if (style.name === "Sun") drawSunGlyph(ctx, cx, cy, rx, style, clipAbove);
         else drawEarthGlyph(ctx, cx, cy, rx, style, clipAbove, light ? earthPhase(p, light) : null);
         const up = p.el_deg >= horizonAt(horizon.elev_deg, p.az_deg);
         if (compact && !up && cy >= L.cy0 && cy <= L.cy1 - 40 && cx >= L.x0 && cx <= L.x1) labels.push({ text: `${style.name} below the horizon`, color: c.get("text-3"), font: `500 11px ${SANS}`, ax: cx, ay: cy, gap: 12 });
-        if (cy >= L.cy0 && cy <= L.cy1 && cx >= L.x0 && cx <= L.x1 && up) labels.push({ text: style.name, color: c.get("text"), font: `600 ${compact ? 12 : 11}px ${SANS}`, ax: cx, ay: cy, gap: compact ? rx + (style.name === "Sun" ? 10 : 5) : Math.max(rx, 8) });
+        if (cy >= L.cy0 && cy <= L.cy1 && cx >= L.x0 && cx <= L.x1 && up) labels.push({ text: style.name, color: c.get("text"), font: `600 ${compact ? 12 : 11}px ${SANS}`, ax: cx, ay: cy, gap: rx + (style.name === "Sun" ? 10 : 5) });
         return p;
       };
       const sunStyle: BodyStyle = { color: c.get("c-sun"), soft: c.get("c-sun-soft"), highlight: c.get("on-accent"), name: "Sun" };
@@ -822,7 +826,7 @@ export function HorizonPanorama({
           const pairs = isSun
             ? sunInsetPairs(served, discFractionAboveHorizon(horizon.elev_deg, p.az_deg, p.el_deg, p.ang_radius_deg))
             : earthInsetPairs((earth ? earthCentre(earth, timeMs) : null) ?? { el_deg: NaN }, p.el_deg - horizonAt(horizon.elev_deg, p.az_deg));
-          drawInset(ctx, horizon, p, style, pairs, ix, iy, c, isSun ? sunDiscLit(served) : 1);
+          drawInset(ctx, horizon, p, style, pairs, ix, iy, c, isSun ? sunDiscLit(served) : 1, !isSun && sunNow ? earthPhase(p, sunNow) : null);
           iy += INSET_H + 8;
         }
       }

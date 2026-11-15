@@ -216,6 +216,11 @@
   cursor: pointer;
   touch-action: none;
 }
+.scrub-rail::before {
+  content: "";
+  position: absolute;
+  inset: -14px 0 -26px;
+}
 .scrub-fill {
   position: absolute;
   top: 0;
