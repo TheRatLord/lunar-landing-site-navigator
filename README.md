@@ -37,7 +37,7 @@ Evidence shows how each part was checked.
   illumination studies, LRO NAC imagery and real missions, with the measured errors.
 - **Oracle suite** (`lunarnav oracle`, `src/lunarnav/oracle`): the runnable form of that validation. Each case
   compares the engine with a value it did not produce (a closed form, a published data product, another
-  group's computation or a real observation), against a tolerance written down beforehand. The latest run
+  group's computation or a real observation), against a stated tolerance; any limit changed after a first run is logged with the data behind it. The latest run
   and its score are in [`docs/validation/oracle.md`](docs/validation/oracle.md).
 
 ## Where the numbers come from
