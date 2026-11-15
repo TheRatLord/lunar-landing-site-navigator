@@ -11,6 +11,7 @@
   --fs-xl: 22px;
   --fs-2xl: 28px;
   --fs-hero: 40px;
+  --fs-display: clamp(30px, 3vw, 46px);
   --lh-tight: 1.22;
   --lh-body: 1.47;
   --fw-regular: 400;
@@ -191,8 +192,8 @@
   --c-earth: #1f6fd0;
   --c-earth-soft: rgba(31, 111, 208, 0.26);
   --c-terrain: #6d7078;
-  --c-terrain-fill: #dcdce0;
-  --c-terrain-fill-top: #c2c2c8;
+  --c-terrain-fill: #ececf0;
+  --c-terrain-fill-top: #d4d4da;
   --map-dim: rgba(60, 60, 67, 0.08);
   --map-vignette: rgba(0, 0, 0, 0.14);
   --c-terrain-line: #3e4047;

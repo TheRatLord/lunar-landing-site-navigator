@@ -163,7 +163,7 @@ export function verdictHeadline(overall: string, outcomes: readonly RequirementO
   const s = verdictSentence(overall, outcomes, ctx);
   if (!s) return null;
   const n = outcomes.length;
-  if (overall === "pass") return { word: s.word, lead: n === 1 ? "Requirement met" : `All ${n} requirements met`, note: null };
+  if (overall === "pass") return { word: s.word, lead: n === 1 ? "Requirement met" : n === 2 ? "Both requirements met" : `All ${n} requirements met`, note: null };
   if (overall === "fail") {
     const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
     const first = failing[0];
@@ -178,7 +178,7 @@ export function verdictHeadline(overall: string, outcomes: readonly RequirementO
 
 export function verdictSentence(overall: string, outcomes: readonly RequirementOutcome[], ctx: VerdictContext = {}): { word: string; detail: string | null } | null {
   const n = outcomes.length;
-  if (overall === "pass") return { word: "Pass", detail: n === 1 ? "requirement met" : `all ${n} requirements met` };
+  if (overall === "pass") return { word: "Pass", detail: n === 1 ? "requirement met" : n === 2 ? "both requirements met" : `all ${n} requirements met` };
   if (overall === "fail") {
     const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
     if (failing.length === 0) return { word: "Fail", detail: null };

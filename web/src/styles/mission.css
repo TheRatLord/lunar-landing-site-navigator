@@ -6,9 +6,10 @@
 }
 .mission-title {
   margin: 0;
-  font-size: var(--fs-2xl);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-display);
+  font-size: var(--fs-display);
+  font-weight: var(--fw-medium);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
 }
 .mission-grid {
   display: flex;
@@ -61,7 +62,7 @@
   outline: none;
 }
 .mission-sec {
-  max-width: 640px;
+  max-width: 600px;
   padding-top: var(--sp-5);
 }
 .mission-sec + .mission-sec {
@@ -91,4 +92,10 @@
 }
 .mission .page-header-mid {
   flex: 1 1 0;
+}
+.mission-sec .sc-row {
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 240px);
+}
+.mission-sec .sc-row.has-origin {
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 240px) 104px;
 }

@@ -439,8 +439,10 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
     const onWheel = (e: WheelEvent) => {
       const p = localPoint(e, el);
       if (p.x < plotX0 || p.x > plotX1) return;
+      const sideways = e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY);
+      if (!sideways && !(e.ctrlKey || e.metaKey)) return;
       e.preventDefault();
-      if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      if (sideways) {
         const d = (e.shiftKey ? e.deltaY : e.deltaX) / plotW;
         setView((v) => panDomain(v, d * (v[1] - v[0]), extent));
       } else zoom(Math.exp(-e.deltaY * 0.0018), (p.x - plotX0) / plotW);

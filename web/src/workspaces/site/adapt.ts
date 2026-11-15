@@ -727,3 +727,9 @@ export function batteryRisk(r: EvaluateResult, scenario: Scenario | null): Batte
   const suggestedMin = typeof dod === "number" && dod > 0 && dod < 1 ? Math.round((1 - dod) * 100) / 100 : 0.2;
   return { low, high: m?.high ?? null, everyHeading: batteryFailsEveryHeading(r), depends: r.heading?.depends === true, suggestedMin };
 }
+
+export function batteryNote(b: BatteryRisk): string {
+  if (!b.depends) return "Not checked: the battery can run flat";
+  if (b.everyHeading) return "Not checked: the battery runs flat whichever way the lander faces";
+  return `Not checked: the battery runs flat at some headings, lowest ${Math.round(b.low * 100)}–${Math.round((b.high ?? b.low) * 100)} %`;
+}

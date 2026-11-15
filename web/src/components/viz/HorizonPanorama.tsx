@@ -673,7 +673,7 @@ export function HorizonPanorama({
         const main = deg % 90 === 0;
         if (compact && !main) continue;
         ctx.font = `600 ${compact ? 10 : main ? 12 : 11}px ${SANS}`;
-        ctx.fillStyle = compact ? "rgba(255, 255, 255, 0.42)" : main ? c.get("text-2") : c.get("text-3");
+        ctx.fillStyle = compact ? "rgba(255, 255, 255, 0.62)" : main ? c.get("text-2") : c.get("text-3");
         ctx.fillText(CARDINALS[deg / 45]!, x, compact ? Math.min(L.cy1 - 12, Math.max(toY(L, 0), toY(L, horizonAt(horizon.elev_deg, deg))) + 16) : L.y0 - 14);
         if (!compact) {
           ctx.strokeStyle = c.get("grid-strong");
@@ -808,9 +808,10 @@ export function HorizonPanorama({
     const el = canvasRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey || e.altKey)) return;
       e.preventDefault();
       const f = Math.exp(-e.deltaY * 0.0016);
-      if (e.altKey || e.ctrlKey) {
+      if (e.altKey) {
         if (!compact) setVexag(L.vexag * f);
       }
       else zoom(f, localPoint(e, el).x);
@@ -879,8 +880,42 @@ export function HorizonPanorama({
           onPointerLeave={() => setHover(null)}
           onKeyDown={onKey}
           onDoubleClick={resetView}
-        >
-          <div className="viz-float toolstrip toolstrip-float" role="group" aria-label="View controls" style={{ bottom: Math.max(10, size.h - L.y1 + 10), right: Math.max(10, size.w - L.x1 + 10) }}>
+        />
+        <div className="viz-foot">
+          <ul className="legend" aria-label="Legend">
+            <li>
+              <i className="lg-line" style={{ background: "var(--c-terrain-line)" }} /> Horizon
+            </li>
+            <li>
+              <i className="lg-band" /> Terrain error range
+            </li>
+            {sun && (
+              <li>
+                <i className="lg-line" style={{ background: "var(--c-sun)" }} /> Sun
+              </li>
+            )}
+            {earth && (
+              <li>
+                <i className="lg-line" style={{ background: "var(--c-earth)" }} /> Earth
+              </li>
+            )}
+            {(sun || earth) && (
+              <li>
+                <i className="lg-past" /> Past
+              </li>
+            )}
+            {stations.length > 0 && (
+              <>
+                <li>
+                  <i className="lg-diamond filled" /> Earth link
+                </li>
+                <li>
+                  <i className="lg-diamond" /> No link
+                </li>
+              </>
+            )}
+          </ul>
+          <div className="toolstrip viz-tools" role="group" aria-label="View controls">
             <IconButton icon="target" label="True-size Sun and Earth discs" size="sm" pressed={inset} onClick={() => setInset((v) => !v)} />
             <span className="toolstrip-sep" aria-hidden="true" />
             <div className="viz-float-slider">
@@ -899,40 +934,7 @@ export function HorizonPanorama({
             <IconButton icon="minus" label="Zoom out" size="sm" onClick={() => zoom(1 / 1.5)} />
             <IconButton icon="reset" label="Reset view" size="sm" shortcut="F" onClick={resetView} />
           </div>
-        </Canvas>
-        <ul className="legend" aria-label="Legend">
-          <li>
-            <i className="lg-line" style={{ background: "var(--c-terrain-line)" }} /> Horizon
-          </li>
-          <li>
-            <i className="lg-band" /> Terrain error range
-          </li>
-          {sun && (
-            <li>
-              <i className="lg-line" style={{ background: "var(--c-sun)" }} /> Sun
-            </li>
-          )}
-          {earth && (
-            <li>
-              <i className="lg-line" style={{ background: "var(--c-earth)" }} /> Earth
-            </li>
-          )}
-          {(sun || earth) && (
-            <li>
-              <i className="lg-past" /> Past
-            </li>
-          )}
-          {stations.length > 0 && (
-            <>
-              <li>
-                <i className="lg-diamond filled" /> Earth link
-              </li>
-              <li>
-                <i className="lg-diamond" /> No link
-              </li>
-            </>
-          )}
-        </ul>
+        </div>
       </div>
     </section>
   );

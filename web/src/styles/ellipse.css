@@ -60,7 +60,7 @@
 .el-outline, .el-mark-ring, .el-mark-plus, .el-scale path { fill: none; stroke: var(--text); stroke-width: 2; }
 .el-ring { fill: none; stroke: var(--text-2); stroke-width: 1; stroke-dasharray: 4 4; }
 .el-axis { fill: none; stroke: var(--text-2); stroke-width: 1; stroke-dasharray: 1 5; stroke-linecap: round; }
-.el-label, .el-mark-text, .el-scale text, .el-north text { fill: var(--text); font-size: 11px; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+.el-label, .el-mark-text, .el-scale text, .el-north text { fill: var(--text); font-size: 17px; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
 .el-mark-text { font-weight: 700; }
 
 

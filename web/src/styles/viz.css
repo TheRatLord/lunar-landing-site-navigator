@@ -62,10 +62,6 @@
   cursor: pointer;
 }
 
-/* panorama: controls float inside the plot */
-.viz-float {
-  position: absolute;
-}
 .viz-float-slider {
   width: 112px;
   padding: 0 var(--sp-1);
@@ -211,3 +207,6 @@
   height: 1px;
   background: var(--text-3);
 }
+.viz-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-4); }
+.viz-foot > .legend { flex: 1 1 320px; min-width: 0; }
+.viz-tools { flex: none; padding: 2px; border-radius: var(--r-pill); background: var(--fill); }

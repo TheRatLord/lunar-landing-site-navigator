@@ -14,7 +14,7 @@ import { verdictHeadline } from "../../lib/requirements";
 import { siteLabel } from "../../lib/siteName";
 import { parseUtc } from "../../lib/time";
 import { hoursOrDays, whenText } from "../../scenario/when";
-import { batteryRisk, type VerdictSummary } from "./adapt";
+import { batteryNote, batteryRisk, type VerdictSummary } from "./adapt";
 import { Assumptions } from "./Assumptions";
 import { SiteTabs } from "./SiteTabs";
 
@@ -41,11 +41,7 @@ function Notes({ doc, result }: { doc: Scenario; result: EvaluateResult | null }
       {battery && (
         <span className="vs-note vs-note-warn">
           <Icon name="battery" size={12} />
-          {!battery.depends
-            ? "Not checked: the battery can run flat"
-            : battery.everyHeading
-              ? "Not checked: the battery runs flat whichever way the lander faces"
-              : `Not checked: the battery runs flat at some headings, lowest ${Math.round(battery.low * 100)}–${Math.round((battery.high ?? battery.low) * 100)} %`}
+          {batteryNote(battery)}
           <Button size="sm" variant="ghost" onClick={addBattery}>
             Make it a requirement
           </Button>

@@ -101,6 +101,7 @@
 .vs-note-warn > svg { color: var(--c-marginal); }
 .site-verdict { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2) var(--sp-5) var(--sp-4); }
 .site-eyebrow { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); font-weight: var(--fw-semibold); letter-spacing: 0.01em; color: var(--text-2); }
-.site-headline { margin: 0; font-size: clamp(26px, 2.6vw, 38px); font-weight: var(--fw-semibold); line-height: 1.08; letter-spacing: -0.022em; color: var(--text); text-wrap: balance; }
+.site-headline { margin: 0; font-size: var(--fs-display); font-weight: var(--fw-medium); line-height: 1.06; letter-spacing: -0.03em; color: var(--text); text-wrap: balance; }
 .site-headline-wait { display: flex; align-items: center; gap: var(--sp-3); color: var(--text-2); }
 .site-headline-note { margin: var(--sp-1) 0 0; font-size: var(--fs-lg); font-weight: var(--fw-medium); letter-spacing: var(--tracking-tight); color: var(--text-2); }
+.site-rail { margin-top: calc(var(--control-h) + var(--gutter)); }

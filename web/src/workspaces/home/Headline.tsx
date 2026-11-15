@@ -7,7 +7,8 @@ import { Spinner } from "../../components/ui/Progress";
 import type { Verdict } from "../../contract/types";
 import { verdictHeadline } from "../../lib/requirements";
 import { VERDICT_LABEL } from "../../lib/verdict";
-import type { VerdictSummary } from "../site/adapt";
+import { useScenario } from "../../scenario/store";
+import { batteryNote, batteryRisk, type VerdictSummary } from "../site/adapt";
 import { nextPass, scanAt, type BestLanding, type YearScan } from "./scan";
 import { dayText, skyFacts, type Survey } from "./survey";
 
@@ -43,6 +44,8 @@ function exactLine(s: VerdictSummary): VerdictLine {
 }
 
 export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump }: HeadlineProps) {
+  const doc = useScenario((s) => s.doc);
+  const battery = summary && evaluation.result && !evaluation.stale ? batteryRisk(evaluation.result, doc) : null;
   const sky = survey ? skyFacts(survey, timeMs) : null;
   const preview = scan && (dragging || (!summary && evaluation.phase === "running")) ? scanAt(scan, timeMs) : null;
   const line: VerdictLine | null =
@@ -86,6 +89,11 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
         )}
         {line && failed && <Failed onRetry={onRetry} small />}
         {line?.note && <p className="home-headline-note">{line.note}</p>}
+        {battery && (
+          <p className="home-headline-sub home-unchecked">
+            <Icon name="battery" size={12} /> {batteryNote(battery)}
+          </p>
+        )}
         {(requirements === 0 ? sky?.events : skyLine) ? (
           <p className="home-headline-sub">
             <span className={requirements !== 0 && sky?.warn ? "home-warn" : undefined}>{requirements === 0 ? sky?.events : skyLine}</span>

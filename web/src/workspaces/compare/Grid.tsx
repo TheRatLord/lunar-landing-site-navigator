@@ -91,7 +91,7 @@ export function Grid({
                     <span className="cmp-col-date num">{ms === null ? labels[i] : dayText(ms, new Date(ms).getUTCFullYear() !== plannedYear)}</span>
                     {h !== 0 && removable(h) && <IconButton icon="close" size="sm" className="cmp-x" label={`Remove ${ms === null ? labels[i] : dayText(ms, true)}`} onClick={() => onRemoveSlip(h)} />}
                   </span>
-                  {h === 0 && <span className="cmp-col-sub num">Planned</span>}
+                  <span className="cmp-col-sub num">{h === 0 ? "Planned" : "\u00a0"}</span>
                 </th>
               );
             })}

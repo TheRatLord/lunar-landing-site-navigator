@@ -102,7 +102,8 @@ function RequirementLane({ spans, start, end, best, state, onPick }: { spans: re
 }
 
 function share(scan: YearScan): string {
-  return `${Math.round(scan.passFraction * 100)}%`;
+  const pct = scan.passFraction * 100;
+  return pct > 0 && pct < 0.5 ? "<1%" : `${Math.round(pct)}%`;
 }
 
 export function PinnedRow({ label, sub, survey, scan, requirements, failed, start_ms, end_ms, onSelect, onRemove }: PinnedRowProps) {

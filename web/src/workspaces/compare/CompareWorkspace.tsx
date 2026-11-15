@@ -107,6 +107,7 @@ function Compare() {
   const tally = useMemo(() => {
     let total = 0;
     let ok = 0;
+    let marginal = 0;
     const okSites = new Set<string>();
     for (const site of sites)
       for (const h of slips) {
@@ -115,10 +116,11 @@ function Compare() {
         total += 1;
         if (works(row.state)) {
           ok += 1;
+          if (row.state === "marginal") marginal += 1;
           okSites.add(site.key);
         }
       }
-    return { total, ok, okSites: okSites.size };
+    return { total, ok, marginal, okSites: okSites.size };
   }, [sites, slips, cellAt]);
   const options = sites.length * slips.length;
   const title =
@@ -126,7 +128,9 @@ function Compare() {
       ? "Comparing sites and dates"
       : tally.ok === 0
         ? `None of ${options} option${options === 1 ? "" : "s"} works.`
-        : `${tally.ok} of ${options} options work${tally.ok === 1 ? "s" : ""}.`;
+        : tally.ok === tally.marginal
+          ? `${tally.marginal} of ${options} options ${tally.marginal === 1 ? "is" : "are"} marginal.`
+          : `${tally.ok - tally.marginal} of ${options} options work${tally.ok - tally.marginal === 1 ? "s" : ""}${tally.marginal ? `, ${tally.marginal} marginal` : ""}.`;
   const subtitle =
     tally.total < options || tally.total === 0
       ? null
@@ -157,7 +161,7 @@ function Compare() {
         <AddDate plannedMs={plannedMs} />
       </PageHeader>
       <header className="cmp-head">
-        <h1 className="cmp-title" data-tone={tally.total === options && options > 0 ? (tally.ok === 0 ? "fail" : "pass") : undefined}>
+        <h1 className="cmp-title" data-tone={tally.total === options && options > 0 ? (tally.ok === 0 ? "fail" : tally.ok === tally.marginal ? "marginal" : "pass") : undefined}>
           {title}
         </h1>
         {subtitle && <p className="cmp-sub">{subtitle}</p>}
@@ -197,12 +201,13 @@ function Detail({ site, row, slip_h, landingMs, stale, onDone }: { site: SiteRef
   const plan = site.key === BASELINE_SITE;
   const ok = works(row.state);
   const nextMs = ok ? null : parseUtc(row.next_open_utc ?? null);
+  const nextMarginal = nextMs !== null && row.next_open_state === "marginal";
   const target = nextMs ?? landingMs;
   const isCurrent = plan && slip_h === 0;
   const sentence = rowVerdict(row);
   const label = ok
     ? isCurrent ? null : plan ? "Use this date" : slip_h === 0 ? "Use this site" : "Use this site and date"
-    : nextMs === null ? null : plan ? `Use ${dayText(nextMs)} instead` : `Use this site on ${dayText(nextMs)}`;
+    : nextMs === null ? null : `${plan ? `Use ${dayText(nextMs)} instead` : `Use this site on ${dayText(nextMs)}`}${nextMarginal ? " (marginal)" : ""}`;
 
   return (
     <section className={`cmp-detail${stale ? " cmp-stale" : ""}`} aria-label="Selected site and date">
@@ -222,7 +227,7 @@ function Detail({ site, row, slip_h, landingMs, stale, onDone }: { site: SiteRef
         )}
         {!ok && (
           <div>
-            <dt>Next date</dt>
+            <dt>{nextMarginal ? "Next marginal date" : "Next date"}</dt>
             <dd className="num">{nextMs !== null ? dateText(nextMs) : "No date within a year"}</dd>
           </div>
         )}
