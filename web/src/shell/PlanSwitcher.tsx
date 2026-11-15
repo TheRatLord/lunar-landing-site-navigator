@@ -9,8 +9,9 @@ import { useEditorUi } from "../scenario/editor/editorUi";
 import { useField } from "../scenario/editor/fieldState";
 import { useConfirm } from "../scenario/editor/useConfirm";
 import { exportScenarioJson } from "../scenario/editor/scenarioActions";
+import { resetDemo } from "../scenario/demo";
 import { loadCreatedPlans } from "../scenario/myPlans";
-import { forgetDemoSearch, importPlanFile, selectSearchDirty, usePlanSearch } from "../scenario/planSearch";
+import { importPlanFile, selectSearchDirty, usePlanSearch } from "../scenario/planSearch";
 import { planLink } from "../scenario/scenarioUrl";
 import { BLANK_LINK, DEMO_LINK, RESET_LINK, selectDirty, useScenario } from "../scenario/store";
 import type { ScenarioRecord } from "../scenario/types";
@@ -65,11 +66,6 @@ export function useDiscardGuard() {
   const { confirm, dialog } = useConfirm();
   const guard = (action: string) => (dirty ? confirm({ title: "Discard unsaved edits?", consequence: `“${name || "Untitled plan"}” has unsaved edits.`, action }) : Promise.resolve(true));
   return { guard, dialog };
-}
-
-export async function resetDemo(): Promise<void> {
-  forgetDemoSearch();
-  if (await useScenario.getState().openDemo(true)) toast({ kind: "info", title: "Demo reset" });
 }
 
 export async function startBlankPlan(): Promise<boolean> {

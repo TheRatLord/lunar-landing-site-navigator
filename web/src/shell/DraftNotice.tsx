@@ -6,7 +6,7 @@ import { runPlanAction } from "./PlanSwitcher";
 const ACTION_TEXT: Record<string, string> = {
   [DEMO_LINK]: "This opens the demo plan.",
   [BLANK_LINK]: "This starts a blank plan.",
-  [RESET_LINK]: "This resets and opens the demo plan.",
+  [RESET_LINK]: "This opens a fresh demo plan.",
 };
 
 const MAX_LINES = 8;

@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { currentSearch, searchToParams, usePlanSearch } from "./planSearch";
-import { selectDirty, useScenario } from "./store";
+import { resetDemo } from "./demo";
+import { currentSearch, searchToParams, selectSearchDirty, usePlanSearch } from "./planSearch";
+import { RESET_LINK, forgetDemoCopy, selectDirty, useScenario } from "./store";
 
 const SCENARIO_ID_RE = /^scen-[0-9a-f]{12}$/;
 
@@ -34,6 +35,19 @@ function openFromLink(): void {
 }
 
 openFromLink();
+
+function openDemoLink(): void {
+  if (typeof window === "undefined" || !/^\/demo\/?$/.test(window.location.pathname)) return;
+  const s = useScenario.getState();
+  if (!s.demo && (selectDirty(s) || selectSearchDirty(usePlanSearch.getState()))) {
+    useScenario.setState({ pendingLink: RESET_LINK });
+    return;
+  }
+  forgetDemoCopy();
+  setTimeout(() => void resetDemo(true), 0);
+}
+
+openDemoLink();
 
 export function useScenarioUrl(): void {
   const [params, setParams] = useSearchParams();

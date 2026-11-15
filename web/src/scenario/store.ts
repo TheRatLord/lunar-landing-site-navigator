@@ -104,6 +104,13 @@ function readDemo(): Scenario | null {
   }
 }
 
+export function forgetDemoCopy(): void {
+  try {
+    localStorage.removeItem(DEMO_KEY);
+  } catch {
+  }
+}
+
 function writeDemo(doc: Scenario): void {
   try {
     localStorage.setItem(DEMO_KEY, JSON.stringify(doc));
@@ -281,13 +288,7 @@ useScenario.subscribe((s) => {
   if (!s.doc && s.phase === "idle") startPlan();
 });
 
-const demoLink = typeof window !== "undefined" && /^\/demo\/?$/.test(window.location.pathname);
-setTimeout(() => {
-  const s = useScenario.getState();
-  if (!demoLink || s.demo || s.phase !== "idle") return startPlan();
-  if (s.doc && selectDirty(s)) useScenario.setState({ pendingLink: DEMO_LINK });
-  else void s.openDemo();
-}, 0);
+setTimeout(startPlan, 0);
 
 function adoptNewerSaved(): void {
   const s = useScenario.getState();
