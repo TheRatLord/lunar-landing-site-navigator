@@ -1491,6 +1491,8 @@ button.l-lessons-label {
 }
 .l-walk-hint {
   top: 16px;
+  display: flex;
+  gap: 18px;
   padding: 8px 16px;
   pointer-events: none;
 }
@@ -2227,6 +2229,9 @@ button.l-lessons-label {
   margin-top: 6px;
 }
 .l-about-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   color: var(--text-2);
   font-size: var(--l-fs-xs);
@@ -2309,10 +2314,8 @@ button.l-lessons-label {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-.l-dock-sum span::before {
-  content: "·";
-  margin-right: 8px;
-  color: var(--text-3);
+.l-dock-sum {
+  gap: 12px;
 }
 .l-dock-sum span {
   color: var(--text-2);

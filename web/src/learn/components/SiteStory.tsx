@@ -57,14 +57,11 @@ export function SiteStory({ site }: { site: SiteId }) {
             ))}
           </ul>
           <p className="l-about-sources">
-            Sources:{" "}
-            {story.sources.map((s, i) => (
-              <span key={s.url}>
-                {i > 0 && " · "}
-                <a href={s.url} target="_blank" rel="noreferrer">
-                  {s.label}
-                </a>
-              </span>
+            <span>Sources</span>
+            {story.sources.map((s) => (
+              <a key={s.url} href={s.url} target="_blank" rel="noreferrer">
+                {s.label}
+              </a>
             ))}
           </p>
         </div>

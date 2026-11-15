@@ -62,11 +62,21 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
       {hint && (
         <p className="l-walk-hint" role="note">
           {touch ? (
-            <>Drag to look · ▲ to {body === "rover" ? "drive" : "walk"}</>
+            <>
+              <span>Drag to look</span>
+              <span>▲ to {body === "rover" ? "drive" : "walk"}</span>
+            </>
           ) : (
             <>
-              <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> {body === "rover" ? "drive" : "walk"} · drag look
-              {dark && <> · <kbd>L</kbd> lights</>}
+              <span>
+                <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> {body === "rover" ? "drive" : "walk"}
+              </span>
+              <span>Drag to look</span>
+              {dark && (
+                <span>
+                  <kbd>L</kbd> lights
+                </span>
+              )}
             </>
           )}
         </p>

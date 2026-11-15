@@ -52,7 +52,6 @@ export function Dock() {
     <div className="l-dock l-fold" role="group" aria-label="Explore">
       <button type="button" className="l-fold-sum l-dock-sum" aria-label={`Place, view and time: ${SITES[siteId].name}, ${viewLabel}, ${date}. Show the controls`}>
         <strong>{SITES[siteId].name}</strong>
-        <span>{viewLabel}</span>
         <span>{date}</span>
       </button>
       <div className="l-dock-row">

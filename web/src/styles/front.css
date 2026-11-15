@@ -149,8 +149,8 @@
 }
 .front-foot {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
+  flex-direction: column;
+  gap: var(--sp-1);
   color: var(--text-3);
   font-size: var(--fs-sm);
 }

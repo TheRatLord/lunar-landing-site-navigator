@@ -26,7 +26,7 @@ export function FrontDoor() {
             <div className="front-body">
               <span className="front-for">
                 <Icon name="checklist" size={14} />
-                Planner · for mission teams
+                For mission teams
               </span>
               <h2>Plan a landing</h2>
               <ul className="front-points">
@@ -53,7 +53,7 @@ export function FrontDoor() {
             <div className="front-body">
               <span className="front-for">
                 <Icon name="rover" size={14} />
-                Explorer · for everyone
+                For everyone
               </span>
               <h2>Explore the Moon</h2>
               <ul className="front-points">
@@ -71,7 +71,6 @@ export function FrontDoor() {
 
         <footer className="front-foot">
           <Link to={EVIDENCE_WORKSPACE.path}>How we check the numbers</Link>
-          <span aria-hidden="true">·</span>
           <span>Built for the NASA Space Apps Challenge 2026</span>
         </footer>
       </main>
