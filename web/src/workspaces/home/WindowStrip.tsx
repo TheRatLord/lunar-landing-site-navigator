@@ -1,6 +1,7 @@
 import { formatQuantity } from "../../lib/requirements";
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { IconButton } from "../../components/ui/Button";
+import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Progress";
 import type { Interval } from "../../contract/types";
 import type { LandingWindow } from "../../scenario/planSearch";
@@ -106,16 +107,26 @@ function share(scan: YearScan): string {
   return pct > 0 && pct < 0.5 ? "<1%" : `${Math.round(pct)}%`;
 }
 
+function Share({ scan }: { scan: YearScan | null }) {
+  if (!scan) return <span className="ws-share" />;
+  const text = share(scan);
+  return (
+    <span className="ws-share num" data-none={scan.passFraction === 0 || undefined} title={`Meets requirements ${text} of the year`}>
+      {text}
+    </span>
+  );
+}
+
 export function PinnedRow({ label, sub, survey, scan, requirements, failed, start_ms, end_ms, onSelect, onRemove }: PinnedRowProps) {
   const ready = requirements ? scan !== null : survey !== null;
   return (
-    <div className="ws-row ws-block ws-pinned">
-      <div className="ws-gutter ws-pin-head">
-        <button type="button" className="ws-pin-name" title={`Switch to ${label}`} onClick={onSelect}>
-          <strong>{label}</strong>
-          <span className="num">{requirements && scan ? `Meets ${share(scan)}` : sub}</span>
+    <div className="ws-row ws-pinned">
+      <div className="ws-gutter ws-key ws-pin-head">
+        <IconButton icon="close" size="sm" className="ws-unpin" label={`Unpin ${label}`} onClick={onRemove} />
+        <button type="button" className="ws-pin-name" title={`Switch to ${label}, ${sub}`} onClick={onSelect}>
+          {label}
         </button>
-        <IconButton icon="close" size="sm" label={`Unpin ${label}`} onClick={onRemove} />
+        {requirements && <Share scan={scan} />}
       </div>
       <div className="ws-lanes">
         {requirements ? (
@@ -190,14 +201,26 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, failed, si
         </div>
       </div>
 
-      <div className="ws-row ws-block ws-primary">
+      <div className="ws-row ws-primary">
         <div className="ws-gutter ws-lane-labels">
-          <span className="ws-key ws-key-sun">Sunlight</span>
-          <span className="ws-key ws-key-earth">Earth link</span>
-          {scanState === "off" ? <span className="ws-key ws-key-both">Both</span> : (
+          <span className="ws-key ws-key-sun">
+            <Icon name="sun" size={12} />
+            <span className="ws-key-text">Sunlight</span>
+          </span>
+          <span className="ws-key ws-key-earth">
+            <Icon name="earth" size={12} />
+            <span className="ws-key-text">Earth link</span>
+          </span>
+          {scanState === "off" ? (
+            <span className="ws-key ws-key-both">
+              <Icon name="layers" size={12} />
+              <span className="ws-key-text">Both</span>
+            </span>
+          ) : (
             <span className="ws-key ws-key-req">
-              Meets requirements
-              {best.length > 0 && scan && <em className="ws-key-best">◆ best</em>}
+              <Icon name="check" size={12} />
+              <span className="ws-key-text">Meets requirements</span>
+              <Share scan={scan} />
             </span>
           )}
         </div>
