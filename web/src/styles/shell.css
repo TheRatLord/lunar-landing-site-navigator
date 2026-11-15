@@ -121,6 +121,7 @@
   border-radius: var(--r-pill);
 }
 .tb-link {
+  height: var(--control-h);
   text-decoration: none;
 }
 .tb-link.active {

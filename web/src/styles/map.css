@@ -28,6 +28,7 @@
 .map-key-item:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: calc(-1 * var(--focus-w)); }
 .map-float-tl { right: 76px; flex-wrap: wrap; pointer-events: none; }
 .map-float-tl > * { pointer-events: auto; }
+.map-float-tl > .toolstrip-float { box-sizing: border-box; height: 38px; }
 .map-find { height: 38px; padding: 0 var(--sp-4); box-shadow: var(--shadow-popover); }
 .map-find-note { margin-left: var(--sp-2); padding: 1px var(--sp-2); border-radius: var(--r-pill); background: color-mix(in srgb, currentColor 12%, transparent); font-size: var(--fs-xs); font-weight: var(--fw-regular); }
 .map-goto-list { position: absolute; top: calc(100% + var(--sp-2)); left: 0; right: 0; z-index: var(--z-popover); margin: 0; padding: var(--sp-1); list-style: none; background: var(--glass-thick); border: 0.5px solid var(--glass-edge); border-radius: var(--r-lg); box-shadow: var(--shadow-popover); max-height: 320px; overflow: auto; -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); min-width: 280px; }
