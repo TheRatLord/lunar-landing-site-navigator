@@ -113,7 +113,7 @@ export function PinnedRow({ label, sub, survey, scan, requirements, failed, star
       <div className="ws-gutter ws-pin-head">
         <button type="button" className="ws-pin-name" title={`Switch to ${label}`} onClick={onSelect}>
           <strong>{label}</strong>
-          <span className="num">{requirements && scan ? `Meets ${share(scan)} · ${sub}` : sub}</span>
+          <span className="num">{requirements && scan ? `Meets ${share(scan)}` : sub}</span>
         </button>
         <IconButton icon="close" size="sm" label={`Unpin ${label}`} onClick={onRemove} />
       </div>

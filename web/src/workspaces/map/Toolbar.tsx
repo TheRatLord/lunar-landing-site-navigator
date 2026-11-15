@@ -14,7 +14,7 @@ interface ToolbarProps {
   canFitSite: boolean;
   sites: readonly SiteEntry[];
   searchRef: Ref<HTMLInputElement>;
-  find: { label: string; note: () => string | null; busy: boolean; stale: boolean };
+  find: { label: string; note: () => string | null; hint?: string; busy: boolean; stale: boolean };
   layers: ReactNode;
   dockOpen: boolean;
   canDock: boolean;
@@ -64,7 +64,7 @@ export function Toolbar(p: ToolbarProps) {
         {!p.dockOpen && p.canDock && <IconButton icon="panelRight" label="Show panel" shortcut="L" size="sm" onClick={p.onDock} />}
       </div>
       <MapSearch sites={p.sites} inputRef={p.searchRef} onSite={p.onSite} onPoint={p.onPoint} />
-      <Button size="sm" variant="primary" icon="search" className="map-find" aria-busy={p.find.busy} data-stale={p.find.stale || undefined} onClick={p.onFind}>
+      <Button size="sm" variant="primary" icon="search" className="map-find" title={p.find.hint} aria-busy={p.find.busy} data-stale={p.find.stale || undefined} onClick={p.onFind}>
         {p.find.label}
         {note && <span className="map-find-note">{note}</span>}
       </Button>

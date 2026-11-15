@@ -387,7 +387,10 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
         ctx.stroke();
         ctx.globalAlpha = 1;
         const lines: Array<[string, string]> = [["Time", whenText(t)]];
-        for (const r of rows) lines.push([r.label, r.kind === "intervals" ? describeInterval(r, t) : describeLine(r, t)]);
+        for (const r of rows) {
+          if (r.kind === "intervals") lines.push([r.label, describeInterval(r, t)]);
+          else describeLine(r, t).forEach((v, i) => lines.push([i === 0 ? r.label : "", v]));
+        }
         drawReadout(ctx, lines, hover.x, hover.y, sz, c);
       }
     },

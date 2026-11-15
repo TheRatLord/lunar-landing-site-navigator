@@ -49,7 +49,9 @@ export function LanderPicker() {
                         {landerName(e.name)}
                         {on && customised && <span className="chip chip-marginal">Edited</span>}
                       </strong>
-                      <span>{landerFacts(e.profile)}</span>
+                      {landerFacts(e.profile).map((f) => (
+                        <span key={f}>{f}</span>
+                      ))}
                     </span>
                   </button>
                 </li>

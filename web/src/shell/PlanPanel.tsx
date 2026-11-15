@@ -111,7 +111,11 @@ export function PlanPanel() {
           </div>
         </Card>
 
-        <Card field="lander" icon="lander" label="Lander" value={landerTitle} width={480} lines={<span className="plan-card-line">{landerFacts(doc.profile)}</span>}>
+        <Card field="lander" icon="lander" label="Lander" value={landerTitle} width={480} lines={landerFacts(doc.profile).map((f) => (
+            <span key={f} className="plan-card-line">
+              {f}
+            </span>
+          ))}>
           <LanderPicker />
         </Card>
 

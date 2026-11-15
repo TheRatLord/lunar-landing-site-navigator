@@ -21,6 +21,6 @@ export function marginText(r: SearchRow): string | null {
 export function pinMarks(rows: readonly SearchRow[]): PinMark[] {
   return rows.map((r) => {
     const margin = marginText(r);
-    return { rank: r.rank, lat_deg: r.lat_deg, lon_deg: r.lon_deg, state: r.state, title: `#${r.rank} · ${STATE_WORD[r.state]}`, lines: margin ? [margin] : [] };
+    return { rank: r.rank, lat_deg: r.lat_deg, lon_deg: r.lon_deg, state: r.state, title: STATE_WORD[r.state], lines: margin ? [margin] : [] };
   });
 }

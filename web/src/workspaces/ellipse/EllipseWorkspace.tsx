@@ -18,7 +18,6 @@ import "../../styles/ellipse.css";
 import { SiteTabs } from "../site/SiteTabs";
 import { formatLimit, requirementName } from "../../lib/requirements";
 import { CONSTRAINT_META } from "../../scenario/editor/fieldSpecs";
-import { siteLabel } from "../../lib/siteName";
 import { countStates, limitInfo, marginText, plotHalfWidth, samplesCsv, stateShares, STATES, STATE_LABEL } from "./adapt";
 import { EllipsePlot, type Marker } from "./EllipsePlot";
 import { ConstraintTable, PointsPanel, ResultDetails, ResultStats, Warnings } from "./Results";
@@ -139,7 +138,8 @@ export function EllipseWorkspace() {
       />
       <header className={`el-head${stale ? " is-stale" : ""}`}>
         <p className="el-eyebrow">
-          {[siteLabel(doc.site.name ?? "") || "Unnamed site", `${axisText(ell.semi_major_m)} × ${axisText(ell.semi_minor_m)} ellipse`, result ? `${result.n_samples.toLocaleString("en-US")} points` : null].filter(Boolean).join(" · ")}
+          {axisText(ell.semi_major_m)} × {axisText(ell.semi_minor_m)} ellipse
+          {result && ` sampled at ${result.n_samples.toLocaleString("en-US")} points`}
         </p>
         <EllipseHeadline result={result} />
         <div className="el-status">{status}</div>

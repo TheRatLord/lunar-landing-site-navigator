@@ -61,16 +61,15 @@ export function gutterReadout(r: LineRow, t: number): string {
   return finite(rd.value) ? formatNum(rd.value, r.decimals ?? 2) : "—";
 }
 
-export function describeLine(r: LineRow, t: number): string {
+export function describeLine(r: LineRow, t: number): string[] {
   const rd = readLine(r, t);
-  if (rd === null) return "—";
+  if (rd === null) return ["—"];
   const d = r.decimals ?? 2;
   const b = bandText(rd, d);
-  const also = rd.also.map((a) => ` · ${caseName(a.world)} ${formatValue(a.value, r.unit, d)}`).join("");
-  const from = rd.note === null ? "" : ` · ${rd.note}${also}`;
-  if (rd.range) return b === null ? "—" : `${b}${from}`;
-  if (!finite(rd.value)) return "—";
-  return `${formatValue(rd.value, r.unit, d)}${b === null ? "" : ` [${b}]`}${from}`;
+  const from = rd.note === null ? [] : [rd.note, ...rd.also.map((a) => `${caseName(a.world)} ${formatValue(a.value, r.unit, d)}`)];
+  if (rd.range) return b === null ? ["—"] : [b, ...from];
+  if (!finite(rd.value)) return ["—"];
+  return [`${formatValue(rd.value, r.unit, d)}${b === null ? "" : ` [${b}]`}`, ...from];
 }
 
 export function describeInterval(r: IntervalRow, t: number): string {

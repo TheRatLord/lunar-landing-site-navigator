@@ -153,7 +153,7 @@
 .cd-act { grid-area: act; color: var(--text-3); display: inline-flex; align-self: center; }
 .cd-btn:hover .cd-act { color: var(--text); }
 .cd-when { grid-area: when; font-size: var(--fs-xs); color: var(--text-3); }
-.cd-range { color: var(--text-3); }
+.cd-range { display: block; color: var(--text-3); }
 .cd-none { margin: var(--sp-1) 0 0; padding: 0 var(--sp-1); font-size: var(--fs-xs); color: var(--text-3); }
 
 .cp { width: 100%; border-collapse: collapse; table-layout: auto; font-size: var(--fs-sm); }

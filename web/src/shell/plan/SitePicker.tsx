@@ -107,7 +107,7 @@ export function SitePicker() {
               <span className="plan-option-mark">{on ? <Icon name="check" size={14} /> : isPinned ? <Icon name="pin" size={14} /> : null}</span>
               <span className="plan-option-text plan-option-stack">
                 <strong>{o.title}</strong>
-                <span>{isPinned ? `Pinned · ${o.note}` : o.note}</span>
+                <span>{o.note}</span>
               </span>
             </button>
           </li>

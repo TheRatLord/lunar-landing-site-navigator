@@ -1358,7 +1358,7 @@ export class MapEngine {
     ctx.lineWidth = 1.5;
     ctx.fillRect(x1 - 4.5, y1 - 4.5, 9, 9);
     ctx.strokeRect(x1 - 4.5, y1 - 4.5, 9, 9);
-    const text = [`Blocker · azimuth ${formatBearing(b.azimuth_deg)} · ${formatDistance(b.distance_m)}`, b.label].filter(Boolean);
+    const text = ["Blocker", `${formatDistance(b.distance_m)} away at ${formatBearing(b.azimuth_deg)}`, b.label].filter(Boolean);
     plateText(ctx, text, (x0 + x1) / 2, (y0 + y1) / 2 - 22, p, this.w, this.h, p.fail, [this.w - 80, 0, this.w, 80]);
   }
 
@@ -1407,7 +1407,7 @@ export class MapEngine {
     lg.forEach((l, i) => {
       const [la, lo] = destination(l.from.lat_deg, l.from.lon_deg, l.bearing_deg, l.distance_m / 2);
       const [mx, my] = proj.forward(la, lo);
-      const lines = [`${formatDistance(l.distance_m)} · ${formatBearing(l.bearing_deg)}`];
+      const lines = [formatDistance(l.distance_m), formatBearing(l.bearing_deg)];
       if (lg.length > 1 && i === lg.length - 1) lines.push(`total ${formatDistance(l.cumulative_m)}`);
       plateText(ctx, lines, toScreenX(f, mx), toScreenY(f, my) - 18, p, this.w, this.h, p.text);
     });

@@ -290,7 +290,8 @@ export function MapWorkspace() {
       ? { label: "Searching", note: () => leftText(startedMs, useSearchResults.getState().progress, search.guessS), busy: true, stale: false }
       : {
           label: "Find sites",
-          note: () => (current ? `${search.candidates.length} found` : stale ? `${search.candidates.length} found · out of date` : plan.body ? `${plan.radiusKm} km · ${plan.about}` : null),
+          note: () => (current ? `${search.candidates.length} found` : stale ? "out of date" : plan.body ? `${plan.radiusKm} km` : null),
+          hint: plan.body && !current ? `Search within ${plan.radiusKm} km of the plan site, about ${plan.about}` : undefined,
           busy: false,
           stale,
         };
@@ -384,7 +385,11 @@ export function MapWorkspace() {
             )}
             {popupSite && (
               <MapPopup engine={engine} lat={popupSite.lat_deg} lon={popupSite.lon_deg} title={popupSite.name} icon={<SiteTitleIcon site={popupSite} />} onClose={closePopup}>
-                <p className="map-popup-facts">{siteFacts(popupSite)}</p>
+                {siteFacts(popupSite).map((f) => (
+                  <p key={f} className="map-popup-facts">
+                    {f}
+                  </p>
+                ))}
                 <SiteSources site={popupSite} />
                 <PlaceActions
                   isPlan={site?.catalog_id === popupSite.id && isPlanAt(popupSite.lat_deg, popupSite.lon_deg)}
@@ -395,7 +400,7 @@ export function MapWorkspace() {
               </MapPopup>
             )}
             {popupPin && (
-              <MapPopup engine={engine} lat={popupPin.lat_deg} lon={popupPin.lon_deg} title={`#${popupPin.rank} · ${STATE_WORD[popupPin.state]}`} onClose={closePopup}>
+              <MapPopup engine={engine} lat={popupPin.lat_deg} lon={popupPin.lon_deg} title={STATE_WORD[popupPin.state]} onClose={closePopup}>
                 {marginText(popupPin) && <p className="map-popup-facts">{marginText(popupPin)}</p>}
                 {pinLanding !== null && <p className="map-popup-facts">Best landing {whenText(pinLanding)}</p>}
                 <PlaceActions

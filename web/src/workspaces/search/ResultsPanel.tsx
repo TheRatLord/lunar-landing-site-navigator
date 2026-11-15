@@ -49,7 +49,7 @@ export function ResultsPanel({ plan, selected, onRun, onPick }: ResultsPanelProp
       {running && startedMs !== null && (
         <div className="se-run" role="status">
           <div className="se-run-line">
-            <span>Searching · {leftText(startedMs, progress, guessS)}</span>
+            <span>Searching ({leftText(startedMs, progress, guessS)})</span>
             <Button size="sm" variant="ghost" onClick={cancel}>
               Cancel
             </Button>

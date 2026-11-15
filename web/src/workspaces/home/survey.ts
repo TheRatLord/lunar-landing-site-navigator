@@ -200,7 +200,7 @@ export interface SkyFacts {
   text: string;
   tone: "pass" | "marginal" | "fail";
   warn: boolean;
-  events: string;
+  events: string[];
 }
 
 export function skyFacts(s: Survey, t: number): SkyFacts {
@@ -221,12 +221,10 @@ export function skyFacts(s: Survey, t: number): SkyFacts {
   add(sun, sunNever, "Sunrise", "Sunset", "Sun never sets");
   add(earth, earthNever, "Earthrise", "Earthset", "Earth never sets");
   events.sort((a, b) => a[0] - b[0]);
-  const timed = events.filter((e) => Number.isFinite(e[0])).map((e) => e[1]);
-  if (timed.length) timed[timed.length - 1] += " UTC";
-  const withUtc = [...timed, ...events.filter((e) => !Number.isFinite(e[0])).map((e) => e[1])].join(" · ");
-  const facts = (text: string, tone: SkyFacts["tone"], warn = false): SkyFacts => ({ text, tone, warn, events: withUtc });
+  const lines = events.map(([ms, text]) => (Number.isFinite(ms) ? `${text} UTC` : text));
+  const facts = (text: string, tone: SkyFacts["tone"], warn = false): SkyFacts => ({ text, tone, warn, events: lines });
   if (sun.up && earth.up) {
-    const span = !both ? "" : until === null ? ` past ${after}` : ` until ${eventText(until)}${timed.length ? "" : " UTC"}`;
+    const span = !both ? "" : until === null ? ` past ${after}` : ` until ${eventText(until)} UTC`;
     return facts(`Sunlit with Earth link${span}`, "pass");
   }
   if (sun.up) return earthNever ? facts("Sunlit, no Earth link all year", "fail", true) : facts("Sunlit, no Earth link", "marginal");

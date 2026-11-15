@@ -24,7 +24,7 @@ export function buildSources(
       key: "work",
       group: "work",
       name: doc.name,
-      detail: `${doc.site.name || "unnamed site"} · the open plan, including unsaved edits`,
+      detail: `The open plan at ${doc.site.name || "an unnamed site"}, including unsaved edits`,
       item: { scenario: doc },
     });
     for (const a of alternatives) {
@@ -32,7 +32,7 @@ export function buildSources(
         key: `alt:${a.id}`,
         group: "alternative",
         name: `${doc.name} @ ${a.name}`,
-        detail: `${a.name} · the open plan moved to this site`,
+        detail: `The open plan moved to ${a.name}`,
         item: {
           scenario: doc,
           overrides: {

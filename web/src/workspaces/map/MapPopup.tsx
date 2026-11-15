@@ -114,10 +114,10 @@ export function PlaceActions({ isPlan, inCompare, onUse, onUseWithLanding, onCom
   );
 }
 
-export function siteFacts(site: SiteEntry): string {
+export function siteFacts(site: SiteEntry): string[] {
   const kind = KIND_STYLE[site.kind].label;
   const when = dayText(site.landing_utc ?? site.landing_date) ?? dayText(site.planned_date);
-  return [site.confidence === "high" ? kind : `${kind} · ${site.confidence} confidence`, when, site.mission && site.kind !== "poi" && site.kind !== "region" && !site.name.includes(site.mission) ? site.mission : null].filter(Boolean).join(" · ");
+  return [site.confidence === "high" ? kind : `${kind}, ${site.confidence} confidence`, when, site.mission && site.kind !== "poi" && site.kind !== "region" && !site.name.includes(site.mission) ? site.mission : null].filter((f): f is string => Boolean(f));
 }
 
 export function SiteTitleIcon({ site }: { site: SiteEntry }) {

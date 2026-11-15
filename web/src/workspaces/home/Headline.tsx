@@ -15,7 +15,6 @@ import { formatDeg } from "../../lib/format";
 import { dayText, elevationAt, nextChange, skyFacts, type Survey } from "./survey";
 
 interface HeadlineProps {
-  subject: string;
   blockRef: Ref<HTMLElement>;
   survey: Survey | null;
   failed: boolean;
@@ -36,16 +35,16 @@ interface VerdictLine {
   tone: Tone;
   word: string;
   lead: string | null;
-  note: string | null;
+  notes: string[];
 }
 
 function exactLine(s: VerdictSummary): VerdictLine {
-  if (s.overall === "unknown") return { tone: "unknown", word: "Not evaluated", lead: null, note: null };
+  if (s.overall === "unknown") return { tone: "unknown", word: "Not evaluated", lead: null, notes: [] };
   const v = verdictHeadline(s.overall, s.outcomes, { batteryEveryHeading: s.batteryEveryHeading, batteryWorst: s.batteryWorst });
-  return { tone: s.overall, word: VERDICT_LABEL[s.overall], lead: v?.lead ?? null, note: v?.note ?? null };
+  return { tone: s.overall, word: VERDICT_LABEL[s.overall], lead: v?.lead ?? null, notes: v?.notes ?? [] };
 }
 
-export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump }: HeadlineProps) {
+export function Headline({ blockRef, survey, failed, onRetry, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump }: HeadlineProps) {
   const doc = useScenario((s) => s.doc);
   const battery = summary && evaluation.result && !evaluation.stale ? batteryRisk(evaluation.result, doc) : null;
   const sky = survey ? skyFacts(survey, timeMs) : null;
@@ -56,21 +55,20 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
       : summary
         ? exactLine(summary)
         : preview
-          ? { tone: preview.verdict, word: VERDICT_LABEL[preview.verdict], lead: preview.verdict === "pass" ? null : preview.limiting, note: null }
+          ? { tone: preview.verdict, word: VERDICT_LABEL[preview.verdict], lead: preview.verdict === "pass" ? null : preview.limiting, notes: [] }
           : null;
   const current = line?.tone ?? null;
   const next = scan && current !== null && current !== "pass" ? nextPass(scan, timeMs, survey?.both ?? null) : null;
   const top = best.reduce<BestLanding | null>((a, b) => (!a || b.key > a.key ? b : a), null);
   const showTop = top && dayText(top.t_ms) !== dayText(timeMs) && (next === null || dayText(top.t_ms) !== dayText(next));
   const failing = summary !== null && (summary.overall === "fail" || summary.overall === "marginal");
-  const skyLine = sky ? [sky.text, sky.events].filter(Boolean).join(" · ") : null;
+  const skyWarn = sky?.warn ? sky : null;
   const change = survey ? nextChange(survey, timeMs) : null;
   const sunElevation = survey ? elevationAt(survey.sunTrack, timeMs) : null;
 
   return (
     <>
       <section ref={blockRef} className="home-verdict" aria-live="polite">
-        <p className="home-eyebrow">{subject}</p>
         {requirements === 0 ? (
           sky ? (
             <p className="home-headline-text">{sentence(sky.text)}</p>
@@ -92,27 +90,31 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
           <Wait text="Checking requirements" />
         )}
         {line && failed && <Failed onRetry={onRetry} small />}
-        {line?.note && <p className="home-headline-note">{line.note}</p>}
+        {line?.notes.map((n, i) => (
+          <p key={n} className={i === 0 ? "home-headline-note" : "home-headline-sub"}>
+            {n}
+          </p>
+        ))}
         {battery && (
           <p className="home-headline-sub home-unchecked">
             <Icon name="battery" size={12} /> {batteryNote(battery)}
           </p>
         )}
-        {(requirements === 0 ? sky?.events : skyLine) ? (
+        {requirements === 0 ? (
+          sky?.events.map((e) => (
+            <p key={e} className="home-headline-sub">
+              {e}
+            </p>
+          ))
+        ) : skyWarn ? (
           <p className="home-headline-sub">
-            <span className={requirements !== 0 && sky?.warn ? "home-warn" : undefined}>{requirements === 0 ? sky?.events : skyLine}</span>
+            <span className="home-warn">{sentence(skyWarn.text)}</span>
           </p>
-        ) : requirements !== 0 && !failed && !sky ? (
+        ) : !failed && !sky ? (
           <p className="home-headline-sub">
             <Spinner size={12} /> Computing the year
           </p>
         ) : null}
-        {survey && (
-          <p className="home-source">
-            {survey.smooth ? "Sun and Earth positions from NASA SPICE" : "Sun and Earth positions from NASA SPICE, terrain from LOLA"} ·{" "}
-            <Link to="/evidence">checked against JPL Horizons</Link>
-          </p>
-        )}
       </section>
 
       {(scan || change || sunElevation !== null) && (

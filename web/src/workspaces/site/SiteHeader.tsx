@@ -13,8 +13,6 @@ import { DownloadMenu } from "../ReportButton";
 import { explorerHref } from "../../learn/planPlace";
 import { verdictHeadline } from "../../lib/requirements";
 import { siteLabel } from "../../lib/siteName";
-import { parseUtc } from "../../lib/time";
-import { hoursOrDays, whenText } from "../../scenario/when";
 import { batteryNote, batteryRisk, type VerdictSummary } from "./adapt";
 import { Assumptions } from "./Assumptions";
 import { SiteTabs } from "./SiteTabs";
@@ -61,7 +59,6 @@ export function SiteHeader({ doc, evaluated, result, summary, run }: SiteHeaderP
   const computing = run.phase === "running";
   const known = summary && summary.overall !== "unknown";
   const head = known && !run.stale ? verdictHeadline(summary.overall, summary.outcomes, { batteryEveryHeading: summary.batteryEveryHeading, batteryWorst: summary.batteryWorst }) : null;
-  const landing = parseUtc(doc.landing_utc);
   return (
     <>
       <PageHeader
@@ -79,10 +76,6 @@ export function SiteHeader({ doc, evaluated, result, summary, run }: SiteHeaderP
         }
       />
       <section className="site-verdict" aria-live="polite">
-        <p className="site-eyebrow">
-          {siteLabel(doc.site.name) || "Unnamed site"}
-          {landing !== null && ` · ${whenText(landing)}`} · {hoursOrDays(doc.mission_duration_h)} on the surface
-        </p>
         {head ? (
           <>
             <p className="site-headline">
@@ -91,7 +84,7 @@ export function SiteHeader({ doc, evaluated, result, summary, run }: SiteHeaderP
               </strong>
               {head.lead && ` ${head.lead}.`}
             </p>
-            {head.note && <p className="site-headline-note">{head.note}</p>}
+            {head.notes[0] && <p className="site-headline-note">{head.notes[0]}</p>}
           </>
         ) : computing ? (
           <p className="site-headline site-headline-wait" role="status">

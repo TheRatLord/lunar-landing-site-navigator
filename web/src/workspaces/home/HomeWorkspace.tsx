@@ -24,7 +24,7 @@ import { Headline } from "./Headline";
 import { HomeMap, type MapFocus } from "./HomeMap";
 import { adaptScan, bestLandings, scanParams, yearScanBody } from "./scan";
 import { useApp } from "../../state/store";
-import { SPAN_MS, adaptSurvey, dayText, roundToHour, spanStartFor, surveyBody, trackWindow, withExact, type Survey, type SurveySite } from "./survey";
+import { SPAN_MS, adaptSurvey, roundToHour, spanStartFor, surveyBody, trackWindow, withExact, type Survey, type SurveySite } from "./survey";
 import { PinnedRow, WindowStrip } from "./WindowStrip";
 import "../../styles/home.css";
 
@@ -209,7 +209,6 @@ export function HomeWorkspace() {
           </div>
         )}
         <Headline
-          subject={`${siteLabel(name) || "Unnamed site"} · ${dayText(timeMs, true)}`}
           blockRef={verdictRef}
           survey={survey}
           failed={failed}

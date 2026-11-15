@@ -660,7 +660,12 @@ export function HorizonPanorama({
       for (const e of elTicks) {
         const y = toY(L, e);
         if (compact ? e !== 0 : y < L.y0 + 4 || y > L.y1 - 4) continue;
-        ctx.fillText(compact ? `0° · heights ×${L.vexag.toFixed(0)}` : `${formatNum(e, elDecimals)}°`, compact ? L.x0 + 18 : L.x0 - 8, compact ? y - 5 : y);
+        ctx.fillText(compact ? "0°" : `${formatNum(e, elDecimals)}°`, compact ? L.x0 + 18 : L.x0 - 8, compact ? y - 5 : y);
+        if (compact) {
+          ctx.textAlign = "right";
+          ctx.fillText(`Heights ×${L.vexag.toFixed(0)}`, L.x1 - 18, y - 5);
+          ctx.textAlign = "left";
+        }
       }
 
       ctx.textBaseline = "middle";

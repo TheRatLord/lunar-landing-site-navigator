@@ -156,24 +156,24 @@ const byShare = (a: RequirementOutcome, b: RequirementOutcome): number => share(
 export interface VerdictHeadline {
   word: string;
   lead: string | null;
-  note: string | null;
+  notes: string[];
 }
 
 export function verdictHeadline(overall: string, outcomes: readonly RequirementOutcome[], ctx: VerdictContext = {}): VerdictHeadline | null {
   const s = verdictSentence(overall, outcomes, ctx);
   if (!s) return null;
   const n = outcomes.length;
-  if (overall === "pass") return { word: s.word, lead: n === 1 ? "Requirement met" : n === 2 ? "Both requirements met" : `All ${n} requirements met`, note: null };
+  if (overall === "pass") return { word: s.word, lead: n === 1 ? "Requirement met" : n === 2 ? "Both requirements met" : `All ${n} requirements met`, notes: [] };
   if (overall === "fail") {
     const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
     const first = failing[0];
-    if (!first) return { word: s.word, lead: null, note: null };
+    if (!first) return { word: s.word, lead: null, notes: [] };
     const b = failBits(first, ctx);
     const count = `${failing.length} of ${n} requirement${n === 1 ? "" : "s"} failed`;
-    return { word: s.word, lead: b.lead, note: b.limit ? `Limit ${b.limit} · ${count}` : count };
+    return { word: s.word, lead: b.lead, notes: b.limit ? [`Limit ${b.limit}`, count] : [count] };
   }
   const m = s.detail ? /^(.*) \(limit (.*)\)$/.exec(s.detail) : null;
-  return m ? { word: s.word, lead: m[1]!, note: `Limit ${m[2]!}` } : { word: s.word, lead: s.detail, note: null };
+  return m ? { word: s.word, lead: m[1]!, notes: [`Limit ${m[2]!}`] } : { word: s.word, lead: s.detail, notes: [] };
 }
 
 export function verdictSentence(overall: string, outcomes: readonly RequirementOutcome[], ctx: VerdictContext = {}): { word: string; detail: string | null } | null {

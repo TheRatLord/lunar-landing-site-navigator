@@ -290,7 +290,7 @@ function adopt(site: SiteRef, landingMs: number): void {
     {
       kind: "success",
       title: "Plan updated",
-      detail: `${site.name} · ${dateText(landing)}`,
+      detail: `Landing at ${site.name} on ${dateText(landing)}`,
       action: {
         label: "Undo",
         run: () => {

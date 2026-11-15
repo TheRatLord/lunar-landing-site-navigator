@@ -50,7 +50,7 @@ function Row({ kind, event, timeMs, onTrace, busy }: { kind: CountdownKind; even
       <span className="cd-in num">{now ? "now" : `in ${spanText(rem)}`}</span>
       <span className="cd-when num">
         {whenText(event.best_ms)}
-        {range && <span className="cd-range"> · {range}</span>}
+        {range && <span className="cd-range">{range}</span>}
       </span>
       {onTrace && <span className="cd-act">{busy ? <Spinner size={12} /> : <Icon name="search" size={12} />}</span>}
     </>
