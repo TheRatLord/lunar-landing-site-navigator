@@ -3,6 +3,7 @@ import type { ViewKind } from "../chapters";
 import type { CraterSource } from "../scene/craterView";
 import type { SiteId } from "../sites";
 import type { ChapterKey } from "../store";
+import { siteById } from "../terrain";
 import { CloseIcon, InfoIcon } from "./icons";
 
 function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: CraterSource): string[] {
@@ -12,13 +13,24 @@ function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: Crater
   } else if (view === "ground" || view === "walk") {
     if (chapter === "earth") out.push("Earth is drawn 3 times bigger. Where it sits in the sky is real.");
     if (site === "custom") out.push("The ground is flat on purpose, so only the tilt matters.");
+    else if (view === "walk")
+      out.push(
+        siteById(site).terrain
+          ? "The ground around you is from NASA laser maps. Rocks and small bumps are made up."
+          : "The far hills are from NASA laser maps. The ground near you is made up.",
+      );
     else out.push("The hills are from NASA laser maps. Rocks and small craters are made up.");
   } else if (crater === "real") {
     out.push("This is Shackleton's real shape, measured by a laser on NASA's Lunar Reconnaissance Orbiter.");
   } else {
     out.push("The real map could not load, so this is a look-alike with the right size and depth.");
   }
-  if (view === "walk") out.push(`The rover, astronaut and spacecraft are simple models.${site === "apollo11" ? " Apollo 11 had no rover." : ""}`);
+  if (view === "walk") {
+    out.push("The astronaut and rover are you, visiting today. They were not really here.");
+    if (site === "apollo11" || site === "change4" || site === "blueghost")
+      out.push(`The spacecraft and gear on the ground are really here, drawn as simple models about where they stand.${site === "change4" ? " Yutu-2 has since driven away." : ""}`);
+    out.push("The lamps are pretend. With them off, the dark is real.");
+  }
   if (site === "blueghost" && chapter === "timing") out.push("The battery is pretend.", "The eclipse view is zoomed in.");
   out.push("Sun and Earth can be off by about one Sun-width.");
   return out;

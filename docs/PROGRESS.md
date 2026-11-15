@@ -72,8 +72,9 @@ Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/sup
 - [x] Rename Learn to Explorer (visible text only; routes and code stay `learn`)
 - [x] Walk view: terrain, sky, sunlight and shadow
 - [x] Astronaut, follow camera, keyboard
-- [x] Solar panel and the Battery tile in Walk
+- [x] Solar panel and the Battery tile in Walk (panel taken out again in 32e82ce)
 - [x] Rover and switching
 - [x] Hardware at the historical sites and fact cards
 - [x] First and third person views for the astronaut and the rover (V or a button)
-- [ ] Touch controls, lights, reduced motion, honesty notes
+- [x] Touch controls, rover headlights and helmet lamp (L or a button in the dark), honesty notes for Walk
+- [ ] Reduced-motion and low-end performance checks

@@ -107,11 +107,13 @@ export class WalkView {
   private applyLayers(): void {
     const hide = this.cam.pov === "first" && this.body === "astronaut";
     this.astronaut.object.traverse((o) => o.layers.set(hide ? 1 : 0));
+    this.astronaut.lamp.layers.set(0);
     this.rover.setInside(this.cam.pov === "first" && this.body === "rover");
   }
 
   setLights(on: boolean): void {
     this.rover.setLights(on);
+    this.astronaut.setLamp(on);
   }
 
   lookAt(azDeg: number, elDeg: number): void {

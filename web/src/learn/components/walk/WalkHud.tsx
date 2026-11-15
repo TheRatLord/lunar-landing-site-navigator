@@ -50,6 +50,7 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
           ) : (
             <>
               <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> {body === "rover" ? "drive" : "walk"} · drag look · <kbd>E</kbd> switch
+              {dark && <> · <kbd>L</kbd> lights</>}
             </>
           )}
         </p>
@@ -80,7 +81,7 @@ export function WalkHud({ onStick, onJump }: { onStick: (x: number, y: number) =
         </div>
       )}
       <div className="l-walk-actions">
-        {body === "rover" && (dark || lights) && (
+        {(dark || lights) && (
           <button type="button" className="l-btn l-walk-lights" aria-pressed={lights} onClick={() => useLearn.setState({ walkLights: !lights })}>
             Lights
           </button>

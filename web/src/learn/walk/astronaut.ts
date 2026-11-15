@@ -1,4 +1,4 @@
-import { BoxGeometry, CapsuleGeometry, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, CapsuleGeometry, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, SphereGeometry, SpotLight, Vector3 } from "three";
 import { RAD } from "../geometry";
 import { clampRadius, pushOut, type Obstacle } from "./collide";
 import type { Drive } from "./walkInput";
@@ -30,6 +30,7 @@ export class Astronaut {
   heading = 340;
   kneeling = true;
   atEdge = false;
+  readonly lamp = new SpotLight(0xfff4e0, 0, 28, 0.5, 0.55, 0);
   private readonly body = new Group();
   private readonly legL: Mesh;
   private readonly legR: Mesh;
@@ -52,8 +53,14 @@ export class Astronaut {
     const helmet = part(new SphereGeometry(0.22, 20, 14), suit, 0, 1.66, 0);
     const face = part(new SphereGeometry(0.2, 20, 14, Math.PI * 1.1, Math.PI * 0.8, Math.PI * 0.28, Math.PI * 0.4), visor, 0, 1.66, -0.04);
     this.body.add(this.legL, this.legR, torso, pack, panel, this.armL, this.armR, helmet, face);
-    this.object.add(this.body);
+    this.lamp.position.set(0, 1.78, -0.12);
+    this.lamp.target.position.set(0, 0, -9);
+    this.object.add(this.body, this.lamp, this.lamp.target);
     this.reset();
+  }
+
+  setLamp(on: boolean): void {
+    this.lamp.intensity = on ? 1.8 : 0;
   }
 
   reset(): void {
