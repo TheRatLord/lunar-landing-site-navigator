@@ -14,6 +14,7 @@ interface OptionListProps {
   rank: RankBy;
   requirements: number;
   selectedKey: string | null;
+  previewKey: string | null;
   notice: ReactNode;
   search: ReactNode;
   bar: ReactNode;
@@ -21,6 +22,7 @@ interface OptionListProps {
   scope: string;
   onRank(r: RankBy): void;
   onSelect(o: LandingOption): void;
+  onPreview(o: LandingOption | null): void;
   onOpen(o: LandingOption): void;
   onPin(o: LandingOption): void;
   onUnpin(o: LandingOption): void;
@@ -41,7 +43,7 @@ function value(o: LandingOption, key: RankBy): string {
   return hoursText(o.totals[key]);
 }
 
-function Row({ o, n, rank, values, requirements, selected, onSelect, onOpen, tools }: { o: LandingOption; n: number | null; rank: RankBy; values: typeof VALUES; requirements: number; selected: boolean; onSelect(): void; onOpen(): void; tools: ReactNode }) {
+function Row({ o, n, rank, values, requirements, selected, previewing, onSelect, onPreview, onOpen, tools }: { o: LandingOption; n: number | null; rank: RankBy; values: typeof VALUES; requirements: number; selected: boolean; previewing: boolean; onSelect(): void; onPreview(on: boolean): void; onOpen(): void; tools: ReactNode }) {
   const tone = o.pending || o.failed ? "wait" : requirements === 0 ? "none" : (o.verdict ?? "none");
   const blank = o.pending || o.failed;
   const when =
@@ -51,7 +53,7 @@ function Row({ o, n, rank, values, requirements, selected, onSelect, onOpen, too
       </span>
     );
   return (
-    <tr className="ot-row" data-tone={tone} data-blank={blank || o.t_ms === null || undefined} aria-current={selected || undefined} onClick={onSelect} title={o.note ?? undefined}>
+    <tr className="ot-row" data-tone={tone} data-blank={blank || o.t_ms === null || undefined} aria-current={selected || undefined} data-preview={previewing || undefined} onClick={onSelect} onMouseEnter={() => onPreview(true)} onMouseLeave={() => onPreview(false)} title={o.note ?? undefined}>
       <td className="ot-n-cell">
         <span className="ot-n num">{n === null ? <Icon name="pin" size={12} /> : n}</span>
       </td>
@@ -81,7 +83,7 @@ function Row({ o, n, rank, values, requirements, selected, onSelect, onOpen, too
   );
 }
 
-export function OptionList({ pinned, ranked, rank, requirements, selectedKey, notice, search, bar, selection, scope, onRank, onSelect, onOpen, onPin, onUnpin, canPin }: OptionListProps) {
+export function OptionList({ pinned, ranked, rank, requirements, selectedKey, previewKey, onPreview, notice, search, bar, selection, scope, onRank, onSelect, onOpen, onPin, onUnpin, canPin }: OptionListProps) {
   const [all, setAll] = useState(false);
   const values = VALUES.filter((v) => !(requirements === 0 && v.key === "margin"));
   const cols = 5 + values.length + (requirements > 0 ? 1 : 0);
@@ -95,7 +97,9 @@ export function OptionList({ pinned, ranked, rank, requirements, selectedKey, no
       values={values}
       requirements={requirements}
       selected={o.key === selectedKey}
+      previewing={o.key === previewKey && o.key !== selectedKey}
       onSelect={() => onSelect(o)}
+      onPreview={(on) => onPreview(on && !o.pending && !o.failed && o.t_ms !== null ? o : null)}
       onOpen={() => onOpen(o)}
       tools={
         o.kind === "pin" ? (

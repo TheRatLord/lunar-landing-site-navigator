@@ -42,9 +42,9 @@ export interface Marker {
   shape?: MarkerShape;
 }
 
-export type MarkerLayer = "plan" | "ranked" | "pins" | "sites" | "pick";
+export type MarkerLayer = "plan" | "ranked" | "pins" | "sites" | "pick" | "hover";
 const PICK_ORDER: MarkerLayer[] = ["plan", "ranked", "pins", "sites"];
-const LAYER_ORDER: Record<MarkerLayer, number> = { sites: 4, pins: 5, ranked: 6, plan: 7, pick: 8 };
+const LAYER_ORDER: Record<MarkerLayer, number> = { sites: 4, pins: 5, ranked: 6, plan: 7, pick: 8, hover: 9 };
 
 export interface SurfaceMesh {
   positions: Float32Array;

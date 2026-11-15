@@ -1,5 +1,5 @@
 import { siteLabel } from "../../lib/siteName";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PLANNING_ENDPOINTS, type ScanResult } from "../../api/planning";
 import { useReportPlanning } from "../../api/report";
@@ -10,10 +10,10 @@ import { usePublishScreenContext } from "../../ask/screenContext";
 import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { ProgressBar, Spinner } from "../../components/ui/Progress";
-import { MS_DAY, parseUtc, toIsoUtc } from "../../lib/time";
+import { MS_DAY, MS_HOUR, parseUtc, toIsoUtc } from "../../lib/time";
 import { catalogApi } from "../../scenario/api";
 import { useAlternatives } from "../../scenario/alternatives";
-import { DEFAULT_RADIUS_KM, activeRequirements, effectiveWindow, isYear, rankLabel, shiftYear, usePlanSearch, useRankBy, yearFrom, yearText, type LandingWindow, type RankBy } from "../../scenario/planSearch";
+import { DEFAULT_RADIUS_KM, activeRequirements, effectiveWindow, isYear, rankLabel, usePlanSearch, useRankBy, yearFrom, yearText, type LandingWindow, type RankBy } from "../../scenario/planSearch";
 import { chooseSite, searchHere, useSearchSite } from "../../scenario/searchAnchor";
 import { movePlanSite, routeStackIssues, shiftPlanLanding, useScenario } from "../../scenario/store";
 import type { Scenario } from "../../scenario/types";
@@ -32,7 +32,8 @@ import { OptionList } from "./OptionList";
 import { closestOption, hereOptions, pinOption, samePlace, sortOptions, spotOptions, type LandingOption, type Place } from "./options";
 import { adaptScan, limitingAt, scanIndexAt, scanParams, verdictAt, yearScanBody, type YearScan } from "./scan";
 import { adaptSurvey, surveyBody } from "./survey";
-import { Selection } from "./Selection";
+import { useClockDriver, type Stay } from "./clock";
+import { Selection, type StayLight } from "./Selection";
 import { YearBar } from "./YearBar";
 import "../../styles/home.css";
 
@@ -98,8 +99,7 @@ export function HomeWorkspace() {
   const [view, setView] = useState<LandingWindow>(() => (isYear(win) ? win : yearFrom(win.first_ms)));
   const wantView = isYear(win) ? win : overlaps(view, win) ? view : yearFrom(win.first_ms);
   if (!sameWindow(wantView, view)) setView(wantView);
-  const [draftWin, setDraftWin] = useState<LandingWindow | null>(null);
-  const listWin = draftWin ?? win;
+  const listWin = win;
   const whole = listWin.first_ms <= view.first_ms && listWin.last_ms >= view.last_ms;
 
   const [focus, setFocus] = useState<GlobeFocus>(() => ({ lat_deg: cLat, lon_deg: cLon, radius_m: 0, nonce: 0 }));
@@ -179,6 +179,28 @@ export function HomeWorkspace() {
   const selectedKey = selectedOpt?.key ?? null;
   const selectedN = ranked.findIndex(atLanding) + 1 || null;
 
+  const [hovered, setHovered] = useState<LandingOption | null>(null);
+  const hoverTimer = useRef(0);
+  const previewOption = useCallback((o: LandingOption | null) => {
+    window.clearTimeout(hoverTimer.current);
+    hoverTimer.current = window.setTimeout(() => setHovered(o), o ? 120 : 200);
+  }, []);
+  useEffect(() => () => window.clearTimeout(hoverTimer.current), []);
+  const preview = hovered && hovered.key !== selectedKey && [...pinned, ...ranked].some((o) => o.key === hovered.key) ? hovered : null;
+  const stayMs = doc.mission_duration_h * MS_HOUR;
+  const stay = useMemo<Stay>(() => ({ start_ms: landingMs, end_ms: landingMs + stayMs }), [landingMs, stayMs]);
+  const previewStart = preview?.t_ms ?? null;
+  const previewStay = useMemo<Stay | null>(() => (previewStart === null ? null : { start_ms: previewStart, end_ms: previewStart + stayMs }), [previewStart, stayMs]);
+  useClockDriver(previewStay ?? stay);
+
+  const lightReq = useMemo(() => surveyBody(doc, chosen, landingMs, landingMs + stayMs), [doc, chosen, landingMs, stayMs]);
+  const lightRun = useAnalysis<EvaluateResult>(SITE_ENDPOINTS.evaluate, lightReq, { debounceMs: 250 });
+  const light = useMemo<StayLight | null>(() => {
+    if (!lightRun.result || lightRun.stale) return null;
+    const sv = adaptSurvey(lightRun.result, landingMs, landingMs + stayMs);
+    return { start_ms: landingMs, end_ms: landingMs + stayMs, sun: sv.sun, earth: sv.earth };
+  }, [lightRun.result, lightRun.stale, landingMs, stayMs]);
+
   const keepYear = useCallback(
     (t: number | null) => {
       if (planWindow === null && t !== null && !sameWindow(yearFrom(t), win)) setWindow(win);
@@ -231,7 +253,7 @@ export function HomeWorkspace() {
     [moveTo],
   );
 
-  const sub = useSubpoints(view.first_ms, view.last_ms);
+  const sub = useSubpoints(view.first_ms - 15 * MS_DAY, view.last_ms + 45 * MS_DAY);
   const pinMarks = useMemo(() => pins.filter((p) => !samePlace(p, chosen)).map((p) => ({ id: p.id, name: p.name, lat_deg: p.lat_deg, lon_deg: p.lon_deg })), [pins, chosen]);
 
   const windowPhrase = whole ? `any time in ${yearText(view)}` : spanText(listWin.first_ms, listWin.last_ms - 1);
@@ -240,6 +262,7 @@ export function HomeWorkspace() {
   const planVerdict = requirements === 0 ? null : scan && planIndex !== null ? verdictAt(scan, planIndex) : (selectedOpt?.verdict ?? null);
   const planLimiting = scan && planIndex !== null ? limitingAt(scan, planIndex) : (selectedOpt?.limiting ?? null);
   const chosenPin = pins.find((p) => samePlace(p, chosen)) ?? null;
+  const chosenScan = !away ? scan : chosenPin ? (pinScans[chosenPin.id]?.scan ?? null) : null;
 
   const notice = scanRun.phase === "error" ? (
     <p className="opts-note" role="alert">
@@ -322,6 +345,7 @@ export function HomeWorkspace() {
         <MoonGlobe
           site={chosen}
           centre={site}
+          preview={preview && !samePlace(preview.place, chosen) ? preview.place : null}
           focus={focus}
           sites={sites}
           pins={pinMarks}
@@ -354,6 +378,8 @@ export function HomeWorkspace() {
         rank={rank}
         requirements={requirements}
         selectedKey={selectedKey}
+        previewKey={preview?.key ?? null}
+        onPreview={previewOption}
         notice={notice}
         search={search}
         scope={scope}
@@ -361,6 +387,8 @@ export function HomeWorkspace() {
           <Selection
             name={chosenName}
             t_ms={landingMs}
+            end_ms={landingMs + stayMs}
+            light={light}
             verdict={planVerdict}
             limiting={planLimiting}
             n={selectedN}
@@ -378,15 +406,13 @@ export function HomeWorkspace() {
           <YearBar
             view={view}
             window={win}
-            spans={requirements > 0 ? (scan?.spans ?? null) : null}
-            both={requirements > 0 ? null : (survey?.both ?? null)}
-            marks={marks}
-            landingMs={landingMs}
-            busy={requirements > 0 ? !scan : !survey}
-            onWindow={(w) => setWindow(w.first_ms <= view.first_ms && w.last_ms >= view.last_ms ? view : w)}
-            onDraft={setDraftWin}
+            spans={requirements > 0 ? (chosenScan?.spans ?? null) : null}
+            both={requirements > 0 || away ? null : (survey?.both ?? null)}
+            marks={away ? [] : marks}
+            stay={stay}
+            preview={previewStay}
+            busy={away ? chosenPin !== null && requirements > 0 && !chosenScan : requirements > 0 ? !scan : !survey}
             onPick={(ms) => land(ms)}
-            onYear={(d) => setWindow(shiftYear(view, d))}
           />
         }
         onRank={(r: RankBy) => setRankBy(r)}

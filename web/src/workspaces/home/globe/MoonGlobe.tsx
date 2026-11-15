@@ -15,6 +15,8 @@ import type { Rect } from "../../map/rect";
 import { EARTH_COLOR, PICK_COLOR, PIN_COLOR, PLAN_COLOR, bySalience, clusterRect, clusterSites, labelCandidates, layoutClusters, layoutLabels, siteLines, siteMarkers, siteSummary, spreadOf, type SiteGroup } from "./marks";
 import { polarCap, viewPatch } from "./patches";
 import { subpointsAt, type Subpoints } from "./subpoints";
+import { useClock } from "../clock";
+import { MS_HOUR } from "../../../lib/time";
 
 const loadTilesets = (signal: AbortSignal) => terrainApi.tilesets({ signal });
 
@@ -35,6 +37,7 @@ type Popup =
 interface MoonGlobeProps {
   site: { lat_deg: number; lon_deg: number; name: string };
   centre?: { lat_deg: number; lon_deg: number };
+  preview?: { lat_deg: number; lon_deg: number } | null;
   focus: GlobeFocus;
   sites: SiteEntry[];
   pins: AltMark[];
@@ -234,14 +237,28 @@ export function MoonGlobe(props: MoonGlobeProps) {
 
   useEffect(() => {
     if (!scene || !sub) return;
-    const at = subpointsAt(sub, timeMs);
-    if (at) scene.setSun(at.sun[0], at.sun[1]);
+    const apply = (t: number) => {
+      const at = subpointsAt(sub, t);
+      if (at) scene.setSun(at.sun[0], at.sun[1]);
+    };
+    apply(useClock.getState().t_ms ?? timeMs);
+    return useClock.subscribe((c) => apply(c.t_ms ?? timeMs));
   }, [scene, sub, timeMs]);
 
+  const earthStep = useClock((c) => Math.round((c.t_ms ?? timeMs) / (6 * MS_HOUR)));
   const earthMark = useMemo<Marker[]>(() => {
-    const at = sub ? subpointsAt(sub, timeMs) : null;
+    const at = sub ? subpointsAt(sub, earthStep * 6 * MS_HOUR) : null;
     return at ? [{ lat_deg: at.earth[0], lon_deg: at.earth[1], color: EARTH_COLOR, size: 11 }] : [];
-  }, [sub, timeMs]);
+  }, [sub, earthStep]);
+
+  const previewLat = props.preview?.lat_deg ?? null;
+  const previewLon = props.preview?.lon_deg ?? null;
+  useEffect(() => {
+    scene?.setMarkers("hover", previewLat === null || previewLon === null ? [] : [{ lat_deg: previewLat, lon_deg: previewLon, color: PICK_COLOR, size: 34, shape: "ring" }]);
+  }, [scene, previewLat, previewLon]);
+
+  const playing = useClock((c) => c.playing);
+  const setPlaying = useClock((c) => c.setPlaying);
 
   useEffect(() => {
     if (!scene) return;
@@ -508,6 +525,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
         </div>
       )}
       <div className="globe-tools toolstrip">
+        <IconButton icon={playing ? "pause" : "play"} size="sm" label={playing ? "Pause sunlight" : "Play sunlight over the stay"} onClick={() => setPlaying(!playing)} />
         <IconButton icon="plus" size="sm" label="Zoom in" onClick={() => scene?.zoomBy(0.5)} />
         <IconButton icon="minus" size="sm" label="Zoom out" onClick={() => scene?.zoomBy(2)} />
         <IconButton icon="target" size="sm" label="Centre on the site" onClick={() => scene?.flyTo(site.lat_deg, site.lon_deg, contextView(areaRadius_m ?? lattice?.radius_m ?? null))} />
