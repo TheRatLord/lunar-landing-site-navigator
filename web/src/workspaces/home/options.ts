@@ -85,12 +85,12 @@ export function pinOption(id: string, place: Place, label: string, scan: YearSca
   return { ...base, t_ms: null, verdict: null, limiting: null, totals: EMPTY_TOTALS, margin: null, marginUnit: null, score: null, tie: null, note: "No landing time in this window", pending: false, failed: false };
 }
 
-export function spotOptions(rows: readonly SearchRow[], center: { lat_deg: number; lon_deg: number }, spacing_m: number, rank: RankBy, name: (lat: number, lon: number) => string): LandingOption[] {
+export function spotOptions(rows: readonly SearchRow[], from: { lat_deg: number; lon_deg: number }, spacing_m: number, rank: RankBy, name: (lat: number, lon: number) => string): LandingOption[] {
   const out: LandingOption[] = [];
   for (const row of rows) {
-    const d = distance_m(center.lat_deg, center.lon_deg, row.lat_deg, row.lon_deg);
+    const d = distance_m(from.lat_deg, from.lon_deg, row.lat_deg, row.lon_deg);
     if (d < spacing_m * 0.75) continue;
-    const az = bearing_deg(center.lat_deg, center.lon_deg, row.lat_deg, row.lon_deg);
+    const az = bearing_deg(from.lat_deg, from.lon_deg, row.lat_deg, row.lon_deg);
     const dir = SECTORS[Math.round((((az % 360) + 360) % 360) / 45) % 8]!;
     const verdict = row.state === "unknown" ? null : row.state;
     out.push({

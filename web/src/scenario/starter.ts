@@ -17,7 +17,7 @@ export const FEATURED_SITES = [
 ] as const;
 
 const SITE = FEATURED_SITES[0];
-const LANDING_UTC = "2027-09-13T06:00:00Z";
+const LANDING_UTC = "2027-09-12T02:00:00Z";
 export const DEMO_SEARCH_YEAR = 2027;
 const PROFILE_ID = "nova-c-polar";
 const CONSTRAINTS = "viper-polar";

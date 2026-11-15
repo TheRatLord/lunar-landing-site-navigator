@@ -144,13 +144,12 @@ export function HomeWorkspace() {
   );
   const here = useMemo(() => (scan ? hereOptions(scan, rank, listWin, site, siteName) : []), [scan, rank, listWin, site, siteName]);
   const closest = useMemo(() => (scan && here.length === 0 ? closestOption(scan, rank, listWin, site, siteName) : null), [scan, here.length, rank, listWin, site, siteName]);
-  const center = searchBodyDone?.region ?? null;
   const spots = useMemo(
     () =>
-      radiusKm !== null && covers && center && searchBodyDone
-        ? spotOptions(searchRows, center, searchBodyDone.final_spacing_m, rank, pointName).filter((o) => !samePlace(o.place, site) && !pins.some((p) => samePlace(p, o.place)))
+      radiusKm !== null && covers && searchBodyDone
+        ? spotOptions(searchRows, site, searchBodyDone.final_spacing_m, rank, pointName).filter((o) => !pins.some((p) => samePlace(p, o.place)))
         : [],
-    [radiusKm, covers, center, searchBodyDone, searchRows, rank, site, pins],
+    [radiusKm, covers, searchBodyDone, searchRows, rank, site, pins],
   );
   const ranked = useMemo(() => sortOptions([...(closest ? [closest] : here), ...spots]), [closest, here, spots]);
 
