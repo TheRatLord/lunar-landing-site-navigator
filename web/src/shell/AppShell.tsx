@@ -17,6 +17,7 @@ import { PlannerNav, PlannerTools, TopBar } from "./TopBar";
 import { useArrivingSite } from "../scenario/arrivingSite";
 import { useScenarioUrl } from "../scenario/scenarioUrl";
 import { useCommands } from "./useCommands";
+import { useRememberMode } from "./lastMode";
 
 const AskDock = lazy(() => import("../ask/AskDock").then((m) => ({ default: m.AskDock })));
 
@@ -95,6 +96,7 @@ function Planner() {
   const timeRoute = usesTime(pathname);
   const plan = showsPlan(pathname);
   usePlayback(timeRoute);
+  useRememberMode(plan ? "planner" : null);
   useEffect(() => {
     void loadAskAvailability();
   }, []);

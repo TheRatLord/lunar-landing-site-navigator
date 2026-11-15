@@ -4,7 +4,7 @@ A planning tool for lunar landing sites and dates, built for the NASA Space Apps
 [Lunar Landing Site Navigator](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/)
 challenge ([problem statement](problem-statement.md)).
 
-The home page offers two ways in. The Planner is for mission teams: its first screen, Overview, answers one
+The home page offers two ways in and, on a later visit, opens the one you used last (the logo always shows it). The Planner is for mission teams: its first screen, Overview, answers one
 question: if the landing site or the landing date moves, is the mission still viable, and where is the nearest
 alternative? Click the map to move the site, drag the year timeline to move
 the date, and pin a site to keep its row while you try another. For the chosen site and date it shows the Sun

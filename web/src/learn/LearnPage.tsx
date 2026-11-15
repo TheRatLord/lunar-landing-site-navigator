@@ -13,6 +13,7 @@ import { TimeBar } from "./components/TimeBar";
 import { placeFromParams, visitPlanPlace } from "./planPlace";
 import { useLearn, type ChapterKey } from "./store";
 import { prefersReducedMotion } from "../lib/media";
+import { useRememberMode } from "../shell/lastMode";
 import { TopBar } from "../shell/TopBar";
 
 function ExploreRoute() {
@@ -115,6 +116,7 @@ export default function LearnPage() {
   const { pathname } = useLocation();
   const current = currentKey(pathname);
   useKeyboard(current);
+  useRememberMode("explorer");
   const view = useLearn((s) => s.view);
   const panel = useLearn((s) => s.panel);
   return (

@@ -2,12 +2,15 @@ import "../styles/front.css";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { Icon } from "../components/ui/Icon";
 import { prefetchExplorer } from "../learn/prefetch";
+import { lastMode } from "../shell/lastMode";
 import { TopBar } from "../shell/TopBar";
 import { EVIDENCE_WORKSPACE, HOME } from "../workspaces/registry";
 
 export function FrontDoor() {
-  const { search, hash } = useLocation();
+  const { search, hash, state } = useLocation();
   if (search || hash) return <Navigate to={{ pathname: HOME.path, search, hash }} replace />;
+  const mode = (state as { front?: boolean } | null)?.front ? null : lastMode();
+  if (mode) return <Navigate to={mode === "explorer" ? "/learn" : HOME.path} replace />;
   return (
     <div className="front">
       <TopBar modes={false} />
