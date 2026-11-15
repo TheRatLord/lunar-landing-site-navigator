@@ -10,6 +10,8 @@ export interface ConstraintPanelProps {
   limitingId: string | null;
   title?: string;
   whenById?: Readonly<Record<string, readonly WhenLine[]>>;
+  showable?: ReadonlySet<string>;
+  onShow?: (id: string) => void;
 }
 
 const VERDICT_ICON: Record<Verdict, IconName> = { pass: "check", marginal: "warn", fail: "cross" };
@@ -23,7 +25,10 @@ export function limitText(c: Pick<ConstraintVerdict, "limit" | "limit_range" | "
 }
 
 function valueText(c: ConstraintVerdict): string {
-  if (c.heading_dependent) return "by heading";
+  if (c.heading_dependent) {
+    const worst = c.value_worlds?.pessimistic;
+    return worst !== null && worst !== undefined && Number.isFinite(worst) ? quantityText(worst, c.unit) : "by heading";
+  }
   return `${c.censored ? "≥ " : ""}${quantityText(c.value, c.unit)}`;
 }
 
@@ -53,7 +58,7 @@ function detailPairs(c: ConstraintVerdict, when: readonly WhenLine[] | undefined
   return out;
 }
 
-export function ConstraintPanel({ constraints, limitingId, title = "Requirements", whenById }: ConstraintPanelProps) {
+export function ConstraintPanel({ constraints, limitingId, title = "Requirements", whenById, showable, onShow }: ConstraintPanelProps) {
   const [open, setOpen] = useState<string | null>(null);
   return (
     <Panel title={title} flush>
@@ -81,18 +86,24 @@ export function ConstraintPanel({ constraints, limitingId, title = "Requirements
               const pairs = detailPairs(c, whenById?.[c.id]);
               const isOpen = open === c.id && pairs.length > 0;
               const m = marginOf(c);
+              const shows = c.verdict !== "pass" && onShow !== undefined && (showable?.has(c.id) ?? false);
+              const clickable = pairs.length > 0 || shows;
+              const act = () => {
+                if (pairs.length > 0) setOpen(isOpen ? null : c.id);
+                if (shows && !isOpen) onShow(c.id);
+              };
               return (
                 <Fragment key={c.id}>
                   <tr
-                    className={`cp-row ${pairs.length > 0 ? "cp-click" : ""} ${isOpen ? "is-open" : ""}`}
-                    onClick={pairs.length > 0 ? () => setOpen(isOpen ? null : c.id) : undefined}
+                    className={`cp-row ${clickable ? "cp-click" : ""} ${isOpen ? "is-open" : ""}`}
+                    onClick={clickable ? act : undefined}
                     onKeyDown={(e) => {
-                      if (pairs.length > 0 && (e.key === "Enter" || e.key === " ")) {
+                      if (clickable && (e.key === "Enter" || e.key === " ")) {
                         e.preventDefault();
-                        setOpen(isOpen ? null : c.id);
+                        act();
                       }
                     }}
-                    tabIndex={pairs.length > 0 ? 0 : undefined}
+                    tabIndex={clickable ? 0 : undefined}
                     aria-expanded={pairs.length > 0 ? isOpen : undefined}
                   >
                     <th scope="row">

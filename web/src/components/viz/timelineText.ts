@@ -1,8 +1,7 @@
 import type { IntervalRow, LineRow } from "../../contract/types";
-import { formatNum, formatValue, glue, withUnit } from "../../lib/format";
+import { formatNum, formatValue, glue } from "../../lib/format";
 import { intervalsContain } from "../../lib/intervals";
 import { clamp, lowerBound } from "../../lib/scale";
-import { formatUtc } from "../../lib/time";
 
 interface LineReading {
   value: number | null;
@@ -23,11 +22,6 @@ export function nearestSample(utc_ms: ArrayLike<number>, t: number): number {
   return t - utc_ms[j - 1]! <= utc_ms[j]! - t ? j - 1 : j;
 }
 
-export function sampleNote(utc_ms: ArrayLike<number>, i: number, t: number): string | null {
-  const at = utc_ms[i]!;
-  return Math.abs(at - t) < SAMPLE_TOL_MS ? null : formatUtc(at, { date: Math.floor(at / 86_400_000) !== Math.floor(t / 86_400_000) });
-}
-
 function readLine(r: LineRow, t: number): LineReading | null {
   const here = (r.marks ?? []).filter((m) => Math.abs(m.t_ms - t) < SAMPLE_TOL_MS && m.value !== null);
   const mk = here[0];
@@ -37,7 +31,7 @@ function readLine(r: LineRow, t: number): LineReading | null {
       lo: null,
       hi: null,
       range: false,
-      note: `min · ${mk.world}`,
+      note: null,
       also: here.slice(1).map((m) => ({ world: m.world, value: m.value! })),
     };
   }
@@ -48,7 +42,7 @@ function readLine(r: LineRow, t: number): LineReading | null {
     lo: r.lo ? (r.lo[i] ?? null) : null,
     hi: r.hi ? (r.hi[i] ?? null) : null,
     range: r.noNominal === true,
-    note: sampleNote(r.utc_ms, i, t),
+    note: null,
     also: [],
   };
 }
@@ -64,10 +58,6 @@ export function gutterReadout(r: LineRow, t: number): string {
   if (rd === null) return "—";
   if (rd.range) return bandText(rd, r.decimals ?? 2) ?? "—";
   return finite(rd.value) ? formatNum(rd.value, r.decimals ?? 2) : "—";
-}
-
-export function gutterNote(r: LineRow, t: number): string | null {
-  return readLine(r, t)?.note ?? null;
 }
 
 export function describeLine(r: LineRow, t: number): string {
@@ -86,15 +76,8 @@ export function describeInterval(r: IntervalRow, t: number): string {
   const inBest = intervalsContain(r.best, t);
   const opt = r.optimistic ? intervalsContain(r.optimistic, t) : null;
   const pess = r.pessimistic ? intervalsContain(r.pessimistic, t) : null;
-  const parts = [inBest ? "yes" : "no"];
-  if (pess !== null || opt !== null) {
-    parts.push(`(${pess === null ? "" : `worst ${pess ? "yes" : "no"}`}${pess !== null && opt !== null ? ", " : ""}${opt === null ? "" : `best ${opt ? "yes" : "no"}`})`);
-  }
-  const win = r.best.find((iv) => t >= iv.start_ms && t <= iv.end_ms);
-  if (win) {
-    const open = win.start_open === true || win.end_open === true;
-    if (typeof win.duration_h === "number") parts.push(`· ${withUnit(`${open ? "≥ " : ""}${formatNum(win.duration_h, 1)}`, "h")}`);
-    else if (open) parts.push("· open");
-  }
-  return parts.join(" ");
+  const word = inBest ? "Yes" : "No";
+  if (!inBest && opt) return `${word} (yes in best case)`;
+  if (inBest && pess === false) return `${word} (no in worst case)`;
+  return word;
 }

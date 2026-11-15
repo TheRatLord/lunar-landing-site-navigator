@@ -133,9 +133,9 @@ def export_job(req: dict[str, Any], ctx: JobContext) -> dict[str, Any]:
     files: dict[str, Path] = {}
     provenance: dict[str, Any]
     if kind == "scenario-json":
-        files[f"{prefix}.scenario.json"] = write_scenario_json(scenario, out / f"{prefix}.scenario.json")
+        files[f"{prefix}.plan.json"] = write_scenario_json(scenario, out / f"{prefix}.plan.json")
         provenance = {"scenario": scenario.model_dump(mode="json")}
-        main = f"{prefix}.scenario.json"
+        main = f"{prefix}.plan.json"
     elif kind in ("aem", "timeseries-csv", "timeseries-json", "intervals-csv", "metrics-csv"):
         ev = evaluation()
         provenance = ev.provenance
@@ -194,7 +194,7 @@ def export_job(req: dict[str, Any], ctx: JobContext) -> dict[str, Any]:
     elif kind == "bundle":
         ev = evaluation()
         provenance = ev.provenance
-        bundle: dict[str, Path] = {p.name: p for p in export_evaluation(ev, out / "parts", prefix).values()}
+        bundle: dict[str, Path] = {p.name.replace(".scenario.json", ".plan.json"): p for p in export_evaluation(ev, out / "parts", prefix).values()}
         parts = out / "parts"
         if req.get("scan"):
             ctx.progress(0.5, "scanning opportunities")

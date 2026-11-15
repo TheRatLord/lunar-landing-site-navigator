@@ -48,10 +48,10 @@ export function sunDiscLit(served: { sunlight: ServedValue; eclipse: number | nu
   return served.eclipse !== null ? clamp(1 - served.eclipse, 0, 1) : 1;
 }
 
-export function earthInsetPairs(centre: { el_deg: number }, clearance: ServedValue | null): InsetPair[] {
+export function earthInsetPairs(centre: { el_deg: number }, aboveTerrain: number): InsetPair[] {
   return [
     ["Elevation", withUnit(formatNum(centre.el_deg, 1), "°")],
-    ["Above horizon", clearance ? withUnit(formatNum(clearance.value, 1), "°") : "—"],
+    ["Above horizon", Number.isFinite(aboveTerrain) ? withUnit(formatNum(aboveTerrain, 1), "°") : "—"],
   ];
 }
 

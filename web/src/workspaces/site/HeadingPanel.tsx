@@ -54,7 +54,7 @@ export function HeadingPanel({ view, rows }: { view: HeadingView; rows: readonly
       <div className="hd">
         <div className="hd-stats">
           {same ? (
-            <p className="hd-same">Same result at every heading</p>
+            <p className="hd-same">{shown.some((c) => c.key === "min_state_of_charge" && c.nonePass) ? "Battery runs flat at every heading" : "Same result at every heading"}</p>
           ) : (
             <>
               <div className="hd-stat">

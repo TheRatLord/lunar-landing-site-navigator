@@ -335,7 +335,7 @@ export class TerrainScene {
       const o = offsetAt(b.az_deg, d);
       const hv = heightAtOffset(g, o.east, o.north);
       const yb = Number.isFinite(hv) ? hv : y0;
-      const top = yb + half * 0.12;
+      const top = yb + half * (d < half * 0.3 ? 0.3 : 0.12);
       const line = new BufferGeometry().setFromPoints([new Vector3(0, y0 + pin, 0), new Vector3(o.east, yb, -o.north)]);
       overlay.add(new Line(line, new LineBasicMaterial({ color: col.blocker, depthTest: false })));
       overlay.add(new Line(new BufferGeometry().setFromPoints([new Vector3(o.east, yb, -o.north), new Vector3(o.east, top, -o.north)]), new LineBasicMaterial({ color: col.blocker, depthTest: false })));

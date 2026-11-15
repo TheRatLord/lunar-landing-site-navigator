@@ -182,12 +182,6 @@ interface MarginRef {
   margin_unit?: string | null;
 }
 
-export function hazardOriginText(o: { origin: "request" | "scenario_constraint" | "none"; label: string | null; basis: string | null; source_url: string | null } | null | undefined): { text: string; url: string | null } | null {
-  if (!o || o.origin === "none") return null;
-  const text = [o.label ?? (o.origin === "request" ? "set in the request" : null), o.basis].filter((x): x is string => !!x).join(" · ");
-  if (!text) return null;
-  return { text, url: o.source_url && /^https?:\/\//.test(o.source_url) ? o.source_url : null };
-}
 
 export function marginText(r: MarginRef): string {
   const phys = r.worst_margin_physical;

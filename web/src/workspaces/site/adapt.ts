@@ -3,7 +3,6 @@ import type {
   ConstraintVerdict,
   CrossingEvent,
   CountdownKind,
-  BandSeries,
   ConstraintCase,
   LimitSide,
   HorizonProfile,
@@ -79,15 +78,6 @@ export function adaptSunlight(s: EvaluateSeries): SunlightSeries | null {
   const hi = seriesColumn(s, "sunlight_fraction_hi");
   const ecl = seriesColumn(s, "eclipse_fraction");
   return { utc_ms: t, fraction: f, ...(lo && hi ? { lo, hi } : {}), ...(ecl ? { eclipse: ecl } : {}) };
-}
-
-export function adaptClearance(s: EvaluateSeries): BandSeries | null {
-  const t = seriesColumn(s, "t_ms");
-  const v = seriesColumn(s, "contact_clearance_deg");
-  if (!t || !v) return null;
-  const lo = seriesColumn(s, "contact_clearance_deg_lo");
-  const hi = seriesColumn(s, "contact_clearance_deg_hi");
-  return { utc_ms: t, value: v, ...(lo && hi ? { lo, hi } : {}) };
 }
 
 export function stationShortName(name: string): string {
@@ -220,6 +210,27 @@ const EVENT_EDGE: Record<CountdownKind, { set: "sunlit" | "contact"; edge: "end"
   earthrise: { set: "contact", edge: "start" },
 };
 
+const CONSTRAINT_INTERVAL: Record<string, string> = {
+  max_dark_span_h: "dark",
+  max_contact_gap_h: "contact_gap",
+};
+
+export function constraintIntervals(intervals: Record<string, IntervalJson[]>): Map<string, [number, number]> {
+  const out = new Map<string, [number, number]>();
+  for (const [key, set] of Object.entries(CONSTRAINT_INTERVAL)) {
+    let best: [number, number] | null = null;
+    for (const r of intervals[set] ?? []) {
+      if (!r.nominal) continue;
+      const a = parseSec(r.start_utc);
+      const b = parseSec(r.end_utc);
+      if (a === null || b === null) continue;
+      if (best === null || b - a > best[1] - best[0]) best = [a, b];
+    }
+    if (best) out.set(key, best);
+  }
+  return out;
+}
+
 export function crossingEvents(intervals: Record<string, IntervalJson[]>): CrossingEvent[] {
   const out: CrossingEvent[] = [];
   for (const kind of Object.keys(EVENT_EDGE) as CountdownKind[]) {
@@ -309,6 +320,25 @@ export interface VerdictSummary {
   limitingKey: string | null;
   limiting: ConstraintVerdict | null;
   counts: { pass: number; marginal: number; fail: number; unevaluated: number };
+  batteryEveryHeading: boolean;
+  batteryWorst: number | null;
+}
+
+function inArc(y: number, [from, to]: Arc): boolean {
+  return wrap360(y - from) <= wrap360(to - from) + 1e-6;
+}
+
+export function batteryFailsEveryHeading(r: Pick<EvaluateResult, "heading">): boolean {
+  const h = r.heading;
+  if (!h) return false;
+  const c = h.constraints.find((x) => x.key === "min_state_of_charge");
+  if (c) return c.none_pass;
+  if (!h.depends) return false;
+  const flat = h.soc_min_heading_only?.[0];
+  if (typeof flat !== "number" || flat > 0.05) return false;
+  const worst = arcs(h.worst_arc_deg);
+  const yaws = h.yaws_deg.filter((y) => Number.isFinite(y));
+  return worst.length > 0 && yaws.length > 0 && yaws.every((y) => worst.some((a) => inArc(y, a)));
 }
 
 export function summarize(r: EvaluateResult): VerdictSummary {
@@ -321,6 +351,8 @@ export function summarize(r: EvaluateResult): VerdictSummary {
     limitingKey: key,
     limiting: key ? (constraints.find((c) => c.id === key) ?? null) : null,
     counts,
+    batteryEveryHeading: batteryFailsEveryHeading(r),
+    batteryWorst: batteryWorst(r),
   };
 }
 
@@ -370,28 +402,40 @@ export function metricWhenLines(metrics: readonly MetricJson[]): Record<string, 
   return out;
 }
 
+function percentRow(row: LineRow | null): LineRow | null {
+  if (!row) return null;
+  const pct = (a: ArrayLike<number>) => Float64Array.from(a, (v) => v * 100);
+  return {
+    ...row,
+    value: pct(row.value),
+    lo: row.lo ? pct(row.lo) : undefined,
+    hi: row.hi ? pct(row.hi) : undefined,
+    domain: [0, 100],
+    threshold: row.threshold ? { ...row.threshold, value: row.threshold.value * 100 } : undefined,
+    marks: row.marks?.map((m) => ({ ...m, value: m.value === null ? null : m.value * 100 })),
+  };
+}
+
 export function timelineRows(r: EvaluateResult, scenario: Scenario | null): TimelineRow[] {
   const span = seriesExtent(r.series) ?? [NaN, NaN];
   const minSoc = scenario?.constraints.min_state_of_charge?.min;
   const noNominal = noNominalSeries(r.provenance);
   const rows: Array<TimelineRow | null> = [
-    intervalRow("sunlit", "Sunlit", "c-sun", r.intervals["sunlit"], span),
+    intervalRow("sunlit", "Sunlight", "c-sun", r.intervals["sunlit"], span),
     intervalRow("eclipse", "Eclipse", "c-uncertainty", r.intervals["eclipse"], span),
     intervalRow("contact", "Earth link", "c-network", r.intervals["contact"], span),
-    lineRow(r.series, "soc", "soc", "Battery", "", "c-power", {
-      domain: [0, 1],
-      decimals: 2,
-      noNominal: noNominal.has("soc"),
-      threshold: minSoc !== null && minSoc !== undefined ? { value: minSoc, label: "limit" } : undefined,
-      marks: socMarks(r.metrics),
-    }),
-    lineRow(r.series, "contact_clearance_deg", "clearance", "Earth above mask", "°", "c-earth", { decimals: 1, threshold: { value: 0, label: "mask" } }),
+    percentRow(
+      lineRow(r.series, "soc", "soc", "Battery", "%", "c-power", {
+        domain: [0, 1],
+        decimals: 0,
+        noNominal: noNominal.has("soc"),
+        threshold: minSoc !== null && minSoc !== undefined ? { value: minSoc, label: "limit" } : undefined,
+        marks: socMarks(r.metrics),
+      }),
+    ),
+    lineRow(r.series, "contact_clearance_deg", "clearance", "Earth link margin", "°", "c-earth", { decimals: 1, threshold: { value: 0, label: "" } }),
   ];
   return rows.filter((x): x is TimelineRow => x !== null && (x.kind !== "intervals" || x.best.length > 0 || (x.optimistic?.length ?? 0) > 0 || (x.pessimistic?.length ?? 0) > 0));
-}
-
-export function rangeOnlyRows(rows: readonly TimelineRow[]): boolean {
-  return rows.some((r) => r.kind === "line" && r.noNominal === true);
 }
 
 export function seriesExtent(s: EvaluateSeries): [number, number] | null {
@@ -516,7 +560,8 @@ export function blockerMark(scenario: Scenario, label: string, az_deg: number, d
 }
 
 export function attributionLabel(kind: CountdownKind, e: CrossingEvent): string {
-  return `${KIND_LABEL[kind]} ${whenText(e.best_ms, { year: false })}`;
+  const sun = kind === "sunrise" || kind === "sunset";
+  return `${KIND_LABEL[kind]}${sun ? ", half the disc" : ""} ${whenText(e.best_ms, { year: false })}`;
 }
 
 export function eventRequest(kind: CountdownKind, e: CrossingEvent, timeMs: number): { kind: CountdownKind; from_utc: string } {
@@ -663,7 +708,7 @@ export function verdictSentence(summary: VerdictSummary): string | null {
   const m = c.heading_dependent ? (c.margin_worst ?? null) : Number.isFinite(c.margin) ? c.margin : null;
   if (m === null) return c.heading_dependent ? `${lead}, which depends on the heading` : lead;
   const by = quantityText(Math.abs(m), c.unit);
-  const worst = c.heading_dependent ? " at the worst heading" : "";
+  const worst = c.heading_dependent ? (c.id === "min_state_of_charge" && summary.batteryEveryHeading ? " at every heading" : " at the worst heading") : "";
   if (c.limit_range) {
     return `${lead}: ${by} ${m >= 0 ? "inside" : "outside"} the ${quantityText(c.limit_range[0], c.unit, { exact: true })}–${quantityText(c.limit_range[1], c.unit, { exact: true })} range${worst}`;
   }
@@ -675,8 +720,15 @@ export function verdictSentence(summary: VerdictSummary): string | null {
 export interface BatteryRisk {
   low: number;
   high: number | null;
-  heading: boolean;
+  everyHeading: boolean;
+  depends: boolean;
   suggestedMin: number;
+}
+
+function batteryWorst(r: Pick<EvaluateResult, "metrics">): number | null {
+  const m = r.metrics.find((x) => x.key === "min_state_of_charge");
+  const v = m ? (m.low ?? m.value) : null;
+  return v === null || v === undefined || !Number.isFinite(v) ? null : v;
 }
 
 export function batteryRisk(r: EvaluateResult, scenario: Scenario | null): BatteryRisk | null {
@@ -686,5 +738,5 @@ export function batteryRisk(r: EvaluateResult, scenario: Scenario | null): Batte
   if (low === null || low === undefined || !Number.isFinite(low) || low > 0.05) return null;
   const dod = scenario.profile.battery?.max_dod;
   const suggestedMin = typeof dod === "number" && dod > 0 && dod < 1 ? Math.round((1 - dod) * 100) / 100 : 0.2;
-  return { low, high: m?.high ?? null, heading: r.heading?.depends === true && (m?.value ?? null) === null, suggestedMin };
+  return { low, high: m?.high ?? null, everyHeading: batteryFailsEveryHeading(r), depends: r.heading?.depends === true, suggestedMin };
 }

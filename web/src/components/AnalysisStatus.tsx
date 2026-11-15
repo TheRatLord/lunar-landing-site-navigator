@@ -16,6 +16,7 @@ export interface AnalysisStatusProps {
     Omit<AnalysisControls, "forceCancel"> &
     Partial<Pick<AnalysisControls, "forceCancel">>;
   what: string;
+  count?: { verb: string; total: number };
 }
 
 const PREPARING = /^(ephemeris table|utc strings|epochs)$/i;
@@ -27,10 +28,10 @@ export function stageText(stage: string | undefined): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function AnalysisStatus({ state, what }: AnalysisStatusProps) {
+export function AnalysisStatus({ state, what, count }: AnalysisStatusProps) {
   return (
     <>
-      <StatusBody state={state} what={what} />
+      <StatusBody state={state} what={what} count={count} />
       {state.cancelNote && state.phase !== "running" && <CancelNote state={state} />}
     </>
   );
@@ -71,7 +72,7 @@ function Stale() {
   );
 }
 
-function StatusBody({ state, what }: AnalysisStatusProps) {
+function StatusBody({ state, what, count }: AnalysisStatusProps) {
   if (state.phase === "error" && state.error) {
     const err = state.error instanceof ApiError ? state.error : new ApiError({ status: 0, title: "Could not run the analysis", detail: state.error.message });
     return (
@@ -106,11 +107,11 @@ function StatusBody({ state, what }: AnalysisStatusProps) {
     return (
       <div className="an-status an-running" role="status" aria-live="polite">
         <Spinner />
-        <span className="an-stage">{stageText(state.stage)}</span>
+        <span className="an-stage">{count ? `${count.verb} ${Math.round(clamp(state.progress ?? 0, 0, 1) * count.total)} of ${count.total}` : stageText(state.stage)}</span>
         <span className="an-bar">
           <ProgressBar value={state.progress} label={`Progress of ${what}`} />
         </span>
-        {pct !== null && <span className="num an-pct">{pct}%</span>}
+        {pct !== null && !count && <span className="num an-pct">{pct}%</span>}
         <IconButton icon="close" label="Cancel" size="sm" onClick={state.cancel} />
         {state.stale && <Stale />}
       </div>

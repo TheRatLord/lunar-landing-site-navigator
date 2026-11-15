@@ -4,10 +4,9 @@ import { Disclosure } from "../../components/ui/Disclosure";
 import { Pairs } from "../../components/ui/Pairs";
 import { Stat } from "../../components/ui/Stat";
 import { VerdictChip } from "../../components/ui/VerdictChip";
-import { formatLat, formatLon } from "../../lib/coords";
 import { withUnit } from "../../lib/format";
 import { kindWord } from "../../lib/marginKind";
-import { PROB_KEY, STATES, STATE_LABEL, hazardOriginText, limitInfo, marginText, offsetText, percent, standardError, stateShares } from "./adapt";
+import { STATES, STATE_LABEL, limitInfo, marginText, offsetText, percent, standardError, stateShares } from "./adapt";
 import type { Marker } from "./EllipsePlot";
 
 function StateChip({ state }: { state: SampleState }) {
@@ -72,16 +71,23 @@ export function PointsPanel({ result, selected, onSelect }: { result: EllipseRes
     { key: "centre", role: "Centre", ref: result.centre },
   ];
   const cols: Column<PointRow>[] = [
-    { key: "role", header: "Point", render: (r) => r.role },
+    {
+      key: "role",
+      header: "Point",
+      render: (r) => (
+        <span className="el-cellstack">
+          <span>{r.role}</span>
+          {r.ref.limiting && <span className="faint">{limitInfo(result.scenario, r.ref.limiting).label}</span>}
+        </span>
+      ),
+    },
     { key: "state", header: "Verdict", render: (r) => <StateChip state={r.ref.state} /> },
     {
       key: "m",
       header: "Margin",
       numeric: true,
       render: (r) => (
-        <>
-          {marginText(r.ref)} <span className="faint">{kindWord(r.ref.margin_kind)}</span>
-        </>
+        <>{marginText(r.ref)}</>
       ),
     },
   ];
@@ -96,7 +102,6 @@ export function PointsPanel({ result, selected, onSelect }: { result: EllipseRes
             rows={[
               ["Limiting", sel.limiting ? limitInfo(result.scenario, sel.limiting).label : "none"],
               ["Offset", offsetText(sel.east_m, sel.north_m)],
-              sel.lat_deg !== undefined && sel.lon_deg !== undefined ? ["Position", `${formatLat(sel.lat_deg, 5)} ${formatLon(sel.lon_deg, 5)}`] : null,
               sel.slope_deg !== null && sel.slope_deg !== undefined ? ["Slope", withUnit(sel.slope_deg.toFixed(1), "°")] : null,
               sel.margin_note ? ["Note", <span key="n" data-testid="ellipse-margin-note">{sel.margin_note}</span>] : null,
             ]}
@@ -145,60 +150,6 @@ export function ConstraintTable({ result }: { result: EllipseResult }) {
   );
 }
 
-function ConvergenceTable({ result }: { result: EllipseResult }) {
-  const c = result.convergence;
-  const cols: Column<(typeof c.rows)[number]>[] = [
-    { key: "n", header: "Points", numeric: true, render: (r) => r.n.toLocaleString("en-US") },
-    { key: "pass", header: "Pass", numeric: true, render: (r) => percent(r.pass) },
-    { key: "marginal", header: "Marginal", numeric: true, render: (r) => percent(r.marginal) },
-    { key: "fail", header: "Fail", numeric: true, render: (r) => percent(r.fail) },
-  ];
-  return (
-    <>
-      <DataTable columns={cols} rows={c.rows} rowKey={(r) => String(r.n)} caption="Verdict shares among the first n sampled points" />
-      <Pairs
-        className="el-dl"
-        rows={[
-          ["Last halving", withUnit((c.max_change_last_halving * 100).toFixed(1), "%")],
-          ["Tolerance", withUnit((c.tolerance * 100).toFixed(1), "%")],
-        ]}
-      />
-    </>
-  );
-}
-
-function HazardPairs({ result }: { result: EllipseResult }) {
-  const slope = result.hazard_limits["slope_deg"] ?? null;
-  const rough = result.hazard_limits["roughness_m"] ?? null;
-  const origin = (key: string) => {
-    const o = hazardOriginText(result.hazard_origins?.[key]);
-    if (!o) return null;
-    return (
-      <span data-testid="ellipse-hazard-origin" className="faint">
-        {o.url ? (
-          <a href={o.url} target="_blank" rel="noreferrer noopener">
-            {o.text}
-          </a>
-        ) : (
-          o.text
-        )}
-      </span>
-    );
-  };
-  const hazardPass = result.state_probability_non_hazardous[PROB_KEY.pass] ?? null;
-  return (
-    <Pairs
-      className="el-dl"
-      rows={[
-        ["Hazardous", percent(result.hazard_fraction)],
-        slope !== null ? ["Slope over", <span key="s" className="row">{withUnit(String(slope), "°")} {origin("slope_deg")}</span>] : null,
-        rough !== null ? ["Roughness over", <span key="r" className="row">{withUnit(String(rough), "m")} {origin("roughness_m")}</span>] : null,
-        hazardPass !== null ? ["Pass elsewhere", percent(hazardPass)] : null,
-      ]}
-    />
-  );
-}
-
 function ClosingPairs({ result }: { result: EllipseResult }) {
   const closing = Object.entries(result.closing_constraints ?? {})
     .map(([key, count]) => ({ key, count, frac: result.closing_fraction?.[key] ?? null }))
@@ -211,28 +162,15 @@ function ClosingPairs({ result }: { result: EllipseResult }) {
 }
 
 export function ResultDetails({ result }: { result: EllipseResult }) {
-  const c = result.convergence;
   const hasClosing = Object.keys(result.closing_constraints ?? {}).length > 0;
   return (
     <div className="el-more">
+      {!result.convergence.converged && <p className="chip chip-marginal">Not settled: run more points</p>}
       {hasClosing && (
         <Disclosure title="Failing points">
           <ClosingPairs result={result} />
         </Disclosure>
       )}
-      <Disclosure title="Hazard">
-        <HazardPairs result={result} />
-      </Disclosure>
-      <Disclosure
-        title={
-          <>
-            Convergence
-            {!c.converged && <span className="chip chip-marginal">Not settled</span>}
-          </>
-        }
-      >
-        <ConvergenceTable result={result} />
-      </Disclosure>
     </div>
   );
 }

@@ -64,7 +64,7 @@ export function EllipseWorkspace() {
   });
 
   const statusState = { ...run, jobId: null, cached: false, stale: false, rerun: start };
-  const status = result !== null && dirty && !running && run.phase !== "error" ? <OutOfDate state={statusState} /> : <AnalysisStatus state={statusState} what="the landing ellipse" />;
+  const status = result !== null && dirty && !running && run.phase !== "error" ? <OutOfDate state={statusState} /> : <AnalysisStatus state={statusState} what="the landing ellipse" count={Number(run.points) > 0 ? { verb: "Sampling", total: Number(run.points) } : undefined} />;
   const failed = run.phase === "error";
 
   if (!ell) {
@@ -75,7 +75,7 @@ export function EllipseWorkspace() {
         <div className="el-main">
           <EmptyState
             icon="ellipse"
-            title="What share of the landing area passes?"
+            title="The lander can touch down anywhere in its landing ellipse. Check how much of it passes."
             action={
               <Button variant="primary" onClick={addPlanEllipse} icon="plus">
                 Add ellipse

@@ -21,12 +21,67 @@ function estimateName(path: string, label: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+const KEPT_CAVEATS = new Set(["terrain.polar_footprint", "terrain.crest_observer_height", "events.shallow_sun"]);
+
+const UNITS: Array<[RegExp, string]> = [
+  [/_wh$/i, "Wh"],
+  [/_w$/i, "W"],
+  [/_m$/i, "m"],
+  [/_deg$/i, "°"],
+  [/_h$/i, "h"],
+];
+
+function lookup(root: unknown, path: string[]): unknown {
+  let v: unknown = root;
+  for (const k of path) {
+    if (v === null || typeof v !== "object") return undefined;
+    v = (v as Record<string, unknown>)[k];
+  }
+  return v;
+}
+
+function estimateValue(scenario: Scenario, path: string): string {
+  const parts = path.split(".");
+  const key = parts[parts.length - 1] ?? "";
+  if (parts[0] === "constraints") {
+    const lim = lookup(scenario, parts) as { min?: number | null; max?: number | null; unit?: string } | undefined;
+    if (!lim) return "";
+    const u = lim.unit === "deg" ? "°" : lim.unit ? ` ${lim.unit}` : "";
+    return typeof lim.min === "number" ? `≥ ${formatNum(lim.min, 2)}${u}` : typeof lim.max === "number" ? `≤ ${formatNum(lim.max, 2)}${u}` : "";
+  }
+  if (parts[0] !== "profile") return "";
+  const v = lookup(scenario.profile, parts.slice(1));
+  if (typeof v === "number") {
+    const unit = UNITS.find(([re]) => re.test(key))?.[1] ?? "";
+    if (/(efficiency|dod|soc)$/i.test(key) && v <= 1) return `${formatNum(v * 100, 0)} %`;
+    return `${formatNum(v, Math.abs(v) >= 100 ? 0 : 2)}${unit ? (unit === "°" ? "°" : ` ${unit}`) : ""}`;
+  }
+  if (key === "loads" && v && typeof v === "object") {
+    const l = v as { sunlit_w?: number; dark_w?: number };
+    if (typeof l.sunlit_w === "number" && typeof l.dark_w === "number") return `${formatNum(l.sunlit_w, 0)} W day, ${formatNum(l.dark_w, 0)} W night`;
+  }
+  if (v === null || v === undefined) return key === "yaw_deg" ? "every heading tried" : "";
+  if (Array.isArray(v)) return `${v.length} ${key.replace(/_/g, " ")}`;
+  return "";
+}
+
+function caveatText(text: string): string {
+  return glueQuantities(
+    text
+      .replace(/\bscenario's\b/gi, "plan's")
+      .replace(/\bscenario\b/gi, "plan")
+      .replace(/-(\d+(?:\.\d+)?)\s*deg latitude/g, "$1°S")
+      .replace(/(\d+(?:\.\d+)?)\s*deg latitude/g, "$1°N")
+      .replace(/(\d)\s*deg\b/g, "$1°"),
+  );
+}
+
 export function Assumptions({ scenario, result }: { scenario: Scenario | null; result: EvaluateResult }) {
   const estimates = useMemo(() => (scenario ? estimatesUsed(scenario) : []), [scenario]);
   const caveats = useMemo(() => {
     const seen = new Set<string>();
     return (result.limits ?? []).filter((n) => {
-      if (n.kind !== "model_limit") return false;
+      if (n.kind !== "model_limit" || !KEPT_CAVEATS.has(n.id)) return false;
       if (seen.has(n.title)) return false;
       seen.add(n.title);
       return true;
@@ -41,12 +96,12 @@ export function Assumptions({ scenario, result }: { scenario: Scenario | null; r
       <div className="asm">
         {estimates.length > 0 && (
           <section>
-            <h3 className="asm-h">Estimated inputs</h3>
+            <h3 className="asm-h">Estimates</h3>
             <ul className="asm-list">
               {estimates.map((e) => (
                 <li key={e.path}>
-                  <span>{estimateName(e.path, e.label)}</span>
-                  <span className="faint">{BASIS_LABEL[e.basis].toLowerCase()}</span>
+                  <span>{/disc flux/i.test(e.label) ? "Sunlit = half the Sun's disc visible" : estimateName(e.path, e.label)}</span>
+                  <span className="num">{/disc flux/i.test(e.label) ? "" : (scenario && estimateValue(scenario, e.path)) || BASIS_LABEL[e.basis].toLowerCase()}</span>
                 </li>
               ))}
             </ul>
@@ -54,11 +109,11 @@ export function Assumptions({ scenario, result }: { scenario: Scenario | null; r
         )}
         {caveats.length > 0 && (
           <section>
-            <h3 className="asm-h">Limits of the model for this plan</h3>
+            <h3 className="asm-h">Model limits</h3>
             <div className="asm-caveats">
               {caveats.map((n) => (
                 <Disclosure key={n.id} title={n.title}>
-                  <p className="asm-text">{glueQuantities(n.text)}</p>
+                  <p className="asm-text">{caveatText(n.text)}</p>
                 </Disclosure>
               ))}
             </div>

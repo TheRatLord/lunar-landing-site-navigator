@@ -38,7 +38,11 @@ function Notes({ doc, result }: { doc: Scenario; result: EvaluateResult | null }
       {battery && (
         <span className="vs-note vs-note-warn">
           <Icon name="battery" size={12} />
-          Not a requirement: the battery can run flat{battery.heading ? " at the worst heading" : ""}
+          {!battery.depends
+            ? "Battery can run flat (not a requirement)"
+            : battery.everyHeading
+              ? "Battery runs flat at every heading (not a requirement)"
+              : `Battery runs flat at some headings (not a requirement), lowest ${Math.round(battery.low * 100)}–${Math.round((battery.high ?? battery.low) * 100)} %`}
           <Button size="sm" variant="ghost" onClick={addBattery}>
             Add as requirement
           </Button>

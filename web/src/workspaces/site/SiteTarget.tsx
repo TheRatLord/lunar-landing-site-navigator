@@ -9,7 +9,6 @@ import { Countdown } from "../../components/viz/Countdown";
 import { ConstraintPanel } from "../../components/viz/ConstraintPanel";
 import { HorizonPanorama } from "../../components/viz/HorizonPanorama";
 import { Timeline } from "../../components/viz/Timeline";
-import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Tabs, type TabItem } from "../../components/ui/Panel";
 import { Segmented } from "../../components/ui/Segmented";
@@ -21,10 +20,10 @@ import {
   adaptConstraints,
   adaptHorizon,
   adaptStations,
-  adaptClearance,
   adaptSunlight,
   adaptTrack,
   attributionLabel,
+  constraintIntervals,
   crossingEvents,
   directionsAt,
   evaluatedScenario,
@@ -32,7 +31,6 @@ import {
   headingView,
   observerHeightM,
   metricWhenLines,
-  rangeOnlyRows,
   seriesExtent,
   stationGroups,
   summarize,
@@ -57,6 +55,8 @@ const VIEW_TABS = [
 
 const VIEW_NAME: Record<View, string> = { timeline: "Mission timeline", panorama: "Horizon panorama", terrain: "3D terrain" };
 
+let keptView: View = "timeline";
+
 export function SiteTarget() {
   const doc = useScenario((s) => s.doc)!;
   const timeMs = useApp((s) => s.timeMs);
@@ -64,7 +64,11 @@ export function SiteTarget() {
   const bounds = useApp((s) => s.bounds);
   const blocker = useOverlays((s) => s.blocker);
 
-  const [view, setView] = useState<View>("timeline");
+  const [view, setViewState] = useState<View>(() => keptView);
+  const setView = (v: View) => {
+    keptView = v;
+    setViewState(v);
+  };
   const [observer, setObserver] = useState<Observer>("array");
   const [tracing, setTracing] = useState<CountdownKind | null>(null);
 
@@ -78,13 +82,14 @@ export function SiteTarget() {
   const summary = useMemo(() => (result ? summarize(result) : null), [result]);
   const constraints = useMemo(() => (result ? adaptConstraints(result.verdict.constraints) : null), [result]);
   const events = useMemo(() => (result ? crossingEvents(result.intervals) : []), [result]);
+  const spans = useMemo(() => (result ? constraintIntervals(result.intervals) : new Map<string, [number, number]>()), [result]);
+  const showable = useMemo(() => new Set(spans.keys()), [spans]);
   const rows = useMemo(() => (result ? timelineRows(result, evaluated) : []), [result, evaluated]);
   const whenById = useMemo(() => (result ? metricWhenLines(result.metrics) : undefined), [result]);
   const extent = useMemo<[number, number]>(() => (result ? (seriesExtent(result.series) ?? [bounds.start_ms, bounds.end_ms]) : [bounds.start_ms, bounds.end_ms]), [result, bounds]);
   const sunTrack = useMemo(() => (result ? adaptTrack(result.series, "sun") : null), [result]);
   const earthTrack = useMemo(() => (result ? adaptTrack(result.series, "earth") : null), [result]);
   const sunlight = useMemo(() => (result ? adaptSunlight(result.series) : null), [result]);
-  const clearance = useMemo(() => (result ? adaptClearance(result.series) : null), [result]);
   const dirs = useMemo(() => (result ? directionsAt(result.series, timeMs) : { sun: null, earth: null }), [result, timeMs]);
   const stations = useMemo(() => (result ? stationGroups(adaptStations(result.series, result.intervals, evaluated, timeMs), evaluated) : []), [result, evaluated, timeMs]);
   const heading = useMemo(() => headingView(result?.heading), [result]);
@@ -104,7 +109,6 @@ export function SiteTarget() {
     return `${o === "array" ? "Solar array" : "Antenna"}${h !== null ? ` ${h} m` : ""}`;
   };
   const markedAz = attr.state.az_deg ?? (attr.state.result?.event ? attr.state.result.event.az_deg : null);
-  const outside = result !== null && (timeMs < extent[0] - 60_000 || timeMs > extent[1] + 60_000);
   const eventsAt = Math.min(Math.max(timeMs, extent[0]), extent[1]);
   const unevaluated = constraints?.unevaluated ?? [];
 
@@ -147,18 +151,10 @@ export function SiteTarget() {
                   />
                 )}
                 <span className="grow" />
-                {outside && (
-                  <span className="site-outside" role="status">
-                    Outside the mission
-                    <Button size="sm" onClick={() => setTime(extent[0])}>
-                      Jump to landing
-                    </Button>
-                  </span>
-                )}
               </div>
 
               <div className="site-visual">
-                {view === "timeline" && <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" note={rangeOnlyRows(rows) ? "Heading unknown: battery band spans the best to worst heading" : null} />}
+                {view === "timeline" && <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" />}
                 {view === "panorama" &&
                   (horizon ? (
                     <HorizonPanorama
@@ -166,12 +162,11 @@ export function SiteTarget() {
                       sun={sunTrack ?? undefined}
                       earth={earthTrack ?? undefined}
                       sunlight={sunlight ?? undefined}
-                      clearance={clearance ?? undefined}
                       stations={stations}
                       timeMs={timeMs}
                       markedAz_deg={markedAz}
                       title="Horizon"
-                      onBlockerRequest={(r) => attr.request({ az_deg: r.az_deg, observer }, `Horizon at ${Math.round(r.az_deg)}°`, r.az_deg)}
+                      onBlockerRequest={(r) => attr.request({ az_deg: r.az_deg, observer }, "Horizon", r.az_deg)}
                     />
                   ) : (
                     <EmptyState icon="eyeOff" title="No horizon for this height" />
@@ -193,17 +188,29 @@ export function SiteTarget() {
             </div>
 
             <aside className="site-rail" aria-label="Requirements and events">
-              <ConstraintPanel constraints={constraints?.constraints ?? []} limitingId={summary?.limitingKey ?? null} title="Requirements" whenById={whenById} />
+              <ConstraintPanel constraints={constraints?.constraints ?? []} limitingId={summary?.limitingKey ?? null} title="Requirements"
+                whenById={whenById}
+                showable={showable}
+                onShow={(id) => {
+                  const span = spans.get(id);
+                  if (!span) return;
+                  setView("timeline");
+                  setTime(span[0]);
+                }}
+              />
               {unevaluated.length > 0 && <p className="site-unevaluated">Not evaluated: {unevaluated.map((c) => c.label).join(", ")}</p>}
               <Countdown
                 events={events}
                 timeMs={eventsAt}
+                startMs={extent[0]}
+                endMs={extent[1]}
                 title="Next events"
                 tracing={attr.state.phase === "running" ? tracing : null}
                 onTrace={(kind, e) => {
                   setTracing(kind);
                   if (view === "timeline") setView("panorama");
                   attr.request(eventRequest(kind, e, eventsAt), attributionLabel(kind, e), null);
+                  setTime(e.best_ms);
                 }}
               />
             </aside>

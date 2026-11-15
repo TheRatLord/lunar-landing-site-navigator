@@ -46,16 +46,16 @@ const SUN_CAUSE: Record<string, string> = {
   "smooth-sphere horizon": "Set by the curve of the Moon, not terrain",
   "terrain horizon": "Set by the terrain horizon",
   "horizon at the sphere dip": "Set by the horizon",
-  "no horizon limb crossing found near the event": "No terrain crossing near this time",
+  "no horizon limb crossing found near the event": "The Sun grazes the horizon; no single crossing",
 };
 
 const BASIS: Record<string, string> = {
-  "limb crossing": "Sun's edge crosses the horizon",
-  "half-flux event": "Half the Sun's disc visible",
+  "limb crossing": "First edge of the Sun",
+  "half-flux event": "Half the disc",
 };
 
 function mapHref(lat: number, lon: number): string {
-  return `/map?lat=${lat.toFixed(4)}&lon=${(wrap360(lon + 180) - 180).toFixed(4)}`;
+  return `/map?lat=${lat.toFixed(4)}&lon=${(wrap360(lon + 180) - 180).toFixed(4)}&mark=blocker`;
 }
 
 function Details({ result }: { result: AttributionResult }) {
@@ -64,14 +64,8 @@ function Details({ result }: { result: AttributionResult }) {
   const sun = ev.kind === "sunset" || ev.kind === "sunrise";
   return (
     <dl className="attr-grid">
-      <dt>Time</dt>
+      <dt>{sun ? (BASIS[ev.time_basis] ?? "Time") : "Time"}</dt>
       <dd className="num">{whenText(Date.parse(ev.utc))}</dd>
-      {sun && (
-        <>
-          <dt>Time is when</dt>
-          <dd>{BASIS[ev.time_basis] ?? ev.time_basis}</dd>
-        </>
-      )}
       {ev.eclipse_fraction > 0 && (
         <>
           <dt>Sun covered by Earth</dt>
@@ -79,9 +73,9 @@ function Details({ result }: { result: AttributionResult }) {
         </>
       )}
       <dt>Horizon</dt>
-      <dd className="num">{formatNum(ev.horizon_elev_deg, 2)}°</dd>
+      <dd className="num">{formatNum(ev.horizon_elev_deg, 1)}°</dd>
       <dt>{sun ? "Sun elevation" : "Earth elevation"}</dt>
-      <dd className="num">{formatNum(ev.object_elev_deg, 2)}°</dd>
+      <dd className="num">{formatNum(ev.object_elev_deg, 1)}°</dd>
     </dl>
   );
 }
@@ -103,7 +97,6 @@ export function AttributionBar({ state, scenario, onClear, onShow3D }: Attributi
   const bearing = ev?.az_deg ?? az?.az_deg ?? null;
   const lat = b?.["lat_deg"];
   const lon = b?.["lon_deg"];
-  const height = b?.["height_m"];
   const done = state.phase === "done" && result;
 
   if (state.phase === "error") {
@@ -131,7 +124,6 @@ export function AttributionBar({ state, scenario, onClear, onShow3D }: Attributi
           <>
             <span>
               Terrain {distanceText(dist)} {bearingText(bearing)}
-              {height !== undefined && `, ${Math.round(height).toLocaleString("en-US")} m high`}
             </span>
             {lat !== undefined && lon !== undefined && (
               <Link to={mapHref(lat, lon)} className="btn btn-sm btn-default">

@@ -98,7 +98,12 @@ function PaletteDialog({ onClose, commands }: Omit<CommandPaletteProps, "open">)
         </div>
         <ul id={listId} role="listbox" className="palette-list">
           {results.length === 0 && <li className="palette-empty">No matching commands</li>}
-          {results.map((c, i) => (
+          {results.map((c, i) => [
+            c.group !== results[i - 1]?.group && (
+              <li key={`group-${c.group}-${i}`} role="presentation" className="palette-heading">
+                {c.group}
+              </li>
+            ),
             <li
               key={c.id}
               id={`${listId}-${c.id}`}
@@ -110,10 +115,9 @@ function PaletteDialog({ onClose, commands }: Omit<CommandPaletteProps, "open">)
             >
               <span className="palette-icon">{c.icon && <Icon name={c.icon} size={14} />}</span>
               <span className="palette-title">{c.title}</span>
-              <span className="palette-group">{c.group}</span>
               {c.shortcut && <kbd className="kbd">{c.shortcut}</kbd>}
-            </li>
-          ))}
+            </li>,
+          ])}
         </ul>
       </div>
     </div>,

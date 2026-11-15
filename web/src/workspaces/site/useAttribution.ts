@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef } from "react";
 import { ApiError, isAbort, reportError } from "../../api/client";
 import { runAnalysis } from "../../api/jobs";
 import { SITE_ENDPOINTS, attributionBody, type AttributionRequest, type AttributionResult } from "../../api/site";
-import { useOverlays } from "../../scenario/alternatives";
+import { useOverlays, type BlockerMark } from "../../scenario/alternatives";
 import type { Scenario } from "../../scenario/types";
 import { blockerMark, terrainSets } from "./adapt";
 
@@ -33,13 +33,24 @@ function reduce(s: AttributionState, a: Action): AttributionState {
   }
 }
 
+let kept: { state: AttributionState; blocker: BlockerMark | null } = { state: IDLE, blocker: null };
+
 export function useAttribution(scenario: Scenario) {
-  const [state, dispatch] = useReducer(reduce, IDLE);
+  const [state, dispatch] = useReducer(reduce, scenario, (doc) => (kept.state.doc === doc && kept.state.phase === "done" ? kept.state : IDLE));
   const ctlRef = useRef<AbortController | null>(null);
   const setBlocker = useOverlays((s) => s.setBlocker);
 
   useEffect(() => {
+    kept = { ...kept, state };
+  }, [state]);
+
+  useEffect(() => {
+    if (kept.state.doc === scenario && kept.state.phase === "done") {
+      setBlocker(kept.blocker);
+      return;
+    }
     ctlRef.current?.abort();
+    kept = { state: IDLE, blocker: null };
     setBlocker(null);
   }, [scenario, setBlocker]);
 
@@ -56,6 +67,7 @@ export function useAttribution(scenario: Scenario) {
       ctlRef.current?.abort();
       const ctl = new AbortController();
       ctlRef.current = ctl;
+      kept = { ...kept, blocker: null };
       dispatch({ type: "start", label, az_deg, doc: scenario });
       runAnalysis<AttributionResult>(SITE_ENDPOINTS.attribution, attributionBody(scenario, "auto", req), { signal: ctl.signal }).then(
         (result) => {
@@ -67,6 +79,7 @@ export function useAttribution(scenario: Scenario) {
             : az
               ? blockerMark(scenario, label, az.az_deg, az.blocker_dist_m, az.blocker)
               : null;
+          kept = { ...kept, blocker: mark };
           setBlocker(mark);
         },
         (e: unknown) => {
@@ -83,6 +96,7 @@ export function useAttribution(scenario: Scenario) {
 
   const clear = useCallback(() => {
     ctlRef.current?.abort();
+    kept = { state: IDLE, blocker: null };
     dispatch({ type: "clear" });
     setBlocker(null);
   }, [setBlocker]);

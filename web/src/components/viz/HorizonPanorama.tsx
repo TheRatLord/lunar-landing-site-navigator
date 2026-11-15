@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import type { BandSeries, HorizonProfile, StationMarker, SunlightSeries, TargetTrack } from "../../contract/types";
+import type { HorizonProfile, StationMarker, SunlightSeries, TargetTrack } from "../../contract/types";
 import { discFractionAboveHorizon, horizonAt } from "../../lib/disc";
 import { formatDeg, formatNum, tickDecimals } from "../../lib/format";
 import { clamp, lowerBound, niceTicks, wrap180, wrap360 } from "../../lib/scale";
@@ -10,7 +10,7 @@ import { Canvas } from "./canvas";
 import { placeLabels, type Bounds } from "./labels";
 import { MONO, SANS, drawReadout, localPoint, roundRect, type Size, type ThemeColors } from "./draw";
 import { useColors } from "./useColors";
-import { earthCentre, earthInsetPairs, formatBlockerDistance, servedBand, servedSunlight, sunDiscLit, sunInsetPairs, type InsetPair } from "./panoramaText";
+import { earthCentre, earthInsetPairs, formatBlockerDistance, servedSunlight, sunDiscLit, sunInsetPairs, type InsetPair } from "./panoramaText";
 
 export interface BlockerRequest {
   az_deg: number;
@@ -28,7 +28,6 @@ export interface HorizonPanoramaProps {
   sun?: TargetTrack;
   earth?: TargetTrack;
   sunlight?: SunlightSeries;
-  clearance?: BandSeries;
   stations?: PanoramaStation[];
   timeMs: number;
   onBlockerRequest?: (req: BlockerRequest) => void;
@@ -350,7 +349,6 @@ export function HorizonPanorama({
   sun,
   earth,
   sunlight,
-  clearance,
   stations = [],
   timeMs,
   onBlockerRequest,
@@ -506,9 +504,6 @@ export function HorizonPanorama({
         ctx.setLineDash([]);
         ctx.globalAlpha = 1;
       };
-      if (sun) drawTrackLine(sun, c.get("c-sun"));
-      if (earth) drawTrackLine(earth, c.get("c-earth"));
-
       const clipAbove = (g: CanvasRenderingContext2D) => {
         g.beginPath();
         tracePath(g, best);
@@ -517,6 +512,15 @@ export function HorizonPanorama({
         g.closePath();
         g.clip();
       };
+      if (compact) {
+        ctx.save();
+        clipAbove(ctx);
+        if (sun) drawTrackLine(sun, c.get("c-sun"));
+        ctx.restore();
+      } else {
+        if (sun) drawTrackLine(sun, c.get("c-sun"));
+        if (earth) drawTrackLine(earth, c.get("c-earth"));
+      }
 
       const labels: PendingLabel[] = [];
       const place = (t: TargetTrack | undefined, style: BodyStyle) => {
@@ -526,9 +530,9 @@ export function HorizonPanorama({
         const a = p.az_deg + Math.round((L.azCenter - p.az_deg) / 360) * 360;
         const cx = toX(L, a);
         const cy = toY(L, p.el_deg);
-        const rx = p.ang_radius_deg * L.pxX;
-        drawDisc(ctx, cx, cy, rx, p.ang_radius_deg * L.pxY, style, clipAbove);
-        if (cy >= L.y0 && cy <= L.y1) labels.push({ text: style.name, color: c.get("text"), font: `600 11px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) });
+        const rx = compact ? 6 : p.ang_radius_deg * L.pxX;
+        drawDisc(ctx, cx, cy, rx, compact ? 6 : p.ang_radius_deg * L.pxY, style, clipAbove);
+        if (cy >= L.y0 && cy <= L.y1 && cx >= L.x0 && cx <= L.x1 && p.el_deg >= horizonAt(horizon.elev_deg, p.az_deg)) labels.push({ text: style.name, color: c.get("text"), font: `600 11px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) });
         return p;
       };
       const sunStyle: BodyStyle = { color: c.get("c-sun"), soft: c.get("c-sun-soft"), highlight: c.get("on-accent"), name: "Sun" };
@@ -536,7 +540,8 @@ export function HorizonPanorama({
       const sunNow = place(sun, sunStyle);
       const earthNow = place(earth, earthStyle);
 
-      const sorted = [...stations].sort((a, b) => a.el_deg - b.el_deg);
+      const earthShown = earthNow !== null && toY(L, earthNow.el_deg) <= L.y1 && earthNow.el_deg >= horizonAt(horizon.elev_deg, earthNow.az_deg);
+      const sorted = earthShown ? [...stations].sort((a, b) => a.el_deg - b.el_deg) : [];
       sorted.forEach((st) => {
         const { x, y } = stationXY(L, st);
         const col = c.station(stations.indexOf(st));
@@ -610,7 +615,7 @@ export function HorizonPanorama({
           const served = isSun && sunlight ? servedSunlight(sunlight, timeMs) : null;
           const pairs = isSun
             ? sunInsetPairs(served, discFractionAboveHorizon(horizon.elev_deg, p.az_deg, p.el_deg, p.ang_radius_deg))
-            : earthInsetPairs((earth ? earthCentre(earth, timeMs) : null) ?? { el_deg: NaN }, clearance ? servedBand(clearance, timeMs) : null);
+            : earthInsetPairs((earth ? earthCentre(earth, timeMs) : null) ?? { el_deg: NaN }, p.el_deg - horizonAt(horizon.elev_deg, p.az_deg));
           drawInset(ctx, horizon, p, style, pairs, ix, iy, c, isSun ? sunDiscLit(served) : 1);
           iy += INSET_H + 8;
         }
@@ -643,16 +648,16 @@ export function HorizonPanorama({
         const boundHi = horizonAt(horizon.elev_hi_deg, az);
         const rows: Array<[string, string]> = [
           ["Azimuth", formatDeg(az, 1, { azimuth: true })],
-          ["Horizon", `${formatNum(hz, 2)}°`],
+          ["Horizon", `${formatNum(hz, 1)}°`],
         ];
         if (!compact) {
-          if (Math.abs(boundHi - boundLo) >= 0.005) rows.push(["Error range", `${formatNum(boundLo, 2)}…${formatNum(boundHi, 2)}°`]);
+          if (Math.abs(boundHi - boundLo) >= 0.005) rows.push(["Error range", `${formatNum(boundLo, 1)}…${formatNum(boundHi, 1)}°`]);
           rows.push(["Blocker", formatBlockerDistance(horizon.blocker_dist_m[idx]!)]);
         }
         drawReadout(ctx, rows, hover.x, hover.y, sz, c);
       }
     },
-    [colors, L, horizon, sun, earth, sunlight, clearance, stations, timeMs, marked, inset, gutter, hover, nearestIndex, compact],
+    [colors, L, horizon, sun, earth, sunlight, stations, timeMs, marked, inset, gutter, hover, nearestIndex, compact],
   );
 
   const drag = useRef<{ x: number; y: number; moved: number; view: View; eff: Layout } | null>(null);
@@ -810,7 +815,7 @@ export function HorizonPanorama({
           )}
           {earth && (
             <li>
-              <i className="lg-line" style={{ background: "var(--c-earth)" }} /> Earth
+              <i className={compact ? "lg-dot" : "lg-line"} style={{ background: "var(--c-earth)" }} /> Earth
             </li>
           )}
           {!compact && (sun || earth) && (

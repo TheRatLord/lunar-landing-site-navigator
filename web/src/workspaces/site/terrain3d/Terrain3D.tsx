@@ -60,12 +60,12 @@ function fetchReducer(s: Fetch, a: { type: "ok"; loaded: Loaded } | { type: "fai
 
 export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DProps) {
   const colors = useColors();
-  const [sizeKm, setSizeKm] = useState<number>(() => Math.max(DEFAULT_SIZE_KM, sizeFor(blocker) ?? 0));
+  const [sizeKm, setSizeKm] = useState<number>(() => sizeFor(blocker) ?? DEFAULT_SIZE_KM);
   const [seenBlocker, setSeenBlocker] = useState(blocker);
   if (seenBlocker !== blocker) {
     setSeenBlocker(blocker);
     const need = sizeFor(blocker);
-    if (need !== null && need > sizeKm) setSizeKm(need);
+    if (need !== null && need !== sizeKm) setSizeKm(need);
   }
   const samples = SAMPLES;
   const [mode, setMode] = useState<ColorMode>("height");
@@ -243,7 +243,7 @@ export default function Terrain3D({ scenario, sun, earth, blocker }: Terrain3DPr
           <Segmented label="Colour by" size="sm" value={mode} onChange={(v) => setMode(v === "slope" ? "slope" : "height")} options={modeOptions} />
           <Select aria-label="Area" value={String(sizeKm)} options={sizeOptions} onChange={(v) => setSizeKm(Number(v))} />
           <div className="t3-slider">
-            <Slider label="Exaggeration" value={exag} min={1} max={10} step={0.5} onChange={setExag} format={(v) => `×${v}`} />
+            <Slider label="Exaggeration" value={exag} min={1} max={3} step={0.5} onChange={setExag} format={(v) => `×${v}`} />
           </div>
           <IconButton icon="reset" label="Reset camera" size="sm" onClick={() => scene?.resetCamera()} disabled={!scene} />
         </div>

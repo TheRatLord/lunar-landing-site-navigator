@@ -121,6 +121,11 @@
   height: 3px;
   border-radius: var(--r-xs);
 }
+.lg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
 .lg-dash {
   width: 16px;
   border-top: 2px dashed var(--text-3);

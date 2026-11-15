@@ -11,7 +11,7 @@ import { Canvas } from "./canvas";
 import { spanText, whenText } from "./units";
 import { MONO, SANS, drawReadout, fitText, localPoint, type Size, type ThemeColors } from "./draw";
 import { useColors } from "./useColors";
-import { describeInterval, describeLine, gutterNote, gutterReadout } from "./timelineText";
+import { describeInterval, describeLine, gutterReadout } from "./timelineText";
 
 export interface TimelineProps {
   rows: TimelineRow[];
@@ -19,7 +19,6 @@ export interface TimelineProps {
   timeMs: number;
   onTimeChange: (ms: number) => void;
   title?: string;
-  note?: string | null;
 }
 
 const GUTTER = 176;
@@ -27,9 +26,7 @@ const PAD_R = 14;
 const AXIS_H = 26;
 const INTERVAL_H = 26;
 const LINE_H = 74;
-const OVERVIEW_H = 30;
 const MIN_SPAN = 10 * 60_000;
-const MARK_GLYPH_HINT = "▲ ▼ lowest battery";
 
 const rowHeight = (r: TimelineRow) => (r.kind === "intervals" ? INTERVAL_H : LINE_H);
 
@@ -131,7 +128,7 @@ function drawMark(ctx: CanvasRenderingContext2D, world: string, x: number, y: nu
   ctx.strokeStyle = c.get("bg");
   ctx.stroke();
 }
-export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline", note = null }: TimelineProps) {
+export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline" }: TimelineProps) {
   const colors = useColors();
   const [size, setSize] = useState<Size>({ w: 0, h: 0 });
   const [view, setView] = useState<Range>(extent);
@@ -147,13 +144,12 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
 
   const rowsTop = AXIS_H;
   const rowsH = rows.reduce((s, r) => s + rowHeight(r), 0);
-  const totalH = rowsTop + rowsH + 8 + OVERVIEW_H + 8;
+  const totalH = rowsTop + rowsH + 8;
   const plotX0 = GUTTER;
   const plotX1 = Math.max(GUTTER + 50, size.w - PAD_R);
   const plotW = plotX1 - plotX0;
 
   const lineExtents = useMemo(() => new Map(rows.filter((r): r is LineRow => r.kind === "line").map((r) => [r.id, lineExtent(r)])), [rows]);
-  const hasMarks = useMemo(() => rows.some((row) => row.kind === "line" && (row.marks?.length ?? 0) > 0), [rows]);
 
   const markAt = (px: number, py: number) => {
     let y = rowsTop;
@@ -181,9 +177,6 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
 
   const tx = useCallback((t: number) => plotX0 + ((t - view[0]) / (view[1] - view[0])) * plotW, [plotX0, plotW, view]);
   const tFromX = useCallback((x: number) => view[0] + ((x - plotX0) / plotW) * (view[1] - view[0]), [plotX0, plotW, view]);
-  const ox = useCallback((t: number) => plotX0 + ((t - extent[0]) / (extent[1] - extent[0])) * plotW, [plotX0, plotW, extent]);
-  const tFromOx = useCallback((x: number) => extent[0] + ((x - plotX0) / plotW) * (extent[1] - extent[0]), [plotX0, plotW, extent]);
-  const overviewY = rowsTop + rowsH + 8;
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, sz: Size) => {
@@ -255,7 +248,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
           ctx.fillStyle = c.get("text-3");
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
-          const yTicks = niceTicks(e0, e1, 3);
+          const yTicks = row.domain ? [row.domain[0], row.domain[1]] : niceTicks(e0, e1, 3);
           for (const v of yTicks) {
             const yy = yv(v);
             if (yy < top - 2 || yy > bottom + 2) continue;
@@ -358,10 +351,6 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
             ctx.fillStyle = c.get("c-sun");
             ctx.fill();
           }
-          ctx.font = `10px ${MONO}`;
-          ctx.fillStyle = c.get("text-3");
-          const note = gutterNote(row, at);
-          if (note !== null) ctx.fillText(note, 24, y + 47);
         }
         ctx.restore();
         y += h;
@@ -393,30 +382,6 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
       ctx.closePath();
       if (cx >= plotX0 - 5 && cx <= plotX1 + 5) ctx.fill();
 
-      const oy = overviewY;
-      ctx.fillStyle = c.get("bg");
-      ctx.fillRect(plotX0, oy, plotW, OVERVIEW_H);
-      ctx.strokeStyle = c.get("border");
-      ctx.strokeRect(plotX0 + 0.5, oy + 0.5, plotW - 1, OVERVIEW_H - 1);
-      ctx.font = `10px ${MONO}`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-      ctx.fillStyle = c.get("text-3");
-      for (const t of timeTicks(extent[0], extent[1], Math.max(3, Math.floor(plotW / 110)))) {
-        const x = Math.round(ox(t.ms)) + 0.5;
-        ctx.strokeStyle = c.get("grid");
-        ctx.beginPath();
-        ctx.moveTo(x, oy + 1);
-        ctx.lineTo(x, oy + OVERVIEW_H - 1);
-        ctx.stroke();
-        ctx.fillText(t.label, x, oy + OVERVIEW_H - 3);
-      }
-      ctx.strokeStyle = c.get("text");
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(ox(view[0]) + 0.5, oy + 2, Math.max(3, ox(view[1]) - ox(view[0])), OVERVIEW_H - 4);
-      ctx.fillStyle = c.get("c-sun");
-      ctx.fillRect(Math.round(ox(timeMs)) - 1, oy + 1, 2, OVERVIEW_H - 2);
-
       if (hovering) {
         const t = tFromX(hover.x);
         ctx.strokeStyle = c.get("text-2");
@@ -432,25 +397,16 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
         drawReadout(ctx, lines, hover.x, hover.y, sz, c);
       }
     },
-    [colors, view, rows, rowsH, plotW, plotX0, plotX1, tx, tFromX, ox, timeMs, hover, extent, lineExtents, overviewY, rowsTop],
+    [colors, view, rows, rowsH, plotW, plotX0, plotX1, tx, tFromX, timeMs, hover, lineExtents, rowsTop],
   );
 
-  type Drag = { kind: "pan"; x: number; view: Range; moved: number } | { kind: "overview"; grab: number; view: Range };
+  type Drag = { kind: "pan"; x: number; view: Range; moved: number };
   const drag = useRef<Drag | null>(null);
 
   const onPointerDown = (e: PointerEvent<HTMLCanvasElement>) => {
     const p = localPoint(e, e.currentTarget);
     if (p.x < plotX0 || p.x > plotX1) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    if (p.y >= overviewY) {
-      const t = tFromOx(p.x);
-      const half = (view[1] - view[0]) / 2;
-      const inside = t >= view[0] && t <= view[1];
-      const nextView = inside ? view : panDomain(view, t - half - view[0], extent);
-      if (!inside) setView(nextView);
-      drag.current = { kind: "overview", grab: inside ? t - view[0] : half, view: nextView };
-      return;
-    }
     if (p.y < rowsTop) {
       onTimeChange(tFromX(p.x));
       return;
@@ -463,21 +419,15 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
     setHover(p);
     const d = drag.current;
     if (!d) return;
-    if (d.kind === "pan") {
-      d.moved = Math.max(d.moved, Math.abs(p.x - d.x));
-      if (d.moved >= 4) setView(panDomain(d.view, -((p.x - d.x) / plotW) * (d.view[1] - d.view[0]), extent));
-    } else {
-      const t = tFromOx(p.x);
-      const span = d.view[1] - d.view[0];
-      setView(panDomain([t - d.grab, t - d.grab + span], 0, extent));
-    }
+    d.moved = Math.max(d.moved, Math.abs(p.x - d.x));
+    if (d.moved >= 4) setView(panDomain(d.view, -((p.x - d.x) / plotW) * (d.view[1] - d.view[0]), extent));
   };
 
   const onPointerUp = (e: PointerEvent<HTMLCanvasElement>) => {
     const d = drag.current;
     drag.current = null;
     if (!d) return;
-    if (d.kind === "pan" && d.moved < 4) {
+    if (d.moved < 4) {
       const p = localPoint(e, e.currentTarget);
       const hit = markAt(p.x, p.y);
       onTimeChange(hit ? hit.t_ms : clamp(tFromX(p.x), extent[0], extent[1]));
@@ -550,9 +500,6 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
           onKeyDown={onKey}
           onDoubleClick={() => setView([extent[0], extent[1]])}
         />
-        <p className="viz-key">
-          {note ? `${note} · ` : ""}Thick bar = nominal, thin bars = best and worst case{hasMarks ? ` · ${MARK_GLYPH_HINT}` : ""}
-        </p>
       </div>
     </Panel>
   );
