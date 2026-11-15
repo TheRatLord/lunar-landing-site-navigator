@@ -129,9 +129,28 @@ export interface SiteGroup {
 }
 
 export const CLUSTER_PX = 34;
-const AVOID_PX = 16;
 
-const clusterSize = (n: number): number => Math.round(Math.min(46, 26 + Math.log2(n) * 5));
+const PLAN_CLEAR_PX = 15;
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function pinSize(n: number): { w: number; h: number; cy: number } {
+  const w = n >= 1000 ? 42 : n >= 100 ? 36 : 30;
+  return { w, h: Math.round(w * 1.3), cy: w / 2 };
+}
+
+function head(g: SiteGroup): { x: number; y: number; r: number } {
+  const p = pinSize(g.members.length);
+  return { x: g.x, y: g.y - p.h + p.cy, r: p.w / 2 };
+}
+
+function pinPath(w: number, h: number): string {
+  const e = 1.5;
+  const r = w / 2 - e;
+  const cx = w / 2;
+  const cy = w / 2;
+  const tip = h - e;
+  return `M${cx} ${tip}C${cx} ${tip} ${e} ${cy + r * 0.8} ${e} ${cy}A${r} ${r} 0 0 1 ${w - e} ${cy}C${w - e} ${cy + r * 0.8} ${cx} ${tip} ${cx} ${tip}Z`;
+}
 
 export function clusterSites(
   sites: readonly SiteEntry[],
@@ -159,7 +178,9 @@ export function clusterSites(
       for (let b = a + 1; b < groups.length; b++) {
         const A = groups[a]!;
         const B = groups[b]!;
-        if (Math.hypot(A.x - B.x, A.y - B.y) >= (clusterSize(A.members.length) + clusterSize(B.members.length)) / 2 + 3) continue;
+        const ha = head(A);
+        const hb = head(B);
+        if (Math.hypot(ha.x - hb.x, ha.y - hb.y) >= ha.r + hb.r + 3) continue;
         const n = A.members.length + B.members.length;
         groups[a] = { members: [...A.members, ...B.members], x: (A.x * A.members.length + B.x * B.members.length) / n, y: (A.y * A.members.length + B.y * B.members.length) / n };
         groups = groups.filter((_, i) => i !== b);
@@ -170,15 +191,9 @@ export function clusterSites(
   }
   if (avoid) {
     for (const g of groups) {
-      const clear = clusterSize(g.members.length) / 2 + AVOID_PX;
-      const dx = g.x - avoid[0];
-      const dy = g.y - avoid[1];
-      const d = Math.hypot(dx, dy);
-      if (d >= clear) continue;
-      const ux = d > 0.5 ? dx / d : 0.7071;
-      const uy = d > 0.5 ? dy / d : -0.7071;
-      g.x = avoid[0] + ux * clear;
-      g.y = avoid[1] + uy * clear;
+      const { w, h } = pinSize(g.members.length);
+      const hit = avoid[0] > g.x - w / 2 - PLAN_CLEAR_PX && avoid[0] < g.x + w / 2 + PLAN_CLEAR_PX && avoid[1] > g.y - h - PLAN_CLEAR_PX && avoid[1] < g.y + PLAN_CLEAR_PX;
+      if (hit) g.x = g.x >= avoid[0] ? avoid[0] + PLAN_CLEAR_PX + w / 2 : avoid[0] - PLAN_CLEAR_PX - w / 2;
     }
   }
   const clustered = new Set<number>();
@@ -187,35 +202,54 @@ export function clusterSites(
 }
 
 export function clusterRect(g: SiteGroup): Rect {
-  const r = clusterSize(g.members.length) / 2;
-  return [g.x - r, g.y - r, g.x + r, g.y + r];
+  const { w, h } = pinSize(g.members.length);
+  return [g.x - w / 2, g.y - h, g.x + w / 2, g.y];
+}
+
+function newPin(): HTMLButtonElement {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "globe-cluster";
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("aria-hidden", "true");
+  svg.appendChild(document.createElementNS(SVG_NS, "path"));
+  const count = document.createElement("span");
+  count.className = "globe-cluster-count";
+  el.append(svg, count);
+  return el;
 }
 
 export function layoutClusters(host: HTMLElement, groups: readonly SiteGroup[], sites: readonly SiteEntry[]): void {
-  while (host.childElementCount < groups.length) {
-    const el = document.createElement("button");
-    el.type = "button";
-    el.className = "globe-cluster";
-    host.appendChild(el);
-  }
+  while (host.childElementCount < groups.length) host.appendChild(newPin());
   groups.forEach((g, i) => {
     const el = host.children[i] as HTMLButtonElement;
-    const n = String(g.members.length);
-    if (el.textContent !== n) el.textContent = n;
+    const n = g.members.length;
+    const { w, h, cy } = pinSize(n);
+    const count = el.lastElementChild as HTMLElement;
+    if (count.textContent !== String(n)) count.textContent = String(n);
+    if (el.dataset["w"] !== String(w)) {
+      el.dataset["w"] = String(w);
+      el.style.width = `${w}px`;
+      el.style.height = `${h}px`;
+      const svg = el.firstElementChild as SVGSVGElement;
+      svg.setAttribute("width", String(w));
+      svg.setAttribute("height", String(h));
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.firstElementChild!.setAttribute("d", pinPath(w, h));
+      count.style.top = `${cy}px`;
+      count.style.fontSize = n >= 1000 ? "11px" : "12px";
+    }
     const lead = sites[g.members[0]!]!;
     const names = g.members.slice(0, 4).map((m) => siteLabel(sites[m]!.name));
-    const label = `${n} sites: ${names.join(", ")}${g.members.length > 4 ? ", …" : ""}`;
+    const label = `${n} sites: ${names.join(", ")}${n > 4 ? ", …" : ""}`;
     if (el.title !== label) {
       el.title = label;
       el.setAttribute("aria-label", label);
     }
     el.dataset["index"] = String(i);
-    const size = clusterSize(g.members.length);
     el.style.display = "";
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
     el.style.setProperty("--tone", KIND_MARK[lead.kind].color);
-    el.style.transform = `translate(${Math.round(g.x - size / 2)}px, ${Math.round(g.y - size / 2)}px)`;
+    el.style.transform = `translate(${Math.round(g.x - w / 2)}px, ${Math.round(g.y - h)}px)`;
   });
   for (let i = groups.length; i < host.childElementCount; i++) (host.children[i] as HTMLElement).style.display = "none";
 }
