@@ -21,6 +21,8 @@ if ! command -v docker >/dev/null; then
   DEBIAN_FRONTEND=noninteractive apt-get install -y -q docker.io
 fi
 systemctl enable --now docker
+iptables -C OUTPUT -m owner --uid-owner 1000 -d 169.254.169.254 -j REJECT 2>/dev/null \
+  || iptables -I OUTPUT -m owner --uid-owner 1000 -d 169.254.169.254 -j REJECT
 if [[ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]]; then
   sysctl -q -w kernel.apparmor_restrict_unprivileged_userns=0
 fi
