@@ -37,8 +37,11 @@ export interface HorizonPanoramaProps {
   discInset?: boolean;
   compact?: boolean;
   skyPad?: number;
+  scalePad?: number;
   groundPad?: number;
 }
+
+const COMPACT_R = 9;
 
 interface Plot {
   left: number;
@@ -114,7 +117,7 @@ interface Layout {
   azSpan: number;
 }
 
-function makeLayout(size: Size, view: View, extent: [number, number], gutter: number, plot: Plot, bleed: boolean): Layout {
+function makeLayout(size: Size, view: View, extent: [number, number], gutter: number, plot: Plot, bleed: boolean, scaleTop: number | null): Layout {
   const x0 = plot.left;
   const x1 = size.w - plot.right - gutter;
   const y0 = plot.top;
@@ -126,6 +129,10 @@ function makeLayout(size: Size, view: View, extent: [number, number], gutter: nu
   let elCenter: number;
   if (view.manual) {
     ({ vexag, elCenter } = view.manual);
+  } else if (scaleTop !== null) {
+    const span = Math.max(3, extent[1] - extent[0]);
+    vexag = clamp(Math.max(10, y1 - scaleTop) / (span * pxX), 1, SCENE_VEXAG);
+    elCenter = extent[0] + plotH / 2 / (pxX * vexag);
   } else {
     const span = Math.max(3, extent[1] - extent[0]);
     vexag = clamp(plotH / (span * pxX), 1, bleed ? SCENE_VEXAG : DEFAULT_VEXAG);
@@ -262,6 +269,114 @@ function drawDisc(
   }
 }
 
+interface Phase {
+  angle: number;
+  lit: number;
+}
+
+function earthPhase(earth: { az_deg: number; el_deg: number }, sun: { az_deg: number; el_deg: number }): Phase {
+  const r = Math.PI / 180;
+  const dAz = ((((sun.az_deg - earth.az_deg) % 360) + 540) % 360) - 180;
+  const cosE = Math.sin(earth.el_deg * r) * Math.sin(sun.el_deg * r) + Math.cos(earth.el_deg * r) * Math.cos(sun.el_deg * r) * Math.cos(dAz * r);
+  const meanEl = ((earth.el_deg + sun.el_deg) / 2) * r;
+  return { angle: Math.atan2(-(sun.el_deg - earth.el_deg), dAz * Math.cos(meanEl)), lit: (1 - clamp(cosE, -1, 1)) / 2 };
+}
+
+function drawSunGlyph(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, style: BodyStyle, clipAbove: ((ctx: CanvasRenderingContext2D) => void) | null): void {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = style.color;
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  if (clipAbove) clipAbove(ctx);
+  const corona = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r * 3.2);
+  corona.addColorStop(0, style.color);
+  corona.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = corona;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 3.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 0.8;
+  ctx.strokeStyle = style.color;
+  ctx.lineWidth = 1.4;
+  ctx.lineCap = "round";
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4 + Math.PI / 8;
+    const inner = r + 3;
+    const outer = r + (i % 2 === 0 ? 7 : 5);
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+    ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.shadowColor = style.color;
+  ctx.shadowBlur = 18;
+  const disc = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.2, 0, cx, cy, r);
+  disc.addColorStop(0, "#fffbea");
+  disc.addColorStop(0.45, "#ffe3a0");
+  disc.addColorStop(1, style.color);
+  ctx.fillStyle = disc;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawEarthGlyph(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, style: BodyStyle, clipAbove: ((ctx: CanvasRenderingContext2D) => void) | null, phase: Phase | null): void {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = style.color;
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  if (clipAbove) clipAbove(ctx);
+  ctx.shadowColor = style.color;
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = "#08111f";
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.translate(cx, cy);
+  ctx.rotate(phase ? phase.angle : 0);
+  const lit = phase ? phase.lit : 1;
+  const a = r * Math.abs(2 * lit - 1);
+  ctx.beginPath();
+  if (lit >= 0.999) ctx.arc(0, 0, r, 0, Math.PI * 2);
+  else {
+    ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false);
+    if (lit >= 0.5) ctx.ellipse(0, 0, Math.max(a, 0.01), r, 0, Math.PI / 2, (3 * Math.PI) / 2, false);
+    else ctx.ellipse(0, 0, Math.max(a, 0.01), r, 0, Math.PI / 2, -Math.PI / 2, true);
+    ctx.closePath();
+  }
+  const ocean = ctx.createRadialGradient(r * 0.35, -r * 0.3, 0, 0, 0, r);
+  ocean.addColorStop(0, "#d6ecff");
+  ocean.addColorStop(0.35, "#5fb0ff");
+  ocean.addColorStop(1, style.color);
+  ctx.fillStyle = ocean;
+  ctx.fill();
+
+  ctx.beginPath();
+  if (lit >= 0.999) ctx.arc(0, 0, r + 0.8, 0, Math.PI * 2);
+  else ctx.arc(0, 0, r + 0.8, -Math.PI / 2, Math.PI / 2, false);
+  ctx.strokeStyle = "rgba(170, 215, 255, 0.7)";
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawInset(
   ctx: CanvasRenderingContext2D,
   h: HorizonProfile,
@@ -396,6 +511,7 @@ export function HorizonPanorama({
   discInset = true,
   compact = false,
   skyPad = 0,
+  scalePad,
   groundPad = 0,
 }: HorizonPanoramaProps) {
   const themed = useColors();
@@ -416,7 +532,7 @@ export function HorizonPanorama({
 
   const tracks = useMemo(() => [sun, earth].filter((t): t is TargetTrack => !!t), [sun, earth]);
   const extent = useMemo<[number, number]>(() => {
-    if (!compact) return elevationFit ?? elevationExtent(horizon, tracks);
+    if (!compact || elevationFit) return elevationFit ?? elevationExtent(horizon, tracks);
     const lo = arrMin(horizon.elev_deg);
     let hi = arrMax(horizon.elev_deg);
     for (const t of tracks) hi = Math.max(hi, arrMax(t.el_deg));
@@ -425,7 +541,8 @@ export function HorizonPanorama({
     return [lo - pad, hi + pad];
   }, [compact, elevationFit, horizon, tracks]);
   const gutter = inset && size.w >= 640 && size.h >= PLOT.top + PLOT.bottom + INSET_H ? INSET_GUTTER : 0;
-  const L = useMemo(() => makeLayout(size, view, extent, gutter, plot, compact), [size, view, extent, gutter, plot, compact]);
+  const scaleTop = compact && scalePad !== undefined ? scalePad : null;
+  const L = useMemo(() => makeLayout(size, view, extent, gutter, plot, compact, scaleTop), [size, view, extent, gutter, plot, compact, scaleTop]);
 
   const n = horizon.elev_deg.length;
   const nearestIndex = useCallback((az: number) => Math.round((wrap360(az) / 360) * n) % n, [n]);
@@ -606,24 +723,26 @@ export function HorizonPanorama({
       }
 
       const labels: PendingLabel[] = [];
-      const place = (t: TargetTrack | undefined, style: BodyStyle) => {
+      const place = (t: TargetTrack | undefined, style: BodyStyle, light: { az_deg: number; el_deg: number } | null = null) => {
         if (!t) return null;
         const p = interpTrack(t, timeMs);
         if (!p) return null;
         const a = p.az_deg + Math.round((L.azCenter - p.az_deg) / 360) * 360;
         const cx = toX(L, a);
         const cy = toY(L, p.el_deg);
-        const rx = compact ? 7 : p.ang_radius_deg * L.pxX;
-        drawDisc(ctx, cx, cy, rx, compact ? 7 : p.ang_radius_deg * L.pxY, style, clipAbove, compact ? 26 : 10);
+        const rx = compact ? COMPACT_R : p.ang_radius_deg * L.pxX;
+        if (!compact) drawDisc(ctx, cx, cy, rx, p.ang_radius_deg * L.pxY, style, clipAbove, 10);
+        else if (style.name === "Sun") drawSunGlyph(ctx, cx, cy, rx, style, clipAbove);
+        else drawEarthGlyph(ctx, cx, cy, rx, style, clipAbove, light ? earthPhase(p, light) : null);
         const up = p.el_deg >= horizonAt(horizon.elev_deg, p.az_deg);
         if (compact && !up && cy >= L.cy0 && cy <= L.cy1 - 40 && cx >= L.x0 && cx <= L.x1) labels.push({ text: `${style.name} below the horizon`, color: c.get("text-3"), font: `500 11px ${SANS}`, ax: cx, ay: cy, gap: 12 });
-        if (cy >= L.cy0 && cy <= L.cy1 && cx >= L.x0 && cx <= L.x1 && up) labels.push({ text: style.name, color: c.get("text"), font: `600 ${compact ? 12 : 11}px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) + (compact ? 4 : 0) });
+        if (cy >= L.cy0 && cy <= L.cy1 && cx >= L.x0 && cx <= L.x1 && up) labels.push({ text: style.name, color: c.get("text"), font: `600 ${compact ? 12 : 11}px ${SANS}`, ax: cx, ay: cy, gap: compact ? rx + (style.name === "Sun" ? 10 : 5) : Math.max(rx, 8) });
         return p;
       };
       const sunStyle: BodyStyle = { color: c.get("c-sun"), soft: c.get("c-sun-soft"), highlight: c.get("on-accent"), name: "Sun" };
       const earthStyle: BodyStyle = { color: c.get("c-earth"), soft: c.get("c-earth-soft"), highlight: c.get("on-accent"), name: "Earth" };
       const sunNow = place(sun, sunStyle);
-      const earthNow = place(earth, earthStyle);
+      const earthNow = place(earth, earthStyle, sunNow);
 
       const earthShown = earthNow !== null && toY(L, earthNow.el_deg) <= L.y1 && earthNow.el_deg >= horizonAt(horizon.elev_deg, earthNow.az_deg);
       const sorted = earthShown ? [...stations].sort((a, b) => a.el_deg - b.el_deg) : [];

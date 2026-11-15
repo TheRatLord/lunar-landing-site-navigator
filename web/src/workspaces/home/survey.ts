@@ -118,16 +118,12 @@ function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
 }
 
 function skyFit(h: HorizonProfile, tracks: readonly TargetTrack[]): [number, number] {
-  let lo = arrMin(h.elev_lo_deg);
-  let hi = arrMax(h.elev_hi_deg);
-  for (const t of tracks) {
-    lo = Math.min(lo, arrMin(t.el_deg));
-    hi = Math.max(hi, arrMax(t.el_deg));
-  }
-  lo = Math.max(lo, -12);
-  hi = Math.max(hi, lo + 3);
-  const pad = Math.max(0.35, (hi - lo) * 0.12);
-  return [lo - pad, Math.min(90, hi + pad)];
+  const lo = arrMin(h.elev_deg);
+  let hi = arrMax(h.elev_deg);
+  for (const t of tracks) hi = Math.max(hi, arrMax(t.el_deg));
+  hi = Math.min(90, Math.max(hi, lo + 3));
+  const pad = Math.max(0.3, (hi - lo) * 0.08);
+  return [lo - pad, hi + pad];
 }
 
 export function adaptSurvey(r: EvaluateResult, startMs: number): Survey {

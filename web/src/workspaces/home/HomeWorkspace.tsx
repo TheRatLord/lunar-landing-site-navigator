@@ -167,11 +167,16 @@ export function HomeWorkspace() {
   const verdictRef = useRef<HTMLElement>(null);
   const locatorRef = useRef<HTMLDivElement>(null);
   const [skyPad, setSkyPad] = useState(190);
+  const [scalePad, setScalePad] = useState(190);
   useEffect(() => {
     const el = verdictRef.current;
     if (!el) return;
     const locator = locatorRef.current;
-    const measure = () => setSkyPad(Math.round(Math.max(el.offsetTop + el.offsetHeight, locator ? locator.offsetTop + locator.offsetHeight : 0) + SKY_GAP));
+    const measure = () => {
+      const below = locator && locator.offsetHeight > 0 ? locator.offsetTop + locator.offsetHeight : el.offsetTop + el.offsetHeight;
+      setSkyPad(Math.round(Math.max(el.offsetTop + el.offsetHeight, below) + SKY_GAP));
+      setScalePad(Math.round(below + SKY_GAP));
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -195,6 +200,7 @@ export function HomeWorkspace() {
           <HorizonPanorama
             compact
             skyPad={skyPad}
+            scalePad={scalePad}
             groundPad={GROUND_PAD}
             horizon={survey.horizon}
             sun={sunWindow}
