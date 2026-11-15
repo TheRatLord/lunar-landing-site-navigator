@@ -14,6 +14,9 @@ Behind it, the other pages add power and battery survival through dark spans, gr
 landing-ellipse statistics, slip analysis and site search. Every number carries its terrain uncertainty, and
 Evidence shows how each part was checked.
 
+The same example every time: [lunar.cinne.dev/demo](https://lunar.cinne.dev/demo) resets this browser to the example
+plan with three south-pole sites compared.
+
 ![Overview](web/docs/screenshots/overview-dark.png)
 
 ## What is in it
