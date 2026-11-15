@@ -8,7 +8,7 @@ import { MS_DAY, parseUtc } from "../lib/time";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { CONSTRAINT_META } from "../scenario/editor/fieldSpecs";
 import { TimeSection } from "../scenario/editor/TimeSection";
-import { DEFAULT_RANK, effectiveRank, rankLabel, usePlanSearch } from "../scenario/planSearch";
+import { DEFAULT_RANK, effectiveRank, effectiveWindow, rankLabel, usePlanSearch } from "../scenario/planSearch";
 import { shiftPlanLanding, useScenario } from "../scenario/store";
 import type { Limit } from "../scenario/types";
 import { hoursOrDays, whenText } from "../scenario/when";
@@ -18,7 +18,7 @@ import { landerFacts, landerName, sameProfile } from "./plan/landerFacts";
 import { usePresets } from "../scenario/editor/usePresets";
 import { LanderPicker } from "./plan/LanderPicker";
 import { RequirementsPicker } from "./plan/RequirementsPicker";
-import { WindowControl, areaText, windowText } from "./plan/Widen";
+import { WindowControl, windowText } from "./plan/Widen";
 import { formatLimit } from "../lib/requirements";
 
 const SitePicker = lazy(() => import("./plan/SitePicker").then((m) => ({ default: m.SitePicker })));
@@ -43,26 +43,29 @@ export function PlanPanel() {
   const landing = parseUtc(doc.landing_utc);
   const siteName = siteLabel(doc.site.name) || "Unnamed site";
   const active = CONSTRAINT_META.filter((m) => doc.constraints[m.key]);
-  const area = areaText(radius);
-  const span = windowText(win);
+  const span = windowText(effectiveWindow(doc, win));
   const coordText = `${formatLat(doc.site.lat_deg, 2)} ${formatLon(doc.site.lon_deg, 2)}`;
   const rank = effectiveRank(rankBy, doc);
   const preset = presets.status === "ready" ? presets.data.profiles.find((e) => e.profile.id === doc.profile.id) : undefined;
   const landerTitle = `${landerName(doc.profile.name)}${preset && !sameProfile(preset.profile, doc.profile) ? " (edited)" : ""}`;
 
   return (
-    <aside className="plan-side" aria-label="Plan">
+    <aside className="plan-side" aria-label="Mission requirements">
       <div className="plan-cards">
+        <div className="plan-head">
+          <h2>Mission requirements</h2>
+          <p>What a landing has to meet. The Overview ranks the landings that do.</p>
+        </div>
         <Card
           field="site"
           icon="pin"
-          label="Site"
+          label="Where"
           value={siteName}
           width={onMap ? 360 : 860}
           lines={
             <>
               {coordText !== siteName && <span className="plan-card-line num">{coordText}</span>}
-              {area && <span className="plan-card-line plan-card-widen">{area}</span>}
+              <span className="plan-card-line plan-card-widen">{radius === null ? "This site only" : `Plus spots within ${radius} km`}</span>
             </>
           }
         >
@@ -80,13 +83,13 @@ export function PlanPanel() {
         <Card
           field="time"
           icon="calendar"
-          label="Landing"
-          value={landing === null ? doc.landing_utc : whenText(landing)}
+          label="When"
+          value={span}
           width={420}
           lines={
             <>
+              <span className="plan-card-line">{`Plan lands ${landing === null ? doc.landing_utc : whenText(landing)}`}</span>
               <span className="plan-card-line">{`${hoursOrDays(doc.mission_duration_h)} on the surface`}</span>
-              {span && <span className="plan-card-line plan-card-widen">{span}</span>}
             </>
           }
           extra={
@@ -102,8 +105,8 @@ export function PlanPanel() {
         >
           <div className="plan-pick">
             <div className="plan-pick-scroll plan-pick-form">
-              <TimeSection />
               <WindowControl />
+              <TimeSection />
             </div>
           </div>
         </Card>

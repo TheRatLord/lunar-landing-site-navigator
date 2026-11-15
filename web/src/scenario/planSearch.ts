@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { MS_DAY, MS_HOUR, parseUtc, toIsoUtc } from "../lib/time";
 import { CONSTRAINT_META } from "./editor/fieldSpecs";
 import { useScenario } from "./store";
+import { DEMO_SEARCH_YEAR } from "./starter";
 import type { Scenario } from "./types";
 
 export type RankBy = "margin" | "sunlit_h" | "contact_h" | "sunlit_contact_h";
@@ -19,6 +20,7 @@ export const MAX_RADIUS_KM = 200;
 export const RADIUS_PRESETS_KM = [1, 5, 20, 50];
 export const DEFAULT_RADIUS_KM = 5;
 const DEFAULT_WINDOW_DAYS = 90;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const DEFAULT_RANK: RankBy = "sunlit_contact_h";
 
 export interface LandingWindow {
@@ -124,6 +126,7 @@ const link = { id: startParams.get("scenario"), search: startParams.has("scenari
 
 const DEMO = "demo";
 const planKey = (s: { saved: { id: string } | null; demo: boolean }): string => (s.demo ? DEMO : (s.saved?.id ?? DRAFT));
+const DEMO_DEFAULTS: Stored = { ...DEFAULTS, window: { first_ms: Date.UTC(DEMO_SEARCH_YEAR, 0, 1), last_ms: Date.UTC(DEMO_SEARCH_YEAR + 1, 0, 1) } };
 
 function settingsFor(key: string): Kept {
   if (link.search && (link.id === null || link.id === key)) {
@@ -132,6 +135,7 @@ function settingsFor(key: string): Kept {
     writeFor(key, v);
     return v;
   }
+  if (key === DEMO && readAll()[DEMO] === undefined) return kept(DEMO_DEFAULTS);
   return readFor(key);
 }
 
@@ -209,6 +213,34 @@ export const rankLabel = (rank: RankBy): string => RANK_OPTIONS.find((o) => o.va
 export function defaultWindow(doc: Scenario): LandingWindow {
   const landing = parseUtc(doc.landing_utc) ?? Date.UTC(2027, 0, 1);
   return { first_ms: landing, last_ms: landing + DEFAULT_WINDOW_DAYS * MS_DAY };
+}
+
+export function yearFrom(ms: number): LandingWindow {
+  const d = new Date(ms);
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth();
+  return { first_ms: Date.UTC(y, m, 1), last_ms: Date.UTC(y + 1, m, 1) };
+}
+
+export function shiftYear(w: LandingWindow, years: number): LandingWindow {
+  const d = new Date(w.first_ms);
+  return yearFrom(Date.UTC(d.getUTCFullYear() + years, d.getUTCMonth(), 1));
+}
+
+export function isYear(w: LandingWindow): boolean {
+  const y = yearFrom(w.first_ms);
+  return y.first_ms === w.first_ms && y.last_ms === w.last_ms;
+}
+
+export function effectiveWindow(doc: Scenario, w: LandingWindow | null): LandingWindow {
+  return w ?? yearFrom(parseUtc(doc.landing_utc) ?? Date.UTC(2027, 0, 1));
+}
+
+export function yearText(w: LandingWindow): string {
+  const a = new Date(w.first_ms);
+  if (a.getUTCMonth() === 0) return String(a.getUTCFullYear());
+  const b = new Date(w.last_ms - 1);
+  return `${MONTHS[a.getUTCMonth()]} ${a.getUTCFullYear()} – ${MONTHS[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
 }
 
 export function windowDays(w: LandingWindow): number {

@@ -1,5 +1,7 @@
 import { useId, useState } from "react";
+import { IconButton } from "../../components/ui/Button";
 import { DateTimeInput, Select, Toggle } from "../../components/ui/Fields";
+import { Segmented } from "../../components/ui/Segmented";
 import {
   DEFAULT_RADIUS_KM,
   MAX_RADIUS_KM,
@@ -9,7 +11,12 @@ import {
   activeRequirements,
   defaultWindow,
   effectiveRank,
+  effectiveWindow,
+  isYear,
+  shiftYear,
   usePlanSearch,
+  yearFrom,
+  yearText,
   type LandingWindow,
   type RankBy,
 } from "../../scenario/planSearch";
@@ -20,8 +27,8 @@ export function areaText(radius_km: number | null): string | null {
   return radius_km === null ? null : `Within ${radius_km} km`;
 }
 
-export function windowText(w: LandingWindow | null): string | null {
-  return w === null ? null : `Landing window ${spanText(w.first_ms, w.last_ms)}`;
+export function windowText(w: LandingWindow): string {
+  return isYear(w) ? `Any time in ${yearText(w)}` : spanText(w.first_ms, w.last_ms);
 }
 
 export function AreaControl() {
@@ -40,7 +47,7 @@ export function AreaControl() {
           setDraft(null);
           setRadius(on ? DEFAULT_RADIUS_KM : null);
         }}
-        label="Search radius"
+        label="Also search nearby spots"
       />
       {radius !== null && (
         <div className="plan-widen-row">
@@ -97,14 +104,31 @@ export function AreaControl() {
 
 export function WindowControl() {
   const doc = useScenario((s) => s.doc);
-  const win = usePlanSearch((s) => s.window);
+  const stored = usePlanSearch((s) => s.window);
   const setWindow = usePlanSearch((s) => s.setWindow);
   if (!doc) return null;
-  const bad = win !== null && win.last_ms <= win.first_ms;
+  const win = effectiveWindow(doc, stored);
+  const year = isYear(win);
+  const bad = win.last_ms <= win.first_ms;
   return (
     <div className="plan-widen">
-      <Toggle checked={win !== null} onChange={(on) => setWindow(on ? defaultWindow(doc) : null)} label="Search a landing window" />
-      {win !== null && (
+      <Segmented
+        size="sm"
+        label="Landing window"
+        value={year ? "year" : "dates"}
+        onChange={(v) => setWindow(v === "year" ? yearFrom(win.first_ms) : defaultWindow(doc))}
+        options={[
+          { value: "year", label: "A whole year" },
+          { value: "dates", label: "Between dates" },
+        ]}
+      />
+      {year ? (
+        <div className="plan-widen-row">
+          <IconButton icon="chevronLeft" size="sm" label="Previous year" onClick={() => setWindow(shiftYear(win, -1))} />
+          <span className="plan-widen-year">{yearText(win)}</span>
+          <IconButton icon="chevronRight" size="sm" label="Next year" onClick={() => setWindow(shiftYear(win, 1))} />
+        </div>
+      ) : (
         <>
           <div className="plan-widen-row">
             <span className="plan-widen-label">From</span>

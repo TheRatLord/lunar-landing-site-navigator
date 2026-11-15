@@ -1,7 +1,9 @@
 import { useEffect, useReducer } from "react";
 import { Button } from "../../../components/ui/Button";
 import { ProgressBar } from "../../../components/ui/Progress";
-import { usePlanSearch, windowDays } from "../../../scenario/planSearch";
+import { effectiveWindow, usePlanSearch } from "../../../scenario/planSearch";
+import { useScenario } from "../../../scenario/store";
+import { windowText } from "../../../shell/plan/Widen";
 import { leftText } from "../../map/eta";
 import { KindGlyph } from "../../map/KindGlyph";
 import { KIND_STYLE, type SiteKind } from "../../map/sites";
@@ -42,6 +44,7 @@ export function GlobeSearch({ lattice, tools = true }: { lattice: Lattice | null
   const run = useSearchResults((s) => s.run);
   const cancel = useSearchResults((s) => s.cancel);
   const win = usePlanSearch((s) => s.window);
+  const doc = useScenario((s) => s.doc);
   const running = phase === "running";
   useTick(running);
 
@@ -51,7 +54,7 @@ export function GlobeSearch({ lattice, tools = true }: { lattice: Lattice | null
   const unchecked = counts ? n("inside_region") - n("evaluated_full") - n("slope_pruned") : 0;
   const where = resultBody ? pointName(resultBody.region.lat_deg, resultBody.region.lon_deg) : null;
   const windowed = (lattice?.epochs_ms.length ?? 0) > 1;
-  const scope = `${plan.radiusKm} km around the site · ${win ? `${Math.round(windowDays(win))}-day landing window` : "at the plan's landing time"}`;
+  const scope = `${plan.radiusKm} km around the site${doc ? ` · ${windowText(effectiveWindow(doc, win))}` : ""}`;
 
   return (
     <section className="globe-search" aria-label="Where to land">

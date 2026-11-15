@@ -6,7 +6,6 @@ import { lowerBound } from "../../lib/scale";
 import { MS_DAY, MS_HOUR, parseUtc, toIsoUtc } from "../../lib/time";
 import type { LandingWindow, RankBy, TotalKey } from "../../scenario/planSearch";
 import type { Limit, Scenario } from "../../scenario/types";
-import { SPAN_MS } from "./survey";
 
 export interface VerdictSpan extends Interval {
   verdict: Verdict;
@@ -14,9 +13,8 @@ export interface VerdictSpan extends Interval {
 
 export interface BestLanding {
   t_ms: number;
+  index: number;
   verdict: Verdict;
-  hours: number | null;
-  key: number;
 }
 
 export interface YearScan {
@@ -30,8 +28,8 @@ export interface YearScan {
   result: ScanResult;
 }
 
-export function scanParams(startMs: number): ScanParams {
-  return { start_utc: toIsoUtc(startMs), end_utc: toIsoUtc(startMs + SPAN_MS), spacing_s: 3600 };
+export function scanParams(startMs: number, endMs: number): ScanParams {
+  return { start_utc: toIsoUtc(startMs), end_utc: toIsoUtc(endMs), spacing_s: 3600 };
 }
 
 export function yearScanBody(doc: Scenario, params: ScanParams) {
@@ -102,44 +100,80 @@ export function scanAt(s: YearScan, ms: number): { verdict: Verdict; limiting: s
   return v ? { verdict: v, limiting: requirementLabel(s.result, s.limiting[j] ?? null) } : null;
 }
 
-function within(both: readonly Interval[], t: number): boolean {
-  return both.some((iv) => iv.start_ms <= t && t < iv.end_ms);
-}
-
-export function nextPass(s: YearScan, ms: number, both: readonly Interval[] | null): number | null {
-  if (!both) return null;
-  for (let i = lowerBound(s.times, ms + 1); i < s.times.length; i++) if (s.verdicts[i] === "pass" && within(both, s.times[i]!)) return s.times[i]!;
-  return null;
-}
-
-export function bestLandings(s: YearScan, rank: RankBy, window: LandingWindow | null, both: readonly Interval[] | null): BestLanding[] {
+export function scoreAt(s: YearScan, i: number, rank: RankBy): { score: number | null; tie: number | null } {
   const c = s.result.candidates;
-  const tie = c.totals?.["sunlit_contact_h"];
   const column = rank === "margin" ? c.worst_margin : c.totals?.[rank as TotalKey];
-  if (!both) return [];
-  const out: BestLanding[] = [];
+  return { score: column?.[i] ?? null, tie: c.totals?.["sunlit_contact_h"]?.[i] ?? null };
+}
+
+export function totalsAt(s: YearScan, i: number): Record<TotalKey, number | null> {
+  const t = s.result.candidates.totals;
+  return { sunlit_h: t?.["sunlit_h"]?.[i] ?? null, contact_h: t?.["contact_h"]?.[i] ?? null, sunlit_contact_h: t?.["sunlit_contact_h"]?.[i] ?? null };
+}
+
+export function verdictAt(s: YearScan, i: number): Verdict | null {
+  return verdictOf(s.result.states, s.result.candidates.state[i]);
+}
+
+export function limitingAt(s: YearScan, i: number): string | null {
+  return requirementLabel(s.result, s.result.candidates.limiting[i] ?? null);
+}
+
+const keyOf = (v: Verdict, score: number | null, tie: number | null): number => (v === "pass" ? 2e13 : v === "marginal" ? 1e13 : 0) + Math.max(-1e5, Math.min(1e5, score ?? -1e5)) * 1e4 + (tie ?? 0);
+
+export function bestLandings(s: YearScan, rank: RankBy, window: LandingWindow): BestLanding[] {
+  const c = s.result.candidates;
+  const out: Array<BestLanding & { key: number }> = [];
   for (const day of s.lunarDays) {
-    const from = Math.max(day.start_ms, window?.first_ms ?? -Infinity);
-    const to = Math.min(day.end_ms, window ? window.last_ms + 1 : Infinity);
+    const from = Math.max(day.start_ms, window.first_ms);
+    const to = Math.min(day.end_ms, window.last_ms);
     if (to <= from) continue;
-    let best: BestLanding | null = null;
+    let best: (BestLanding & { key: number }) | null = null;
     for (let i = 0; i < c.t_ms.length; i++) {
       const t = c.t_ms[i];
-      if (t === null || t === undefined || t < from || t >= to || !within(both, t)) continue;
+      if (t === null || t === undefined || t < from || t >= to) continue;
       const v = verdictOf(s.result.states, c.state[i]);
       if (v === null || v === "fail") continue;
-      const score = Math.max(-1e5, Math.min(1e5, column?.[i] ?? -1e5));
-      const key = (v === "pass" ? 2e13 : 0) + score * 1e4 + (tie?.[i] ?? 0);
-      if (!best || key > best.key) best = { t_ms: t, verdict: v, hours: tie?.[i] ?? null, key };
+      const { score, tie } = scoreAt(s, i, rank);
+      const key = keyOf(v, score, tie);
+      if (!best || key > best.key) best = { t_ms: t, index: i, verdict: v, key };
     }
     if (best) out.push(best);
   }
-  const kept: BestLanding[] = [];
+  const kept: Array<BestLanding & { key: number }> = [];
   for (const b of out) {
     const last = kept[kept.length - 1];
     if (last && b.t_ms - last.t_ms < 10 * MS_DAY) {
       if (b.key > last.key) kept[kept.length - 1] = b;
     } else kept.push(b);
   }
-  return kept;
+  return kept.map(({ key: _key, ...b }) => b);
+}
+
+export function closestFail(s: YearScan, rank: RankBy, window: LandingWindow): number | null {
+  const c = s.result.candidates;
+  let best: number | null = null;
+  let bestKey = -Infinity;
+  for (let i = 0; i < c.t_ms.length; i++) {
+    const t = c.t_ms[i];
+    if (t === null || t === undefined || t < window.first_ms || t >= window.last_ms) continue;
+    const m = c.worst_margin[i];
+    const key = (m ?? -1e5) * 1e4 + (scoreAt(s, i, rank).tie ?? 0);
+    if (key > bestKey) {
+      bestKey = key;
+      best = i;
+    }
+  }
+  return best;
+}
+
+export function scanIndexAt(s: YearScan, ms: number): number | null {
+  const c = s.result.candidates;
+  let best: number | null = null;
+  for (let i = 0; i < c.t_ms.length; i++) {
+    const t = c.t_ms[i];
+    if (t === null || t === undefined) continue;
+    if (Math.abs(t - ms) <= MS_HOUR / 2 && (best === null || Math.abs(t - ms) < Math.abs(c.t_ms[best]! - ms))) best = i;
+  }
+  return best;
 }

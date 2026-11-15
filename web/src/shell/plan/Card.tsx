@@ -36,6 +36,7 @@ export function Card({ field, icon, label, value, width, lines, extra, children 
       >
         <Icon name={icon} size={16} className="plan-card-icon" />
         <span className="plan-card-text">
+          <span className="plan-card-label">{label}</span>
           <span className="plan-card-value">{value}</span>
           {lines}
         </span>

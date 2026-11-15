@@ -506,6 +506,33 @@
   gap: 3px;
   min-width: 0;
 }
+.plan-head {
+  padding: var(--sp-2) var(--sp-3) var(--sp-1);
+}
+.plan-head h2 {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+.plan-head p {
+  margin: 2px 0 0;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-tight);
+  color: var(--text-3);
+}
+.plan-card-label {
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.plan-widen-year {
+  flex: 1 1 auto;
+  text-align: center;
+  font-weight: var(--fw-semibold);
+}
 .plan-card-value {
   font-size: var(--fs-title);
   font-weight: var(--fw-semibold);
