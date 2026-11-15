@@ -266,6 +266,9 @@ class ScanInput(_Base):
     lookback_h: float = Field(default=720.0, ge=0, le=2000)
     calendar_bin_h: float = Field(default=6.0, gt=0, le=72)
     max_windows: int = Field(default=12, ge=1, le=100)
+    rank_by: Literal["margin", "sunlit_h", "contact_h", "sunlit_contact_h"] = Field(
+        default="margin", description="What ranks the result: `margin` (state, then the normalised margin of the limiting constraint) or "
+        "the nominal hours during the surface mission that are sunlit (`sunlit_h`), in contact (`contact_h`) or both at once (`sunlit_contact_h`).")
 
 
 class ScanOutput(EngineOutput):
@@ -298,14 +301,14 @@ async def scan_tool(ctx: ToolContext, args: ScanInput) -> ScanOutput:
         f"this call chose (the true edge lies within one spacing beyond it)"))
     scan = await call.run(lambda: scan_opportunities(
         sc, provider, start_utc=args.start_utc, end_utc=args.end_utc, spacing_s=args.spacing_h * HOUR_S,
-        signal_step_s=args.signal_step_min * 60.0, lookback_h=args.lookback_h, calendar_bin_h=args.calendar_bin_h))
+        signal_step_s=args.signal_step_min * 60.0, lookback_h=args.lookback_h, calendar_bin_h=args.calendar_bin_h, rank_by=args.rank_by))
     call.add_notes(report_scan_limits(result_context(sc, scan), scan))
     windows = [{
         "start_utc": utc_s(w.start_et), "end_utc": utc_s(w.end_et), "duration_h": w.duration_h,
         "n_candidates": w.n_candidates, "n_pass": w.n_pass, "spacing_h": w.spacing_h,
         "best_utc": utc_s(w.best_et),
         "best_margin": w.best_margin, "best_margin_kind": w.best_margin_kind, "best_margin_note": w.best_margin_note,
-        "best_state": w.best_state, "best_limiting": w.best_limiting,
+        "best_state": w.best_state, "best_limiting": w.best_limiting, "best_totals_h": w.best_totals,
         "robust_runs_utc": [[utc_s(a), utc_s(b)] for a, b in w.robust]} for w in scan.windows]
     windows = jsonable(windows)
     cal = scan.calendar

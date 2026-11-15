@@ -21,9 +21,12 @@ export const CONSTRAINT_KEYS = [
   "dte_at_landing_deg",
   "min_sunlit_hours_after_landing",
   "max_dark_span_h",
+  "min_total_sunlit_h",
   "min_state_of_charge",
   "min_contact_fraction",
   "max_contact_gap_h",
+  "min_total_contact_h",
+  "min_total_sunlit_contact_h",
   "min_link_margin_db",
   "max_slope_deg",
 ] as const;

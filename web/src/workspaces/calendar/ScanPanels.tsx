@@ -16,8 +16,9 @@ import { kindMarginName, kindWord, mixedKindsNote } from "../../lib/marginKind";
 import { decimationNote } from "../../lib/seriesMeta";
 import { MS_HOUR, roundToSecond, toIsoUtc, utcText } from "../../lib/time";
 import { VERDICT_LABEL } from "../../lib/verdict";
+import { TOTALS, hoursText, rankLabel, type RankBy } from "../../scenario/planSearch";
 import type { Limit, Scenario } from "../../scenario/types";
-import { type ClosingRow, closingRows, constraintLabel, nearestCandidate, verdictOfCode, windowContaining } from "./adapt";
+import { type ClosingRow, bestDates, closingRows, constraintLabel, nearestCandidate, verdictOfCode, windowContaining } from "./adapt";
 import { fractionText, headingFacts, offsetText, windowLength, windowMargin } from "./format";
 
 const int = (n: number) => n.toLocaleString("en-US");
@@ -259,6 +260,7 @@ function Candidate({ scan, i, verdict }: { scan: ScanResult; i: number; verdict:
             )}
           </span>,
         ],
+        ...TOTALS.map(({ key, label }): [ReactNode, ReactNode] => [`${label} in the stay`, <span className="num">{hoursText(c.totals?.[key]?.[i])}</span>]),
         c.sun_el_deg[i] != null && ["Sun elevation", <span className="num">{formatNum(c.sun_el_deg[i]!, 1)}°</span>],
         c.local_solar_time_h[i] != null && ["Local solar time", <span className="num">{formatValue(c.local_solar_time_h[i]!, "h", 1)}</span>],
         ...Object.entries(c.values).map(([key, col]): [ReactNode, ReactNode] => {
@@ -291,6 +293,7 @@ function WindowDetail({ w }: { w: ScanWindow }) {
             <span className="num">{utcText(w.best_utc)}</span>
           </span>,
         ],
+        ...TOTALS.map(({ key, label }): [ReactNode, ReactNode] => [`${label} in the stay`, <span className="num">{hoursText(w.best_totals?.[key])}</span>]),
         ["Pass", <span className="num">{w.n_pass}/{w.n_candidates}</span>],
         ["Robust", <span className="num">{w.robust.length}</span>],
         [
@@ -304,6 +307,42 @@ function WindowDetail({ w }: { w: ScanWindow }) {
         w.best_margin_note && ["Note", <span data-testid="window-margin-note">{w.best_margin_note}</span>, "wide"],
       ]}
     />
+  );
+}
+
+export function BestDates({ scan, rank, selectedMs, onSelect }: { scan: ScanResult; rank: RankBy; selectedMs: number | null; onSelect: (ms: number) => void }) {
+  const rows = useMemo(() => bestDates(scan, rank), [scan, rank]);
+  return (
+    <section className="cal-wins" aria-label="Best landing dates">
+      <header className="cal-rail-head">
+        <h2 className="cal-rail-title">Best landing in each lunar day</h2>
+        <span className="grow" />
+        <span className="faint cal-best-rank">by {rankLabel(rank)}</span>
+      </header>
+      {rows.length === 0 ? (
+        <EmptyState icon="calendar" title="No landing dates scanned" />
+      ) : (
+        <ol className="cal-win-list">
+          {rows.map((r, i) => {
+            const on = selectedMs === r.t_ms;
+            const main = rank === "margin" ? (r.margin === null ? "–" : formatSignedValue(r.margin, r.marginUnit, 1)) : hoursText(r.totals[rank]);
+            return (
+              <li key={r.lunation} className={on ? "is-on" : undefined}>
+                <button type="button" className="cal-win cal-best" aria-pressed={on} aria-label={`Rank ${i + 1}: ${utcText(r.t_ms)}, ${VERDICT_LABEL[r.state]}, ${main}`} onClick={() => onSelect(r.t_ms)}>
+                  <i className={`cal-dot cal-dot-${r.state}`} aria-hidden="true" />
+                  <span className="num">
+                    <span className="faint cal-best-n">{i + 1}</span>
+                    {utcText(r.t_ms)}
+                  </span>
+                  <span className="num faint">{TOTALS.map(({ key, short }) => `${short} ${hoursText(r.totals[key])}`).join(" · ")}</span>
+                  <span className="num cal-win-len">{main}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
   );
 }
 

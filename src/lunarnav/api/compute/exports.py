@@ -73,7 +73,8 @@ def _scan(req: dict[str, Any], scenario: Scenario, provider: Any) -> Any:
         raise RequestError("this export needs `scan` parameters")
     return _guard(lambda: scan_opportunities(
         scenario, provider, start_utc=p["start_utc"], end_utc=p["end_utc"], spacing_s=p["spacing_s"],
-        signal_step_s=p["signal_step_s"], lookback_h=p["lookback_h"], calendar_bin_h=p["calendar_bin_h"]))
+        signal_step_s=p["signal_step_s"], lookback_h=p["lookback_h"], calendar_bin_h=p["calendar_bin_h"],
+        rank_by=p.get("rank_by", "margin")))
 
 
 SCAN_STAMP_NOTE = ("scenario_sha256 is the hash of the submitted scenario; each row is one candidate landing time of the scan "

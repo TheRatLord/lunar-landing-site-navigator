@@ -19,17 +19,16 @@ import { Button, IconButton } from "../../components/ui/Button";
 import { DataTable, type Column } from "../../components/ui/DataTable";
 import { Disclosure } from "../../components/ui/Disclosure";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { DateTimeInput, Toggle } from "../../components/ui/Fields";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Popover } from "../../components/ui/Popover";
-import { Segmented } from "../../components/ui/Segmented";
 import { Stat } from "../../components/ui/Stat";
 import { VerdictChip } from "../../components/ui/VerdictChip";
 import { formatLat, formatLon } from "../../lib/coords";
 import { formatSigned, formatSignedValue, withUnit } from "../../lib/format";
 import { mixedKindsNote } from "../../lib/marginKind";
-import { MS_DAY, formatUtc, parseUtc, toIsoUtc } from "../../lib/time";
+import { toIsoUtc } from "../../lib/time";
 import { useAlternatives } from "../../scenario/alternatives";
+import { RADIUS_PRESETS_KM, TOTALS, epochSpacing_h, niceSpacing_m, rankLabel, usePlanSearch, useRankBy, windowDays } from "../../scenario/planSearch";
 import { useScenario } from "../../scenario/store";
 import type { Scenario } from "../../scenario/types";
 import { toast } from "../../state/toasts";
@@ -39,7 +38,7 @@ import { ExploreTabs } from "../explore/ExploreTabs";
 import { ReportButton } from "../ReportButton";
 import { estimatesUsed, type EstimateFlag } from "../site/adapt";
 import { LimitsChip } from "../site/LimitsChip";
-import { regionFromMapView, useMapView } from "./mapView";
+import { PlanInputs } from "../../shell/plan/Widen";
 import { searchScenarioKey, useSearchResults } from "./results";
 import { SearchGrid } from "./SearchGrid";
 import { TerrainStackTag } from "./TerrainStackTag";
@@ -71,9 +70,10 @@ interface NumFieldProps {
   value: string;
   onChange: (v: string) => void;
   integer?: boolean;
+  placeholder?: string;
 }
 
-function NumField({ label, unit, value, onChange, integer }: NumFieldProps) {
+function NumField({ label, unit, value, onChange, integer, placeholder }: NumFieldProps) {
   const id = useId();
   return (
     <div className="se-field">
@@ -88,6 +88,7 @@ function NumField({ label, unit, value, onChange, integer }: NumFieldProps) {
           autoComplete="off"
           spellCheck={false}
           value={value}
+          placeholder={placeholder}
           aria-label={unit ? `${label} (${unit})` : undefined}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -97,18 +98,6 @@ function NumField({ label, unit, value, onChange, integer }: NumFieldProps) {
           </span>
         )}
       </span>
-    </div>
-  );
-}
-
-function EpochField({ label, aria, value, onChange }: { label: string; aria: string; value: number; onChange: (ms: number) => void }) {
-  const id = useId();
-  return (
-    <div className="se-field">
-      <label className="field-label" htmlFor={id}>
-        {label}
-      </label>
-      <DateTimeInput compact id={id} label={aria} value={value} onChange={onChange} />
     </div>
   );
 }
@@ -149,33 +138,33 @@ export function SearchPanel() {
   const doc = useScenario((s) => s.doc)!;
   const formId = useId();
   const errorsId = useId();
-  const landingMs = parseUtc(doc.landing_utc) ?? Date.UTC(2027, 0, 1);
-  const [mode, setMode] = useState<"disc" | "box">("disc");
-  const [lat, setLat] = useState(String(doc.site.lat_deg));
-  const [lon, setLon] = useState(String(doc.site.lon_deg));
-  const [radius, setRadius] = useState("500");
-  const [box, setBox] = useState({ south: String(doc.site.lat_deg - 0.01), north: String(doc.site.lat_deg + 0.01), west: String(doc.site.lon_deg - 0.05), east: String(doc.site.lon_deg + 0.05) });
-  const [spacing, setSpacing] = useState("50");
+  const radiusKm = usePlanSearch((s) => s.radius_km);
+  const setRadiusKm = usePlanSearch((s) => s.setRadius);
+  const planWindow = usePlanSearch((s) => s.window);
+  const rank = useRankBy(doc);
+  const [spacing, setSpacing] = useState("");
   const [topK, setTopK] = useState("20");
-  const [windowOn, setWindowOn] = useState(false);
-  const [firstMs, setFirstMs] = useState(landingMs);
-  const [lastMs, setLastMs] = useState(landingMs + 30 * MS_DAY);
-  const [epochH, setEpochH] = useState("12");
+  const [epochH, setEpochH] = useState("");
   const [submitted, setSubmitted] = useState<SearchBody | null>(null);
 
-  const region: RegionInput =
-    mode === "disc"
-      ? { kind: "disc", lat_deg: num(lat), lon_deg: num(lon), radius_m: num(radius) }
-      : { kind: "box", lat_min: num(box.south), lat_max: num(box.north), lon_min: num(box.west), lon_max: num(box.east) };
-  const epochs = windowOn ? { first_utc: toIsoUtc(firstMs), last_utc: toIsoUtc(lastMs), spacing_h: num(epochH) } : null;
-  const check = checkSearch(region, num(spacing), num(topK), epochs);
+  const radius_m = radiusKm === null ? null : radiusKm * 1000;
+  const autoSpacing = radius_m === null ? null : niceSpacing_m(radius_m);
+  const spacing_m = spacing.trim() === "" ? (autoSpacing ?? Number.NaN) : num(spacing);
+  const autoEpochH = planWindow ? epochSpacing_h(planWindow) : null;
+  const epoch_h = epochH.trim() === "" ? (autoEpochH ?? Number.NaN) : num(epochH);
+  const region = useMemo<RegionInput | null>(
+    () => (radius_m === null ? null : { kind: "disc", lat_deg: doc.site.lat_deg, lon_deg: doc.site.lon_deg, radius_m }),
+    [radius_m, doc.site.lat_deg, doc.site.lon_deg],
+  );
+  const epochs = planWindow ? { first_utc: toIsoUtc(planWindow.first_ms), last_utc: toIsoUtc(planWindow.last_ms), spacing_h: epoch_h } : null;
+  const check = region ? checkSearch(region, spacing_m, num(topK), epochs) : { errors: [], points: Number.NaN };
   const limits = useMemo(() => activeLimits(doc), [doc]);
   const estimates = useMemo(() => estimatesUsed(doc), [doc]);
 
   const analysis = useAnalysis<SearchResult>(SEARCH_ENDPOINT, submitted, { debounceMs: 0 });
   const result = analysis.result;
   const rows = useMemo(() => (result ? searchRows(result) : []), [result]);
-  const currentBody = check.errors.length === 0 ? searchBody(doc, region, num(spacing), num(topK), epochs) : null;
+  const currentBody = region && check.errors.length === 0 ? searchBody(doc, region, spacing_m, num(topK), epochs, rank) : null;
   const formChanged = submitted !== null && !analysis.stale && JSON.stringify(currentBody) !== JSON.stringify(submitted);
   const outOfDate = result !== null && (analysis.stale || formChanged || analysis.phase === "running");
   const resultScenarioKey = useMemo(() => searchScenarioKey(submitted?.scenario), [submitted]);
@@ -189,35 +178,20 @@ export function SearchPanel() {
   }, [result, outOfDate, rows, resultScenarioKey, setCandidates, setStale, clearCandidates]);
   usePublishSearch(result !== null ? submitted : null, outOfDate);
 
-  const mapView = useMapView((m) => m.view);
-  const fromMap = mapView ? regionFromMapView(mapView) : null;
-  const useMapRegion = () => {
-    if (!fromMap) return;
-    if (fromMap.kind === "disc") {
-      setMode("disc");
-      setLat(fromMap.lat_deg.toFixed(5));
-      setLon(fromMap.lon_deg.toFixed(5));
-      setRadius(String(Math.max(1, Math.round(fromMap.radius_m))));
-    } else {
-      setMode("box");
-      setBox({ south: fromMap.south.toFixed(4), north: fromMap.north.toFixed(4), west: fromMap.west.toFixed(4), east: fromMap.east.toFixed(4) });
-    }
-  };
-
   const submit = () => {
-    if (check.errors.length === 0) setSubmitted(searchBody(doc, region, num(spacing), num(topK), epochs));
+    if (currentBody) setSubmitted(currentBody);
   };
 
   usePublishScreenContext({
     where: "Explore, Find sites",
-    summary: mode === "disc" ? "radius around a point" : "bounding box",
+    summary: radiusKm === null ? "no search area set" : `within ${radiusKm} km of the plan site`,
     lines: [
-      mode === "disc"
-        ? `The region is a disc around latitude ${lat || "unset"}, longitude ${lon || "unset"} with radius ${radius || "unset"} m.`
-        : `The region is a box from latitude ${box.south || "unset"} to ${box.north || "unset"} and longitude ${box.west || "unset"} to ${box.east || "unset"}.`,
-      `Grid spacing ${spacing || "unset"} m, the best ${topK || "unset"} sites are kept.`,
-      windowOn
-        ? `The search covers landing times from ${toIsoUtc(firstMs)} to ${toIsoUtc(lastMs)}, every ${epochH || "unset"} h.`
+      radiusKm === null
+        ? "No search area is set: the Site card on the plan panel has to be widened to a radius before a search can run."
+        : `The region is a disc of radius ${radiusKm} km around the plan site at latitude ${doc.site.lat_deg}, longitude ${doc.site.lon_deg} (set on the plan's Site card).`,
+      `Grid spacing ${Number.isFinite(spacing_m) ? spacing_m : "unset"} m, the best ${topK || "unset"} sites are kept, ranked by ${rankLabel(rank)}.`,
+      planWindow
+        ? `The search covers landing times from ${toIsoUtc(planWindow.first_ms)} to ${toIsoUtc(planWindow.last_ms)}, every ${Number.isFinite(epoch_h) ? epoch_h : "unset"} h (the landing window on the plan's Landing card).`
         : "The search uses the plan's landing time.",
     ],
   });
@@ -240,7 +214,7 @@ export function SearchPanel() {
               variant="primary"
               size="sm"
               icon="search"
-              disabled={check.errors.length > 0}
+              disabled={currentBody === null}
               aria-label="Search region"
               aria-describedby={check.errors.length > 0 ? errorsId : undefined}
             >
@@ -263,42 +237,17 @@ export function SearchPanel() {
             submit();
           }}
         >
-          <div className="se-line">
-            <Segmented
-              label="Region shape"
-              value={mode}
-              onChange={(v) => setMode(v as "disc" | "box")}
-              options={[
-                { value: "disc", label: "Circle" },
-                { value: "box", label: "Box" },
-              ]}
-            />
-            <span className="grow" />
-            <IconButton icon="map" label="Use current map view" size="sm" disabled={!fromMap} onClick={useMapRegion} />
-          </div>
-          {mode === "disc" ? (
-            <>
-              <div className="se-pair se-pair-tool">
-                <NumField label="Latitude" unit="°" value={lat} onChange={setLat} />
-                <NumField label="Longitude" unit="°E" value={lon} onChange={setLon} />
-                <IconButton
-                  icon="target"
-                  label="Centre on site"
-                  size="sm"
-                  onClick={() => {
-                    setLat(String(doc.site.lat_deg));
-                    setLon(String(doc.site.lon_deg));
-                  }}
-                />
-              </div>
-              <NumField label="Radius" unit="m" value={radius} onChange={setRadius} />
-            </>
-          ) : (
-            <div className="se-pair se-pair-box">
-              <NumField label="South" unit="°" value={box.south} onChange={(v) => setBox({ ...box, south: v })} />
-              <NumField label="North" unit="°" value={box.north} onChange={(v) => setBox({ ...box, north: v })} />
-              <NumField label="West" unit="°E" value={box.west} onChange={(v) => setBox({ ...box, west: v })} />
-              <NumField label="East" unit="°E" value={box.east} onChange={(v) => setBox({ ...box, east: v })} />
+          <PlanInputs show={["area", "window", "requirements", "rank"]} />
+          {radiusKm === null && (
+            <div className="se-area" role="group" aria-label="Choose a search area">
+              <span className="field-label">Search within</span>
+              <span className="sc-steps se-area-steps">
+                {RADIUS_PRESETS_KM.map((km) => (
+                  <button key={km} type="button" className="sc-step" onClick={() => setRadiusKm(km)}>
+                    {km} km
+                  </button>
+                ))}
+              </span>
             </div>
           )}
 
@@ -306,22 +255,12 @@ export function SearchPanel() {
             <Disclosure title="Advanced">
               <div className="se-adv-body">
                 <div className="se-pair">
-                  <NumField label="Final spacing" unit="m" value={spacing} onChange={setSpacing} />
+                  <NumField label="Grid spacing" unit="m" value={spacing} placeholder={autoSpacing === null ? "Auto" : String(autoSpacing)} onChange={setSpacing} />
                   <NumField label="Sites to rank" value={topK} onChange={setTopK} integer />
                 </div>
-                <Toggle checked={windowOn} onChange={setWindowOn} label="Landing window" />
-                {windowOn ? (
-                  <>
-                    <EpochField label="First" aria="First landing time (UTC)" value={firstMs} onChange={setFirstMs} />
-                    <EpochField label="Last" aria="Last landing time (UTC)" value={lastMs} onChange={setLastMs} />
-                    <div className="se-pair">
-                      <NumField label="Every" unit="h" value={epochH} onChange={setEpochH} />
-                    </div>
-                  </>
-                ) : (
-                  <div className="se-kv">
-                    <span className="field-label">Landing time (UTC)</span>
-                    <span className="num">{formatUtc(landingMs, { seconds: false })}</span>
+                {planWindow && (
+                  <div className="se-pair">
+                    <NumField label="Landings every" unit="h" value={epochH} placeholder={autoEpochH === null ? "Auto" : String(autoEpochH)} onChange={setEpochH} />
                   </div>
                 )}
               </div>
@@ -330,6 +269,9 @@ export function SearchPanel() {
 
           <div className="se-size hairline" aria-live="polite">
             <Stat label="Grid points" value={Number.isFinite(check.points) ? `≈ ${Math.round(check.points).toLocaleString("en-US")}` : "–"} tone={tooMany ? "fail" : "default"} />
+            {planWindow && Number.isFinite(epoch_h) && epoch_h > 0 && (
+              <Stat label="Landing times" value={(Math.floor(windowDays(planWindow) * 24 / epoch_h) + 1).toLocaleString("en-US")} />
+            )}
           </div>
           {check.errors.length > 0 && (
             <ul id={errorsId} className="se-errors" role="alert">
@@ -357,6 +299,8 @@ export function SearchPanel() {
                   <EmptyState icon="clock" title="Searching" />
                 ) : cancelled ? (
                   <EmptyState icon="stop" title="Search cancelled" />
+                ) : radiusKm === null ? (
+                  <EmptyState icon="search" title="Choose a search area first" />
                 ) : (
                   <EmptyState icon="search" title="Not searched yet" />
                 )}
@@ -367,6 +311,14 @@ export function SearchPanel() {
       </div>
     </>
   );
+}
+
+const hoursOnly = (h: number | null | undefined): string => (h === null || h === undefined ? "–" : h >= 100 ? String(Math.round(h)) : h.toFixed(1));
+
+function rankNote(result: SearchResult): string {
+  const by = result.settings["rank_by"];
+  const total = TOTALS.find((t) => t.key === by);
+  return total ? `the engine ranks by the nominal hours of ${total.label.toLowerCase()} during the stay, at each site's best landing time` : "the engine ranks by the normalised margin";
 }
 
 const MARGIN_NAME = { nominal: "Nominal margin", "worst-case": "Worst-case margin", "heading unknown": "Margin (heading unknown)" } as const;
@@ -430,8 +382,11 @@ function Results({ result, rows, stale }: { result: SearchResult; rows: SearchRo
       header: "Verdict",
       render: (r) => (r.state === "unknown" ? <span className="faint">No verdict</span> : <VerdictChip verdict={r.state} compact />),
     },
+    ...TOTALS.map(({ key, label }): Column<SearchRow> => ({ key, header: label, unit: "h", numeric: true, render: (r) => hoursOnly(r.totals[key]) })),
+    ...(multiEpoch
+      ? ([{ key: "utc", header: "Best landing (UTC)", render: (r) => <span className="num">{r.landing_utc.replace("T", " ").replace(/:00Z$|Z$/, "")}</span> }] satisfies Column<SearchRow>[])
+      : []),
     { key: "margin", header: "Margin", numeric: true, render: marginCell },
-    { key: "norm", header: "Normalised margin", numeric: true, render: (r) => (r.normalised === null ? "–" : formatSigned(r.normalised, 3)) },
     {
       key: "limiting",
       header: "Limiting",
@@ -446,12 +401,8 @@ function Results({ result, rows, stale }: { result: SearchResult; rows: SearchRo
         ),
     },
     { key: "slope", header: "Slope", unit: "°", numeric: true, render: (r) => (r.slope_deg === null ? "–" : r.slope_deg.toFixed(1)) },
-    ...(multiEpoch
-      ? ([
-          { key: "epochs", header: "Landings passing", numeric: true, render: (r) => `${r.n_epochs_pass}/${r.n_epochs}` },
-          { key: "utc", header: "Best landing (UTC)", render: (r) => <span className="num">{r.landing_utc.replace("T", " ").replace(/:00Z$|Z$/, "")}</span> },
-        ] satisfies Column<SearchRow>[])
-      : []),
+    ...(multiEpoch ? ([{ key: "epochs", header: "Landings passing", numeric: true, render: (r) => `${r.n_epochs_pass}/${r.n_epochs}` }] satisfies Column<SearchRow>[]) : []),
+    { key: "norm", header: "Normalised margin", numeric: true, render: (r) => (r.normalised === null ? "–" : formatSigned(r.normalised, 3)) },
     {
       key: "actions",
       header: <span className="sr-only">Actions</span>,
@@ -509,7 +460,7 @@ function Results({ result, rows, stale }: { result: SearchResult; rows: SearchRo
             <Disclosure title="Method">
               <div className="se-pop-notes">
                 <p className="se-pop-text">
-                  Each margin is the engine&apos;s margin of the limiting requirement at the site&apos;s best landing time, in that requirement&apos;s unit: named worst-case, nominal or heading unknown as the engine states for that site. The normalised margin is that margin divided by the requirement&apos;s margin scale; the engine ranks by it.
+                  Each margin is the engine&apos;s margin of the limiting requirement at the site&apos;s best landing time, in that requirement&apos;s unit: named worst-case, nominal or heading unknown as the engine states for that site. The normalised margin is that margin divided by the requirement&apos;s margin scale. Passing sites rank first, then marginal, then failing; within each, {rankNote(result)}.
                 </p>
                 <p className="se-pop-text">
                   The final grid shows the search&apos;s last refinement level, north up; a node&apos;s normalised margin exists only where the full horizon was run. Nodes outside the region are left empty.

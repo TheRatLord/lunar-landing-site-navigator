@@ -814,3 +814,123 @@
   outline-offset: var(--focus-offset, 2px);
 }
 
+.plan-card-widen {
+  color: var(--text-3);
+}
+.plan-card-widen[data-on="true"] {
+  color: var(--accent-text);
+}
+.plan-widen {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+.plan-pick-form > .plan-widen {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) 0 var(--sp-1);
+}
+.plan-pick-form > .plan-rank {
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) 0 var(--sp-3);
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+}
+.plan-widen-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.plan-widen-row > .input,
+.plan-widen-row > .select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.plan-widen-label {
+  flex: none;
+  width: 56px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.plan-widen-input {
+  flex: none;
+  width: 96px;
+}
+.plan-widen-presets {
+  display: flex;
+  flex: 1 1 auto;
+}
+.plan-widen-presets .sc-step[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.plan-widen-note {
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+}
+.plan-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+.plan-inputs[data-layout="row"] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.plan-input {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  width: 100%;
+  min-width: 0;
+  padding: var(--sp-1-5) var(--sp-2);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.plan-input > svg {
+  flex: none;
+  align-self: center;
+  color: var(--text-3);
+}
+.plan-input:hover {
+  background: var(--panel-hover);
+  border-color: var(--border-strong);
+}
+.plan-input:focus-visible {
+  outline: var(--focus-w) solid var(--focus);
+  outline-offset: var(--focus-offset);
+}
+.plan-input-label {
+  flex: none;
+  color: var(--text-2);
+}
+.plan-inputs[data-layout="column"] .plan-input-label {
+  width: 72px;
+}
+.plan-inputs[data-layout="column"] .plan-input-value {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.plan-input-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

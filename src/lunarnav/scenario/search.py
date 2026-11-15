@@ -46,7 +46,17 @@ import numpy as np
 from lunarnav.constants import R_MOON_M
 from lunarnav.ephem import et_to_utc
 
-from .engine import FAIL, MARGINAL, PASS, STATE_NAMES, has_no_nominal_margin, margin_kind, margin_note
+from .engine import (
+    FAIL,
+    MARGINAL,
+    PASS,
+    RANK_BY,
+    STATE_NAMES,
+    has_no_nominal_margin,
+    margin_kind,
+    margin_note,
+    rank_key,
+)
 from .horizons import HorizonProvider, SmoothSphereProvider, TerrainProvider
 from .models import Scenario
 from .multisite import (
@@ -157,10 +167,11 @@ class RankedSite:
     constraint_state: dict[str, str]
     margin_kind: str | None = None
     """`worst_case`, `nominal` (a failing site reports the nominal margin) or `best_case` (a failing site limited by the minimum state of
-    charge with an unknown heading: the margin at the upper bound over headings, which no single heading achieves); see `engine.margin_kind`. Sites are ranked by state
+    charge with an unknown heading: the margin at the upper bound over headings, which no single heading achieves); see `engine.margin_kind`. With `rank_by="margin"` sites are ranked by state
     first and then by this margin as it is, so a `best_case` margin is compared with the nominal margins of the others."""
     margin_note: str | None = None
     """The sentence that goes with `margin_kind` where it needs one (`engine.BEST_CASE_NOTE`)."""
+    totals: dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {f: getattr(self, f) for f in self.__slots__}
@@ -181,13 +192,15 @@ class SearchGrid:
     status: np.ndarray
     coarse_score: np.ndarray
     slope_deg: np.ndarray
+    rank_value: np.ndarray | None = None
 
     def to_dict(self) -> dict:
         def clean(a):
             return np.where(np.isfinite(a), a, None).tolist()
         return {"east_m": self.east_m.tolist(), "north_m": self.north_m.tolist(), "score": clean(self.score),
                 "state": self.state.tolist(), "status": self.status.tolist(), "coarse_score": clean(self.coarse_score),
-                "slope_deg": clean(self.slope_deg), "status_text": STATUS_TEXT}
+                "slope_deg": clean(self.slope_deg), "status_text": STATUS_TEXT,
+                "rank_value": None if self.rank_value is None else clean(self.rank_value)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,9 +236,9 @@ def _cheap_provider(provider: HorizonProvider, n_az: int, max_range_km: float | 
     return provider
 
 
-def _best_key(pr: PointResults) -> tuple[np.ndarray, np.ndarray]:
+def _best_key(pr: PointResults, rank_by: str = "margin") -> tuple[np.ndarray, np.ndarray]:
     """(index of the best epoch per point, ranking key per point)."""
-    key = pr.state.astype(np.float64) * 1.0e6 + np.nan_to_num(pr.worst_margin, nan=-1.0e5, posinf=1.0e5, neginf=-1.0e5)
+    key = rank_key(pr.state, pr.worst_margin, pr.totals, rank_by)
     k = np.argmax(key, axis=1)
     return k, key[np.arange(key.shape[0]), k]
 
@@ -252,7 +265,7 @@ def search_sites(
     cheap_n_az: int = 72, cheap_range_km: float | None = 20.0, slope_prune_factor: float = 2.0,
     hazard_roughness_m: float | None = None, top_k: int = 20, min_separation_m: float | None = None,
     exhaustive: bool = False, table=None, prune_world: str = "optimistic",
-    progress: Callable[[float, str], None] | None = None,
+    progress: Callable[[float, str], None] | None = None, rank_by: str = "margin", promote_fraction: float = 0.25,
 ) -> SearchResult:
     """Search `region` for sites satisfying the scenario's constraints (see module doc).
 
@@ -265,6 +278,11 @@ def search_sites(
     run) or `"nominal"` (the cheap-horizon verdict itself: about 10x cheaper but measured recall 0.73 to 0.87 of the
     PASS sites, so it is only a fast preview).
 
+    `rank_by` (`engine.RANK_BY`): `"margin"` ranks by state and then the normalised margin; a mission total (`"sunlit_h"`,
+    `"contact_h"`, `"sunlit_contact_h"`) ranks by state and then the nominal hours of that total, each site at its best epoch by the
+    same key. With a total, a coarse level promotes the `promote_fraction` of its points with the most hours among those within the
+    slack (at least `min_promote`), because without a limit on the total every point would otherwise be promoted.
+
     `progress(fraction, stage)` is called at the start of each level and after every chunk of points evaluated
     (fraction 0..1: table to 0.03, coarse levels share 0.03 to 0.18, the final level 0.18 to 0.98, ranking last;
     the split is a nominal cost estimate, the fraction is monotone). An exception it raises propagates unchanged
@@ -272,6 +290,8 @@ def search_sites(
     """
     if prune_world not in ("nominal", "optimistic"):
         raise ValueError("prune_world must be 'nominal' or 'optimistic'")
+    if rank_by not in RANK_BY:
+        raise ValueError(f"rank_by must be one of {RANK_BY}, got {rank_by!r}")
     t_start = time.perf_counter()
     provider = provider or SmoothSphereProvider()
     check_terrain_stack(scenario, provider)
@@ -306,6 +326,8 @@ def search_sites(
     slope_g = np.full((n, n), np.nan)
     best_epoch = np.zeros((n, n), dtype=np.int64)
     rough_g = np.full((n, n), np.nan)
+    rank_g = np.full((n, n), np.nan)
+    by_total = rank_by != "margin"
     full = {}
 
     n_levels = 1 if exhaustive else int(math.log2(coarse_factor)) + 1
@@ -350,12 +372,14 @@ def search_sites(
                 with_hazards=False, slope_deg=None if sl is None else sl[keep], roughness_m=None if ro is None else ro[keep],
                 progress=scaled_progress(
                     progress, lvl_lo, lvl_hi, f"level {level + 1} of {n_levels} ({step * s:g} m): "))
-            be, key = _best_key(pr)
+            be, key = _best_key(pr, rank_by)
             ar = np.arange(kr.size)
             wm = pr.worst_margin[ar, be]
             if final:
                 status[kr, kc] = STATUS_FULL
                 score[kr, kc] = wm
+                if by_total:
+                    rank_g[kr, kc] = pr.totals[rank_by][ar, be]
                 state[kr, kc] = pr.state[ar, be]
                 best_epoch[kr, kc] = be
                 n_full += int(kr.size)
@@ -366,9 +390,16 @@ def search_sites(
                 opt = np.max(pr.optimistic_margin if prune_world == "optimistic" else np.where(
                     np.isfinite(pr.worst_margin), pr.worst_margin, 1.0e3), axis=1)
                 coarse_score[kr, kc] = opt
-                order = np.argsort(-opt, kind="stable")
                 good = opt >= -slack
-                good[order[:min_promote]] = True
+                if by_total:
+                    hours = np.where(good, pr.totals[rank_by].max(axis=1), -1.0)
+                    order = np.argsort(-hours, kind="stable")
+                    keep_n = max(min_promote, int(math.ceil(promote_fraction * int(good.sum()))))
+                    good = np.zeros(opt.size, dtype=bool)
+                    good[order[:keep_n]] = True
+                else:
+                    order = np.argsort(-opt, kind="stable")
+                    good[order[:min_promote]] = True
                 sel = np.flatnonzero(good)
                 if sel.size > max_promoted:
                     sel = order[:max_promoted]
@@ -391,7 +422,7 @@ def search_sites(
     if progress is not None:
         progress(0.98, "ranking")
     ev_rows, ev_cols = np.nonzero(status == STATUS_FULL)
-    keyv = state[ev_rows, ev_cols].astype(np.float64) * 1.0e6 + np.nan_to_num(score[ev_rows, ev_cols], nan=-1.0e5, posinf=1.0e5, neginf=-1.0e5)
+    keyv = rank_key(state[ev_rows, ev_cols], score[ev_rows, ev_cols], {rank_by: rank_g[ev_rows, ev_cols]}, rank_by)
     order = np.argsort(-keyv, kind="stable")
     sep = 3.0 * s if min_separation_m is None else float(min_separation_m)
     chosen: list[int] = []
@@ -417,7 +448,7 @@ def search_sites(
             None if pr.roughness_m is None or not math.isfinite(pr.roughness_m[a]) else float(pr.roughness_m[a]),
             {k: (float(v[a, e]) if math.isfinite(float(v[a, e])) else None) for k, v in pr.values.items()},
             {k: STATE_NAMES.get(int(v[a, e]), "UNKNOWN") for k, v in pr.per_constraint.items()},
-            kind, margin_note(kind)))
+            kind, margin_note(kind), {k: float(v[a, e]) for k, v in pr.totals.items()}))
     full_states = state[status == STATUS_FULL]
     counts = {"inside_region": int(inside.sum()), "evaluated_full": int(full_states.size),
               "slope_pruned": int((status == STATUS_SLOPE_PRUNED).sum()), "coarse_only": int((status == STATUS_COARSE).sum()),
@@ -429,13 +460,14 @@ def search_sites(
                 "hazard_roughness_m": hazard_roughness_m, "exhaustive": bool(exhaustive), "n_epochs": int(q.size),
                 "region": {"lat_deg": region.lat_deg, "lon_deg": region.lon_deg, "radius_m": region.radius_m,
                           "polygon": None if region.polygon is None else [list(p) for p in region.polygon]},
-                "min_separation_m": sep, "top_k": top_k}
+                "min_separation_m": sep, "top_k": top_k, "rank_by": rank_by, "promote_fraction": promote_fraction}
     prov = {**engine_blocks(), "scenario_hash": scenario_hash(scenario), "provider": provider.provenance(),
             "our_definitions": {"roughness": OUR_DEFINITIONS["roughness"]},
             "terrain_stack": terrain_stack_record(scenario, provider),
             "heading_unknown_soc": any(p[0].heading_unknown for p in full.values()),
             "first_landing_utc": et_to_utc(float(q[0])), "last_landing_utc": et_to_utc(float(q[-1]))}
-    grid = SearchGrid(east[0].copy(), north[:, 0].copy(), lat_g, lon_g, score, state, status, coarse_score, slope_g)
+    grid = SearchGrid(east[0].copy(), north[:, 0].copy(), lat_g, lon_g, score, state, status, coarse_score, slope_g,
+                      rank_g if by_total else None)
     if progress is not None:
         progress(1.0, "done")
     return SearchResult(tuple(sites), grid, tuple(reports), counts, settings, time.perf_counter() - t_start, n_full,

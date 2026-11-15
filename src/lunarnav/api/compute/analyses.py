@@ -150,7 +150,7 @@ def run_search(params: dict[str, Any], scenario: Any, provider: Any, progress: C
         last_utc=params.get("last_utc"), epoch_spacing_h=params.get("epoch_spacing_h"), coarse_factor=params["coarse_factor"],
         slack=params["slack"], min_promote=params["min_promote"], max_promoted=params["max_promoted"], top_k=params["top_k"],
         min_separation_m=params.get("min_separation_m"), exhaustive=params["exhaustive"], prune_world=params["prune_world"],
-        hazard_roughness_m=params.get("hazard_roughness_m"), progress=progress))
+        hazard_roughness_m=params.get("hazard_roughness_m"), progress=progress, rank_by=params.get("rank_by", "margin")))
 
 
 def coverage_utc() -> tuple[str, str]:
@@ -361,7 +361,8 @@ def _scan_arrays(scan: Any, max_points: int) -> dict[str, Any]:
     n = scan.et.size
     idx = np.arange(n)
     if n > max_points:
-        keep = set(minmax_indices({"m": margin, "sun_el": scan.sun_el_deg}, max_points // 2).tolist())
+        ranked = {} if scan.rank_by == "margin" else {"rank": scan.totals[scan.rank_by]}
+        keep = set(minmax_indices({"m": margin, "sun_el": scan.sun_el_deg, **ranked}, max_points // 2).tolist())
         change = np.flatnonzero(np.diff(scan.state) != 0)
         keep.update(change.tolist())
         keep.update((change + 1).tolist())
@@ -383,6 +384,7 @@ def _scan_arrays(scan: Any, max_points: int) -> dict[str, Any]:
         "values": {k: scan.values.values[k][0][idx] for k in keys},
         "values_optimistic": {k: scan.values.values[k][1][idx] for k in keys},
         "values_pessimistic": {k: scan.values.values[k][2][idx] for k in keys},
+        "totals": {k: v[idx] for k, v in scan.totals.items()},
     }
 
 
@@ -407,7 +409,7 @@ def _window(w: Any, limits: dict[str, Any]) -> dict[str, Any]:
         "best_margin": margin, "best_margin_kind": w.best_margin_kind, "best_margin_note": w.best_margin_note, "best_margin_physical": None if lim is None or margin is None else margin * lim.margin_scale,
         "best_margin_unit": None if lim is None else lim.unit, "best_state": w.best_state, "best_limiting": w.best_limiting,
         "robust": [[_utc(a), _utc(b)] for a, b in w.robust],
-        "spacing_h": float(w.spacing_h),
+        "spacing_h": float(w.spacing_h), "best_totals": dict(w.best_totals),
     }
 
 
@@ -415,7 +417,7 @@ def scan_body(scan: Any, req: dict[str, Any], ev: Any) -> dict[str, Any]:
     """The `scan` result for an `OpportunityScan`; `ev` is the scenario's own evaluation, which with the scanned range selects the limits."""
     return _envelope(
         "scan", req, scan.context.provider_name, scan.provenance, limits=limit_notes(scan_limits(ev, scan)),
-        start_utc=req["start_utc"], end_utc=req["end_utc"], spacing_s=scan.spacing_s,
+        start_utc=req["start_utc"], end_utc=req["end_utc"], spacing_s=scan.spacing_s, rank_by=scan.rank_by,
         states=STATES, counts=scan.counts(), closing_constraints=scan.closing_constraints(),
         state_fraction=scan.state_fraction(), closing_fraction=scan.closing_fraction(),
         windows=[_window(w, _margin_scales(scan)) for w in scan.windows], calendar=_calendar(scan.calendar),
@@ -431,7 +433,7 @@ def scan_job(req: dict[str, Any], ctx: JobContext) -> dict[str, Any]:
     scan = _guard(lambda: scan_opportunities(
         scenario, provider, start_utc=req["start_utc"], end_utc=req["end_utc"], spacing_s=req["spacing_s"],
         signal_step_s=req["signal_step_s"], lookback_h=req["lookback_h"], calendar_bin_h=req["calendar_bin_h"],
-        progress=_scaled(ctx, 0.05, 0.9)))
+        progress=_scaled(ctx, 0.05, 0.9), rank_by=req.get("rank_by", "margin")))
     ctx.progress(0.9, "evaluating the scenario for its limits")
     ev = _guard(lambda: evaluate_scenario(scenario, provider))
     ctx.progress(0.95, "preparing result")

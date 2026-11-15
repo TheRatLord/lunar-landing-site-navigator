@@ -43,9 +43,12 @@ _LIMIT_DEFAULTS: dict[str, tuple[str, str, float]] = {
     "dte_at_landing_deg": ("deg", "Earth clearance above the antenna horizon at landing", 5.0),
     "min_sunlit_hours_after_landing": ("h", "Continuous sunlight after landing", 12.0),
     "max_dark_span_h": ("h", "Longest dark span", 10.0),
+    "min_total_sunlit_h": ("h", "Sunlight during the mission", 24.0),
     "min_state_of_charge": ("fraction", "Minimum state of charge", 0.1),
     "min_contact_fraction": ("fraction", "Contact fraction", 0.1),
     "max_contact_gap_h": ("h", "Longest contact outage", 6.0),
+    "min_total_contact_h": ("h", "Contact during the mission", 24.0),
+    "min_total_sunlit_contact_h": ("h", "Sunlight with contact during the mission", 24.0),
     "min_link_margin_db": ("dB", "Lowest link margin", 3.0),
     "max_slope_deg": ("deg", "Terrain slope", 3.0),
 }

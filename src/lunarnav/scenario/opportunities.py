@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -36,6 +36,8 @@ from .engine import (
     judge,
     margin_kind,
     margin_note,
+    mission_totals,
+    rank_key,
 )
 from .evaluate import build_table
 from .horizons import HorizonProvider, SmoothSphereProvider, fold_observers, observer_sites
@@ -228,7 +230,8 @@ class OpenWindow:
     (last minus first: 76 h for 77 hourly candidates; 0 for a single candidate). The true edges lie within one `spacing_h` beyond
     either end, so the open interval may be up to `duration_h + 2 * spacing_h` long. `best_*`: the candidate with the largest
     worst-case normalised margin (`best_margin`: the pessimistic-case margin of that candidate's limiting constraint divided
-    by its `margin_scale`, dimensionless; it is not the nominal margin shown for a single site evaluation)."""
+    by its `margin_scale`, dimensionless; it is not the nominal margin shown for a single site evaluation). With a scan ranked by a
+    mission total (`rank_by`), `best_*` is instead the candidate of the best state with the most nominal hours of that total."""
 
     start_et: float
     end_et: float
@@ -248,6 +251,7 @@ class OpenWindow:
     by the minimum state of charge with an unknown heading: the margin at the upper bound over headings, which no single heading achieves): which case `best_margin` is."""
     best_margin_note: str | None = None
     """The sentence that goes with `best_margin_kind` where it needs one (`engine.BEST_CASE_NOTE`)."""
+    best_totals: dict[str, float] = field(default_factory=dict)
 
 
 def utc_lattice(first_et: float, n: int, spacing_s: float) -> np.ndarray:
@@ -308,6 +312,8 @@ class OpportunityScan:
     local_solar_time_h: np.ndarray
     sun_el_deg: np.ndarray
     provenance: dict
+    totals: dict[str, np.ndarray] = field(default_factory=dict)
+    rank_by: str = "margin"
 
     @property
     def state(self) -> np.ndarray:
@@ -343,11 +349,14 @@ class OpportunityScan:
         return self.context.verdict_at(float(self.et[index]))
 
 
-def _open_windows(et: np.ndarray, vd: Verdicts, spacing_s: float, keys: tuple[str, ...], heading_unknown: bool = False) -> tuple[OpenWindow, ...]:
+def _open_windows(et: np.ndarray, vd: Verdicts, spacing_s: float, keys: tuple[str, ...], heading_unknown: bool = False,
+                  totals: dict[str, np.ndarray] | None = None, rank_by: str = "margin") -> tuple[OpenWindow, ...]:
     out = []
+    totals = totals or {}
+    order = vd.worst_margin if rank_by == "margin" else rank_key(vd.state, vd.worst_margin, totals, rank_by)
     for a, b in _runs(vd.state >= MARGINAL):
         sl = slice(a, b + 1)
-        best = a + int(np.argmax(vd.worst_margin[sl]))
+        best = a + int(np.argmax(order[sl]))
         li = int(vd.limiting[best])
         kind = margin_kind(STATE_NAMES[int(vd.state[best])], float(vd.worst_margin[best]),
                            no_nominal=has_no_nominal_margin(keys[li] if li >= 0 else None, heading_unknown))
@@ -357,7 +366,7 @@ def _open_windows(et: np.ndarray, vd: Verdicts, spacing_s: float, keys: tuple[st
             float(et[a]), float(et[b]), b - a + 1, int((vd.state[sl] == PASS).sum()),
             float(et[b] - et[a]) / HOUR_S, float(et[best]), float(vd.worst_margin[best]),
             STATE_NAMES[int(vd.state[best])], keys[li] if li >= 0 else None, robust, spacing_s / HOUR_S,
-            kind, margin_note(kind)))
+            kind, margin_note(kind), {k: float(v[best]) for k, v in totals.items()}))
     return tuple(out)
 
 
@@ -403,14 +412,15 @@ def scan_opportunities(
     spacing_s: float = DEFAULT_SPACING_S, signal_step_s: float = DEFAULT_SIGNAL_STEP_S,
     lookback_h: float = DEFAULT_LOOKBACK_H, calendar_bin_h: float = 6.0, table: BodyFixedEphemeris | None = None,
     horizons: tuple | None = None, context: ScanContext | None = None,
-    progress: Callable[[float, str], None] | None = None,
+    progress: Callable[[float, str], None] | None = None, rank_by: str = "margin",
 ) -> OpportunityScan:
     """Evaluate every landing candidate from `start_utc` to `end_utc` (inclusive) at `spacing_s`.
 
     `spacing_s` must be a multiple of `signal_step_s`. A prepared `context` (from `build_scan_context`)
     is reused when given. The scenario's own `landing_utc` is ignored; its mission duration, profile,
     constraints, network and site define the evaluation. `progress(fraction, stage)` is called at every stage and
-    every `EVAL_CHUNK` candidates (a raising callback cancels the scan)."""
+    every `EVAL_CHUNK` candidates (a raising callback cancels the scan). `rank_by` (`engine.RANK_BY`) chooses the best candidate
+    of each open window: the largest worst-case margin, or the best state with the most nominal hours of a mission total."""
     if signal_step_s <= 0.0 or abs(spacing_s / signal_step_s - round(spacing_s / signal_step_s)) > 1e-9:
         raise ValueError("spacing_s must be a positive multiple of signal_step_s")
     t0, t1 = utc_to_et(start_utc), utc_to_et(end_utc)
@@ -427,12 +437,13 @@ def scan_opportunities(
     lattice = np.clip(lattice, 0, ctx.analysis.t.size - 1)
     lst = lst_all[lattice]
     sun_el = np.interp(q, ctx.analysis.t, ctx.analysis.sun_el_deg)
-    windows = _open_windows(q, vd, spacing_s, vd.keys, ctx.heading_unknown)
+    totals = mission_totals(ctx.analysis, q, ctx.mission_s)
+    windows = _open_windows(q, vd, spacing_s, vd.keys, ctx.heading_unknown, totals, rank_by)
     cal = build_calendar(q, vd, lst, sun_el, bin_h=calendar_bin_h)
     prov = dict(ctx.provenance)
     prov["analysis"] = {**prov["analysis"], "kind": "opportunity_scan", "start_utc": start_utc, "end_utc": end_utc,
-                        "spacing_s": float(spacing_s), "n_candidates": int(q.size),
+                        "spacing_s": float(spacing_s), "n_candidates": int(q.size), "rank_by": rank_by,
                         "soc_evaluated_only_for_candidates_not_failing_other_constraints": True}
     if progress is not None:
         progress(1.0, "done")
-    return OpportunityScan(ctx, q, float(spacing_s), ev, vd, windows, cal, lst, sun_el, prov)
+    return OpportunityScan(ctx, q, float(spacing_s), ev, vd, windows, cal, lst, sun_el, prov, totals, rank_by)

@@ -26,9 +26,10 @@ link to the validation that measured it.
 - **HTTP service** (`lunarnav serve`): FastAPI over the engine, with a job pool for long analyses, exports
   (CSV, JSON, CCSDS AEM) and HTML/PDF mission reports.
 - **Web app** (`web/`): React interface. A plan panel on the left of every page holds the four choices (site,
-  landing time, lander, requirements); the Overview, Map, Site, Dates and Compare tabs show what they give. Every
-  other setting is on Mission setup, validation is under Evidence, and Explorer is an interactive mode for
-  students and the public.
+  landing time, lander, requirements). The site can be widened to a search radius and the landing time to a landing
+  window, and the requirements carry what to rank by; the Overview, Map, Site, Dates and Compare tabs show what
+  those choices give. Every other setting is on Mission setup, validation is under Evidence, and Explorer is an
+  interactive mode for students and the public.
 - **Analysis agent** (`lunarnav agent`): a Claude agent that answers planning questions through typed
   engine tools, with a ledger of every computation it cites, running in an OS sandbox.
 - **Validation** (`docs/validation`): how each part was checked against JPL Horizons, published

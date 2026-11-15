@@ -16,7 +16,6 @@ import { toast } from "../../state/toasts";
 import { ExploreTabs } from "../explore/ExploreTabs";
 import { regionalLayer } from "../regional/regionalLayer";
 import { useRegionalLayer } from "../regional/regionalLayerStore";
-import { publishMapView } from "../search/mapView";
 import { searchPinsCurrent, useSearchResults } from "../search/results";
 import "../../styles/map.css";
 import { TILESET_OF_VIEW } from "./basis";
@@ -153,7 +152,6 @@ function MapInner({ url }: { url: MapUrlState }) {
       const e = engineRef.current;
       const v = e?.getView();
       if (!e || !v) return;
-      publishMapView({ kind: st.kind, bounds: e.getBounds() });
       setParamsRef.current(writeMapUrl(paramsRef.current, { view: st.kind, cx: v.cx, cy: v.cy, zoom: v.zoom, layers: onLayers(st.layers), site: st.selectedId }), { replace: true });
     }, 450);
   }, [api]);

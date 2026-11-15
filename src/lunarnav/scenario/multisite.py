@@ -25,7 +25,7 @@ import numpy as np
 from lunarnav.constants import R_MOON_M
 from lunarnav.ephem import BodyFixedEphemeris, utc_to_et
 
-from .engine import HOUR_S, build_analysis, epoch_values, judge
+from .engine import HOUR_S, TOTAL_KEYS, build_analysis, epoch_values, judge, mission_totals
 from .horizons import HorizonProvider, fold_observers, observer_sites, observers_per_site
 from .models import Scenario
 from .opportunities import DEFAULT_LOOKBACK_H, DEFAULT_SIGNAL_STEP_S, scan_table
@@ -132,6 +132,7 @@ class PointResults:
     provenance: dict = field(default_factory=dict)
     heading_unknown: bool = False
     """The lander heading is unknown and the minimum state of charge depends on it: its `values` are NaN."""
+    totals: dict[str, np.ndarray] = field(default_factory=dict)
 
     @property
     def n(self) -> int:
@@ -211,6 +212,7 @@ def evaluate_points(
     per = {k: np.empty((n, m), dtype=np.int8) for k in base_keys}
     values = {k: np.full((n, m), np.nan) for k in base_keys}
     cens = {k: np.zeros((n, m), dtype=bool) for k in base_keys}
+    totals = {k: np.empty((n, m)) for k in TOTAL_KEYS}
     keys = base_keys
     heading_unknown = False
     chunk = CHUNK_POINTS if chunk_points is None else max(1, int(chunk_points))
@@ -234,6 +236,8 @@ def evaluate_points(
                               slope_deg=None if slope is None else float(slope[i]),
                               skip_failed_with=cons if skip_failed_soc else None)
             vd = judge(ev, cons)
+            for name, v in mission_totals(an, q, d_s).items():
+                totals[name][i] = v
             keys = vd.keys
             state[i] = vd.state
             wmargin[i] = vd.worst_margin
@@ -254,4 +258,4 @@ def evaluate_points(
     prov = {"provider": provider.provenance(), "n_points": int(n), "n_epochs": int(m),
             "signal_step_s": float(signal_step_s), "our_definitions": {"roughness": OUR_DEFINITIONS["roughness"]}}
     return PointResults(lat, lon, q, keys, state, {k: per[k] for k in keys}, wmargin, omargin, limiting,
-                        {k: values[k] for k in keys}, slope, rough, {k: cens[k] for k in keys}, prov, heading_unknown)
+                        {k: values[k] for k in keys}, slope, rough, {k: cens[k] for k in keys}, prov, heading_unknown, totals)

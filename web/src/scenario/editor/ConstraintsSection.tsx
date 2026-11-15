@@ -56,7 +56,7 @@ function LimitRow({ meta }: { meta: ConstraintMeta }) {
       <div className="sc-limit-head">
         <Toggle
           checked={active}
-          onChange={(on) => edit(["constraints", meta.key], on ? ({ min: null, max: null, unit: meta.unit, label: meta.title, origin: USER_ORIGIN, margin_scale: 1 } satisfies Limit) : null)}
+          onChange={(on) => edit(["constraints", meta.key], on ? ({ min: null, max: null, unit: meta.unit, label: meta.title, origin: USER_ORIGIN, margin_scale: meta.scale ?? 1 } satisfies Limit) : null)}
           label={<span className="sc-limit-title">{meta.title}</span>}
         />
         <span className="grow" />

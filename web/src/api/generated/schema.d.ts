@@ -1278,6 +1278,9 @@ export interface components {
             values_pessimistic: {
                 [key: string]: (number | null)[];
             };
+            totals?: {
+                [key: string]: (number | null)[];
+            };
         };
         ChainStatus: {
             ok: boolean;
@@ -1401,9 +1404,12 @@ export interface components {
             dte_at_landing_deg?: components["schemas"]["Limit"] | null;
             min_sunlit_hours_after_landing?: components["schemas"]["Limit"] | null;
             max_dark_span_h?: components["schemas"]["Limit"] | null;
+            min_total_sunlit_h?: components["schemas"]["Limit"] | null;
             min_state_of_charge?: components["schemas"]["Limit"] | null;
             min_contact_fraction?: components["schemas"]["Limit"] | null;
             max_contact_gap_h?: components["schemas"]["Limit"] | null;
+            min_total_contact_h?: components["schemas"]["Limit"] | null;
+            min_total_sunlit_contact_h?: components["schemas"]["Limit"] | null;
             min_link_margin_db?: components["schemas"]["Limit"] | null;
             max_slope_deg?: components["schemas"]["Limit"] | null;
             sunlit_flux_fraction: components["schemas"]["Parameter"];
@@ -2076,6 +2082,9 @@ export interface components {
             best_limiting: string | null;
             robust: (string | null)[][];
             spacing_h: number;
+            best_totals?: {
+                [key: string]: number | null;
+            };
         };
         Origin: {
             basis: "published" | "derived" | "estimate" | "convention" | "historical" | "mission-specific" | "user" | "model-typed" | "default" | "unknown";
@@ -2254,6 +2263,9 @@ export interface components {
             };
             constraint_state: {
                 [key: string]: string;
+            };
+            totals?: {
+                [key: string]: number | null;
             };
         };
         RegionalBracketCoverage: {
@@ -2442,6 +2454,7 @@ export interface components {
             signal_step_s: number;
             lookback_h: number;
             calendar_bin_h: number;
+            rank_by: "margin" | "sunlit_h" | "contact_h" | "sunlit_contact_h";
             max_candidates: number;
         };
         ScanRequest: {
@@ -2451,6 +2464,7 @@ export interface components {
             signal_step_s: number;
             lookback_h: number;
             calendar_bin_h: number;
+            rank_by: "margin" | "sunlit_h" | "contact_h" | "sunlit_contact_h";
             max_candidates: number;
             scenario?: components["schemas"]["Scenario"] | null;
             scenario_id?: string | null;
@@ -2475,6 +2489,7 @@ export interface components {
             start_utc: string;
             end_utc: string;
             spacing_s: number;
+            rank_by: string;
             states: {
                 [key: string]: number;
             };
@@ -2579,6 +2594,7 @@ export interface components {
             min_separation_m?: number | null;
             exhaustive: boolean;
             prune_world: "optimistic" | "nominal";
+            rank_by: "margin" | "sunlit_h" | "contact_h" | "sunlit_contact_h";
             hazard_roughness_m?: number | null;
             with_grid: boolean;
         };
@@ -2605,6 +2621,7 @@ export interface components {
             min_separation_m?: number | null;
             exhaustive: boolean;
             prune_world: "optimistic" | "nominal";
+            rank_by: "margin" | "sunlit_h" | "contact_h" | "sunlit_contact_h";
             hazard_roughness_m?: number | null;
             with_grid: boolean;
             scenario?: components["schemas"]["Scenario"] | null;

@@ -290,6 +290,9 @@ class SearchInput(BaseModel):
     epoch_spacing_h: float | None = Field(default=None, gt=0)
     top_k: int = Field(default=10, ge=1, le=50)
     min_separation_m: float | None = Field(default=None, gt=0)
+    rank_by: Literal["margin", "sunlit_h", "contact_h", "sunlit_contact_h"] = Field(
+        default="margin", description="What ranks the result: `margin` (state, then the normalised margin of the limiting constraint) or "
+        "the nominal hours during the surface mission that are sunlit (`sunlit_h`), in contact (`contact_h`) or both at once (`sunlit_contact_h`).")
     terrain: str = Field(default="stock", description=f"Terrain model: {TERRAIN_DOC}.")
 
     @model_validator(mode="after")
@@ -324,7 +327,7 @@ async def search_tool(ctx: ToolContext, args: SearchInput) -> SearchOutput:
     region = SearchRegion(args.lat_deg, _lon180(args.lon_deg), radius_m=args.radius_m)
     res = await call.run(lambda: search_sites(
         sc, provider, region, final_spacing_m=args.final_spacing_m, first_utc=args.first_utc, last_utc=args.last_utc,
-        epoch_spacing_h=args.epoch_spacing_h, top_k=args.top_k, min_separation_m=args.min_separation_m))
+        epoch_spacing_h=args.epoch_spacing_h, top_k=args.top_k, min_separation_m=args.min_separation_m, rank_by=args.rank_by))
     full = jsonable(res.to_dict(with_grid=True))
     call.write_json("full", full)
     d = jsonable(res.to_dict(with_grid=False))

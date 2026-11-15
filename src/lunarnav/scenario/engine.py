@@ -38,6 +38,8 @@ HOUR_S = 3600.0
 SCAN_EPOCHS_PER_THREAD = 1000
 
 MARGIN_KINDS = ("worst_case", "nominal", "best_case")
+TOTAL_KEYS = {"sunlit_h": "min_total_sunlit_h", "contact_h": "min_total_contact_h", "sunlit_contact_h": "min_total_sunlit_contact_h"}
+RANK_BY = ("margin", *TOTAL_KEYS)
 BEST_CASE_NOTE = ("no nominal: the lander heading is unknown; this is the margin at the upper bound over headings (the best heading "
                   "at each instant on the lowered horizon; no single heading achieves it), so every real heading does worse")
 
@@ -79,6 +81,7 @@ class WorldWindows:
     dark: WindowSet
     contact: WindowSet
     gap: WindowSet
+    both: WindowSet
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,7 +114,7 @@ def build_analysis(sig: SiteSignals, constraints: Constraints, power: PowerSigna
     for b in WORLDS:
         sunlit = WindowSet.from_signal(t, getattr(sig.sunlight, b), thr)
         contact = WindowSet.from_signal(t, getattr(sig.contact, b), 0.0)
-        worlds.append(WorldWindows(sunlit, sunlit.complement(), contact, contact.complement()))
+        worlds.append(WorldWindows(sunlit, sunlit.complement(), contact, contact.complement(), sunlit.intersection(contact)))
     return Analysis(t, sig.sun_el_deg, sig.contact, sig.link_margin_db, sig.sunlight, float(thr),
                     (worlds[0], worlds[1], worlds[2]), power)
 
@@ -266,6 +269,12 @@ def epoch_values(
             put(key, [r[0] for r in res], res[0][1])
         elif key == "max_dark_span_h":
             put(key, [w.dark.longest_overlap(q, q + d_s) / HOUR_S for w in an.worlds])
+        elif key == "min_total_sunlit_h":
+            put(key, [w.sunlit.covered(q, q + d_s) / HOUR_S for w in an.worlds])
+        elif key == "min_total_contact_h":
+            put(key, [w.contact.covered(q, q + d_s) / HOUR_S for w in an.worlds])
+        elif key == "min_total_sunlit_contact_h":
+            put(key, [w.both.covered(q, q + d_s) / HOUR_S for w in an.worlds])
         elif key == "min_contact_fraction":
             put(key, [w.contact.covered(q, q + d_s) / d_s for w in an.worlds])
         elif key == "max_contact_gap_h":
@@ -287,6 +296,21 @@ def epoch_values(
             skipped["min_state_of_charge"] = ~only
     ordered = {k: values[k] for k in CONSTRAINT_KEYS if k in values}
     return EpochValues(ordered, {k: censored[k] for k in ordered}, n, skipped)
+
+
+def mission_totals(an: Analysis, q: np.ndarray, d_s: float) -> dict[str, np.ndarray]:
+    ev = epoch_values(an, q, d_s, TOTAL_KEYS.values())
+    return {name: ev.values[key][0] for name, key in TOTAL_KEYS.items()}
+
+
+def rank_key(state: np.ndarray, worst_margin: np.ndarray, totals: dict[str, np.ndarray], rank_by: str) -> np.ndarray:
+    if rank_by not in RANK_BY:
+        raise ValueError(f"rank_by must be one of {RANK_BY}, got {rank_by!r}")
+    margin = np.nan_to_num(worst_margin, nan=-1.0e5, posinf=1.0e5, neginf=-1.0e5)
+    if rank_by == "margin":
+        return state.astype(np.float64) * 1.0e6 + margin
+    hours = np.round(np.nan_to_num(totals[rank_by], nan=-1.0), 2)
+    return state.astype(np.float64) * 1.0e6 + hours + 1.0e-4 * np.clip(margin, -40.0, 40.0)
 
 
 @dataclass(frozen=True, slots=True)

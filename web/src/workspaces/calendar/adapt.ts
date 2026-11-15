@@ -2,6 +2,7 @@ import type { OpportunitySlot, Verdict } from "../../contract/types";
 import type { ScanResult, ScanWindow } from "../../api/planning";
 import { lowerBound } from "../../lib/scale";
 import { MS_HOUR, parseUtc } from "../../lib/time";
+import type { RankBy, TotalKey } from "../../scenario/planSearch";
 import type { Limit } from "../../scenario/types";
 
 export interface Lunation {
@@ -88,4 +89,48 @@ export function closingRows(scan: ScanResult): ClosingRow[] {
 
 export function windowContaining(windows: readonly ScanWindow[], ms: number): ScanWindow | null {
   return windows.find((w) => (parseUtc(w.start_utc) ?? Infinity) <= ms && ms <= (parseUtc(w.end_utc) ?? -Infinity)) ?? null;
+}
+
+export interface BestDate {
+  t_ms: number;
+  lunation: number;
+  state: Verdict;
+  totals: Record<TotalKey, number | null>;
+  margin: number | null;
+  marginUnit: string | null;
+}
+
+export function bestDates(scan: ScanResult, rank: RankBy): BestDate[] {
+  const c = scan.candidates;
+  const t = c.t_ms as ArrayLike<number>;
+  const column = rank === "margin" ? c.worst_margin : c.totals?.[rank];
+  const total = (key: TotalKey, i: number): number | null => c.totals?.[key]?.[i] ?? null;
+  const out: Array<BestDate & { key: number }> = [];
+  for (const lu of scan.calendar.lunations) {
+    const a = parseUtc(lu.start_utc);
+    const b = parseUtc(lu.end_utc);
+    if (a === null || b === null) continue;
+    let best = -1;
+    let bestKey = -Infinity;
+    for (let i = lowerBound(t, a); i < t.length && t[i]! < b; i++) {
+      const v = column?.[i];
+      const key = verdictRank(scan, c.state[i]!) * 1e6 + Math.max(-1e5, Math.min(1e5, v ?? -1e5));
+      if (key > bestKey) {
+        best = i;
+        bestKey = key;
+      }
+    }
+    const state = best >= 0 ? verdictOfCode(scan.states, c.state[best]!) : null;
+    if (best < 0 || state === null) continue;
+    out.push({
+      t_ms: t[best]!,
+      lunation: lu.number,
+      state,
+      totals: { sunlit_h: total("sunlit_h", best), contact_h: total("contact_h", best), sunlit_contact_h: total("sunlit_contact_h", best) },
+      margin: c.worst_margin_physical[best] ?? null,
+      marginUnit: c.margin_unit[best] ?? null,
+      key: bestKey,
+    });
+  }
+  return out.sort((x, y) => y.key - x.key);
 }

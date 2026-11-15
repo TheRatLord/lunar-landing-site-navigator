@@ -8,6 +8,7 @@ import { MS_DAY, MS_HOUR, formatUtc, parseUtc } from "../lib/time";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { CONSTRAINT_META } from "../scenario/editor/fieldSpecs";
 import { TimeSection } from "../scenario/editor/TimeSection";
+import { usePlanSearch } from "../scenario/planSearch";
 import { shiftPlanLanding, useScenario } from "../scenario/store";
 import { stackIds, stackName } from "../scenario/terrainStack";
 import type { Limit } from "../scenario/types";
@@ -17,6 +18,7 @@ import { Card } from "./plan/Card";
 import { landerFacts } from "./plan/landerFacts";
 import { LanderPicker } from "./plan/LanderPicker";
 import { RequirementsPicker } from "./plan/RequirementsPicker";
+import { WindowControl, areaText, rankText, windowText } from "./plan/Widen";
 import { PlanFile } from "./PlanFile";
 
 const SitePicker = lazy(() => import("./plan/SitePicker").then((m) => ({ default: m.SitePicker })));
@@ -43,6 +45,9 @@ export function PlanPanel() {
   const fieldDetail = useEditorUi((s) => s.fieldDetail);
   const collapsed = useApp((s) => s.planCollapsed);
   const setCollapsed = useApp((s) => s.setPlanCollapsed);
+  const radius = usePlanSearch((s) => s.radius_km);
+  const win = usePlanSearch((s) => s.window);
+  const rankBy = usePlanSearch((s) => s.rankBy);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -53,7 +58,7 @@ export function PlanPanel() {
   const active = CONSTRAINT_META.filter((m) => doc.constraints[m.key]);
 
   return (
-    <aside className="plan-side" data-collapsed={collapsed} aria-label="Current plan: site, landing, lander and requirements">
+    <aside className="plan-side" data-collapsed={collapsed} aria-label="Current plan: site and search area, landing and landing window, lander, requirements and ranking">
       <PlanFile />
 
       <div className="plan-cards">
@@ -64,7 +69,14 @@ export function PlanPanel() {
           value={siteName}
           title="Choose the landing site"
           width={860}
-          lines={<span className="plan-card-line num">{`${formatLat(doc.site.lat_deg, 2)} ${formatLon(doc.site.lon_deg, 2)}`}</span>}
+          lines={
+            <>
+              <span className="plan-card-line num">{`${formatLat(doc.site.lat_deg, 2)} ${formatLon(doc.site.lon_deg, 2)}`}</span>
+              <span className="plan-card-line plan-card-widen" data-on={radius !== null}>
+                {areaText(radius)}
+              </span>
+            </>
+          }
         >
           <Suspense
             fallback={
@@ -84,7 +96,14 @@ export function PlanPanel() {
           value={landing === null ? doc.landing_utc : `${formatUtc(landing, { seconds: false }).replace("Z", "")} UTC`}
           title="Choose the landing time and the stay on the surface"
           width={460}
-          lines={<span className="plan-card-line">{stayText(doc.mission_duration_h)}</span>}
+          lines={
+            <>
+              <span className="plan-card-line">{stayText(doc.mission_duration_h)}</span>
+              <span className="plan-card-line plan-card-widen" data-on={win !== null}>
+                {windowText(win)}
+              </span>
+            </>
+          }
           extra={
             <div className="plan-card-steps">
               <button type="button" className="sc-step" disabled={landing === null} title="Land one day earlier" onClick={() => shiftPlanLanding(-MS_DAY)}>
@@ -99,6 +118,7 @@ export function PlanPanel() {
           <div className="plan-pick">
             <div className="plan-pick-scroll plan-pick-form">
               <TimeSection scrubber={usesTime(pathname)} transferOpen={fieldDetail === "transfer"} />
+              <WindowControl />
             </div>
             <div className="plan-pop-foot">
               {landing !== null && <span className="faint num">Ends {formatUtc(landing + doc.mission_duration_h * MS_HOUR, { seconds: false })}</span>}
@@ -128,19 +148,19 @@ export function PlanPanel() {
           title="Choose what a site and date must meet to pass"
           width={520}
           lines={
-            active.length === 0 ? (
-              <span className="plan-card-line">Every site and date passes</span>
-            ) : (
-              <>
-                {active.slice(0, MAX_LISTED).map((m) => (
-                  <span key={m.key} className="plan-card-req">
-                    <span>{m.short}</span>
-                    <span className="num">{limitText(doc.constraints[m.key] as Limit)}</span>
-                  </span>
-                ))}
-                {active.length > MAX_LISTED && <span className="plan-card-line">+{active.length - MAX_LISTED} more</span>}
-              </>
-            )
+            <>
+              {active.length === 0 && <span className="plan-card-line">Every site and date passes</span>}
+              {active.slice(0, MAX_LISTED).map((m) => (
+                <span key={m.key} className="plan-card-req">
+                  <span>{m.short}</span>
+                  <span className="num">{limitText(doc.constraints[m.key] as Limit)}</span>
+                </span>
+              ))}
+              {active.length > MAX_LISTED && <span className="plan-card-line">+{active.length - MAX_LISTED} more</span>}
+              <span className="plan-card-line plan-card-widen" data-on="true">
+                {rankText(rankBy, doc)}
+              </span>
+            </>
           }
         >
           <RequirementsPicker />

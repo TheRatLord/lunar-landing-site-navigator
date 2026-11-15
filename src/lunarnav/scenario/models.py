@@ -241,9 +241,12 @@ CONSTRAINT_KEYS: tuple[str, ...] = (
     "dte_at_landing_deg",
     "min_sunlit_hours_after_landing",
     "max_dark_span_h",
+    "min_total_sunlit_h",
     "min_state_of_charge",
     "min_contact_fraction",
     "max_contact_gap_h",
+    "min_total_contact_h",
+    "min_total_sunlit_contact_h",
     "min_link_margin_db",
     "max_slope_deg",
 )
@@ -261,8 +264,12 @@ class Constraints(_Model):
       `antenna_terrain_margin_deg` (best station of the network, or the Earth centre without a network).
     - `min_sunlit_hours_after_landing`: continuous sunlit hours from landing.
     - `max_dark_span_h`: longest dark span of the array during the surface mission.
+    - `min_total_sunlit_h`: total sunlit hours of the array during the surface mission (need not be continuous).
     - `min_state_of_charge`: minimum battery state of charge (fraction) during the mission.
     - `min_contact_fraction` / `max_contact_gap_h`: network contact fraction / longest outage.
+    - `min_total_contact_h`: total hours in contact during the mission (best station of the network, or the Earth
+      centre above the antenna horizon without a network).
+    - `min_total_sunlit_contact_h`: total hours during the mission that are sunlit and in contact at the same time.
     - `min_link_margin_db`: lowest downlink margin while in contact.
     - `max_slope_deg`: terrain slope over `slope_baseline_m` (only with a provider that has terrain).
     """
@@ -272,9 +279,12 @@ class Constraints(_Model):
     dte_at_landing_deg: Limit | None = None
     min_sunlit_hours_after_landing: Limit | None = None
     max_dark_span_h: Limit | None = None
+    min_total_sunlit_h: Limit | None = None
     min_state_of_charge: Limit | None = None
     min_contact_fraction: Limit | None = None
     max_contact_gap_h: Limit | None = None
+    min_total_contact_h: Limit | None = None
+    min_total_sunlit_contact_h: Limit | None = None
     min_link_margin_db: Limit | None = None
     max_slope_deg: Limit | None = None
     sunlit_flux_fraction: Parameter = Parameter(

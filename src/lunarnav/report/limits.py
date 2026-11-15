@@ -106,7 +106,7 @@ REGISTRY: dict[str, NoteSpec] = {
     "power.estimated_profile": NoteSpec("Lander power profile contains estimates", "scenario.profile.estimates() is not empty"),
     "power.model_scope": NoteSpec("Power model omits albedo, diffuse light, thermal and incidence losses", "always"),
     "power.battery_lumped": NoteSpec("Battery is a lumped model", "always"),
-    "contact.geometric": NoteSpec("Contact is geometric", "scenario.network.stations, an active constraint in (dte_at_landing_deg, min_contact_fraction, max_contact_gap_h, min_link_margin_db), or a metric key starting contact, longest_outage, link_margin, dte or earth"),
+    "contact.geometric": NoteSpec("Contact is geometric", "scenario.network.stations, an active constraint in (dte_at_landing_deg, min_contact_fraction, max_contact_gap_h, min_total_contact_h, min_total_sunlit_contact_h, min_link_margin_db), or a metric key starting contact, longest_outage, link_margin, dte or earth"),
     "link.budget": NoteSpec("Link margin uses user-supplied figures", "scenario.profile.link is not None"),
     "landed.slim_recovery": NoteSpec("SLIM recovery days are not predicted", "always"),
     "ellipse.binomial_error": NoteSpec("Ellipse probabilities are sample fractions", "an ellipse result is reported"),
@@ -187,7 +187,7 @@ class Span:
 EARTH_ORIENTATION_ROLE = "high-accuracy historical"
 ECLIPSE_STEP_S = 1800.0
 """Sampling step of the eclipse test over a span; an Earth shadow transit lasts hours, so no eclipse falls between two samples."""
-CONTACT_CONSTRAINTS = ("dte_at_landing_deg", "min_contact_fraction", "max_contact_gap_h", "min_link_margin_db")
+CONTACT_CONSTRAINTS = ("dte_at_landing_deg", "min_contact_fraction", "max_contact_gap_h", "min_total_contact_h", "min_total_sunlit_contact_h", "min_link_margin_db")
 CONTACT_METRIC_PREFIXES = ("contact", "longest_outage", "link_margin", "dte", "earth")
 
 

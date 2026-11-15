@@ -92,9 +92,13 @@ export interface ConstraintMeta {
   decimals: number;
   what: string;
   needsTerrain?: boolean;
+  scale?: number;
 }
 
 export const CONSTRAINT_META: ConstraintMeta[] = [
+  { key: "min_total_sunlit_h", title: "Sunlight during the stay", short: "Sunlight", unit: "h", side: "min", decimals: 1, scale: 24, what: "Total hours the solar array is sunlit during the surface mission. The hours need not be continuous." },
+  { key: "min_total_contact_h", title: "Earth contact during the stay", short: "Earth contact", unit: "h", side: "min", decimals: 1, scale: 24, what: "Total hours with a direct link to Earth during the surface mission: a ground station in contact, or Earth above the antenna horizon when the plan has no ground stations." },
+  { key: "min_total_sunlit_contact_h", title: "Sunlight and Earth contact together", short: "Sun and Earth", unit: "h", side: "min", decimals: 1, scale: 24, what: "Total hours during the surface mission that are sunlit and in contact with Earth at the same time." },
   { key: "landing_sun_elevation_deg", title: "Sun elevation at landing", short: "Sun elevation", unit: "°", side: "min", decimals: 1, what: "Apparent Sun-centre elevation above the local horizontal at landing." },
   { key: "landing_hours_after_sunrise", title: "Time after local sunrise at landing", short: "After sunrise", unit: "h", side: "min", decimals: 1, what: "Hours since the array last rose above the sunlit flux fraction." },
   { key: "dte_at_landing_deg", title: "Earth elevation at landing", short: "Earth elevation", unit: "°", side: "min", decimals: 1, what: "Direct-to-Earth clearance at landing above the antenna horizon plus the antenna terrain margin (best station, or Earth centre without ground stations)." },

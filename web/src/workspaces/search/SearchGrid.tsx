@@ -17,10 +17,12 @@ function cellText(g: SearchGridView, row: number, col: number): string {
   const verdict = GRID_STATE[g.state[row]![col]!];
   const score = g.score[row]![col] ?? null;
   const slope = g.slope_deg[row]![col] ?? null;
+  const ranked = g.rank_value?.[row]?.[col] ?? null;
   return [
     where,
     g.statusText[status] ?? `status ${status}`,
     verdict ? `${WORD[verdict]}` : "no final verdict",
+    ranked !== null ? `${ranked.toFixed(1)} h of the ranked total` : null,
     score !== null ? `normalised margin ${withMinus(score.toFixed(2))}` : null,
     slope !== null ? `slope ${slope.toFixed(1)}°` : null,
   ]

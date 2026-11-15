@@ -8019,6 +8019,24 @@
             "type": "object",
             "title": "Values Pessimistic",
             "description": "The same quantities in the pessimistic world (the engine's third value)."
+          },
+          "totals": {
+            "additionalProperties": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Totals",
+            "description": "Nominal hours during the surface mission: `sunlit_h` (array sunlit), `contact_h` (in contact) and `sunlit_contact_h` (both at once), per candidate."
           }
         },
         "additionalProperties": false,
@@ -8933,6 +8951,16 @@
               }
             ]
           },
+          "min_total_sunlit_h": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Limit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "min_state_of_charge": {
             "anyOf": [
               {
@@ -8954,6 +8982,26 @@
             ]
           },
           "max_contact_gap_h": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Limit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "min_total_contact_h": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Limit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "min_total_sunlit_contact_h": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Limit"
@@ -9026,7 +9074,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "Constraints",
-        "description": "Constraint set of a scenario. Every constraint is optional (None = not applied).\n\nConstraint semantics (value per landing epoch; see docs/validation/scenario.md):\n\n- `landing_sun_elevation_deg`: apparent Sun-centre elevation above the local horizontal at landing.\n- `landing_hours_after_sunrise`: hours since the array's last sunrise (flux > `sunlit_flux_fraction`).\n- `dte_at_landing_deg`: direct-to-Earth clearance at landing, degrees above the antenna horizon plus\n  `antenna_terrain_margin_deg` (best station of the network, or the Earth centre without a network).\n- `min_sunlit_hours_after_landing`: continuous sunlit hours from landing.\n- `max_dark_span_h`: longest dark span of the array during the surface mission.\n- `min_state_of_charge`: minimum battery state of charge (fraction) during the mission.\n- `min_contact_fraction` / `max_contact_gap_h`: network contact fraction / longest outage.\n- `min_link_margin_db`: lowest downlink margin while in contact.\n- `max_slope_deg`: terrain slope over `slope_baseline_m` (only with a provider that has terrain)."
+        "description": "Constraint set of a scenario. Every constraint is optional (None = not applied).\n\nConstraint semantics (value per landing epoch; see docs/validation/scenario.md):\n\n- `landing_sun_elevation_deg`: apparent Sun-centre elevation above the local horizontal at landing.\n- `landing_hours_after_sunrise`: hours since the array's last sunrise (flux > `sunlit_flux_fraction`).\n- `dte_at_landing_deg`: direct-to-Earth clearance at landing, degrees above the antenna horizon plus\n  `antenna_terrain_margin_deg` (best station of the network, or the Earth centre without a network).\n- `min_sunlit_hours_after_landing`: continuous sunlit hours from landing.\n- `max_dark_span_h`: longest dark span of the array during the surface mission.\n- `min_total_sunlit_h`: total sunlit hours of the array during the surface mission (need not be continuous).\n- `min_state_of_charge`: minimum battery state of charge (fraction) during the mission.\n- `min_contact_fraction` / `max_contact_gap_h`: network contact fraction / longest outage.\n- `min_total_contact_h`: total hours in contact during the mission (best station of the network, or the Earth\n  centre above the antenna horizon without a network).\n- `min_total_sunlit_contact_h`: total hours during the mission that are sunlit and in contact at the same time.\n- `min_link_margin_db`: lowest downlink margin while in contact.\n- `max_slope_deg`: terrain slope over `slope_baseline_m` (only with a provider that has terrain)."
       },
       "EclipseSettings": {
         "properties": {
@@ -13395,6 +13443,21 @@
             "type": "number",
             "title": "Spacing H",
             "description": "Candidate spacing in hours."
+          },
+          "best_totals": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Best Totals",
+            "description": "Nominal hours during the surface mission: `sunlit_h` (array sunlit), `contact_h` (in contact) and `sunlit_contact_h` (both at once), for a landing at `best_utc`."
           }
         },
         "additionalProperties": false,
@@ -14568,6 +14631,21 @@
             },
             "type": "object",
             "title": "Constraint State"
+          },
+          "totals": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Totals",
+            "description": "Nominal hours during the surface mission: `sunlit_h` (array sunlit), `contact_h` (in contact) and `sunlit_contact_h` (both at once), for a landing at `landing_utc`."
           }
         },
         "additionalProperties": false,
@@ -15855,6 +15933,18 @@
             "title": "Calendar Bin H",
             "default": 6.0
           },
+          "rank_by": {
+            "type": "string",
+            "enum": [
+              "margin",
+              "sunlit_h",
+              "contact_h",
+              "sunlit_contact_h"
+            ],
+            "title": "Rank By",
+            "description": "What ranks the results: `margin` (state, then the normalised margin of the limiting requirement) or a mission total (state, then the nominal hours during the surface mission that are sunlit, in contact, or both at once). It picks the best candidate of each open window.",
+            "default": "margin"
+          },
           "max_candidates": {
             "type": "integer",
             "maximum": 20000.0,
@@ -15914,6 +16004,18 @@
             "exclusiveMinimum": 0.0,
             "title": "Calendar Bin H",
             "default": 6.0
+          },
+          "rank_by": {
+            "type": "string",
+            "enum": [
+              "margin",
+              "sunlit_h",
+              "contact_h",
+              "sunlit_contact_h"
+            ],
+            "title": "Rank By",
+            "description": "What ranks the results: `margin` (state, then the normalised margin of the limiting requirement) or a mission total (state, then the nominal hours during the surface mission that are sunlit, in contact, or both at once). It picks the best candidate of each open window.",
+            "default": "margin"
           },
           "max_candidates": {
             "type": "integer",
@@ -16052,6 +16154,12 @@
           "spacing_s": {
             "type": "number",
             "title": "Spacing S"
+          },
+          "rank_by": {
+            "type": "string",
+            "title": "Rank By",
+            "description": "What chose the best candidate of each open window (`margin` or a mission total).",
+            "default": "margin"
           },
           "states": {
             "additionalProperties": {
@@ -16672,6 +16780,18 @@
             "title": "Prune World",
             "default": "optimistic"
           },
+          "rank_by": {
+            "type": "string",
+            "enum": [
+              "margin",
+              "sunlit_h",
+              "contact_h",
+              "sunlit_contact_h"
+            ],
+            "title": "Rank By",
+            "description": "What ranks the results: `margin` (state, then the normalised margin of the limiting requirement) or a mission total (state, then the nominal hours during the surface mission that are sunlit, in contact, or both at once). Each site is ranked at its best landing epoch by the same key.",
+            "default": "margin"
+          },
           "hazard_roughness_m": {
             "anyOf": [
               {
@@ -16871,6 +16991,18 @@
             ],
             "title": "Prune World",
             "default": "optimistic"
+          },
+          "rank_by": {
+            "type": "string",
+            "enum": [
+              "margin",
+              "sunlit_h",
+              "contact_h",
+              "sunlit_contact_h"
+            ],
+            "title": "Rank By",
+            "description": "What ranks the results: `margin` (state, then the normalised margin of the limiting requirement) or a mission total (state, then the nominal hours during the surface mission that are sunlit, in contact, or both at once). Each site is ranked at its best landing epoch by the same key.",
+            "default": "margin"
           },
           "hazard_roughness_m": {
             "anyOf": [

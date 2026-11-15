@@ -49,6 +49,7 @@ export interface ScanParams {
   start_utc: string;
   end_utc: string;
   spacing_s: number;
+  rank_by?: Schemas["ScanRequest"]["rank_by"];
 }
 
 export interface SlipParams {

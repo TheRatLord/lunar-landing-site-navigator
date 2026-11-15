@@ -13,6 +13,7 @@ import { SiteSection } from "../../scenario/editor/SiteSection";
 import { FEATURED_SITES } from "../../scenario/starter";
 import { movePlanSite, useScenario } from "../../scenario/store";
 import { HomeMap, type MapFocus } from "../../workspaces/home/HomeMap";
+import { AreaControl } from "./Widen";
 
 interface PlanSite {
   lat_deg: number;
@@ -163,6 +164,7 @@ export function SitePicker() {
             </>
           )}
         </div>
+        <AreaControl />
         <Disclosure title="Exact coordinates and name">
           <SiteSection />
         </Disclosure>

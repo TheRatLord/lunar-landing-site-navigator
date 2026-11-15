@@ -116,6 +116,11 @@ class EvaluateRequest(ScenarioRef):
     with_bounds: bool = Field(default=True, description="Add `bounds`: the cause of each constraint's range (`scenario.bound_attribution`).")
 
 
+RankBy = Literal["margin", "sunlit_h", "contact_h", "sunlit_contact_h"]
+RANK_BY_DOC = ("What ranks the results: `margin` (state, then the normalised margin of the limiting requirement) or a mission total "
+               "(state, then the nominal hours during the surface mission that are sunlit, in contact, or both at once).")
+
+
 class ScanParams(Strict):
     start_utc: UtcStr = Field(description="First landing candidate (UTC).")
     end_utc: UtcStr = Field(description="Last landing candidate (UTC, inclusive).")
@@ -123,6 +128,7 @@ class ScanParams(Strict):
     signal_step_s: float = Field(default=1800.0, ge=300.0, le=3600.0, description="Signal step; at most 3600 s, the engine limit.")
     lookback_h: float = Field(default=720.0, ge=0.0, le=lim.MAX_LOOKBACK_H, description="Signal before the first candidate.")
     calendar_bin_h: float = Field(default=6.0, gt=0.0, le=720.0)
+    rank_by: RankBy = Field(default="margin", description=RANK_BY_DOC + " It picks the best candidate of each open window.")
     max_candidates: int = Field(
         default=4000, ge=100, le=20000,
         description="Size of the candidate series after decimation (windows and calendar are never decimated). Every state "
@@ -397,6 +403,7 @@ class SearchParams(Strict):
     min_separation_m: float | None = Field(default=None, gt=0.0)
     exhaustive: bool = Field(default=False, description="Evaluate the whole final lattice with the full horizon.")
     prune_world: Literal["optimistic", "nominal"] = "optimistic"
+    rank_by: RankBy = Field(default="margin", description=RANK_BY_DOC + " Each site is ranked at its best landing epoch by the same key.")
     hazard_roughness_m: float | None = Field(default=None, gt=0.0)
     with_grid: bool = Field(default=True, description="Return the final lattice (score, state, status per node; not used by the report).")
 

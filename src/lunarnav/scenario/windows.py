@@ -86,6 +86,23 @@ class WindowSet:
                 for a, b, sc, ec in zip(self.starts, self.ends, self.start_cens, self.end_cens)]
         return WindowSet.from_windows(dark_windows(wins, self.t0, self.t1), self.t0, self.t1)
 
+    def intersection(self, other: WindowSet) -> WindowSet:
+        wins: list[Window] = []
+        i = j = 0
+        while i < len(self) and j < len(other):
+            a0, a1, b0, b1 = self.starts[i], self.ends[i], other.starts[j], other.ends[j]
+            lo, hi = max(a0, b0), min(a1, b1)
+            if hi > lo:
+                wins.append(Window(
+                    float(lo), float(hi),
+                    bool((a0 >= b0 and self.start_cens[i]) or (b0 >= a0 and other.start_cens[j])),
+                    bool((a1 <= b1 and self.end_cens[i]) or (b1 <= a1 and other.end_cens[j]))))
+            if a1 <= b1:
+                i += 1
+            else:
+                j += 1
+        return WindowSet.from_windows(wins, self.t0, self.t1)
+
     def index_containing(self, q: np.ndarray) -> np.ndarray:
         """Index of the window containing each query (`start <= q < end`), -1 when none."""
         q = np.asarray(q, dtype=np.float64)

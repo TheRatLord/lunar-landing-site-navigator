@@ -4,9 +4,6 @@
 .cal > .empty { flex: 1 1 auto; }
 .cal-form { display: contents; }
 .cal-form .page-header-mid { gap: var(--sp-2); }
-.cal-range { display: inline-flex; align-items: center; gap: var(--sp-1-5); color: var(--text-3); }
-.cal-range .input-compact { width: 22ch; }
-.cal-range.is-bad .input-compact { border-color: var(--c-fail); }
 .cal-select { height: var(--control-h-sm); font-size: var(--fs-sm); }
 .cal-warnings { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--sp-1-5); font-size: var(--fs-sm); color: var(--c-marginal); }
 .cal-pop-text { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
@@ -35,7 +32,7 @@
 /* right rail: one card, hairline-separated sections */
 .cal-rail { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; border: var(--hairline) solid var(--border); border-radius: var(--r-lg); background: var(--panel); }
 .cal-sel, .cal-wins { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); }
-.cal-wins { flex: 1 1 auto; border-top: var(--hairline) solid var(--border); }
+.cal-wins { flex: none; border-top: var(--hairline) solid var(--border); }
 .cal-sel-head { display: flex; align-items: center; gap: var(--sp-2); min-height: var(--control-h); }
 .cal-sel-time { font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--text); }
 .cal-set { align-self: flex-start; }
@@ -83,3 +80,7 @@
 .cal-win > span:nth-of-type(2) { grid-column: 2; font-size: var(--fs-xs); }
 .cal-win-len { grid-column: 3; grid-row: 1 / span 2; color: var(--text-2); }
 .cal-win-detail { padding: 0 var(--sp-2) var(--sp-2) var(--sp-5); }
+.cal-best-rank { font-size: var(--fs-xs); }
+.cal-best-n { display: inline-block; min-width: 2ch; margin-right: var(--sp-1); }
+.cal-form .plan-inputs { flex: 0 1 auto; min-width: 0; }
+.cal-form .plan-input { width: auto; max-width: 52ch; height: var(--control-h-sm); padding-block: 0; align-items: center; }

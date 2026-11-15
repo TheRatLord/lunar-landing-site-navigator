@@ -394,6 +394,7 @@ class OpenWindow(Model):
     best_limiting: str | None
     robust: list[list[str | None]]
     spacing_h: float = Field(description="Candidate spacing in hours.")
+    best_totals: dict[str, Num] = Field(default_factory=dict, description="Nominal hours during the surface mission: `sunlit_h` (array sunlit), `contact_h` (in contact) and `sunlit_contact_h` (both at once), for a landing at `best_utc`.")
 
 
 class Candidates(Model):
@@ -417,6 +418,7 @@ class Candidates(Model):
     values: dict[str, NumArray] = Field(description="Nominal value of each scanned constraint quantity per candidate.")
     values_optimistic: dict[str, NumArray] = Field(description="The same quantities in the optimistic world (the engine's second value).")
     values_pessimistic: dict[str, NumArray] = Field(description="The same quantities in the pessimistic world (the engine's third value).")
+    totals: dict[str, NumArray] = Field(default_factory=dict, description="Nominal hours during the surface mission: `sunlit_h` (array sunlit), `contact_h` (in contact) and `sunlit_contact_h` (both at once), per candidate.")
 
 
 class ScanResult(ScenarioResult):
@@ -424,6 +426,7 @@ class ScanResult(ScenarioResult):
     start_utc: str
     end_utc: str
     spacing_s: float
+    rank_by: str = Field(default="margin", description="What chose the best candidate of each open window (`margin` or a mission total).")
     states: dict[str, int]
     counts: dict[str, int]
     closing_constraints: dict[str, int]
@@ -675,6 +678,7 @@ class RankedSite(Model):
     roughness_m: Num
     values: dict[str, Num]
     constraint_state: dict[str, str]
+    totals: dict[str, Num] = Field(default_factory=dict, description="Nominal hours during the surface mission: `sunlit_h` (array sunlit), `contact_h` (in contact) and `sunlit_contact_h` (both at once), for a landing at `landing_utc`.")
 
 
 class SearchLevel(Model):

@@ -5,21 +5,23 @@ import { useReportPlanning } from "../../api/report";
 import { AnalysisStatus } from "../../components/AnalysisStatus";
 import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { DateTimeInput, Select } from "../../components/ui/Fields";
-import { Icon } from "../../components/ui/Icon";
+import { Select } from "../../components/ui/Fields";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Popover } from "../../components/ui/Popover";
 import { Spinner } from "../../components/ui/Progress";
 import { LimitsChip } from "../site/LimitsChip";
 import { LunationCalendar } from "../../components/viz/LunationCalendar";
-import { MS_DAY, MS_HOUR, parseUtc, roundToSecond, toIsoUtc, utcText } from "../../lib/time";
+import { MS_HOUR, formatUtc, parseUtc, roundToSecond, toIsoUtc, utcText } from "../../lib/time";
+import { useEditorUi } from "../../scenario/editor/editorUi";
+import { rankLabel, usePlanSearch, useRankBy, yearAround } from "../../scenario/planSearch";
 import { routeStackIssues, useScenario } from "../../scenario/store";
+import { PlanInputs } from "../../shell/plan/Widen";
 import { toast } from "../../state/toasts";
 import "../../styles/calendar.css";
 import { usePublishScreenContext } from "../../ask/screenContext";
 import { ReportButton } from "../ReportButton";
 import { TerrainStackTag } from "../search/TerrainStackTag";
-import { ScanStats, SelectedEpoch, WindowList } from "./ScanPanels";
+import { BestDates, ScanStats, SelectedEpoch, WindowList } from "./ScanPanels";
 import { bestCandidateIn, calendarSlots, lunationsOf } from "./adapt";
 
 const SPACINGS = [
@@ -27,6 +29,7 @@ const SPACINGS = [
   { value: "10800", label: "3 h" },
   { value: "21600", label: "6 h" },
 ];
+const dayText = (ms: number): string => formatUtc(ms, { seconds: false }).slice(0, 10);
 const TERRAIN: Array<{ value: TerrainMode; label: string }> = [
   { value: "auto", label: "Auto" },
   { value: "on", label: "Terrain" },
@@ -47,33 +50,36 @@ export function CalendarWorkspace() {
 function Opportunities() {
   const doc = useScenario((s) => s.doc)!;
   const edit = useScenario((s) => s.edit);
+  const openField = useEditorUi((s) => s.openField);
   const landingMs = parseUtc(doc.landing_utc);
+  const planWindow = usePlanSearch((s) => s.window);
+  const rank = useRankBy(doc);
 
-  const [startMs, setStartMs] = useState(() => (landingMs ?? Date.UTC(2027, 0, 1)) - 30 * MS_DAY);
-  const [endMs, setEndMs] = useState(() => (landingMs ?? Date.UTC(2027, 0, 1)) + 335 * MS_DAY);
+  const [year] = useState(() => yearAround(doc));
+  const range = planWindow ?? year;
+  const startMs = range.first_ms;
+  const endMs = range.last_ms;
   const [spacing, setSpacing] = useState("3600");
   const [terrain, setTerrain] = useState<TerrainMode>("auto");
-  const [submitted, setSubmitted] = useState<ScanParams>({ start_utc: toIsoUtc(startMs), end_utc: toIsoUtc(endMs), spacing_s: 3600 });
   const [pickedMs, setPickedMs] = useState<number | null>(null);
 
   const rangeOk = endMs > startMs;
-  const dirty = toIsoUtc(startMs) !== submitted.start_utc || toIsoUtc(endMs) !== submitted.end_utc || Number(spacing) !== submitted.spacing_s;
-
-  const body = useMemo(() => scanBody({ ...doc, landing_utc: submitted.start_utc }, submitted, terrain), [doc, submitted, terrain]);
+  const params = useMemo<ScanParams>(() => ({ start_utc: toIsoUtc(startMs), end_utc: toIsoUtc(endMs), spacing_s: Number(spacing), rank_by: rank }), [startMs, endMs, spacing, rank]);
+  const body = useMemo(() => (rangeOk ? scanBody({ ...doc, landing_utc: params.start_utc }, params, terrain) : null), [rangeOk, doc, params, terrain]);
   const analysis = useAnalysis<ScanResult>(PLANNING_ENDPOINTS.scan, body, { debounceMs: 400 });
   const scan = analysis.result;
   useEffect(() => routeStackIssues(analysis.error), [analysis.error]);
   const setReportScan = useReportPlanning((s) => s.setScan);
   useEffect(() => {
-    if (scan) setReportScan(submitted, terrain);
-  }, [scan, submitted, terrain, setReportScan]);
+    if (scan) setReportScan(params, terrain);
+  }, [scan, params, terrain, setReportScan]);
 
   usePublishScreenContext({
     where: "Dates",
     summary: "",
     lines: [
-      `The candidate landing times run from ${toIsoUtc(startMs)} to ${toIsoUtc(endMs)}, spaced ${SPACINGS.find((o) => o.value === spacing)?.label ?? `${spacing} s`} apart.`,
-      `Horizon model: ${TERRAIN.find((o) => o.value === terrain)?.label ?? terrain}.`,
+      `The candidate landing times run from ${toIsoUtc(startMs)} to ${toIsoUtc(endMs)}, spaced ${SPACINGS.find((o) => o.value === spacing)?.label ?? `${spacing} s`} apart${planWindow ? " (the landing window set on the plan's Landing card)" : " (a year around the plan landing; no landing window is set)"}.`,
+      `Horizon model: ${TERRAIN.find((o) => o.value === terrain)?.label ?? terrain}. Best dates are ranked by ${rankLabel(rank)}.`,
     ],
   });
 
@@ -96,23 +102,13 @@ function Opportunities() {
     const ms = parseUtc(w.best_utc);
     if (ms !== null) setPickedMs(ms);
   };
-  const runScan = () => {
-    if (rangeOk) setSubmitted({ start_utc: toIsoUtc(startMs), end_utc: toIsoUtc(endMs), spacing_s: Number(spacing) });
-  };
-
   const failed = analysis.phase === "error";
   const status = <AnalysisStatus state={analysis} what="the landing-date scan" />;
-  const exportBody = { scenario: body.scenario, terrain, scan: submitted };
+  const exportBody = body ? { scenario: body.scenario, terrain, scan: params } : null;
 
   return (
     <>
-      <form
-        className="cal-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          runScan();
-        }}
-      >
+      <div className="cal-form">
         <PageHeader
           actions={
             <>
@@ -136,7 +132,7 @@ function Opportunities() {
               {scan && <LimitsChip limits={scan.limits} stale={analysis.stale} align="end" />}
               <ReportButton
                 exports={
-                  scan
+                  scan && exportBody
                     ? [
                         { kind: "calendar-csv", label: "Calendar CSV", body: exportBody },
                         { kind: "opportunities-csv", label: "Windows CSV", body: exportBody },
@@ -144,26 +140,18 @@ function Opportunities() {
                     : []
                 }
               />
-              <Button type="submit" size="sm" variant={dirty ? "primary" : "default"} icon="play" disabled={!rangeOk || !dirty}>
-                Scan dates
-              </Button>
             </>
           }
         >
-          <div className={`cal-range ${rangeOk ? "" : "is-bad"}`} role="group" aria-label="Candidate range">
-            <DateTimeInput compact label="First candidate (UTC)" value={startMs} onChange={setStartMs} />
-            <Icon name="chevronRight" size={12} />
-            <DateTimeInput compact label="Last candidate (UTC)" value={endMs} onChange={setEndMs} />
-            {!rangeOk && <span className="sr-only" role="alert">The last candidate must come after the first.</span>}
-          </div>
+          <PlanInputs layout="row" show={["window", "requirements", "rank"]} when={planWindow ? undefined : `${dayText(startMs)} to ${dayText(endMs)}, a year around the landing`} />
           <Select className="cal-select" aria-label="Candidate spacing" value={spacing} options={SPACINGS} onChange={setSpacing} />
           <Select className="cal-select" aria-label="Horizon model" value={terrain} options={TERRAIN} onChange={(v) => setTerrain(v as TerrainMode)} />
         </PageHeader>
-      </form>
+      </div>
 
       {failed && <div className="cal-fail">{status}</div>}
 
-      {scan && (
+      {scan && rangeOk && (
         <div className={`cal-body ${analysis.stale ? "is-stale" : ""}`}>
           <div className="cal-main">
             <ScanStats scan={scan} />
@@ -189,6 +177,7 @@ function Opportunities() {
               terrain={terrain}
               current={!analysis.stale && analysis.phase === "done"}
             />
+            <BestDates scan={scan} rank={rank} selectedMs={selectedMs} onSelect={setPickedMs} />
             <WindowList scan={scan} selectedMs={selectedMs} onSelect={selectWindow} />
           </aside>
         </div>
@@ -198,13 +187,13 @@ function Opportunities() {
           <Spinner />
         </div>
       )}
-      {!scan && analysis.phase === "idle" && (
+      {!rangeOk && (
         <EmptyState
           icon="calendar"
-          title="Not scanned yet"
+          title="The landing window ends before it starts"
           action={
-            <Button icon="play" onClick={runScan} disabled={!rangeOk}>
-              Scan dates
+            <Button icon="calendar" onClick={() => openField("time")}>
+              Fix the landing window
             </Button>
           }
         />

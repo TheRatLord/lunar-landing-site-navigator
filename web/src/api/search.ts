@@ -67,9 +67,9 @@ export function checkSearch(region: RegionInput, spacing_m: number, top_k: numbe
   if (epochs) {
     const a = Date.parse(epochs.first_utc);
     const b = Date.parse(epochs.last_utc);
-    if (!Number.isFinite(a) || !Number.isFinite(b)) errors.push("Both landing-epoch bounds need a valid UTC time.");
-    else if (b <= a) errors.push("The last landing epoch must be after the first.");
-    if (!Number.isFinite(epochs.spacing_h) || epochs.spacing_h <= 0 || epochs.spacing_h > 8760) errors.push("Epoch spacing must be above 0 and at most 8,760 h.");
+    if (!Number.isFinite(a) || !Number.isFinite(b)) errors.push("Both ends of the landing window need a valid UTC time.");
+    else if (b <= a) errors.push("The landing window must end after it starts.");
+    if (!Number.isFinite(epochs.spacing_h) || epochs.spacing_h <= 0 || epochs.spacing_h > 8760) errors.push("The spacing between landings must be above 0 and at most 8,760 h.");
   }
   let points = Number.NaN;
   if (errors.length === 0) {
@@ -88,12 +88,14 @@ export function searchBody(
   spacing_m: number,
   top_k: number,
   epochs: { first_utc: string; last_utc: string; spacing_h: number } | null,
+  rank_by: Schemas["SearchRequest"]["rank_by"] = "margin",
 ): SearchBody {
   return {
     scenario,
     region: regionModel(region),
     final_spacing_m: spacing_m,
     top_k,
+    rank_by,
     ...(epochs ? { first_utc: epochs.first_utc, last_utc: epochs.last_utc, epoch_spacing_h: epochs.spacing_h } : {}),
     with_grid: true,
     terrain: "auto",
@@ -124,6 +126,7 @@ export interface SearchRow {
   n_epochs_pass: number;
   n_epochs: number;
   slope_deg: number | null;
+  totals: Record<string, number | null>;
 }
 
 function limitOf(scenario: unknown, key: string): Limit | null {
@@ -157,6 +160,7 @@ export function searchRows(result: SearchResult): SearchRow[] {
       n_epochs_pass: s.n_epochs_pass,
       n_epochs: s.n_epochs,
       slope_deg: s.slope_deg,
+      totals: s.totals ?? {},
     };
   });
 }
@@ -176,6 +180,7 @@ export interface SearchGridView {
   status: number[][];
   score: (number | null)[][];
   slope_deg: (number | null)[][];
+  rank_value: (number | null)[][] | null;
   statusText: Record<number, string>;
   statusCounts: Record<number, number>;
 }
@@ -198,6 +203,7 @@ export function searchGrid(result: SearchResult): SearchGridView | null {
   const score = matrix(g["score"], ny, nx);
   const slope = matrix(g["slope_deg"], ny, nx);
   if (!state || !status || !score || !slope) return null;
+  const ranked = matrix(g["rank_value"], ny, nx);
   const text = g["status_text"];
   const statusText: Record<number, string> = {};
   if (typeof text === "object" && text !== null) for (const [k, v] of Object.entries(text)) if (typeof v === "string") statusText[Number(k)] = v;
@@ -210,6 +216,7 @@ export function searchGrid(result: SearchResult): SearchGridView | null {
     status: status as number[][],
     score: score.map((r) => r.map((v) => (isNum(v) ? v : null))),
     slope_deg: slope.map((r) => r.map((v) => (isNum(v) ? v : null))),
+    rank_value: ranked ? ranked.map((r) => r.map((v) => (isNum(v) ? v : null))) : null,
     statusText,
     statusCounts,
   };
