@@ -23,6 +23,7 @@ function descentStage(): Group {
     g.add(box(0.05, 0.03, 0.56, silver, lx + 0.9 - 1.3 * t, 0.35 + 1.85 * t, 0));
   }
   g.add(box(1.0, 0.06, 0.9, silver, lx - 0.7, 2.25, 0));
+  g.add(box(0.02, 0.24, 0.3, silver, lx - 0.15, 1.45, 0));
   return g;
 }
 

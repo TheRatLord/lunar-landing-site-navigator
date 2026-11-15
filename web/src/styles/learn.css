@@ -2095,4 +2095,75 @@ button.l-lessons-label {
     display: none;
   }
 }
+.l-story-pop {
+  width: min(460px, calc(100vw - 32px));
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+}
+.l-story-title {
+  margin: 0;
+  font-size: var(--l-fs-body);
+  font-weight: 700;
+}
+.l-story-when {
+  margin: 2px 0 12px;
+  color: var(--text-2);
+}
+.l-story-pop .l-story-crew {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.l-story-crew li {
+  display: grid;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  background: var(--panel-2);
+}
+.l-story-crew span {
+  color: var(--text-2);
+}
+.l-story-quote {
+  margin: 0 0 12px;
+  padding: 4px 0 4px 12px;
+  border-left: 3px solid var(--c-sun);
+}
+.l-story-quote p {
+  margin: 0;
+  font-size: var(--l-fs-body);
+  font-weight: 600;
+}
+.l-story-quote footer {
+  color: var(--text-2);
+}
+.l-story-pop .l-story-facts {
+  margin: 0 0 12px;
+  padding-left: 18px;
+}
+.l-story-facts li + li {
+  margin-top: 6px;
+}
+.l-story-sources {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--l-fs-xs);
+}
+@media (max-width: 759px) {
+  .l-story .l-pill span {
+    display: none;
+  }
+  .learn:has(.l-story-pop) .l-battery {
+    display: none;
+  }
+  .l-story-pop {
+    position: fixed;
+    top: 110px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: calc(100% - 260px);
+  }
+}
 

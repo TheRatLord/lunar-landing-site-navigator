@@ -20,8 +20,8 @@ const PLANETARY_CE4 = "https://www.planetary.org/space-missions/change-4";
 export const FACTS: Record<PropId, Fact> = {
   "lm-descent": {
     title: "Eagle's descent stage",
-    body: "The bottom half of the lunar module Eagle. It landed here on 20 July 1969 and stayed behind as the launch pad for the top half.",
-    source: NSSDCA_A11,
+    body: "The bottom half of the lunar module Eagle. It landed here on 20 July 1969 and stayed behind as the launch pad for the top half. A plaque on its ladder leg says the crew came \"in peace for all mankind\".",
+    source: "https://en.wikipedia.org/wiki/Apollo_11",
   },
   "us-flag": {
     title: "The Apollo 11 flag",

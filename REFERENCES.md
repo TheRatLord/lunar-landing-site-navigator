@@ -149,3 +149,19 @@ Tenacious was lost with its lander in 2025, and Chang'e 7 slipped to 2027.
   https://www.livescience.com/space/space-exploration/see-the-crawling-ball-shaped-rover-that-rolled-around-the-moon-during-japans-historic-first-landing
 - Jinchan (Chang'e 6): Space.com, https://www.space.com/china-change-6-moon-far-side-minirover
 - Chang'e 7 delay: CNN, https://www.cnn.com/2026/08/23/science/change-7-china-moon-mission-launch-postponed
+
+## Explorer: "About" cards for each place
+
+The "About" card for each Explorer place (`web/src/learn/siteStories.ts`) paraphrases these pages, read 2026-11-15.
+Quotes are the crew's own words and the text of the Apollo 11 plaque.
+
+- Apollo 11: NASA, "Apollo 11 Mission Overview", https://www.nasa.gov/missions/apollo/apollo-11-mission-overview/;
+  Wikipedia, "Apollo 11", https://en.wikipedia.org/wiki/Apollo_11
+- Blue Ghost Mission 1: Firefly Aerospace,
+  https://fireflyspace.com/news/firefly-aerospace-becomes-first-commercial-company-to-successfully-land-on-the-moon/;
+  SpacePolicyOnline, https://spacepolicyonline.com/news/fireflys-dazzling-images-of-earth-eclipsing-the-sun/;
+  CBS News, https://www.cbsnews.com/news/sunset-on-the-moon-blue-ghost-lander-firefly-aerospace-nasa
+- Shackleton crater: Scientific American, https://www.scientificamerican.com/article/new-nasa-image-of-the-moons-shackleton-crater/;
+  Wikipedia, "Shackleton (crater)", https://en.wikipedia.org/wiki/Shackleton_(crater)
+- Chang'e 4: Wikipedia, "Chang'e 4", https://en.wikipedia.org/wiki/Chang%27e_4; Science News Explores,
+  https://www.snexplores.org/?p=3892
