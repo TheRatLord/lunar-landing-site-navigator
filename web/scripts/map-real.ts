@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from "playwright";
+import type { BrowserContext, Locator, Page } from "playwright";
 import type { RegionalResult } from "../src/api/regional";
 import type { SearchResult } from "../src/api/search";
 import { buildScenario } from "../src/scenario/editor/newScenario";
@@ -21,7 +21,9 @@ export async function buildStudyDoc(base: string) {
   if (!site) throw new Error("catalogue has no artemis-region-peak-near-shackleton");
   const profiles = await getJson<{ profiles: Array<{ id: string; profile: never }> }>(base, "/profiles");
   const prof = profiles.profiles.find((p) => p.id === "peregrine-polar") ?? profiles.profiles[0]!;
-  const doc = buildScenario({ name: STUDY_NAME, site, landing_utc: "2027-03-14T12:00:00Z", mission_duration_h: 336, profile: prof.profile });
+  const constraints = (await getJson<{ presets: Array<{ name: string; constraints: never }> }>(base, "/constraints/presets")).presets.find((c) => c.name === "viper-polar")?.constraints;
+  const network = (await getJson<{ presets: Array<{ id: string; network: never }> }>(base, "/networks/presets")).presets.find((n) => n.id === "dsn-all")?.network;
+  const doc = buildScenario({ name: STUDY_NAME, site, landing_utc: "2027-03-14T12:00:00Z", mission_duration_h: 336, profile: prof.profile, constraints, network });
   return { ...doc, ellipse: { semi_major_m: 1500, semi_minor_m: 600, azimuth_deg: 40, dispersion: "gaussian", sigma_level: 3 } };
 }
 
@@ -68,43 +70,23 @@ export function expectedCells(result: RegionalResult, layer: string): { cells: n
   return { cells, unreliable };
 }
 
-async function done(page: Page, what: string): Promise<void> {
-  await page.waitForTimeout(700);
-  const ok = page.locator(".an-status:has(.an-dot-ok)");
-  await ok.or(page.getByRole("alert")).first().waitFor({ timeout: 290_000 });
-  if ((await ok.count()) === 0) throw new Error(`${what} failed: ${await page.getByRole("alert").first().innerText()}`);
-}
-
-async function openAdvanced(page: Page): Promise<void> {
-  const toggle = page.getByRole("button", { name: "Advanced", exact: true });
-  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+async function settle(what: string, ok: Locator, failed: Locator): Promise<void> {
+  await ok.or(failed).first().waitFor({ timeout: 900_000 });
+  if ((await ok.count()) === 0) throw new Error(`${what} failed: ${await failed.first().innerText()}`);
 }
 
 export async function runRealPreviews(page: Page, base: string): Promise<void> {
-  await page.goto(`${base}/explore/find`);
-  await page.getByRole("button", { name: /^Search( region)?$/ }).waitFor();
-  await page.getByLabel("Radius (m)").fill("300");
-  await openAdvanced(page);
-  await page.getByLabel("Final spacing (m)").fill("50");
-  await page.getByLabel("Sites to rank").fill("8");
-  await page.getByRole("button", { name: /^Search( region)?$/ }).click();
-  await done(page, "search");
-
-  await page.getByRole("tab", { name: "Regional", exact: true }).click();
-  await page.getByRole("button", { name: "Compute", exact: true }).waitFor();
-  await page.getByLabel("Period end (UTC)").fill("2027-04-13 12:00");
-  await page.getByLabel("Period end (UTC)").press("Enter");
-  await page.getByLabel("Side", { exact: true }).fill("2000");
-  await page.getByLabel("Cell spacing", { exact: true }).fill("50");
-  await page.getByLabel("Metric", { exact: true }).selectOption("longest_shadow_h");
-  await openAdvanced(page);
-  await page.getByLabel("Time step").selectOption({ label: "6 h" });
-  await page.getByLabel("Pass limit", { exact: true }).fill("0.3");
-  await page.getByRole("button", { name: "Compute", exact: true }).click();
-  await done(page, "regional layer");
-  await page.waitForTimeout(400);
-
-  await page.getByRole("tab", { name: "Map", exact: true }).click();
-  await page.waitForURL(/\/explore(\?|$)/);
+  await page.goto(`${base}/map?radius=0.3`);
   await page.locator("canvas.map-canvas").waitFor();
+  await page.getByRole("button", { name: /^Find sites/ }).click();
+  await page.getByRole("tab", { name: "Results", exact: true }).click();
+  await settle("search", page.getByRole("list", { name: "Sites found" }), page.locator(".se-error"));
+
+  await page.getByRole("tab", { name: "Layers", exact: true }).click();
+  await page.getByLabel("Area analysis metric").selectOption("longest_shadow_h");
+  await page.getByRole("button", { name: "Compute", exact: true }).click();
+  const shown = page.getByRole("list", { name: "Area analysis legend" }).or(page.getByRole("img", { name: /^Longest dark span:/ }));
+  await page.getByRole("status").filter({ hasText: /^Computing/ }).or(shown).first().waitFor({ timeout: 20_000 });
+  await settle("area analysis", shown, page.locator(".rg-hint", { hasText: /^Failed/ }));
+  await page.waitForTimeout(400);
 }

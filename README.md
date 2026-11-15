@@ -10,9 +10,9 @@ the date, and pin a site to keep its row while you try another. For the chosen s
 and Earth against the terrain horizon, how long until sunset and Earthset, and every window in the year with
 both sunlight and a direct Earth link, computed from SPICE ephemerides and LOLA terrain.
 
-Behind it, the detailed pages add power and battery survival through dark spans, ground-station contact,
-landing-ellipse statistics, slip analysis and site search. Every number carries its terrain uncertainty and a
-link to the validation that measured it.
+Behind it, the other pages add power and battery survival through dark spans, ground-station contact,
+landing-ellipse statistics, slip analysis and site search. Every number carries its terrain uncertainty, and
+Evidence shows how each part was checked.
 
 ![Overview](web/docs/screenshots/overview-dark.png)
 
@@ -25,11 +25,12 @@ link to the validation that measured it.
   (`scenario`).
 - **HTTP service** (`lunarnav serve`): FastAPI over the engine, with a job pool for long analyses, exports
   (CSV, JSON, CCSDS AEM) and HTML/PDF mission reports.
-- **Web app** (`web/`): React interface. A plan panel on the left of every page holds the four choices (site,
-  landing time, lander, requirements). The site can be widened to a search radius and the landing time to a landing
-  window, and the requirements carry what to rank by; the Overview, Map, Site, Dates and Compare tabs show what
-  those choices give. Every other setting is on Mission setup, validation is under Evidence, and Explorer is an
-  interactive mode for students and the public.
+- **Web app** (`web/`): React interface. A plan panel on the left holds the four choices (site, landing time,
+  lander, requirements), with a search radius, a landing window and what to rank by. The Overview, Site, Map and
+  Compare tabs show what those choices give: Overview has the year's landing dates, Site the full analysis and the
+  landing ellipse, Map finds sites and runs an area analysis, Compare sets sites against dates. Setup holds every
+  other setting, Evidence summarises how each part was validated, and Explorer is an interactive mode for students
+  and the public.
 - **Analysis agent** (`lunarnav agent`): a Claude agent that answers planning questions through typed
   engine tools, with a ledger of every computation it cites, running in an OS sandbox.
 - **Validation** (`docs/validation`): how each part was checked against JPL Horizons, published

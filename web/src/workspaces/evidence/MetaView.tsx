@@ -1,270 +1,203 @@
-import type { ReactNode } from "react";
 import { metaApi } from "../../api/endpoints";
 import { useLoad, type Loaded } from "../../api/useLoad";
-import { classifyHref } from "../../components/content/markdownSafety";
 import { ServiceNotice } from "../../components/ServiceNotice";
-import { IconButton } from "../../components/ui/Button";
 import { Disclosure } from "../../components/ui/Disclosure";
-import { EmptyState } from "../../components/ui/EmptyState";
-import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Progress";
-import { toast } from "../../state/toasts";
 
-type Scalar = string | number | boolean | null;
 type Obj = Record<string, unknown>;
 
-const HASH = /^(?:[a-z0-9]+:)?[0-9a-f]{32,}$/i;
-const UNITS: Record<string, string> = { m: "m", deg: "°", h: "h", s: "s", bytes: "bytes" };
+interface Store {
+  id: string;
+  pixel: number;
+  sigma: number | null;
+  basis: string | null;
+  lat: number | null;
+  lon: number | null;
+}
 
-const isScalar = (v: unknown): v is Scalar => v === null || typeof v !== "object";
+interface Kernel {
+  name: string;
+  role: string;
+  url: string | null;
+}
+
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
+const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
+const numOr = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
-function splitKey(k: string): { name: string; unit?: string } {
-  const m = /^(.+)_(m|deg|h|s|bytes)$/.exec(k);
-  return m ? { name: m[1]!, unit: UNITS[m[2]!] } : { name: k };
+const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+const dateText = (iso: string) => DATE.format(new Date(iso));
+
+const px = (m: number) => `${m >= 100 ? Math.round(m) : Number(m.toFixed(m < 10 ? 1 : 0))} m`;
+
+function stores(meta: Obj): Store[] {
+  const list = Array.isArray(meta["terrain_stores"]) ? meta["terrain_stores"] : [];
+  return list.filter(isObj).flatMap((s) => {
+    const id = str(s["dem_id"]);
+    const pixel = numOr(s["pixel_size_m"]);
+    if (!id || pixel === null) return [];
+    const cov = isObj(s["coverage"]) ? s["coverage"] : {};
+    return [{ id, pixel, sigma: numOr(s["sigma_z_m"]), basis: str(s["error_basis_z"]), lat: numOr(cov["centre_lat_deg"]), lon: numOr(cov["centre_lon_deg"]) }];
+  });
 }
 
-function label(k: string): string {
-  if (/[A-Z#]/.test(k)) return k;
-  const t = k.replace(/_/g, " ").replace(/\b(utc|url|dem|sha256|id)\b/g, (w) => (w === "sha256" ? "SHA-256" : w.toUpperCase()));
-  return t.charAt(0).toUpperCase() + t.slice(1);
+function kernels(meta: Obj): { files: Kernel[]; valid: [string, string] | null } {
+  const k = isObj(meta["kernels"]) ? meta["kernels"] : {};
+  const files = (Array.isArray(k["files"]) ? k["files"] : []).filter(isObj).flatMap((f) => {
+    const name = str(f["name"]);
+    return name ? [{ name, role: str(f["role"]) ?? "", url: str(f["url"]) }] : [];
+  });
+  const v = k["valid_utc"];
+  const valid = Array.isArray(v) && typeof v[0] === "string" && typeof v[1] === "string" ? ([v[0], v[1]] as [string, string]) : null;
+  return { files, valid };
 }
 
-function formatNumber(n: number): string {
-  if (Number.isInteger(n)) return Math.abs(n) >= 10000 ? n.toLocaleString("en-US") : String(n);
-  return String(Number(n.toPrecision(6)));
+const TILE = /^pgda78_(.+)_5m$/;
+const POLAR = /^lola_(\d\d)(\d)?([ns])_\d+m$/;
+const WINDOW = /^(sldem2015|ldem)_512_/;
+
+function tileName(t: string): string {
+  const site = /^site(\d+)(.*)$/.exec(t);
+  if (site) return `Site ${site[1]}${site[2]}`;
+  return t.length <= 3 ? t.toUpperCase() : t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function Hash({ value }: { value: string }) {
-  const short = value.length > 20 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value;
+const coord = (lat: number, lon: number) => {
+  const e = ((lon + 540) % 360) - 180;
+  return `${Math.abs(lat).toFixed(2)}°${lat < 0 ? "S" : "N"} ${Math.abs(e).toFixed(2)}°${e < 0 ? "W" : "E"}`;
+};
+
+function modelName(s: Store): string {
+  const tile = TILE.exec(s.id);
+  if (tile) return `PGDA ${tileName(tile[1]!)}`;
+  const polar = POLAR.exec(s.id);
+  if (polar) return `LOLA ${polar[1]}${polar[2] ? "." + polar[2] : ""}°${polar[3]!.toUpperCase()}`;
+  const win = WINDOW.exec(s.id);
+  if (win) return `${win[1] === "sldem2015" ? "SLDEM2015" : "LOLA"} window${s.lat !== null && s.lon !== null ? " at " + coord(s.lat, s.lon) : ""}`;
+  if (s.id.startsWith("lola_global")) return "LOLA global";
+  return s.id;
+}
+
+function family(s: Store): string {
+  if (TILE.test(s.id)) return "NASA PGDA site models, south pole";
+  if (POLAR.test(s.id)) return "LOLA polar grids, both poles";
+  if (WINDOW.test(s.id)) return "Regional windows (SLDEM2015, LOLA)";
+  return "LOLA global";
+}
+
+function span(values: number[], fmt: (v: number) => string): string {
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  return fmt(lo) === fmt(hi) ? fmt(lo) : `${fmt(lo).replace(/ m$/, "")} to ${fmt(hi)}`;
+}
+
+const sigmaText = (v: number) => `${v.toFixed(2)} m`;
+
+function Versions({ meta }: { meta: Obj }) {
+  const version = str(meta["code_version"]);
+  const terrain = stores(meta);
+  const { files, valid } = kernels(meta);
+  const ephem = files.find((f) => /^de\d+\.bsp$/i.test(f.name))?.name.replace(/\.bsp$/i, "").toUpperCase();
+  const families = [...Map.groupBy(terrain, family)];
   return (
-    <span className="meta-hash">
-      <code className="meta-hash-text" title={value}>
-        {short}
-      </code>
-      <IconButton
-        icon="copy"
-        size="sm"
-        label="Copy hash"
-        onClick={() => navigator.clipboard.writeText(value).then(() => toast({ kind: "success", title: "Hash copied" }, 1500))}
-      />
-    </span>
-  );
-}
-
-function StateChip({ on, onLabel, offLabel, offTone }: { on: boolean; onLabel: string; offLabel: string; offTone: "fail" | "neutral" }) {
-  return (
-    <span className={`chip ${on ? "chip-pass" : offTone === "fail" ? "chip-fail" : ""}`}>
-      <Icon name={on ? "check" : "cross"} size={12} strokeWidth={2} />
-      {on ? onLabel : offLabel}
-    </span>
-  );
-}
-
-function Value({ value, name, unit }: { value: Scalar; name: string; unit?: string }) {
-  if (typeof value === "string" && HASH.test(value)) return <Hash value={value} />;
-  if (typeof value === "boolean") {
-    return /(^|_)available$/.test(name) ? (
-      <StateChip on={value} onLabel="Available" offLabel="Unavailable" offTone="fail" />
-    ) : (
-      <StateChip on={value} onLabel="Yes" offLabel="No" offTone="neutral" />
-    );
-  }
-  if (value === null) return <span className="faint">—</span>;
-  if (typeof value === "number") {
-    return (
-      <span className="num" title={Number.isInteger(value) ? undefined : String(value)}>
-        {formatNumber(value)}
-        {unit && <span className="meta-unit">{unit}</span>}
-      </span>
-    );
-  }
-  const link = /^https?:\/\/\S+$/i.test(value) ? classifyHref(value) : null;
-  if (link?.kind === "external") {
-    return (
-      <a className="meta-url" href={link.href} target="_blank" rel="noopener noreferrer" title={link.href}>
-        {link.href.replace(/^https?:\/\//, "")}
-      </a>
-    );
-  }
-  return <span className={name === "error" ? "meta-error" : "meta-text"}>{value}</span>;
-}
-
-function Table({ rows, cols }: { rows: Obj[]; cols: string[] }) {
-  return (
-    <div className="md-table-wrap" tabIndex={0} role="region" aria-label="Table">
-      <table>
-        <thead>
-          <tr>
-            {cols.map((c) => {
-              const { name, unit } = splitKey(c);
-              return (
-                <th key={c} scope="col">
-                  {label(name)}
-                  {unit && <span className="meta-unit">{unit}</span>}
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              {cols.map((c) => (
-                <td key={c}>{c in r && isScalar(r[c]) ? <Value value={r[c]} name={c} /> : <Chips value={(r[c] as Scalar[] | undefined) ?? []} />}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Chips({ value }: { value: readonly Scalar[] }) {
-  return (
-    <ul className="meta-chips">
-      {value.map((v, i) => (
-        <li key={i}>
-          <Value value={v} name="" />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function tableOf(value: unknown[]): { rows: Obj[]; cols: string[] } | null {
-  const rows = value.filter(isObj);
-  if (rows.length !== value.length || rows.length === 0) return null;
-  const cols = [...new Set(rows.flatMap((r) => Object.keys(r)))];
-  const simple = rows.every((r) => Object.values(r).every((v) => isScalar(v) || (Array.isArray(v) && v.every(isScalar))));
-  return simple && cols.length <= 7 ? { rows, cols } : null;
-}
-
-const isFlat = (o: Obj) => Object.keys(o).length <= 6 && Object.values(o).every(isScalar);
-
-function Nested({ value, name, depth }: { value: unknown; name: string; depth: number }): ReactNode {
-  if (isScalar(value)) return <Value value={value} name={name} unit={splitKey(name).unit} />;
-  if (Array.isArray(value)) {
-    if (value.length === 0) return <span className="faint">—</span>;
-    if (value.every(isScalar)) return <Chips value={value} />;
-    const table = tableOf(value);
-    if (table) return <Table rows={table.rows} cols={table.cols} />;
-    return (
-      <ol className="meta-list">
-        {value.map((v, i) => (
-          <li key={i}>
-            <Nested value={v} name="" depth={depth + 1} />
-          </li>
-        ))}
-      </ol>
-    );
-  }
-  return <Rows value={value as Obj} depth={depth} />;
-}
-
-function Rows({ value, depth, skip }: { value: Obj; depth: number; skip?: string }) {
-  const entries = Object.entries(value).filter(([k, v]) => k !== skip && !(k === "error" && v === null));
-  return (
-    <dl className="meta-rows">
-      {entries.map(([k, v]) => {
-        const { name } = splitKey(k);
-        const key = /(^|_)available$/.test(k) && k !== "available" ? k.replace(/_?available$/, "") : name;
-        const title = label(key === "" ? "available" : key);
-        const flat = isScalar(v) || (Array.isArray(v) && v.length > 0 && v.every(isScalar)) || (isObj(v) && depth > 0 && isFlat(v));
-        const nested = <Nested value={v} name={k} depth={depth + 1} />;
-        return (
-          <div key={k} className={flat ? "meta-row" : "meta-row meta-row-block"}>
-            {!flat && depth > 0 ? (
-              <Disclosure title={title} count={Array.isArray(v) ? v.length : Object.keys(v as Obj).length}>
-                {nested}
+    <div className="evi-versions">
+      <dl className="evi-versions-rows">
+        {version && (
+          <div>
+            <dt>Version</dt>
+            <dd className="num">{version}</dd>
+          </div>
+        )}
+        {files.length > 0 && (
+          <div>
+            <dt>Ephemeris</dt>
+            <dd>
+              <p>
+                NASA JPL {ephem ?? "SPICE"}
+                {valid && `, valid ${dateText(valid[0])} to ${dateText(valid[1])}`}
+              </p>
+              <Disclosure title="SPICE kernels" count={files.length}>
+                <ul className="evi-versions-list">
+                  {files.map((f) => (
+                    <li key={f.name}>
+                      {f.url ? (
+                        <a href={f.url} target="_blank" rel="noopener noreferrer" className="mono">
+                          {f.name}
+                        </a>
+                      ) : (
+                        <span className="mono">{f.name}</span>
+                      )}
+                      <span className="faint">{f.role}</span>
+                    </li>
+                  ))}
+                </ul>
               </Disclosure>
-            ) : (
-              <>
-                <dt className={flat && /[A-Z#]/.test(k) ? "meta-raw" : undefined}>{title}</dt>
-                <dd>{nested}</dd>
-              </>
-            )}
+            </dd>
           </div>
-        );
-      })}
-    </dl>
-  );
-}
-
-function Group({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="meta-group" aria-label={title}>
-      <h2 className="meta-group-title">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-const SCALAR_GROUP = (k: string) => (k.startsWith("service_") ? "Engine" : /^(code_|python_)|_module_available$/.test(k) ? "Code" : "Other");
-
-function Meta({ meta }: { meta: Obj }) {
-  const scalars = new Map<string, Obj>();
-  const blocks: Array<[string, unknown]> = [];
-  for (const [k, v] of Object.entries(meta)) {
-    if (isScalar(v)) {
-      const g = SCALAR_GROUP(k);
-      scalars.set(g, { ...scalars.get(g), [k.replace(/^(service|code)_/, "")]: v });
-    } else blocks.push([k, v]);
-  }
-  const stores = blocks.find(([k]) => k === "terrain_stores")?.[1];
-  const rest = blocks.filter(([k]) => k !== "terrain_stores" && k !== "kernels");
-  const kernels = blocks.find(([k]) => k === "kernels")?.[1];
-  return (
-    <div className="meta">
-      <div className="meta-top">
-        {[...scalars].map(([g, rows]) => (
-          <Group key={g} title={g}>
-            <Rows value={rows} depth={0} />
-          </Group>
-        ))}
-      </div>
-      {isObj(kernels) && (
-        <Group title="Kernels">
-          <Rows value={kernels} depth={0} />
-        </Group>
-      )}
-      {Array.isArray(stores) && stores.length > 0 && (
-        <div className="meta-stores">
-          <h2 className="meta-group-title">
-            DEMs<span className="meta-count num">{stores.length}</span>
-          </h2>
-          <div className="meta-store-list">
-            {stores.map((s, i) => {
-              const store: Obj = isObj(s) ? s : { value: s };
-              const id = typeof store["dem_id"] === "string" ? store["dem_id"] : String(i + 1);
-              const px = store["pixel_size_m"];
-              return (
-                <Disclosure
-                  key={id}
-                  title={
-                    <span className="meta-store-title">
-                      <span className="mono">{id}</span>
-                      {typeof px === "number" && <span className="meta-unit num">{formatNumber(px)} m</span>}
-                    </span>
-                  }
-                >
-                  <Rows value={store} depth={1} skip="dem_id" />
-                </Disclosure>
-              );
-            })}
+        )}
+        {terrain.length > 0 && (
+          <div>
+            <dt>Terrain</dt>
+            <dd>
+              <table className="evi-versions-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Models</th>
+                    <th scope="col" className="num">
+                      Count
+                    </th>
+                    <th scope="col" className="num">
+                      Pixel
+                    </th>
+                    <th scope="col" className="num">
+                      Height error (1σ)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {families.map(([name, group]) => {
+                    const sig = group.flatMap((s) => (s.sigma === null ? [] : [s.sigma]));
+                    return (
+                      <tr key={name}>
+                        <th scope="row">{name}</th>
+                        <td className="num">{group.length}</td>
+                        <td className="num">{span(group.map((s) => s.pixel), px)}</td>
+                        <td className="num">{sig.length ? span(sig, sigmaText) : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <Disclosure title="All terrain models" count={terrain.length}>
+                <table className="evi-versions-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Model</th>
+                      <th scope="col" className="num">
+                        Pixel
+                      </th>
+                      <th scope="col" className="num">
+                        Height error
+                      </th>
+                      <th scope="col">Basis</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {terrain.map((s) => (
+                      <tr key={s.id}>
+                        <th scope="row">{modelName(s)}</th>
+                        <td className="num">{px(s.pixel)}</td>
+                        <td className="num">{s.sigma === null ? "—" : sigmaText(s.sigma)}</td>
+                        <td>{s.basis?.replace(/-/g, " ") ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Disclosure>
+            </dd>
           </div>
-        </div>
-      )}
-      {rest.length > 0 && (
-        <div className="meta-more">
-          {rest.map(([k, v]) => (
-            <Disclosure key={k} title={label(k)} count={Array.isArray(v) ? v.length : Object.keys(v as Obj).length}>
-              <Nested value={v} name={k} depth={1} />
-            </Disclosure>
-          ))}
-        </div>
-      )}
+        )}
+      </dl>
     </div>
   );
 }
@@ -292,6 +225,5 @@ export function LoadState({ state, loading, what, onRetry }: { state: Loaded<unk
 export function MetaView() {
   const { state, reload } = useLoad(loadMeta);
   if (state.status !== "ready") return <LoadState state={state} loading="Loading data versions" what="the data versions" onRetry={reload} />;
-  if (!isObj(state.data)) return <EmptyState icon="evidence" title="No data versions" />;
-  return <Meta meta={state.data} />;
+  return isObj(state.data) ? <Versions meta={state.data} /> : null;
 }

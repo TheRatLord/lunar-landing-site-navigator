@@ -3,7 +3,7 @@
 CSS = """
 @page { size: A4; margin: 17mm 14mm 17mm 14mm;
   @top-left { content: string(runtitle); font: 7pt 'DejaVu Sans'; color: #333; }
-  @top-right { content: string(runhash); font: 7pt 'DejaVu Sans Mono'; color: #333; }
+  @top-right { content: string(runhash); font: 7pt 'DejaVu Sans'; color: #333; }
   @bottom-left { content: string(rungen); font: 7pt 'DejaVu Sans'; color: #333; }
   @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 7pt 'DejaVu Sans'; color: #333; } }
 * { box-sizing: border-box; }

@@ -1,7 +1,7 @@
-// Usage: bun scripts/screenshots.ts [base] [mode]
+// Usage: bun scripts/screenshots.ts [base] [mode] [curated output directory]
 //   (no mode)   shell + gallery scratch shots in docs/screenshots-scratch/ (git-ignored)
 //   pages       the curated page shots, both themes, seeded study, in docs/screenshots/
-//   map-curated the two curated south-pole Map shots (real search + regional layer), in docs/screenshots/
+//   map-curated the two curated south-pole Map shots (real site search + area analysis), in docs/screenshots/
 import { mkdirSync } from "node:fs";
 import { chromium, type Browser, type Page } from "playwright";
 import { buildStudyDoc, runRealPreviews, seedStudy } from "./map-real";
@@ -9,7 +9,7 @@ import { buildStudyDoc, runRealPreviews, seedStudy } from "./map-real";
 const BASE = process.argv[2] ?? "http://127.0.0.1:5173";
 const MODE = process.argv[3] ?? "scratch";
 const SCRATCH = new URL("../docs/screenshots-scratch/", import.meta.url).pathname;
-const CURATED = new URL("../docs/screenshots/", import.meta.url).pathname;
+const CURATED = process.argv[4] ? process.argv[4].replace(/\/?$/, "/") : new URL("../docs/screenshots/", import.meta.url).pathname;
 const THEMES = ["dark", "light"] as const;
 type Theme = (typeof THEMES)[number];
 interface Size {
@@ -47,15 +47,12 @@ interface PageShot {
 }
 const PAGE_SHOTS: PageShot[] = [
   { name: "overview", path: "/overview", wait: 6000 },
-  { name: "explore-map", path: "/explore", wait: 4000 },
-  { name: "explore-find", path: "/explore/find" },
-  { name: "explore-regional", path: "/explore/regional" },
+  { name: "map", path: "/map", wait: 4000 },
   { name: "site", path: "/site", wait: 9000 },
-  { name: "site-accuracy", path: "/site/accuracy", wait: 4000 },
-  { name: "dates", path: "/dates", wait: 4000 },
-  { name: "compare", path: "/compare", wait: 4000 },
+  { name: "site-ellipse", path: "/site/ellipse", wait: 4000 },
+  { name: "compare", path: "/compare", wait: 9000 },
   { name: "evidence", path: "/evidence", wait: 3000 },
-  { name: "palette", path: "/explore", keys: "Control+k", wait: 1500 },
+  { name: "palette", path: "/map", keys: "Control+k", wait: 1500 },
   { name: "mission", path: "/mission", wait: 3000 },
   { name: "plan-site", path: "/overview", click: "#plan-site", wait: 4000 },
   { name: "plan-landing", path: "/overview", click: "#plan-time", wait: 4000 },
@@ -103,16 +100,16 @@ async function scratch(browser: Browser): Promise<void> {
         const page = await open();
         const prefix = `${SCRATCH}${theme}-${size.width}x${size.height}`;
 
-        await page.goto(`${BASE}/explore`);
+        await page.goto(`${BASE}/map`);
         await fontsReady(page);
         await page.waitForTimeout(400);
         await page.screenshot({ path: `${prefix}-shell-map.png` });
         await page.keyboard.press("Control+k");
         await page.waitForSelector('[role="dialog"]');
-        await page.keyboard.type("dates");
+        await page.keyboard.type("compare");
         await page.screenshot({ path: `${prefix}-shell-palette.png` });
         await page.keyboard.press("Enter");
-        await page.waitForURL("**/dates");
+        await page.waitForURL("**/compare");
 
         await page.goto(`${BASE}/dev/gallery`);
         await fontsReady(page);
@@ -163,7 +160,7 @@ async function mapCurated(browser: Browser): Promise<void> {
     await withContext(browser, theme, SIZE_1440, theme, doc, async (open) => {
       const page = await open();
       await runRealPreviews(page, BASE);
-      await page.getByRole("button", { name: "Fit site" }).click();
+      await page.getByRole("button", { name: "Zoom to plan site" }).click();
       await fontsReady(page);
       await page.waitForFunction(() => document.querySelector<HTMLCanvasElement>("canvas.map-canvas")?.dataset["tilesLoading"] === "0", undefined, { timeout: 30_000 });
       await page.waitForTimeout(900);
@@ -177,7 +174,7 @@ async function mapCurated(browser: Browser): Promise<void> {
       await page.screenshot({ path: `${CURATED}map-south-preview-overlays-${theme}.png` });
 
       await page.getByRole("tab", { name: "Sites", exact: true }).click();
-      await page.getByRole("list", { name: "Matching sites" }).getByRole("button", { name: /Peak near Shackleton/i }).first().click();
+      await page.getByRole("list", { name: "Sites", exact: true }).getByRole("button", { name: /Peak near Shackleton/i }).first().click();
       await page.waitForTimeout(1000);
       await page.mouse.move(box.x + 24, box.y + box.height - 24);
       await page.waitForTimeout(300);

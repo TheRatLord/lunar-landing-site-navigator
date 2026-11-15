@@ -35,6 +35,7 @@ from .fmt import (
     raw,
     signed,
     signed_kind,
+    span,
     unit_label,
     utc,
     values_by_case,
@@ -50,18 +51,14 @@ HOUR_S = 3600.0
 CENSORED_LO = "before the analysed span (not a time)"
 CENSORED_HI = "after the analysed span (not a time)"
 WINDOW_NOTE = (
-    "<p class='small'>Candidates are {m} min apart. A window runs from its first to its last open candidate and Duration is the time "
-    "between them, so a window of one candidate lasts 0 h; the true edges lie within half a spacing of either end. Norm. margin "
-    "is the margin divided by that constraint's margin scale, so constraints compare.</p>")
+    "<p class='small'>Landing times are {m} min apart, so a window's edges are known to half that. Norm. margin is the margin divided by "
+    "the requirement's margin scale.</p>")
 STATE_LABEL = {"pass": "PASS", "marginal": "MARGINAL", "fail": "FAIL", "unknown": "NOT EVALUATED"}
 
 CONVENTIONS = (
-    "Times are UTC with a Z suffix. Angles are degrees; latitude and longitude are planetocentric, east-positive, "
-    "in the Moon Mean Earth frame on the 1737.4 km reference sphere; azimuth is clockwise from local north and "
-    "elevation is above the local horizontal. Durations are hours. A signed margin is positive inside its limit. "
-    "Three cases are evaluated: nominal, optimistic and pessimistic. Each bound combines the terrain-error bound "
-    "on the horizon and, for power and state of charge, the lander-heading bound; where a range is shown it is the "
-    "smallest to the largest value over the three cases."
+    "Times are UTC. Latitude and longitude are planetocentric and east-positive (Moon Mean Earth frame, 1737.4 km sphere); "
+    "azimuth is clockwise from north. A margin is positive inside its limit. Every result has a nominal, an optimistic and a "
+    "pessimistic case (terrain error on the horizon, and the lander heading for power); a range runs from the smallest to the largest."
 )
 
 
@@ -83,9 +80,11 @@ def explain(c, ev=None) -> str:
     """One sentence per non-pass constraint, from the constraint verdict's own fields."""
     u = unit_label(c.unit)
     if getattr(c, "heading_dependent", False):
-        rng = f"{qty(c.value_range[0], c.unit)} {DASH} {qty(c.value_range[1], c.unit)} {u}"
+        rng = f"{span(c.value_range[0], c.value_range[1], lambda v: qty(v, c.unit))} {u}"
         return (f"{c.label}: {rng} against {limit_text(c.limit_min, c.limit_max, c.unit)}; no nominal value, because the lander "
                 f"heading is unknown and the result depends on it. {c.heading_note}")
+    if c.state == "unknown":
+        return f"{c.label}: not evaluated."
     head = f"{c.label}: {qty(c.value, c.unit)} {u} against {limit_text(c.limit_min, c.limit_max, c.unit)}"
     if c.state == "marginal":
         body = f"holds in the nominal case only; worst-case margin {qty(c.margin_worst, c.unit, plus=True)} {u}{_worst_where(c)}"
@@ -98,8 +97,8 @@ def explain(c, ev=None) -> str:
 
 
 INTERVAL_PHRASE = {"dark": "longest dark span", "contact_gap": "longest contact gap", "sunlit": "sunlit interval"}
-EDGE_PHRASE = {"sunset": "sunset", "sunrise": "sunrise", "earthset": "Earth set (loss of contact)",
-               "earthrise": "Earth rise (contact regained)"}
+EDGE_PHRASE = {"sunset": "sunset", "sunrise": "sunrise", "earthset": "Earthset or loss of contact",
+               "earthrise": "Earthrise or contact regained"}
 
 
 def _bound_for(attr, key: str):
@@ -111,7 +110,7 @@ CAUSE_PHRASE = {"heading": "the lander heading", "terrain": "the terrain-error b
 
 
 def _pct_range(r) -> str:
-    return f"{qty(r[0], 'fraction')} {DASH} {qty(r[1], 'fraction')} %"
+    return f"{span(r[0], r[1], lambda v: qty(v, 'fraction'))} %"
 
 
 def spread_sentence(ev, c, attr=None) -> str:
@@ -128,7 +127,7 @@ def spread_sentence(ev, c, attr=None) -> str:
         cause = h.cause
         contrib = {"total": h.soc_min_total, "heading": h.soc_min_heading_only, "terrain": h.soc_min_horizon_only}
     if cause is None:
-        return "The engine gives no account of what moves this constraint between the three cases."
+        return "The engine gives no account of what moves this requirement between the three cases."
     phrase = CAUSE_PHRASE.get(cause)
     out = ("The three cases give the same value." if phrase is None else f"The engine attributes the spread to {phrase}.")
     if contrib and contrib.get("total") is not None:
@@ -149,12 +148,12 @@ def spread_sentence(ev, c, attr=None) -> str:
     nom = top.worlds[0]
     where = ""
     if nom.az_deg is not None:
-        where = f" (nominal: {utc(nom.et)}, azimuth {num(nom.az_deg)} deg, horizon {num(nom.horizon_elev_deg)} deg"
+        where = f" (nominal: {utc(nom.et)}, azimuth {num(nom.az_deg)}\u00b0, horizon {num(nom.horizon_elev_deg)}\u00b0"
         if nom.blocker_dist_m is not None:
             where += f", blocker {num(nom.blocker_dist_m / 1000.0)} km away"
         where += f"; {nom.cause})"
-    return (f"{out} The {INTERVAL_PHRASE[cb.interval_kind]} lasts {num(min(cb.interval_hours.values()))} to "
-            f"{num(max(cb.interval_hours.values()))} h over the three cases; the {EDGE_PHRASE[top.kind]} edge accounts for "
+    return (f"{out} The {INTERVAL_PHRASE[cb.interval_kind]} lasts {span(min(cb.interval_hours.values()), max(cb.interval_hours.values()), num)} "
+            f"h over the three cases; the {EDGE_PHRASE[top.kind]} edge accounts for "
             f"{num(top.share * 100.0)} % of that {num(cb.spread_h)} h spread{where}.")
 
 
@@ -205,14 +204,11 @@ def attribution_html(attr) -> str:
                     + td(w.cause, cls="small") + contrib + share)
         blocks.append(
             f"<h4>{esc(cb.label)}</h4><table class='kv'>{''.join(facts)}</table>"
-            + table([th("Edge"), th("World"), th("Time (UTC)"), th("Azimuth (deg)", "num"), th("Horizon (deg)", "num"),
+            + table([th("Edge"), th("World"), th("Time (UTC)"), th("Azimuth (\u00b0)", "num"), th("Horizon (\u00b0)", "num"),
                      th("Blocker range (km)", "num"), th("Cause"), th("Contribution", "num"), th("Share", "num")], rows, cls="dense"))
-    return ("<h3>Why the bounds differ</h3>"
-            f"<p class='small'>{esc(attr.note)}. Where the engine decomposes a spread, shares are each edge's part of the spread of the interval's duration "
-            "(mission-clipped), the two shares add to 1, and an edge outside the mission window explains nothing; where it does not, "
-            "the row says why and prints no contribution or share. The blocker range is read from the "
-            "nominal terrain profile at each world's limiting azimuth; the optimistic and pessimistic cases are brackets of the "
-            "same terrain and carry no blocker of their own.</p>" + "".join(blocks))
+    return ("<h3>Why the cases differ</h3>"
+            f"<p class='small'>{esc(attr.note)}. A share is an edge's part of the spread in the interval's duration; the two shares add to 1. "
+            "The blocker range is read from the nominal terrain.</p>" + "".join(blocks))
 
 
 def site_terrain(prov: dict) -> dict | None:
@@ -276,12 +272,54 @@ def terrain_stack_sentence(prov: dict) -> str | None:
         return f"Terrain stack: the engine's default stack, {n}."
     if by == "scenario":
         tail = "this is also the engine's default stack" if rec["is_default"] else "not the default stack"
-        return (f"Terrain stack: restricted to {n}, {tail}; the scenario names its stores. "
+        return (f"Terrain stack: restricted to {n}, {tail}; the plan names its stores. "
                 "Another choice of stores can give other horizons.")
     if by == "caller":
-        return (f"Terrain stack: {n}, chosen by whoever ran the engine, not by the scenario and not the engine's default stack. "
+        return (f"Terrain stack: {n}, chosen by whoever ran the engine, not by the plan and not the engine's default stack. "
                 "Another choice of stores can give other horizons.")
     raise ReportInputError(f"unknown terrain_stack.chosen_by {by!r} in the evaluation provenance")
+
+
+def qu(v, unit: str, plus: bool = False) -> str:
+    u = unit_label(unit)
+    return f"{qty(v, unit, plus=plus)}{'' if u == chr(176) else ' '}{u}"
+
+
+FACTS = (("sunlit_hours", "Sunlight"), ("contact_hours", "{link}"), ("contact_sunlit_hours", "Sunlight with {link}"),
+         ("time_to_next_sunset_h", "{sunset}"), ("time_to_next_earthset_h", "{set}"), ("longest_dark_span_h", "Longest dark span"))
+TOTALS = ("sunlit_hours", "contact_hours", "contact_sunlit_hours")
+
+
+def fact_rows(ev) -> list[str]:
+    stations = bool(ev.scenario.network.stations)
+    names = {"link": "Earth link" if stations else "Earth in view", "set": "Earth link lost" if stations else "Earthset"}
+    rows = []
+    for key, label in FACTS:
+        m = next((x for x in ev.metrics if x.key == key), None)
+        if m is None:
+            continue
+        event = m.label.removeprefix("Time to next ").removesuffix(" (from landing)")
+        names["sunset"] = event[:1].upper() + event[1:]
+        has_range = m.low is not None and m.high is not None
+        if m.value is None and not has_range:
+            text = "none in the analysed span" if key.startswith("time_to") else NA
+        else:
+            rng = span(m.low, m.high, num) if has_range else ""
+            text = (rng if m.value is None else num(m.value)) + " h"
+            if key in TOTALS:
+                text += f" of {num(ev.scenario.mission_duration_h)} h"
+            elif key.startswith("time_to"):
+                text += " after landing"
+            if m.value is not None and rng and rng != num(m.value):
+                text += f"; {rng} h over the cases"
+            if m.censored:
+                text += " (bound: the data ends first)"
+        rows.append(f"<tr><th>{esc(label.format(**names))}</th>{td(text, f'fact:{key}', m.value)}</tr>")
+    return rows
+
+
+VERDICT_PHRASE = {"pass": "passes in every case", "marginal": "holds in the nominal case only", "fail": "fails",
+                  "unknown": "not evaluated"}
 
 
 def section_answer(ev, attr=None) -> str:
@@ -293,18 +331,28 @@ def section_answer(ev, attr=None) -> str:
     c = _constraint_by_key(ev, v.limiting)
     counts = {s: sum(x.state == s for x in v.constraints) for s in ("pass", "marginal", "fail", "unknown")}
     no_nominal = "no nominal value (lander heading unknown)"
-    value_rows = [
-        f"<tr><th>Limiting constraint</th>{td(c.label, 'answer:limiting', c.key)}</tr>",
-        f"<tr><th>Value (nominal)</th>{td(no_nominal if c.value is None else f'{qty(c.value, c.unit)} {unit_label(c.unit)}', 'answer:value', c.value)}</tr>",
-    ]
+    value = (f"{span(c.value_range[0], c.value_range[1], lambda x: qty(x, c.unit))} {unit_label(c.unit)} over all headings"
+             if c.value is None and c.value_range is not None else qu(c.value, c.unit))
+    limit = limit_text(c.limit_min, c.limit_max, c.unit)
+    head = "Closest to its limit is" if v.state == "pass" else "Limited by"
+    phrase = (f"{STATE_LABEL[c.state].lower()} with the heading unknown" if getattr(c, "heading_dependent", False)
+              else VERDICT_PHRASE[c.state])
+    lead = (f'<p class="lead">{head} <b data-key="answer:limiting" data-raw="{esc(c.key)}">{esc(c.label)}</b>: {esc(value)} against '
+            f"{esc(limit)}, {phrase} (worst margin {esc(qu(c.margin_worst, c.unit, plus=True))}). "
+            f'Requirements: {counts["pass"]} pass, {counts["marginal"]} marginal, {counts["fail"]} fail'
+            f'{f", {counts["unknown"]} not evaluated" if counts["unknown"] else ""}.</p>')
+    value_rows = [f"<tr><th>Value (nominal)</th>{td(no_nominal if c.value is None else qu(c.value, c.unit), 'answer:value', c.value)}</tr>"]
     if c.value_range is not None:
-        value_rows.append(
-            "<tr><th>Value over the bounds</th><td>"
-            f'<span data-key="answer:range_lo" data-raw="{esc(raw(c.value_range[0]))}">{esc(qty(c.value_range[0], c.unit))}</span> {DASH} '
-            f'<span data-key="answer:range_hi" data-raw="{esc(raw(c.value_range[1]))}">{esc(qty(c.value_range[1], c.unit))}</span> '
-            f"{esc(unit_label(c.unit))} (smallest to largest; the cases are named in \"Value by case\")</td></tr>")
+        lo, hi = c.value_range
+        same = qty(lo, c.unit) == qty(hi, c.unit)
+        if not (same and c.value is not None and qty(lo, c.unit) == qty(c.value, c.unit)):
+            value_rows.append(
+                "<tr><th>Range over the cases</th><td>"
+                f'<span data-key="answer:range_lo" data-raw="{esc(raw(lo))}">{esc(qty(lo, c.unit))}</span>'
+                + ("" if same else f' {DASH} <span data-key="answer:range_hi" data-raw="{esc(raw(hi))}">{esc(qty(hi, c.unit))}</span>')
+                + f" {esc(unit_label(c.unit))}</td></tr>")
     if values_by_case(c, str):
-        value_rows.append(f"<tr><th>Value by case</th>{td(values_by_case(c, lambda v: qty(v, c.unit) + ' ' + unit_label(c.unit)), 'answer:by_case')}</tr>")
+        value_rows.append(f"<tr><th>Value by case</th>{td(values_by_case(c, lambda x: qu(x, c.unit)), 'answer:by_case')}</tr>")
     when_m = min_soc_when(ev) if c.key == "min_state_of_charge" else None
     if when_m is not None:
         value_rows.append(f"<tr><th>Minimum occurs (UTC)</th>{td(when_text(when_m, c), 'answer:when')}</tr>")
@@ -312,20 +360,16 @@ def section_answer(ev, attr=None) -> str:
     if facts:
         value_rows.append(f"<tr><th>Single headings</th>{td(facts, 'answer:heading_facts')}</tr>")
     value_rows += [
-        f"<tr><th>Limit</th>{td(limit_text(c.limit_min, c.limit_max, c.unit), 'answer:limit', c.limit_min)}</tr>",
-        f"<tr><th>Signed margin (nominal)</th>{td(no_nominal if c.margin is None else f'{qty(c.margin, c.unit, plus=True)} {unit_label(c.unit)}', 'answer:margin', c.margin)}</tr>",
-        f"<tr><th>Worst-case margin over the bounds</th>"
-        f"{td(f'{qty(c.margin_worst, c.unit, plus=True)} {unit_label(c.unit)}', 'answer:margin_worst', c.margin_worst)}</tr>",
-        f"<tr><th>Constraint verdict</th><td>{state_chip(c.state, 'answer:state')}</td></tr>",
+        f"<tr><th>Limit</th>{td(limit, 'answer:limit', c.limit_min)}</tr>",
+        f"<tr><th>Margin (nominal)</th>{td(no_nominal if c.margin is None else qu(c.margin, c.unit, plus=True), 'answer:margin', c.margin)}</tr>",
+        f"<tr><th>Worst margin</th>{td(qu(c.margin_worst, c.unit, plus=True), 'answer:margin_worst', c.margin_worst)}</tr>",
     ]
     if worst_case_text(c):
-        value_rows.insert(-1, f"<tr><th>Where the worst-case margin is</th><td>{esc(worst_case_text(c))}</td></tr>")
+        value_rows.append(f"<tr><th>Worst margin is in</th><td>{esc(worst_case_text(c))}</td></tr>")
     if c.censored:
-        value_rows.append("<tr><th>Note</th><td>The nominal value is a bound: the analysed data ends before the quantity does.</td></tr>")
-    others = [x for x in v.constraints if x.state != "pass"]
-    why = "".join(f"<li>{esc(explain(x, ev))}"
-                  + (f" {esc(spread_sentence(ev, x, attr))}" if x is not c else "")
-                  + "</li>" for x in others)
+        value_rows.append("<tr><th>Note</th><td>The value is a bound: the analysed data ends first.</td></tr>")
+    others = [x for x in v.constraints if x.state != "pass" and x is not c]
+    why = "".join(f"<li>{esc(explain(x, ev))} {esc(spread_sentence(ev, x, attr))}</li>" for x in others)
     spread = spread_sentence(ev, c, attr)
     spread_html = f'<p class="spread"><b>Spread.</b> {esc(spread)}</p>' if spread else ""
     warn = "".join(f"<li>{esc(w)}</li>" for w in ev.warnings)
@@ -335,22 +379,18 @@ def section_answer(ev, attr=None) -> str:
         spread_html += f'<h3>Warnings from the engine</h3><ul class="limits">{warn}</ul>'
     hd = [x for x in v.constraints if getattr(x, "heading_dependent", False)]
     if hd:
-        spread_html += ('<p class="spread"><b>Lander heading.</b> The heading is unknown, as for any lander before it lands, so there is '
-                        "no nominal state of charge: the result is a range over all headings and the verdict follows the heading rule. "
-                        + esc(" ".join(x.heading_note for x in hd)) + "</p>")
-    why_html = f'<h3>What is not a clean pass</h3><ul class="limits">{why}</ul>' if why else ""
+        spread_html += ('<p class="spread"><b>Lander heading.</b> The heading is unknown before landing, so state of charge is a range '
+                        "over all headings. " + esc(" ".join(x.heading_note for x in hd)) + "</p>")
+    why_html = f'<h3>Also not a clean pass</h3><ul class="limits">{why}</ul>' if why else ""
     overview = table(
-        [th("Constraint"), th("Margin", "num"), th("Worst margin", "num"), th("Unit"), th("Verdict")],
+        [th("Requirement"), th("Margin", "num"), th("Worst margin", "num"), th("Unit"), th("Verdict")],
         [td(x.label) + td(qty(x.margin, x.unit, plus=True), cls="num") + td(qty(x.margin_worst, x.unit, plus=True), cls="num") + td(unit_label(x.unit))
-         + f"<td>{state_chip(x.state)}</td>" for x in v.constraints], caption="Every active constraint", cls="dense")
-    word = STATE_LABEL[v.state]
+         + f"<td>{state_chip(x.state)}</td>" for x in v.constraints], cls="dense")
     return (
         '<section id="answer"><h2>1. Answer</h2><div class="answer">'
-        f'<div class="verdict {esc(v.state)}" data-key="verdict:state" data-raw="{esc(v.state)}">{esc(word)}</div>'
-        f'<p class="lead">Overall verdict for <b>{esc(display_name(ev.scenario))}</b>, landing {esc(ev.scenario.landing_utc)}. '
-        f'Constraints: {counts["pass"]} pass, {counts["marginal"]} marginal, {counts["fail"]} fail'
-        f'{f", {counts["unknown"]} not evaluated" if counts["unknown"] else ""}.</p>'
-        f'<table class="kv">{"".join(value_rows)}</table>{spread_html}{why_html}{overview}</div></section>')
+        f'<div class="verdict {esc(v.state)}" data-key="verdict:state" data-raw="{esc(v.state)}">{esc(STATE_LABEL[v.state])}</div>'
+        f'{lead}<table class="kv facts">{"".join(fact_rows(ev))}</table>{overview}{why_html}</div>'
+        f'<h3>{esc(c.label)}</h3><table class="kv">{"".join(value_rows)}</table>{spread_html}</section>')
 
 
 def _is_model_default(profile, path: str) -> bool | None:
@@ -401,11 +441,11 @@ def _profile_rows(p) -> list[tuple[str, str, float | str | None, str]]:
         rows.append((f"panels.{i}.normal", f"Panel {i + 1} normal (body x, y, z)", None,
                      ", ".join(n10(c) for c in panel.normal_body) + (" (sun-tracking)" if panel.tracking else "")))
     a = p.attitude
-    rows += [("attitude.yaw_deg", "Heading, clockwise from north (deg)", a.yaw_deg,
+    rows += [("attitude.yaw_deg", "Heading, clockwise from north (\u00b0)", a.yaw_deg,
               f"unknown: all {len(a.yaws())} headings are evaluated" if a.yaw_deg is None else n10(a.yaw_deg)),
-             ("attitude.yaw_uncertainty_deg", "Heading uncertainty (deg)", a.yaw_uncertainty_deg,
+             ("attitude.yaw_uncertainty_deg", "Heading uncertainty (\u00b0)", a.yaw_uncertainty_deg,
               "not used (heading unknown)" if a.yaw_deg is None else n10(a.yaw_uncertainty_deg)),
-             ("attitude.tilt_deg", "Tilt (deg)", a.tilt_deg, n10(a.tilt_deg))]
+             ("attitude.tilt_deg", "Tilt (\u00b0)", a.tilt_deg, n10(a.tilt_deg))]
     b = p.battery
     rows += [("battery.capacity_wh", "Battery capacity (Wh)", b.capacity_wh, n10(b.capacity_wh)),
              ("battery.charge_efficiency", "Charge efficiency", b.charge_efficiency, n10(b.charge_efficiency)),
@@ -432,7 +472,7 @@ def terrain_error_html(ev, ter) -> str:
     hz = need(prov, "horizons", "evaluation.provenance")
     applied = [k for k in ("array", "antenna") if (hz.get(k) or {}).get("widened")]
     if not te.get("enabled") or ter is None or not applied:
-        why = ("the scenario turns it off" if not te.get("enabled") else "no terrain is used, so there is nothing to widen")
+        why = ("the plan turns it off" if not te.get("enabled") else "no terrain is used, so there is nothing to widen")
         return f"<p><b>Terrain error model:</b> not applied ({why}); the three cases share one horizon.</p>"
     out = [f"<p><b>Terrain error model:</b> applied in <b>{esc(te['mode'])}</b> mode at "
            f'<span data-key="terr:k_sigma" data-raw="{esc(raw(te["k_sigma"]))}">{esc(num(te["k_sigma"]))}</span> sigma.</p>']
@@ -443,10 +483,10 @@ def terrain_error_html(ev, ter) -> str:
             continue
         used.update(b.get("store_index") or [])
         zr, xr = b["sigma_z_m"], b["sigma_xy_m"]
-        rows.append(td(name) + td(f"{num(zr[0])} {DASH} {num(zr[1])}", f"terr:{k}:sigma_z_lo", zr[0], "num", f' data-raw-hi="{esc(raw(zr[1]))}"')
-                    + td(f"{num(xr[0])} {DASH} {num(xr[1])}", f"terr:{k}:sigma_xy_lo", xr[0], "num", f' data-raw-hi="{esc(raw(xr[1]))}"'))
+        rows.append(td(name) + td(span(zr[0], zr[1], num), f"terr:{k}:sigma_z_lo", zr[0], "num", f' data-raw-hi="{esc(raw(zr[1]))}"')
+                    + td(span(xr[0], xr[1], num), f"terr:{k}:sigma_xy_lo", xr[0], "num", f' data-raw-hi="{esc(raw(xr[1]))}"'))
     out.append(table([th("Horizon"), th("Vertical sigma used (m)", "num"), th("Horizontal sigma used (m)", "num")], rows,
-                     caption="Sigma applied to the horizon at the sampled azimuths (smallest to largest over the terrain stores the horizon crossed)"))
+                     caption="Sigma applied to the horizon (over the terrain stores it crossed)"))
     if te["mode"] == "custom":
         out.append(f"<p>Planner-set sigma: vertical {esc(num(te['sigma_z_m']))} m, horizontal {esc(num(te['sigma_xy_m']))} m "
                    f"(origin: {esc(origin_text(ev.scenario.terrain_error.origin))}).</p>")
@@ -457,7 +497,7 @@ def terrain_error_html(ev, ter) -> str:
                  + td(st["source"] + ". " + st["note"], cls="small")
                  for i, st in enumerate(stores) if i in used]
         out.append(table([th("Terrain store"), th("Vertical (m)", "num"), th("Horizontal (m)", "num"), th("Vertical basis"), th("Horizontal basis"), th("Source and note")], srows,
-                         caption="Per-store sigma of the stores the horizons used. A basis of \"assumed\" means no measurement exists for that figure"))
+                         caption="Per-store sigma of the stores the horizons used (\"assumed\": no measurement exists)"))
         out.append(seam_html(hz))
     return "".join(out)
 
@@ -470,7 +510,7 @@ def seam_html(hz: dict) -> str:
     return (f"<p><b>Near-field store seam.</b> The {esc(seam['ground_store'])} and {esc(seam['other_store'])} stores meet "
             f"{esc(num(seam['distance_m']))} m from the lander. Their heights differ by a median {esc(num(seam['step_median_m']))} m "
             f"(95th percentile {esc(num(seam['step_p95_m']))} m) over {esc(str(seam['n_crossings']))} crossings, which can move the "
-            f"horizon by {esc(num(seam['horizon_shift_deg']))} deg.</p>")
+            f"horizon by {esc(num(seam['horizon_shift_deg']))}\u00b0.</p>")
 
 
 def section_scenario(ev) -> str:
@@ -481,8 +521,8 @@ def section_scenario(ev) -> str:
     site_rows = [
         f"<tr><th>Name</th><td>{esc(sc.site.name or NA)}"
         f"{f' (catalogue id {esc(sc.site.catalog_id)})' if sc.site.catalog_id else ''}</td></tr>",
-        f"<tr><th>Latitude (deg)</th>{td(n10(sc.site.lat_deg), 'site:lat_deg', sc.site.lat_deg, 'num')}</tr>",
-        f"<tr><th>Longitude (deg east)</th>{td(n10(sc.site.lon_deg), 'site:lon_deg', sc.site.lon_deg, 'num')}</tr>",
+        f"<tr><th>Latitude (\u00b0)</th>{td(n10(sc.site.lat_deg), 'site:lat_deg', sc.site.lat_deg, 'num')}</tr>",
+        f"<tr><th>Longitude (\u00b0 east)</th>{td(n10(sc.site.lon_deg), 'site:lon_deg', sc.site.lon_deg, 'num')}</tr>",
     ]
     if ter is None:
         site_rows.append("<tr><th>Terrain used</th><td>None: smooth sphere at the observer heights "
@@ -491,15 +531,15 @@ def section_scenario(ev) -> str:
         site_rows.append(
             f"<tr><th>Terrain store at the site</th><td><span class='mono'>{esc(ter['dem_id'])}</span>, pixel "
             f'<span data-key="site:pixel_m" data-raw="{esc(raw(ter["pixel_m"]))}">{esc(num(ter["pixel_m"]))}</span> m '
-            f"(finest store with valid data at the site; provider {esc(ev.provider_name)})</td></tr>")
+            f"(the finest store with data at the site)</td></tr>")
     if (stack_text := terrain_stack_sentence(prov)) is not None:
         site_rows.append(f"<tr><th>Terrain stack</th><td>{esc(stack_text.removeprefix('Terrain stack: '))}</td></tr>")
     site_rows.append(
         f"<tr><th>Observer heights</th><td>array {esc(num(sc.profile.array_height_m))} m, "
         f"antenna {esc(num(sc.profile.antenna_height_m))} m above local ground</td></tr>")
     epoch_rows = [
-        f"<tr><th>Landing epoch (UTC)</th>{td(sc.landing_utc, 'scenario:landing_utc', sc.landing_utc)}</tr>",
-        f"<tr><th>Surface mission duration (h)</th>{td(num(sc.mission_duration_h), 'scenario:duration_h', sc.mission_duration_h, 'num')}</tr>",
+        f"<tr><th>Landing (UTC)</th>{td(sc.landing_utc, 'scenario:landing_utc', sc.landing_utc)}</tr>",
+        f"<tr><th>Time on the surface (h)</th>{td(num(sc.mission_duration_h), 'scenario:duration_h', sc.mission_duration_h, 'num')}</tr>",
         f"<tr><th>Analysed span (UTC)</th><td>{esc(_to_second(analysis['t_first_utc']))} {DASH} {esc(_to_second(analysis['t_last_utc']))} "
         f"({esc(num(sc.sampling.lookback_h))} h before landing to find the last sunrise)</td></tr>",
         f"<tr><th>Sampling step (s)</th>{td(num(sc.sampling.step_s), 'scenario:step_s', sc.sampling.step_s, 'num')}</tr>",
@@ -535,12 +575,11 @@ def section_scenario(ev) -> str:
                     + td(n10(s.rx_mask_deg), f"station:{s.id}:rx", s.rx_mask_deg, "num") + td(n10(s.tx_mask_deg), f"station:{s.id}:tx", s.tx_mask_deg, "num")
                     + td(NA + " (unknown; 0 is a placeholder)" if s.alt_basis == "unknown" else n10(s.alt_m), f"station:{s.id}:alt", s.alt_m, "num")
                     + td(s.alt_basis) + td(basis_label(s.origin.basis)) for s in net.stations]
-        net_html = table([th("Station"), th("Name"), th("Network"), th("Lat (deg)", "num"), th("Lon (deg E)", "num"),
-                          th("Rx mask (deg)", "num"), th("Tx mask (deg)", "num"), th("Altitude (m)", "num"), th("Altitude basis"), th("Basis")], net_rows,
-                         caption=f"Ground network: {net.label or 'unnamed'}; contact uses the {net.direction} mask", cls="dense")
+        net_html = table([th("Station"), th("Name"), th("Network"), th("Lat (\u00b0)", "num"), th("Lon (\u00b0 E)", "num"),
+                          th("Rx mask (\u00b0)", "num"), th("Tx mask (\u00b0)", "num"), th("Altitude (m)", "num"), th("Altitude basis"), th("Basis")], net_rows,
+                         caption=f"{net.label or 'Ground network'}; contact uses the {net.direction} mask", cls="dense")
     else:
-        net_html = ("<p><b>Ground network:</b> none. Contact is geometric direct-to-Earth: the Earth centre above the "
-                    "antenna horizon plus the clearance margin, with no Earth-side mask.</p>")
+        net_html = ("<p>None: Earth in view means the Earth's centre above the antenna horizon plus the clearance margin.</p>")
     ecl = need(prov, "eclipse", "evaluation.provenance")
     eclipse_html = (
         f"<p><b>Eclipse convention:</b> {esc(ecl['shadow'])} shadow, occulting radius "
@@ -548,16 +587,16 @@ def section_scenario(ev) -> str:
         f"(atmosphere {esc(num(ecl['atmosphere_km']))} km); {esc(origin_text(sc.eclipse.origin))}.</p>")
     terr_html = terrain_error_html(ev, ter)
     return (
-        '<section id="scenario"><h2>2. Scenario</h2>'
+        '<section id="scenario"><h2>2. Plan</h2>'
         f'<div class="conv"><b>Conventions.</b> {esc(CONVENTIONS)}</div>'
         f'<h3>Site</h3><table class="kv">{"".join(site_rows)}</table>'
-        f'<h3>Landing epoch and duration</h3><table class="kv">{"".join(epoch_rows)}</table>'
-        f'<h3>Lander profile: {esc(sc.profile.name)}</h3>'
+        f'<h3>Landing</h3><table class="kv">{"".join(epoch_rows)}</table>'
+        f'<h3>Lander: {esc(sc.profile.name)}</h3>'
         + (f"<p class='small'>{esc(sc.profile.description.replace(chr(96), ''))}</p>" if sc.profile.description else "")
         + table([th("Parameter"), th("Value", "num"), th("Basis"), th("Source")], [r for r in prof_rows])
-        + '<h3>Constraints and where each limit came from</h3>'
-        + table([th("Constraint"), th("Limit"), th("Basis"), th("Source")], cons_rows)
-        + f"<h3>Ground network</h3>{net_html}<h3>Eclipse and terrain conventions</h3>{eclipse_html}{terr_html}"
+        + '<h3>Requirements and where each limit came from</h3>'
+        + table([th("Requirement"), th("Limit"), th("Basis"), th("Source")], cons_rows)
+        + f"<h3>Ground stations</h3>{net_html}<h3>Eclipse and terrain conventions</h3>{eclipse_html}{terr_html}"
         + (f"<p><b>Notes:</b> {esc(sc.notes)}</p>" if sc.notes else "") + "</section>")
 
 
@@ -603,7 +642,7 @@ def section_constraints(ev) -> str:
             td(c.label)
             + td(("no nominal (heading unknown)" if c.value is None else qty(c.value, c.unit)) + (" (bound)" if c.censored else ""),
                  f"constraint:{k}:value", c.value, "num")
-            + td(f"{qty(rng_lo, c.unit)} {DASH} {qty(rng_hi, c.unit)}" if c.value_range else NA, f"constraint:{k}:range", rng_lo, "num",
+            + td(span(rng_lo, rng_hi, lambda v, u=c.unit: qty(v, u)) if c.value_range else NA, f"constraint:{k}:range", rng_lo, "num",
                  f' data-raw-hi="{esc(raw(rng_hi))}"')
             + td(values_by_case(c, lambda v, u=c.unit: qty(v, u), short=True), f"constraint:{k}:by_case", None, "small bycase")
             + td(unit_label(c.unit))
@@ -613,7 +652,7 @@ def section_constraints(ev) -> str:
             + td(qty(c.margin_worst, c.unit, plus=True), f"constraint:{k}:margin_worst", c.margin_worst, "num")
             + td(worst_case_text(c, short=True), f"constraint:{k}:worst_case", c.worst_world, cls="small wholeword")
             + f"<td>{state_chip(c.state, f'constraint:{k}:state')}</td>")
-    head = [th("Constraint"), th("Value", "num"), th("Range over bounds", "num"), th("Value by case"), th("Unit"), th("Limit", "num"),
+    head = [th("Requirement"), th("Value", "num"), th("Range over the cases", "num"), th("Value by case"), th("Unit"), th("Limit", "num"),
             th("Margin", "num"), th("Worst margin", "num"), th("Worst margin is in"), th("Verdict")]
     mrows = []
     for m in ev.metrics:
@@ -624,18 +663,15 @@ def section_constraints(ev) -> str:
                                           + ("one-sided: the range is over the cases that have the event; the others have none in the analysed span. "
                                              if getattr(m, "one_sided", False) else "") + m.note, cls="small"))
     return (
-        '<section id="constraints"><h2>3. Constraint table</h2>'
-        "<p class='small'>Margin is the nominal signed margin in the constraint's unit, positive inside the limit. Worst margin is the "
-        "smallest margin over the nominal, optimistic and pessimistic cases; \"Worst margin is in\" names the case and the limit the engine "
-        "reports for it (it is not always the pessimistic case). \"min limit\" and \"max limit\" name the side that binds. Optimistic and pessimistic are the lower and the upper horizon bracket, or, with an "
-        "unknown lander heading, the upper and the lower bound over headings. Pass holds in the worst case; Marginal holds "
-        "nominally only; Fail does not hold nominally.</p>"
+        '<section id="constraints"><h2>3. Requirements</h2>'
+        "<p class='small'>Margin is nominal and positive inside the limit; worst margin is the smallest over the three cases. Pass holds in "
+        "every case, Marginal in the nominal case only, Fail not in the nominal case.</p>"
         + table(head, rows)
         + "".join(f"<p class='small'><b>{esc(x.label)}, single headings.</b> {esc(heading_facts_text(x))}</p>"
                   for x in ev.verdict.constraints if heading_facts_text(x))
         + (f"<p class='small'><b>Minimum state of charge occurs at (UTC).</b> {esc(when_text(w, next((x for x in ev.verdict.constraints if x.key == 'min_state_of_charge'), None)))}.</p>"
            + basis_paragraph(w) if (w := min_soc_when(ev)) is not None else "")
-        + "<h3>Headline metrics with bounds</h3>"
+        + "<h3>Metrics</h3>"
         + table([th("Metric"), th("Nominal", "num"), th("Low", "num"), th("High", "num"), th("Unit"), th("Note")], mrows)
         + "</section>")
 
@@ -687,8 +723,8 @@ def windows_table(scan, labels: dict[str, str]) -> str:
             + td(str(w.n_pass), f"window:{i}:n_pass", w.n_pass, "num") + td(utc(w.best_et), f"window:{i}:best", w.best_et)
             + f"<td>{state_chip(w.best_state)}</td>" + td(signed_kind(w.best_margin, w.best_margin_kind), f"window:{i}:best_margin", w.best_margin, "num")
             + td(labels.get(w.best_limiting, w.best_limiting) if w.best_limiting else NA))
-    return table([th("Opens (UTC)"), th("Closes (UTC)"), th("Duration (h)", "num"), th("Candidates", "num"), th("Pass", "num"),
-                  th("Best candidate (UTC)"), th("Best state"), th("Best norm. margin", "num"), th("Limiting")], rows, caption=MARGIN_KIND_NOTE, cls="dense") + notes_paragraph(
+    return table([th("Opens (UTC)"), th("Closes (UTC)"), th("Duration (h)", "num"), th("Landing times", "num"), th("Pass", "num"),
+                  th("Best landing (UTC)"), th("Best state"), th("Best norm. margin", "num"), th("Limiting")], rows, caption=MARGIN_KIND_NOTE, cls="dense") + notes_paragraph(
         kind_notes((w.best_margin_kind, w.best_margin_note) for w in scan.windows))
 
 
@@ -697,7 +733,7 @@ def comparison_table(cmp) -> str:
     head = [th("Metric")] + [th(n, "num") for n in names] + [th("Unit")]
     rows = []
     rows.append(td("Verdict") + "".join(f"<td class='num'>{state_chip(s, f'compare:state:{j}')}</td>" for j, s in enumerate(cmp.states)) + td(""))
-    rows.append(td("Limiting constraint") + "".join(td(lim or NA, f"compare:limiting:{j}", lim, "num") for j, lim in enumerate(cmp.limiting)) + td(""))
+    rows.append(td("Limiting requirement") + "".join(td(lim or NA, f"compare:limiting:{j}", lim, "num") for j, lim in enumerate(cmp.limiting)) + td(""))
     for i, key in enumerate(cmp.metric_keys):
         cells = ""
         for j in range(len(names)):
@@ -707,10 +743,11 @@ def comparison_table(cmp) -> str:
             m = next((x for x in cmp.evaluations[j].metrics if x.key == key), None)
             bound = (" (bound)" if m is not None and m.censored else "") + (" (one-sided)" if m is not None and m.one_sided else "")
             no_nominal = isn and not (math.isnan(lo) or math.isnan(hi))
-            txt = f"no nominal [{qty(float(lo), u)} {DASH} {qty(float(hi), u)}]" if no_nominal else NA if isn else qty(float(v), u) + bound + ("" if math.isnan(lo) or (lo == v == hi) else f" [{qty(float(lo), u)} {DASH} {qty(float(hi), u)}]")
+            rng = "" if isn and not no_nominal else span(float(lo), float(hi), lambda x, u=u: qty(x, u)) if not math.isnan(lo) else ""
+            txt = f"no nominal [{rng}]" if no_nominal else NA if isn else qty(float(v), u) + bound + ("" if not rng or rng == qty(float(v), u) else f" [{rng}]")
             cells += td(txt, f"compare:{key}:{j}", None if isn else float(v), "num")
         rows.append(td(cmp.metric_labels[i]) + cells + td(unit_label(cmp.metric_units[i])))
-    return table(head, rows, caption="Comparison matrix: nominal value, with the smallest-to-largest range over the three cases in brackets where it is not a point. (bound): the value is only a bound, the data ends before the quantity does. (one-sided): the range is over the cases that have the event")
+    return table(head, rows, caption="Nominal value, with the range over the three cases in brackets. (bound): the data ends first. (one-sided): the range covers only the cases that have the event")
 
 
 def section_figures(ev, scan, slip, cmp) -> str:
@@ -734,22 +771,21 @@ def section_figures(ev, scan, slip, cmp) -> str:
     if scan is not None:
         c = scan.counts()
         out.append(_figure(figures.calendar(scan),
-                           "Landing opportunity calendar. Each row is one lunation, each column a time after new moon; the cell shows the best "
-                           f"verdict among the candidates in it. Candidates: {c.get('pass', 0)} pass, {c.get('marginal', 0)} marginal, "
+                           "Landing calendar. Each row is one lunar day, each column a time after new moon; a cell shows the best "
+                           f"verdict among its landing times: {c.get('pass', 0)} pass, {c.get('marginal', 0)} marginal, "
                            f"{c.get('fail', 0)} fail.", n))
         n += 1
         closing, shares = scan.closing_constraints(), scan.closing_fraction()
         crow = [td(labels.get(k, k)) + td(str(v), f"scan:closing:{k}", v, "num")
                 + td("n/a" if shares[k] is None else f"{num(shares[k] * 100.0)} %", f"scan:closing_share:{k}", shares[k], "num") for k, v in closing.items()]
-        out.append(table([th("Constraint that closes a failing candidate"), th("Candidates", "num"), th("Share of failing candidates", "num")], crow))
+        out.append(table([th("Requirement that fails a landing time"), th("Landing times", "num"), th("Share of failing landing times", "num")], crow))
         out.append("<h3>Open landing windows</h3>" + (windows_table(scan, labels) + WINDOW_NOTE.format(m=num(scan.spacing_s / 60.0)) if scan.windows else "<p>No open window in the scanned range.</p>"))
     if slip is not None:
         out.append(_figure(figures.slip_curve(slip),
-                           "Slip curve: the normalised margin of the limiting constraint (margin divided by that constraint's "
-                           "margin scale) versus slip, and the wait to the next open landing candidate. A margin is the worst case, except at a failing slip, "
-                           "which reports the nominal margin (ring) or, where the limiting constraint has no nominal, the margin at the upper bound over "
-                           "headings (square). Margins of different kinds are not comparable, so points of different kinds are never joined by a line. A diamond at 0 h marks a slip with no "
-                           "open landing found in the searched range (it is not a wait of zero).", n))
+                           "Slip curve: the limiting requirement's margin over its margin scale versus slip, and the wait to the next open landing time. "
+                           "Margins are worst-case; a failing slip shows its nominal margin (ring) or, with an unknown heading, the margin at the upper "
+                           "bound over headings (square). Points of different kinds are not joined. A diamond at 0 h marks a slip with no open landing "
+                           "in the searched range.", n))
         n += 1
         out.append(slip_table(slip, labels))
     if cmp is not None:
@@ -816,15 +852,15 @@ def _event_rows(ev, provider) -> list[tuple[float, str]]:
     contact = need(ivs, "contact", "evaluation.intervals")
     for i, r in enumerate(contact):
         if r.nominal and not r.start_censored and t0 <= r.start_et <= t1:
-            edge("contact_start", named("earthrise", r.start_et, "Network contact acquired"), i, r.start_et, r.start_range,
+            edge("contact_start", named("earthrise", r.start_et, "Earth link starts"), i, r.start_et, r.start_range,
                  "" if r.certain else "the pessimistic case never opens this interval", lo_censored=r.start_range_censored,
                  worlds=r.start_worlds)
         if r.nominal and not r.end_censored and t0 <= r.end_et <= t1:
-            edge("contact_end", named("earthset", r.end_et, "Network contact lost"), i, r.end_et, r.end_range, "", hi_censored=r.end_range_censored,
+            edge("contact_end", named("earthset", r.end_et, "Earth link ends"), i, r.end_et, r.end_range, "", hi_censored=r.end_range_censored,
                  worlds=r.end_worlds)
     for i, r in enumerate(contact):
         if not r.nominal and t0 <= r.start_range[0] <= t1:
-            edge("contact_optimistic", "Network contact, optimistic case only", i, None, r.start_range,
+            edge("contact_optimistic", "Earth link, optimistic case only", i, None, r.start_range,
                  f"opens and closes only in {only_in(r.start_worlds)}", lo_censored=r.start_range_censored,
                  hi_censored=r.end_range_censored, worlds=r.start_worlds)
     for i, r in enumerate(need(ivs, "eclipse", "evaluation.intervals")):
@@ -855,17 +891,15 @@ def section_events(ev, provider, attr=None) -> str:
             + td(num(att.az_deg), f"limb:{kind}:az", att.az_deg, "num") + td(num(att.horizon_elev_deg), f"limb:{kind}:horizon", att.horizon_elev_deg, "num")
             + td(att.cause) + td(att.detail + blk, cls="small"))
     return (
-        '<section id="events"><h2>5. Key events</h2>'
-        "<p class='small'>Half-flux events are the crossings the verdicts use. Earliest and latest are the edge times over the "
-        "nominal, optimistic and pessimistic cases. Eclipse edges do not depend on the horizon. Sunrises and sunsets are listed for the "
-        "mission and the last sunrise before landing.</p>"
+        '<section id="events"><h2>5. Events</h2>'
+        "<p class='small'>Sunrise and sunset are the half-flux crossings the verdicts use. Earliest and latest span the three cases; "
+        "eclipse edges do not depend on the horizon.</p>"
         + table([th("Event"), th("Nominal (UTC)"), th("Earliest (UTC)"), th("Latest (UTC)"), th("Earliest / latest from"), th("Note")],
-                rows or [td("none in the mission") + td("") * 5], caption="Earliest / latest from: the horizon case that gives the earliest and the latest edge, as the engine states it")
+                rows or [td("none in the mission") + td("") * 5])
         + "<h3>Limb events after landing</h3>"
-        "<p class='small'>The last (first) limb is the instant the last (first) point of the solar disc crosses the horizon. It is not "
-        "the half-flux event the verdicts use, and the two can differ by hours. Where the Earth's shadow ends the sunlight there is "
-        "no limb crossing, and the row says so and gives the half-flux time instead.</p>"
-        + table([th("Event"), th("Time (UTC)"), th("Azimuth (deg)", "num"), th("Horizon (deg)", "num"), th("Cause"), th("Detail")], limb_rows)
+        "<p class='small'>The instant the last or first point of the Sun's disc crosses the horizon, which can be hours from the "
+        "half-flux event.</p>"
+        + table([th("Event"), th("Time (UTC)"), th("Azimuth (\u00b0)", "num"), th("Horizon (\u00b0)", "num"), th("Cause"), th("Detail")], limb_rows)
         + attribution_html(attr) + "</section>")
 
 
@@ -873,9 +907,7 @@ def section_limits(ev, number: int = 6, extra=(), base=None) -> str:
     groups: dict[str, list] = {}
     for note in (*(applicable_limits(ev) if base is None else base), *extra):
         groups.setdefault(note.category, []).append(note)
-    out = [f'<section id="limits"><h2>{number}. Assumptions and limits</h2>'
-           "<p class='small'>Each statement is selected from this scenario's latitude, terrain resolution, sampling step, shadow convention "
-           "and profile, and cites the validation report it comes from.</p>"]
+    out = [f'<section id="limits"><h2>{number}. Assumptions</h2>']
     for cat, notes in groups.items():
         out.append(f"<h3>{esc(cat)}</h3><ul class='limits'>")
         for n in notes:
@@ -904,10 +936,10 @@ def section_provenance(ev, extras: list[tuple[str, dict]], cmp=None, number: int
     hz = need(prov, "horizons", "evaluation.provenance")
     arr = need(hz, "array", "evaluation.provenance.horizons")
     ant = need(hz, "antenna", "evaluation.provenance.horizons")
-    parts = [f'<section id="provenance"><h2>{number}. Provenance appendix</h2><h3>Code and conventions</h3>']
+    parts = [f'<section id="provenance"><h2>{number}. Provenance</h2><h3>Code and conventions</h3>']
     parts.append(table([th("Item"), th("Value")], [
-        td("Scenario SHA-256 (canonical JSON)") + td(sha, "prov:scenario_sha256", sha, "hash"),
-        td("Scenario schema version") + td(str(need(prov, "schema_version", "evaluation.provenance"))),
+        td("Plan SHA-256 (canonical JSON)") + td(sha, "prov:scenario_sha256", sha, "hash"),
+        td("Plan schema version") + td(str(need(prov, "schema_version", "evaluation.provenance"))),
         td("lunarnav package version") + td(code["package_version"], "prov:package_version", code["package_version"]),
         td("lunarnav source SHA-256") + td(code["source_sha256"], "prov:source_sha256", code["source_sha256"], "hash"),
         td("Ephemeris frame") + td(str(eph.get("frame", NA))),
@@ -947,16 +979,16 @@ def section_provenance(ev, extras: list[tuple[str, dict]], cmp=None, number: int
         parts.append(f"<h3>{esc(title)}</h3>" + _kv([(k, str(v)) for k, v in need(p, "analysis", title).items()]))
     if cmp is not None:
         parts.append("<h3>Comparison members</h3>" + table(
-            [th("#"), th("Scenario"), th("Scenario SHA-256")],
+            [th("#"), th("Plan"), th("Plan SHA-256")],
             [td(str(j)) + td(n) + td(e.provenance["scenario_sha256"], f"compare:sha:{j}", e.provenance["scenario_sha256"], "hash")
              for j, (n, e) in enumerate(zip(cmp.names, cmp.evaluations))]))
     doc = canonical_scenario_json(ev.scenario)
     if hashlib.sha256(doc.encode()).hexdigest() != sha:
         raise ReportInputError("the scenario document does not hash to the evaluation provenance scenario_sha256")
     b64 = base64.b64encode(doc.encode()).decode()
-    parts.append('<h3>Scenario document (rerun with <span class="mono">lunarnav.scenario.Scenario.model_validate_json</span>)</h3>'
+    parts.append('<h3>Plan document</h3>'
                  f'<p class="small"><a class="scenario-file" download="{SCENARIO_FILE}" href="data:application/json;base64,{b64}">'
-                 f'{SCENARIO_FILE}</a> is this document as a file (embedded in the PDF as an attachment).</p>'
+                 f'{SCENARIO_FILE}</a> reruns this analysis (attached to the PDF).</p>'
                  f'<pre id="scenario-document" data-sha256="{esc(sha)}">{esc(doc)}</pre>')
     parts.append("</section>")
     return "".join(parts)
@@ -1048,17 +1080,17 @@ def render_html(
                                search_site_evaluations=search_site_evaluations)
     body = (
         f'<header><h1><span class="rt">{esc(REPORT_TITLE)}: {esc(display_name(sc))}</span></h1>'
-        f'<div class="sub">Lunar Landing Site Navigator, engine-generated. Every number in this document comes from the engine.</div>'
-        f'<div class="meta"><span>Generated <span class="rg">{esc(generated)}</span></span>'
-        f'<span>Scenario hash <span class="mono rh">{esc(sha[:16])}</span></span>'
-        f"<span>Landing {esc(sc.landing_utc)}</span><span>Duration {esc(num(sc.mission_duration_h))} h</span></div></header>"
+        f'<div class="meta"><span>Lunar Landing Site Navigator</span><span>Generated <span class="rg">{esc(generated)}</span></span>'
+        f'<span>Landing <span class="rh">{esc(sc.landing_utc)}</span></span></div></header>'
         + section_answer(evaluation, attr) + section_scenario(evaluation) + section_constraints(evaluation)
         + section_figures(evaluation, scan, slip, comparison) + section_events(evaluation, provider, attr)
         + survey_html + section_limits(evaluation, number, survey_notes, base_notes) + section_provenance(evaluation, extras, comparison, number + 1))
+    text, pre, rest = body.partition('<pre id="scenario-document"')
+    body = re.sub(r"(\d) \u00b0", "\\1\u00b0", text) + pre + rest
     return (
         '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">'
         f"<title>{esc(REPORT_TITLE)}: {esc(display_name(sc))}</title>"
         f'<meta name="generator" content="lunarnav.report"><meta name="dcterms.created" content="{esc(generated)}">'
-        f'<meta name="description" content="Scenario {esc(sha)}">'
+        f'<meta name="description" content="Plan {esc(sha)}">'
         f"<style>{font_face_css()}\n{CSS}</style></head><body>{body}</body></html>\n")
 

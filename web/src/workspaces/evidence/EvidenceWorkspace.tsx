@@ -1,24 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePublishScreenContext } from "../../ask/screenContext";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { evidenceApi } from "../../api/endpoints";
 import { useLoad } from "../../api/useLoad";
 import type { EvidenceDoc } from "../../api/types";
 import { Markdown } from "../../components/content/Markdown";
-import { IconButton } from "../../components/ui/Button";
+import { Button } from "../../components/ui/Button";
+import { Disclosure } from "../../components/ui/Disclosure";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { Tabs } from "../../components/ui/Panel";
+import { Icon, type IconName } from "../../components/ui/Icon";
 import { evidenceHref, resolveSection } from "../../lib/evidence";
 import { extractToc, resolveRelative, type TocEntry } from "../../lib/markdown";
 import { toast } from "../../state/toasts";
-import { Chip } from "../analyst/Chip";
+import { Chip, type ChipTone } from "../analyst/Chip";
+import { CHECKS, DOC_TITLES, NOT_VALIDATED, type CheckStatus } from "./glance";
 import { LoadState, MetaView } from "./MetaView";
 
 const MARK_MS = 3000;
 const ACTIVE_OFFSET = 24;
 
-const plainTitle = (t: string) => t.replaceAll("`", "");
+const docTitle = (d: EvidenceDoc) => DOC_TITLES[d.id] ?? d.title.replaceAll("`", "");
+
+const STATUS: Record<CheckStatus, { tone: ChipTone; icon?: IconName }> = {
+  Met: { tone: "pass", icon: "check" },
+  Missed: { tone: "fail", icon: "cross" },
+  Mixed: { tone: "marginal", icon: "warn" },
+  Measured: { tone: "default" },
+};
 
 function useActiveHeading(scroller: HTMLElement | null, toc: readonly TocEntry[]): string | null {
   const [active, setActive] = useState<string | null>(null);
@@ -51,7 +59,7 @@ function useActiveHeading(scroller: HTMLElement | null, toc: readonly TocEntry[]
   return scroller && toc.some((t) => t.id === active) ? active : null;
 }
 
-function DocView({ doc, docs, section, onSection }: { doc: EvidenceDoc; docs: EvidenceDoc[]; section: string | null; onSection: (text: string | null) => void }) {
+function DocView({ doc, docs, section }: { doc: EvidenceDoc; docs: EvidenceDoc[]; section: string | null }) {
   const docId = doc.id;
   const { state, reload } = useLoad(useCallback((signal: AbortSignal) => evidenceApi.doc(docId, { signal }), [docId]));
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
@@ -80,12 +88,7 @@ function DocView({ doc, docs, section, onSection }: { doc: EvidenceDoc; docs: Ev
     return resolveSection(section, fullToc) ?? ("missing" as const);
   }, [section, state, fullToc]);
   const active = useActiveHeading(scroller, toc);
-
-  const activeText = toc.find((t) => t.id === active)?.text ?? null;
-  useEffect(() => {
-    onSection(activeText);
-  }, [activeText, onSection]);
-  useEffect(() => () => onSection(null), [onSection]);
+  const current = toc.find((t) => t.id === active)?.text ?? null;
 
   useEffect(() => {
     if (!target || target === "missing") return;
@@ -100,11 +103,19 @@ function DocView({ doc, docs, section, onSection }: { doc: EvidenceDoc; docs: Ev
     };
   }, [target, state]);
 
-  if (state.status !== "ready") return <LoadState state={state} loading={`Loading ${plainTitle(doc.title)}`} what={plainTitle(doc.title)} onRetry={reload} />;
+  const copyLink = () => {
+    const url = window.location.origin + evidenceHref(doc.id, current);
+    navigator.clipboard.writeText(url).then(
+      () => toast({ kind: "success", title: "Link copied" }, 1500),
+      () => toast({ kind: "error", title: "Could not copy the link" }),
+    );
+  };
+
+  if (state.status !== "ready") return <LoadState state={state} loading={`Loading ${docTitle(doc)}`} what={docTitle(doc)} onRetry={reload} />;
 
   return (
     <div className="evi-doc" ref={setScroller}>
-      <article className="evi-article" aria-label={plainTitle(doc.title)}>
+      <article className="evi-article" aria-label={docTitle(doc)}>
         {target === "missing" && (
           <p className="evi-miss" role="status">
             <Chip tone="marginal" icon="warn">
@@ -115,39 +126,42 @@ function DocView({ doc, docs, section, onSection }: { doc: EvidenceDoc; docs: Ev
         )}
         <Markdown source={state.data} resolveImage={resolveImage} resolveLink={resolveLink} />
       </article>
-      {toc.length > 1 && (
-        <nav className="evi-toc" aria-label="On this page">
-          <ul>
-            {toc.map((t) => (
-              <li key={t.id} className={t.level === 3 ? "evi-toc-sub" : undefined}>
-                <a
-                  href={`#${t.id}`}
-                  className={t.id === active ? "is-active" : undefined}
-                  aria-current={t.id === active ? "location" : undefined}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(t.id)?.scrollIntoView({ block: "start", behavior: "smooth" });
-                  }}
-                >
-                  {t.text}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+      <aside className="evi-aside">
+        <Button size="sm" variant="ghost" icon="link" onClick={copyLink} title={current ? `Copy a link to "${current}"` : undefined}>
+          {current ? "Copy section link" : "Copy link"}
+        </Button>
+        {toc.length > 1 && (
+          <nav className="evi-toc" aria-label="On this page">
+            <ul>
+              {toc.map((t) => (
+                <li key={t.id} className={t.level === 3 ? "evi-toc-sub" : undefined}>
+                  <a
+                    href={`#${t.id}`}
+                    className={t.id === active ? "is-active" : undefined}
+                    aria-current={t.id === active ? "location" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById(t.id)?.scrollIntoView({ block: "start", behavior: "smooth" });
+                    }}
+                  >
+                    {t.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+      </aside>
     </div>
   );
 }
 
-function DocList({ docs, selected, onOpen }: { docs: EvidenceDoc[]; selected: EvidenceDoc; onOpen: (id: string) => void }) {
-  const collide = useMemo(() => {
-    const seen = new Map<string, number>();
-    for (const d of docs) seen.set(plainTitle(d.title), (seen.get(plainTitle(d.title)) ?? 0) + 1);
-    return (d: EvidenceDoc) => (seen.get(plainTitle(d.title)) ?? 0) > 1;
-  }, [docs]);
+function DocList({ docs, selected, onOpen }: { docs: EvidenceDoc[]; selected: string | null; onOpen: (id: string | null) => void }) {
   return (
     <nav className="evi-list" aria-label="Documents">
+      <button type="button" className="evi-item" aria-current={selected === null ? "page" : undefined} onClick={() => onOpen(null)}>
+        At a glance
+      </button>
       {[...Map.groupBy(docs, (d) => d.kind)].map(([kind, group]) => (
         <section key={kind} className="evi-group" aria-labelledby={`evi-group-${kind}`}>
           <h2 id={`evi-group-${kind}`} className="evi-group-title">
@@ -156,15 +170,8 @@ function DocList({ docs, selected, onOpen }: { docs: EvidenceDoc[]; selected: Ev
           <ul>
             {group.map((d) => (
               <li key={d.id}>
-                <button
-                  type="button"
-                  className="evi-item"
-                  title={d.path}
-                  aria-current={d.id === selected.id ? "page" : undefined}
-                  onClick={() => onOpen(d.id)}
-                >
-                  <span className="evi-item-title">{plainTitle(d.title)}</span>
-                  {collide(d) && <span className="evi-item-path">{d.path}</span>}
+                <button type="button" className="evi-item" aria-current={d.id === selected ? "page" : undefined} onClick={() => onOpen(d.id)}>
+                  {docTitle(d)}
                 </button>
               </li>
             ))}
@@ -175,70 +182,98 @@ function DocList({ docs, selected, onOpen }: { docs: EvidenceDoc[]; selected: Ev
   );
 }
 
-type Tab = "reports" | "versions";
+const COUNTS = (["Met", "Missed", "Mixed", "Measured"] as const).map((s) => [s, CHECKS.filter((c) => c.status === s).length] as const).filter(([, n]) => n > 0);
+
+function Glance() {
+  return (
+    <div className="evi-glance-scroll">
+      <div className="evi-glance">
+        <header className="evi-glance-head">
+          <h1>At a glance</h1>
+          <p className="evi-glance-sum">
+            {CHECKS.length} checks against independent references:{" "}
+            {COUNTS.map(([s, n], i) => (
+              <span key={s}>
+                {i > 0 && ", "}
+                {n} {s.toLowerCase()}
+              </span>
+            ))}
+            .
+          </p>
+        </header>
+        <div className="evi-checks-wrap">
+          <table className="evi-checks">
+            <thead>
+              <tr>
+                <th scope="col">Check</th>
+                <th scope="col">Reference</th>
+                <th scope="col">Result</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CHECKS.map((c) => (
+                <tr key={c.check}>
+                  <th scope="row">
+                    <Link className="evi-check-name" to={evidenceHref(c.doc, c.section)}>
+                      {c.check}
+                      <Icon name="chevronRight" size={12} />
+                    </Link>
+                  </th>
+                  <td className="evi-check-ref">{c.reference}</td>
+                  <td className="evi-check-result">{c.result}</td>
+                  <td className="evi-check-status">
+                    <Chip tone={STATUS[c.status].tone} icon={STATUS[c.status].icon}>
+                      {c.status}
+                    </Chip>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="evi-glance-not">
+          <b>Not validated:</b> {NOT_VALIDATED.text} <Link to={evidenceHref(NOT_VALIDATED.doc, NOT_VALIDATED.section)}>Details</Link>
+        </p>
+        <div className="evi-glance-versions">
+          <Disclosure title="Data versions">
+            <MetaView />
+          </Disclosure>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const loadList = (signal: AbortSignal) => evidenceApi.list({ signal });
 
 export function EvidenceWorkspace() {
   const [params, setParams] = useSearchParams();
-  const [tab, setTab] = useState<Tab>("reports");
   const { state: list, reload } = useLoad(loadList);
-  const [current, setCurrent] = useState<string | null>(null);
 
   const docs = list.status === "ready" ? list.data : [];
-  const selected = docs.find((d) => d.id === params.get("doc")) ?? docs[0];
-  const section = selected && selected.id === params.get("doc") ? params.get("section") : null;
-  const open = (id: string) => setParams({ doc: id });
-
-  const copyLink = () => {
-    if (!selected) return;
-    const url = window.location.origin + evidenceHref(selected.id, current);
-    navigator.clipboard.writeText(url).then(
-      () => toast({ kind: "success", title: "Link copied" }, 1500),
-      () => toast({ kind: "error", title: "Could not copy the link" }),
-    );
-  };
+  const docId = params.get("doc");
+  const selected = docId ? docs.find((d) => d.id === docId) : undefined;
+  const section = selected ? params.get("section") : null;
+  const open = (id: string | null) => setParams(id ? { doc: id } : {});
 
   usePublishScreenContext({
     where: "Evidence",
-    summary: tab === "reports" ? "Validation reports" : "Data versions",
-    lines:
-      tab === "reports"
-        ? [selected ? `The open document is "${selected.id}"${section ? `, at section "${section}"` : ""}.` : "No document is open."]
-        : ["The Data versions tab (data and code versions) is open."],
+    summary: selected ? docTitle(selected) : "At a glance",
+    lines: [selected ? `The open document is "${selected.id}"${section ? `, at section "${section}"` : ""}.` : "The validation summary is open."],
   });
+
+  let main;
+  if (!docId) main = <Glance />;
+  else if (selected) main = <DocView key={selected.id + "|" + (section ?? "")} doc={selected} docs={docs} section={section} />;
+  else if (list.status === "ready") main = <EmptyState icon="evidence" title="Document not found" />;
+  else main = <LoadState state={list} loading="Loading" what="the validation documents" onRetry={reload} />;
 
   return (
     <div className="evidence">
-      <PageHeader
-        tabs={
-          <Tabs
-            label="Evidence"
-            panels
-            value={tab}
-            onChange={(t) => setTab(t as Tab)}
-            tabs={[
-              { id: "reports", label: "Validation reports" },
-              { id: "versions", label: "Data versions" },
-            ]}
-          />
-        }
-        actions={tab === "reports" && selected ? <IconButton icon="link" label={current ? "Copy section link" : "Copy link"} onClick={copyLink} /> : undefined}
-      />
-      <div className="evi-body" role="tabpanel" id={`tabpanel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "versions" && <MetaView />}
-        {tab === "reports" && (
-          <>
-            <LoadState state={list} loading="Loading validation reports" what="the validation reports" onRetry={reload} />
-            {list.status === "ready" && docs.length === 0 && <EmptyState icon="evidence" title="No validation reports" />}
-            {selected && (
-              <div className="evi-layout">
-                <DocList docs={docs} selected={selected} onOpen={open} />
-                <DocView key={selected.id + "|" + (section ?? "")} doc={selected} docs={docs} section={section} onSection={setCurrent} />
-              </div>
-            )}
-          </>
-        )}
+      <div className="evi-layout">
+        <DocList docs={docs} selected={docId} onOpen={open} />
+        {main}
       </div>
     </div>
   );

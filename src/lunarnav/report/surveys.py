@@ -77,7 +77,7 @@ def _ellipse_sampling(res, ev) -> str:
     parts = [
         f"<p><b>Sampling.</b> {esc(str(res.n_samples))} samples, seed {esc(str(res.seed))}; scheme: {esc(res.scheme)}. "
         f"Ellipse: semi-major {esc(num(ell['semi_major_m']))} m, semi-minor {esc(num(ell['semi_minor_m']))} m, major axis at azimuth "
-        f"{esc(num(ell['azimuth_deg']))} deg clockwise from north, {esc(disp)}. "
+        f"{esc(num(ell['azimuth_deg']))}\u00b0 clockwise from north, {esc(disp)}. "
         f"Every sample is evaluated at the landing {esc(_to_second(res.provenance['landing_utc']))} in the nominal, optimistic and pessimistic cases. "
         + (f"The verdict map has {esc(str(shape[1]))} x {esc(str(shape[0]))} nodes spaced {esc(num(res.map.spacing_m))} m. " if shape else "")
         + f"Convergence is checked at {esc(', '.join(str(n) for n in sizes))} samples.</p>"]
@@ -88,7 +88,7 @@ def _ellipse_not_covered(res) -> str:
     items = [
         "Probabilities are sample fractions, not exact: the standard error in the first table is the binomial value "
         "sqrt(p(1 - p) / n), a conservative figure for a low-discrepancy sample.",
-        "The ellipse is the planner's input (its origin is recorded in the scenario table); the engine does not derive the dispersion.",
+        "The ellipse is the planner's input (its origin is recorded in the plan table); the engine does not derive the dispersion.",
         "Only the landing epoch above is evaluated; another landing time needs another run.",
     ]
     if res.truncated:
@@ -118,14 +118,14 @@ def _origin_phrase(o: dict) -> str:
     if o["origin"] == "request":
         return "set in the request"
     if o["origin"] == "scenario_constraint":
-        return f"the scenario's {o['label']} limit, origin: {basis_label(o['basis'])}" + (f", {o['source_url']}" if o["source_url"] else "")
+        return f"the plan's {o['label']} limit, origin: {basis_label(o['basis'])}" + (f", {o['source_url']}" if o["source_url"] else "")
     return "no limit"
 
 
 def _hazard_sentence(res, ev) -> str:
     hz = res.hazard_limits
     org = res.hazard_origins
-    lim = ", ".join(x for x in (f"slope above {num(hz['slope_deg'])} deg ({_origin_phrase(org['slope_deg'])})" if hz["slope_deg"] is not None else "",
+    lim = ", ".join(x for x in (f"slope above {num(hz['slope_deg'])}\u00b0 ({_origin_phrase(org['slope_deg'])})" if hz["slope_deg"] is not None else "",
                                 f"roughness above {num(hz['roughness_m'])} m ({_origin_phrase(org['roughness_m'])})" if hz["roughness_m"] is not None else "") if x)
     if site_terrain(ev.provenance) is None:
         return "<p>No terrain was used, so slope and roughness are not evaluated and no sample is marked hazardous.</p>"
@@ -142,8 +142,8 @@ def _constraint_table(res, cons: Constraints) -> str:
         rows.append(td(cons.label(k)) + td(_pct(cp["pass"]), f"ellipse:cp:{k}:pass", cp["pass"], "num")
                     + td(_pct(cp["not_fail"]), f"ellipse:cp:{k}:not_fail", cp["not_fail"], "num")
                     + td(_pct(cp["unknown"]), f"ellipse:cp:{k}:unknown", cp["unknown"], "num"))
-    return table([th("Constraint"), th("Passes in all three cases (%)", "num"), th("Passes or marginal, nominal (%)", "num"), th("Not evaluated (%)", "num")],
-                 rows, caption="Probability per constraint")
+    return table([th("Requirement"), th("Passes in all three cases (%)", "num"), th("Passes or marginal, nominal (%)", "num"), th("Not evaluated (%)", "num")],
+                 rows, caption="Probability per requirement")
 
 
 def _percentile_table(res, cons: Constraints) -> str:
@@ -159,7 +159,7 @@ def _percentile_table(res, cons: Constraints) -> str:
         rows.append(td(cons.label(k)) + td(unit_label(u))
                     + "".join(td(qty(pc[c], u), f"ellipse:pct:{k}:{c}", pc[c], "num") for c in PERCENTILE_COLUMNS)
                     + td(str(pc["n_finite"]), f"ellipse:pct:{k}:n_finite", pc["n_finite"], "num"))
-    return table([th("Constraint value (nominal case)"), th("Unit"), *(th(h, "num") for h in PERCENTILE_HEADS), th("Samples with a value", "num")],
+    return table([th("Requirement value (nominal case)"), th("Unit"), *(th(h, "num") for h in PERCENTILE_HEADS), th("Samples with a value", "num")],
                  rows, caption="Percentiles over the samples", cls="dense")
 
 
@@ -173,12 +173,12 @@ def _reference_table(res, cons: Constraints) -> str:
         places.append(td(name) + td(num(ref.lat_deg, 6), f"ellipse:{k}:lat", ref.lat_deg, "num") + td(num(ref.lon_deg, 6), f"ellipse:{k}:lon", ref.lon_deg, "num")
                       + td(num(ref.east_m), f"ellipse:{k}:east", ref.east_m, "num") + td(num(ref.north_m), f"ellipse:{k}:north", ref.north_m, "num")
                       + td(num(ref.slope_deg), f"ellipse:{k}:slope", ref.slope_deg, "num") + td(num(ref.roughness_m), f"ellipse:{k}:roughness", ref.roughness_m, "num"))
-    return (table([th("Sample"), th("Verdict"), th("Limiting constraint"), th("Norm. margin", "num"), th("Margin in the constraint's unit", "num")], verdicts,
-                  caption="Best, worst and central points (margin of the limiting constraint). " + MARGIN_KIND_NOTE)
+    return (table([th("Sample"), th("Verdict"), th("Limiting requirement"), th("Norm. margin", "num"), th("Margin in the requirement's unit", "num")], verdicts,
+                  caption="Best, worst and central points (margin of the limiting requirement). " + MARGIN_KIND_NOTE)
             + "".join(f"<p class='small'>Margin note (engine): {esc(n)}.</p>"
                       for n in kind_notes((r.margin_kind, r.margin_note) for r in (res.best, res.worst, res.centre)))
-            + table([th("Sample"), th("Latitude (deg)", "num"), th("Longitude (deg)", "num"), th("East (m)", "num"), th("North (m)", "num"),
-                     th("Slope (deg)", "num"), th("Roughness (m)", "num")], places, cls="dense"))
+            + table([th("Sample"), th("Latitude (\u00b0)", "num"), th("Longitude (\u00b0)", "num"), th("East (m)", "num"), th("North (m)", "num"),
+                     th("Slope (\u00b0)", "num"), th("Roughness (m)", "num")], places, cls="dense"))
 
 
 def _convergence(res) -> str:
@@ -196,8 +196,7 @@ def section_ellipse(ev, res, number: int, fig_n: int, cons: Constraints) -> str:
     if res.n_samples < 1:
         raise ReportInputError("the ellipse result has no samples")
     out = [f'<section id="ellipse"><h2>{number}. Landing ellipse statistics</h2>',
-           "<p class='small'>What fraction of the landing dispersion still works? Each sample point is evaluated with the same verdict "
-           "pipeline as the site above.</p>", _ellipse_sampling(res, ev), _state_table(res), _hazard_sentence(res, ev)]
+           _ellipse_sampling(res, ev), _state_table(res), _hazard_sentence(res, ev)]
     if res.provenance.get("heading_unknown_soc"):
         out.append(_heading_note(cons))
     out += [_constraint_table(res, cons), _percentile_table(res, cons), _reference_table(res, cons)]
@@ -209,7 +208,7 @@ def section_ellipse(ev, res, number: int, fig_n: int, cons: Constraints) -> str:
 
 
 def _region_text(reg: dict) -> str:
-    where = f"centre {num(reg['lat_deg'], 6)} deg, {num(reg['lon_deg'], 6)} deg"
+    where = f"centre {num(reg['lat_deg'], 6)}\u00b0, {num(reg['lon_deg'], 6)}\u00b0"
     if reg["polygon"]:
         return f"polygon of {len(reg['polygon'])} vertices anchored at {where}"
     return f"disc of radius {num(reg['radius_m'])} m, {where}"
@@ -227,7 +226,7 @@ def _search_sampling(res) -> str:
               f"and refine around the promoted points; the final level uses the full horizon")
     return (f"<p><b>Sampling.</b> Region: {esc(_region_text(s['region']))}; final lattice spacing {esc(num(s['final_spacing_m']))} m; "
             f"{epochs}. Method: {esc(method)}. "
-            f"Ranking keeps the best {esc(str(s['top_k']))} sites at least {esc(num(s['min_separation_m']))} m apart. The scenario's own site is not used: "
+            f"Ranking keeps the best {esc(str(s['top_k']))} sites at least {esc(num(s['min_separation_m']))} m apart. The plan's own site is not used: "
             f"the region defines where sites are.</p>")
 
 
@@ -261,14 +260,14 @@ def _sites_table(res, cons: Constraints) -> str:
             v = s.values.get("min_state_of_charge")
             cells += td("no nominal value" if v is None else qty(v, "fraction"), f"{k}:soc", v, "small" if v is None else "num")
         detail.append(cells)
-    head = [th("Rank", "num"), th("Verdict"), th("Limiting constraint"), th("Norm. margin", "num"), th("Margin in the constraint's unit", "num")]
-    dhead = [th("Rank", "num"), th("Latitude (deg)", "num"), th("Longitude (deg)", "num"), th("East (m)", "num"), th("North (m)", "num"), th("Slope (deg)", "num")]
+    head = [th("Rank", "num"), th("Verdict"), th("Limiting requirement"), th("Norm. margin", "num"), th("Margin in the requirement's unit", "num")]
+    dhead = [th("Rank", "num"), th("Latitude (\u00b0)", "num"), th("Longitude (\u00b0)", "num"), th("East (m)", "num"), th("North (m)", "num"), th("Slope (\u00b0)", "num")]
     if multi:
         dhead += [th("Epochs passing", "num"), th("Best landing (UTC)")]
     if soc:
         dhead.append(th("Min. state of charge (%)", "num"))
     notes = "".join(f"<p class='small'>Margin note (engine): {esc(n)}.</p>" for n in kind_notes((s.margin_kind, s.margin_note) for s in res.sites))
-    return (table(head, rows, caption="Ranked sites (margin of the limiting constraint" + (", at the site's best landing epoch). " if multi else "). ") + MARGIN_KIND_NOTE)
+    return (table(head, rows, caption="Ranked sites (margin of the limiting requirement" + (", at the site's best landing epoch). " if multi else "). ") + MARGIN_KIND_NOTE)
             + notes + table(dhead, detail, caption="Ranked sites: position and terrain", cls="dense"))
 
 
@@ -290,8 +289,7 @@ def _search_not_covered(res) -> str:
 
 def section_search(ev, res, number: int, fig_n: int, cons: Constraints) -> str:
     out = [f'<section id="search"><h2>{number}. Site search</h2>',
-           "<p class='small'>Which places in the region satisfy the constraints, and with what margin? A ranked site's verdict equals a full "
-           "evaluation of the scenario moved to it.</p>", _search_sampling(res), _levels_table(res)]
+           "<p class='small'>A ranked site's verdict equals a full evaluation of the plan moved to it.</p>", _search_sampling(res), _levels_table(res)]
     if res.provenance.get("heading_unknown_soc"):
         out.append(_heading_note(cons))
     if res.sites:
@@ -306,7 +304,7 @@ def section_search(ev, res, number: int, fig_n: int, cons: Constraints) -> str:
 def provenance_rows(res, kind: str) -> list[tuple[str, str]]:
     """Rows for the provenance appendix: what the result was computed with."""
     p = res.provenance
-    rows = [("Scenario SHA-256", p["scenario_hash"]), ("Horizon provider", str(p["provider"].get("provider", DASH)))]
+    rows = [("Plan SHA-256", p["scenario_hash"]), ("Horizon provider", str(p["provider"].get("provider", DASH)))]
     if kind == "ellipse":
         rows += [("Samples, seed", f"{res.n_samples}, {res.seed}"), ("Landing", p["landing_utc"])]
     else:

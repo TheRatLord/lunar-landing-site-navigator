@@ -83,7 +83,12 @@ def scale(v: float | None, unit: str) -> float | None:
 
 
 def unit_label(unit: str) -> str:
-    return "%" if unit == FRACTION else unit
+    return "%" if unit == FRACTION else "\u00b0" if unit == "deg" else unit
+
+
+def span(lo, hi, fmt) -> str:
+    a, b = fmt(lo), fmt(hi)
+    return a if a == b else f"{a} {DASH} {b}"
 
 
 def qty(v: float | None, unit: str, *, plus: bool = False, digits: int = 4) -> str:
@@ -94,7 +99,7 @@ def qty(v: float | None, unit: str, *, plus: bool = False, digits: int = 4) -> s
 def limit_text(lo: float | None, hi: float | None, unit: str, with_unit: bool = True) -> str:
     u = f" {unit_label(unit)}" if with_unit and unit else ""
     if lo is not None and hi is not None:
-        return f"{qty(lo, unit, digits=10)} {DASH} {qty(hi, unit, digits=10)}{u}"
+        return f"{span(lo, hi, lambda v: qty(v, unit, digits=10))}{u}"
     if lo is not None:
         return f"\u2265 {qty(lo, unit, digits=10)}{u}"
     if hi is not None:
@@ -102,10 +107,8 @@ def limit_text(lo: float | None, hi: float | None, unit: str, with_unit: bool = 
     return NA
 
 
-MARGIN_KIND_NOTE = ("A margin is the worst-case (pessimistic) one; a failing point reports its nominal margin instead, and the "
-                    "engine's margin kind marks it (nominal), or (upper bound over headings) where the limiting constraint has no nominal because the lander "
-                    "heading is unknown: then it is the margin at the upper bound over headings, which no single heading achieves. Margins of different kinds are not comparable: "
-                    "one is not better or worse than another because its number is larger.")
+MARGIN_KIND_NOTE = ("Margins are worst-case. A failing point shows its nominal margin, marked (nominal), or, where the lander heading is unknown, "
+                    "the margin at the upper bound over headings, marked (upper bound over headings). Margins of different kinds do not compare.")
 
 
 def signed_kind(value, kind: str | None) -> str:
@@ -161,8 +164,12 @@ def worst_case_text(c, short: bool = False) -> str:
 
 
 def values_by_case(c, unit_text, short: bool = False) -> str:
-    """The value in each case that has one (`value_worlds`), labelled by `case_label`; `unit_text` formats one value."""
-    return "; ".join(f"{case_label(c, w, short)}: {unit_text(c.value_worlds[w])}" for w in CASES if c.value_worlds.get(w) is not None)
+    """The value in each case that has one (`value_worlds`), labelled by `case_label`, or empty where they read the same; `unit_text`
+    formats one value."""
+    texts = {w: unit_text(c.value_worlds[w]) for w in CASES if c.value_worlds.get(w) is not None}
+    if len(set(texts.values())) <= 1:
+        return ""
+    return "; ".join(f"{case_label(c, w, short)}: {t}" for w, t in texts.items())
 
 
 def heading_facts_text(c) -> str:
@@ -172,6 +179,6 @@ def heading_facts_text(c) -> str:
     if not b or not w:
         return ""
     u = unit_label(c.unit)
-    arcs = ", ".join(f"{num(a)} to {num(z)} deg" for a, z in w["arcs_deg"])
-    return (f"Best single heading {num(b['yaw_deg'])} deg: {qty(b['value'], c.unit)} {u}; worst {num(w['yaw_deg'])} deg "
+    arcs = ", ".join(f"{num(a)}\u00b0 to {num(z)}\u00b0" for a, z in w["arcs_deg"])
+    return (f"Best single heading {num(b['yaw_deg'])}\u00b0: {qty(b['value'], c.unit)} {u}; worst {num(w['yaw_deg'])}\u00b0 "
             f"(arc {arcs}): {qty(w['value'], c.unit)} {u} ({b['horizon']} horizon). {getattr(c, 'heading_basis', '')}").strip()
