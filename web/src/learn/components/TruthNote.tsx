@@ -32,6 +32,7 @@ function lines(view: ViewKind, site: SiteId, chapter: ChapterKey, crater: Crater
     out.push("The astronaut and rover are you, visiting today. They were not really here.");
     if (site === "apollo11" || site === "change4" || site === "blueghost")
       out.push(`The spacecraft and gear on the ground are really here, drawn as simple models about where they stand.${site === "change4" ? " Yutu-2 has since driven away." : ""}`);
+    if (site === "apollo11") out.push("The flag stands as it was planted in 1969. It has since been blown over by Eagle's takeoff blast.");
     out.push("The lamps are pretend. With them off, the dark is real.");
     const m = missionById(useLearn.getState().mission);
     if (m) out.push(`The ${m.rover} mission is played here with this rover. The real ${m.rover} was smaller and ${m.where}; the markers are made up.`);

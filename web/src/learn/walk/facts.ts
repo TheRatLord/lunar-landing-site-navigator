@@ -25,7 +25,7 @@ export const FACTS: Record<PropId, Fact> = {
   },
   "us-flag": {
     title: "The Apollo 11 flag",
-    body: "Buzz Aldrin said the engine blast at takeoff blew this flag over.",
+    body: "Armstrong and Aldrin planted it on 20 July 1969. A rod along the top holds it out, since there is no wind. Aldrin said the engine blast at takeoff later blew it over.",
     source: "https://en.wikipedia.org/wiki/Lunar_Flag_Assembly",
   },
   lrrr: {

@@ -27,14 +27,15 @@ function descentStage(): Group {
   return g;
 }
 
-function fallenFlag(): Group {
+function plantedFlag(): Group {
   const g = new Group();
-  const pole = mesh(new CylinderGeometry(0.025, 0.025, 2.4, 8), silver, 0, 0.03, 0);
-  pole.rotation.z = Math.PI / 2;
-  g.add(pole);
-  const cloth = new Mesh(new PlaneGeometry(1.52, 0.8), new MeshLambertMaterial({ map: usFlag(), side: DoubleSide }));
-  cloth.rotation.x = -Math.PI / 2;
-  cloth.position.set(0.35, 0.05, 0.42);
+  g.add(mesh(new CylinderGeometry(0.025, 0.025, 2.2, 8), silver, 0, 1.1, 0));
+  const bar = mesh(new CylinderGeometry(0.018, 0.018, 1.55, 8), silver, 0.77, 2.12, 0);
+  bar.rotation.z = Math.PI / 2;
+  g.add(bar);
+  const cloth = new Mesh(new PlaneGeometry(1.52, 0.91), new MeshLambertMaterial({ map: usFlag(), side: DoubleSide }));
+  cloth.position.set(0.79, 1.66, 0);
+  cloth.castShadow = true;
   cloth.receiveShadow = true;
   g.add(cloth);
   g.rotation.y = 0.6;
@@ -95,7 +96,7 @@ function bootprints(): Group {
 export function apollo11(): PropSpec[] {
   return [
     { id: "lm-descent", object: descentStage(), x: LM.x, z: LM.z, r: 3.2 },
-    { id: "us-flag", object: fallenFlag(), x: FLAG.x, z: FLAG.z, r: 0.8 },
+    { id: "us-flag", object: plantedFlag(), x: FLAG.x, z: FLAG.z, r: 0.8 },
     { id: "easep", object: easep(), x: EASEP.x, z: EASEP.z, r: 1.1 },
     { id: "lrrr", object: lrrr(), x: LRRR.x, z: LRRR.z, r: 0.4 },
     { id: null, object: bootprints(), x: 0, z: 0, r: 0, walkOver: true, decal: true },
