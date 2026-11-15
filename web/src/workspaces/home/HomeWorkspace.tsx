@@ -133,6 +133,7 @@ export function HomeWorkspace() {
     if (!demo || !scan || !pinsReady || comparePrefetched) return;
     comparePrefetched = true;
     prefetchAnalysis(PLANNING_ENDPOINTS.slip, compareRequest(doc, pins, compareSlipsStored, planWindow).body);
+    void import("../compare/CompareWorkspace");
   }, [demo, scan, pinsReady, doc, pins, compareSlipsStored, planWindow]);
   const pinPlaces = useMemo(() => pins.map((p) => ({ id: p.id, label: siteLabel(p.name) || pointName(p.lat_deg, p.lon_deg), place: { lat_deg: p.lat_deg, lon_deg: p.lon_deg, name: p.name, catalog_id: p.catalog_id } })), [pins]);
 
