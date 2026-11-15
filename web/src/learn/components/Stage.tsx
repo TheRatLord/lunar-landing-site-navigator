@@ -16,6 +16,7 @@ import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon, CrosshairIcon, InfoIcon } f
 import { SunPath } from "./SunPath";
 import { SiteStory } from "./SiteStory";
 import { Fold } from "./Fold";
+import { LessonsPop } from "./LessonsPop";
 import { TruthNote } from "./TruthNote";
 
 function sentence(): string {
@@ -292,15 +293,18 @@ export function Stage() {
         )}
       </div>
       <div className="l-stage-ui">
-        <Fold className="l-stage-top" sumClass="l-pill" label="Show info and links" summary={<><InfoIcon size={18} /> Info</>}>
-          <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} />
-          {chapter === "explore" && <SiteStory key={siteId} site={siteId} />}
-          {chapter === "explore" && siteId !== "custom" && (
-            <Link className="l-pill l-to-planner" to={plannerHref(siteId)}>
-              Analyse in Planner <ArrowRightIcon size={16} />
-            </Link>
-          )}
-        </Fold>
+        <div className="l-stage-top">
+          <LessonsPop />
+          <Fold className="l-info" sumClass="l-pill" label="Show info and links" summary={<><InfoIcon size={18} /> Info</>}>
+            <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} />
+            {chapter === "explore" && <SiteStory key={siteId} site={siteId} />}
+            {chapter === "explore" && siteId !== "custom" && (
+              <Link className="l-pill l-to-planner" to={plannerHref(siteId)}>
+                Analyse in Planner <ArrowRightIcon size={16} />
+              </Link>
+            )}
+          </Fold>
+        </div>
         {chapter === "pole" && (
           <div className="l-pole">
             <PoleDiagram />

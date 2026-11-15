@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { CHAPTERS, chapterBySlug, learnPath, type Chapter } from "./chapters";
 import { Fold } from "./components/Fold";
-import { LessonsPop } from "./components/LessonsPop";
 import { Pop } from "./components/Pop";
 import { plainText } from "./glossary";
 import { PauseIcon, PlayIcon } from "./components/icons";
@@ -11,7 +10,6 @@ import { dateOfDay } from "./geometry";
 import { Announcer } from "./components/Announcer";
 import { Dock } from "./components/Dock";
 import { Finale } from "./components/Finale";
-import { LessonNav } from "./components/LessonNav";
 import { Readouts } from "./components/Readouts";
 import { Stage } from "./components/Stage";
 import { StoryCard } from "./components/StoryCard";
@@ -48,8 +46,7 @@ function LessonTime({ c }: { c: Chapter }) {
   const date = dateOfDay(c.epochD + t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   const day = Math.floor(t + 1e-6) + 1;
   return (
-    <div className="l-popbar" role="group" aria-label="Lessons and time">
-      <LessonsPop />
+    <div className="l-popbar" role="group" aria-label="Time">
       <Pop
         className="l-pop-time"
         label={`Time: day ${day}, ${date}, ${playing ? "playing" : "paused"}`}
@@ -162,7 +159,7 @@ export default function LearnPage() {
       <a className="l-skip" href="#l-main">
         Skip to the controls
       </a>
-      <TopBar nav={<LessonNav current={current} />} />
+      <TopBar nav={null} />
       <main className="l-main" id="l-main">
         <Routes>
           <Route index element={<ExploreRoute />} />

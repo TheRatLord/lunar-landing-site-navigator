@@ -2687,12 +2687,45 @@ button.l-lessons-label {
     display: none;
   }
 }
-.l-stage-ui:has(.l-stage-top:is(:hover, :focus-within, .is-open)) .l-walk-hint {
+.l-stage-ui:has(.l-info:is(:hover, :focus-within, .is-open)) .l-walk-hint {
   visibility: hidden;
 }
 .l-pop-lesson strong {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.l-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.l-stage-top .l-pop-btn {
+  min-height: 40px;
+}
+.l-stage-top .l-pop.is-down .l-pop-card {
+  transform-origin: top left;
+}
+@media (max-width: 759px) {
+  .l-stage-top,
+  .learn.is-explore .l-stage-top {
+    flex-direction: row;
+  }
+  .l-info {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .l-stage-top .l-pop-panel {
+    position: fixed;
+    top: 120px;
+    left: 8px;
+    right: 8px;
+    padding: 0;
+    transform: none;
+  }
+  .l-stage-top .l-pop-card {
+    width: auto;
+    max-width: none;
+  }
 }
 

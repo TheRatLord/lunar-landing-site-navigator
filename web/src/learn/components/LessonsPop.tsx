@@ -28,6 +28,8 @@ export function LessonsPop() {
   const done = STORY.filter((c) => answers[c.slug]?.correct).length;
   return (
     <Pop
+      side="down"
+      align="start"
       label={here ? `Lessons: lesson ${here.n}, ${here.short}` : `Lessons: ${done} of ${STORY.length} done`}
       active={!!here}
       summary={
