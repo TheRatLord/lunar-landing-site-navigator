@@ -1,4 +1,5 @@
-import { useCallback, useId, useMemo } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { EllipseSampleRef, EllipseSamples } from "../../api/ellipse";
 import { niceScaleBar } from "../map/scaleBar";
 import type { Ellipse } from "../../scenario/types";
@@ -21,6 +22,18 @@ export interface EllipsePlotProps {
 
 export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, selected, description }: EllipsePlotProps) {
   const uid = useId();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [k, setK] = useState(1);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) setK(SIZE / w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const half = plotHalfWidth(ellipse);
   const at = useCallback((e: number, n: number) => toPx(e, n, half, SIZE), [half]);
   const mpp = (2 * half) / SIZE;
@@ -36,7 +49,7 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
     return `M${x0.toFixed(1)} ${y0.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}`;
   }, [ellipse, at]);
 
-  const r = !samples ? 3 : samples.state.length <= 600 ? 3.4 : samples.state.length <= 2500 ? 2.5 : 1.8;
+  const r = k * (!samples ? 3 : samples.state.length <= 600 ? 3.4 : samples.state.length <= 2500 ? 2.5 : 1.8);
   const paths = useMemo(() => {
     if (!samples) return null;
     const groups = indicesByState(samples);
@@ -63,7 +76,7 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
     : [];
 
   return (
-    <svg className="el-plot" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={description} data-testid="ellipse-plot">
+    <svg ref={svgRef} style={{ "--k": k } as CSSProperties} className="el-plot" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={description} data-testid="ellipse-plot">
       <defs>
         <clipPath id={`${uid}-clip`}>
           <rect width={SIZE} height={SIZE} />
@@ -88,7 +101,7 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
         {rings.map((g) => (
           <g key={g.sigma}>
             <path className="el-ring" d={g.d} />
-            <text className="el-label" x={g.label[0] + 4} y={g.label[1] - 4}>
+            <text className="el-label" x={g.label[0] + 5 * k} y={g.label[1] - 5 * k}>
               {g.sigma}σ
             </text>
           </g>
@@ -99,8 +112,8 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
         {showSamples &&
           paths?.map((g) => (
             <g key={g.state} className={`el-pts el-pts-${g.state}`}>
-              <path className="el-halo" d={g.d} strokeWidth={g.state === "pass" ? 2 * r + 2 : 4.2} />
-              <path className="el-shape" d={g.d} strokeWidth={g.state === "pass" ? 2 * r : 1.8} />
+              <path className="el-halo" d={g.d} strokeWidth={g.state === "pass" ? 2 * r + 2 * k : 4.2 * k} />
+              <path className="el-shape" d={g.d} strokeWidth={g.state === "pass" ? 2 * r : 1.8 * k} />
             </g>
           ))}
 
@@ -109,9 +122,9 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
           const on = selected === m.id;
           return (
             <g key={m.id} className={`el-mark el-mark-${m.id} ${on ? "is-on" : ""}`}>
-              <circle cx={x} cy={y} r={on ? 12 : 9} className="el-mark-ring" />
-              {m.id === "centre" && <path className="el-mark-plus" d={`M${x - 5} ${y}H${x + 5}M${x} ${y - 5}V${y + 5}`} />}
-              <text className="el-mark-text" x={x + 13} y={y - 9}>
+              <circle cx={x} cy={y} r={(on ? 12 : 9) * k} className="el-mark-ring" />
+              {m.id === "centre" && <path className="el-mark-plus" d={`M${x - 5 * k} ${y}H${x + 5 * k}M${x} ${y - 5 * k}V${y + 5 * k}`} />}
+              <text className="el-mark-text" x={x + 13 * k} y={y - 9 * k}>
                 {m.label}
               </text>
             </g>
@@ -119,16 +132,16 @@ export function EllipsePlot({ ellipse, samples, refs, backdrop, showSamples, sel
         })}
       </g>
 
-      <g className="el-north" transform={`translate(${SIZE - 34} 36)`} aria-hidden="true">
-        <path d="M0 -22L7 4L0 0L-7 4Z" />
-        <text y="22" textAnchor="middle">
+      <g className="el-north" transform={`translate(${SIZE - 30 * k} ${34 * k}) scale(${k})`} aria-hidden="true">
+        <path d="M0 -16L5.5 3L0 0L-5.5 3Z" />
+        <text y="17" textAnchor="middle">
           N
         </text>
       </g>
       {bar && (
-        <g className="el-scale" transform={`translate(16 ${SIZE - 18})`} aria-hidden="true">
-          <path d={`M0 -5V0H${bar.px.toFixed(1)}V-5`} />
-          <text x="0" y="-9">
+        <g className="el-scale" transform={`translate(${18 * k} ${SIZE - 18 * k})`} aria-hidden="true">
+          <path d={`M0 ${-5 * k}V0H${bar.px.toFixed(1)}V${-5 * k}`} />
+          <text x="0" y={-10 * k}>
             {bar.label}
           </text>
         </g>

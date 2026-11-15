@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { usePublishScreenContext } from "../../ask/screenContext";
 import { ELLIPSE_LIMITS, ellipseBody, type EllipseParams, type EllipseResult } from "../../api/ellipse";
@@ -16,7 +16,9 @@ import type { Ellipse, Scenario } from "../../scenario/types";
 import { useApp } from "../../state/store";
 import "../../styles/ellipse.css";
 import { SiteTabs } from "../site/SiteTabs";
-import { countStates, plotHalfWidth, samplesCsv, STATES, STATE_LABEL } from "./adapt";
+import { requirementName } from "../../lib/requirements";
+import { siteLabel } from "../../lib/siteName";
+import { countStates, limitInfo, marginText, percent, plotHalfWidth, samplesCsv, stateShares, STATES, STATE_LABEL } from "./adapt";
 import { EllipsePlot, type Marker } from "./EllipsePlot";
 import { ConstraintTable, PointsPanel, ResultDetails, ResultStats, Warnings } from "./Results";
 import { useBackdrop } from "./useBackdrop";
@@ -65,7 +67,6 @@ export function EllipseWorkspace() {
 
   const statusState = { ...run, jobId: null, cached: false, stale: false, rerun: start };
   const status = result !== null && dirty && !running && run.phase !== "error" ? <OutOfDate state={statusState} /> : <AnalysisStatus state={statusState} what="the landing ellipse" count={Number(run.points) > 0 ? { verb: "Sampling", total: Number(run.points) } : undefined} />;
-  const failed = run.phase === "error";
 
   if (!ell) {
     return (
@@ -87,6 +88,38 @@ export function EllipseWorkspace() {
     );
   }
 
+  const form = (
+    <form
+      id="el-form"
+      className="el-side"
+      onSubmit={(e) => {
+        e.preventDefault();
+        start();
+      }}
+    >
+      <EllipseEditor />
+      <div className="el-params">
+        <Field label="Points" htmlFor="el-n" error={problems[0] ?? null}>
+          <input
+            id="el-n"
+            className="input"
+            type="number"
+            inputMode="numeric"
+            min={ELLIPSE_LIMITS.nSamples.min}
+            max={ELLIPSE_LIMITS.nSamples.max}
+            step={1}
+            aria-invalid={problems.length > 0}
+            value={run.points}
+            onChange={(e) => run.setPoints(e.target.value)}
+          />
+        </Field>
+        <Button type="submit" form="el-form" className="el-run" variant={dirty ? "primary" : "default"} icon="play" disabled={problems.length > 0 || running}>
+          {result ? "Run again" : "Run"}
+        </Button>
+      </div>
+    </form>
+  );
+
   return (
     <div className="el" aria-label="Landing ellipse page">
       <h1 className="sr-only">Landing ellipse: {doc.name}</h1>
@@ -100,49 +133,56 @@ export function EllipseWorkspace() {
             {result?.samples && (
               <IconButton icon="download" label="Download points (CSV)" onClick={() => downloadText(`ellipse-${slug(result.scenario_name)}-${result.n_samples}-points.csv`, samplesCsv(result), "text/csv")} />
             )}
-            <Button type="submit" form="el-form" variant={dirty ? "primary" : "default"} icon="play" disabled={problems.length > 0 || running}>
-              Run
-            </Button>
           </>
         }
-      >
-        {!failed && status}
-      </PageHeader>
-      {failed && <div className="el-notice">{status}</div>}
-      <div className="el-body">
-        <form
-          id="el-form"
-          className="el-side"
-          onSubmit={(e) => {
-            e.preventDefault();
-            start();
-          }}
-        >
-          <EllipseEditor />
-          <div className="el-params">
-            <Field label="Points" htmlFor="el-n" error={problems[0] ?? null}>
-              <input
-                id="el-n"
-                className="input"
-                type="number"
-                inputMode="numeric"
-                min={ELLIPSE_LIMITS.nSamples.min}
-                max={ELLIPSE_LIMITS.nSamples.max}
-                step={1}
-                aria-invalid={problems.length > 0}
-                value={run.points}
-                onChange={(e) => run.setPoints(e.target.value)}
-              />
-            </Field>
-          </div>
-        </form>
-        <ResultArea doc={doc} result={result} stale={stale} />
-      </div>
+      />
+      <header className={`el-head${stale ? " is-stale" : ""}`}>
+        <p className="el-eyebrow">
+          {[siteLabel(doc.site.name ?? "") || "Unnamed site", `${axisText(ell.semi_major_m)} × ${axisText(ell.semi_minor_m)} ellipse`, result ? `${result.n_samples.toLocaleString("en-US")} points` : null].filter(Boolean).join(" · ")}
+        </p>
+        <EllipseHeadline result={result} />
+        <div className="el-status">{status}</div>
+      </header>
+      <ResultArea doc={doc} result={result} stale={stale} form={form} />
     </div>
   );
 }
 
-function ResultArea({ doc, result, stale }: { doc: Scenario; result: EllipseResult | null; stale: boolean }) {
+const axisText = (m: number): string => (m >= 1000 ? `${Number((m / 1000).toFixed(2))} km` : `${Math.round(m)} m`);
+
+function EllipseHeadline({ result }: { result: EllipseResult | null }) {
+  if (!result) {
+    return (
+      <>
+        <h2 className="site-headline">Where in the ellipse can it land?</h2>
+        <p className="site-headline-note">Run the sample to see what share of the possible landing points meets the requirements.</p>
+      </>
+    );
+  }
+  const shares = stateShares(result);
+  const pass = shares.pass ?? 0;
+  const marginal = shares.marginal ?? 0;
+  const tone = pass >= 0.9995 ? "pass" : pass + marginal <= 0.0005 ? "fail" : "marginal";
+  const worst = result.worst;
+  const limit = worst.limiting ? requirementName(worst.limiting, limitInfo(result.scenario, worst.limiting).label) : null;
+  return (
+    <>
+      <h2 className="site-headline">
+        <strong className="verdict-word" data-tone={tone}>
+          {tone === "pass" ? "Pass." : tone === "fail" ? "Fail." : `${percent(pass)}.`}
+        </strong>{" "}
+        {tone === "pass" ? "Every sampled landing point passes." : tone === "fail" ? "No sampled landing point passes." : "of the ellipse passes."}
+      </h2>
+      <p className="site-headline-note">
+        Worst point {marginText(worst)}
+        {limit ? ` on ${limit.toLowerCase()}` : ""}
+        {marginal > 0.0005 ? ` · ${percent(marginal)} marginal` : ""}
+      </p>
+    </>
+  );
+}
+
+function ResultArea({ doc, result, stale, form }: { doc: Scenario; result: EllipseResult | null; stale: boolean; form: ReactNode }) {
   const [selected, setSelected] = useState<Marker | null>(null);
   const dark = useApp((s) => s.theme) === "dark";
 
@@ -159,47 +199,49 @@ function ResultArea({ doc, result, stale }: { doc: Scenario; result: EllipseResu
   }`;
 
   return (
-    <div className={`el-main ${result && stale ? "is-stale" : ""}`}>
-      {result && <ResultStats result={result} />}
-      <div className="el-view">
-        <div className="el-plotcol">
-          <EllipsePlot
-            ellipse={ellipse}
-            samples={result?.samples ?? null}
-            refs={result ? { centre: result.centre, worst: result.worst, best: result.best } : null}
-            backdrop={backdrop}
-            showSamples={result !== null}
-            selected={selected}
-            description={description}
-          />
-          <div className="el-plotbar">
-            {result ? (
-              <ul className="el-keys" aria-label="Legend">
-                <li>
-                  <span className="el-glyph el-glyph-pass" aria-hidden="true">●</span> Pass
-                </li>
-                <li>
-                  <span className="el-glyph el-glyph-marginal" aria-hidden="true">▲</span> Marginal
-                </li>
-                <li>
-                  <span className="el-glyph el-glyph-fail" aria-hidden="true">✕</span> Fail
-                </li>
-                {counts && counts.unknown > 0 && (
-                  <li>
-                    <span className="el-glyph el-glyph-unknown" aria-hidden="true">◆</span> Unknown
-                  </li>
-                )}
-              </ul>
-            ) : null}
-            <span className="grow" />
-            {backdrop.status === "loading" && <Spinner size={12} />}
-            {backdrop.status === "error" && (
-              <span className="el-relief-error">
-                <Icon name="warn" size={12} /> No relief
-              </span>
+    <div className={`el-body ${result && stale ? "is-stale" : ""}`}>
+      <div className="el-plotcol">
+        <EllipsePlot
+          ellipse={ellipse}
+          samples={result?.samples ?? null}
+          refs={result ? { centre: result.centre, worst: result.worst, best: result.best } : null}
+          backdrop={backdrop}
+          showSamples={result !== null}
+          selected={selected}
+          description={description}
+        />
+        {result && (
+          <ul className="el-keys" aria-label="Legend">
+            <li>
+              <span className="el-glyph el-glyph-pass" aria-hidden="true">●</span> Pass
+            </li>
+            <li>
+              <span className="el-glyph el-glyph-marginal" aria-hidden="true">▲</span> Marginal
+            </li>
+            <li>
+              <span className="el-glyph el-glyph-fail" aria-hidden="true">✕</span> Fail
+            </li>
+            {counts && counts.unknown > 0 && (
+              <li>
+                <span className="el-glyph el-glyph-unknown" aria-hidden="true">◆</span> Unknown
+              </li>
             )}
-          </div>
-        </div>
+          </ul>
+        )}
+        {backdrop.status === "loading" && (
+          <span className="el-relief">
+            <Spinner size={12} />
+          </span>
+        )}
+        {backdrop.status === "error" && (
+          <span className="el-relief el-relief-error">
+            <Icon name="warn" size={12} /> No relief
+          </span>
+        )}
+      </div>
+      <div className="el-rail">
+        {form}
+        {result && <ResultStats result={result} />}
         {result && (
           <div className="el-detailcol">
             <Warnings result={result} />

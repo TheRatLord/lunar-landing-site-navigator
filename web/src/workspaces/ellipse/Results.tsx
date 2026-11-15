@@ -3,10 +3,8 @@ import type { EllipseResult, EllipseSampleRef, SampleState } from "../../api/ell
 import { DataTable, type Column } from "../../components/ui/DataTable";
 import { Disclosure } from "../../components/ui/Disclosure";
 import { Pairs } from "../../components/ui/Pairs";
-import { Stat } from "../../components/ui/Stat";
 import { VerdictChip } from "../../components/ui/VerdictChip";
 import { withUnit } from "../../lib/format";
-import { kindWord } from "../../lib/marginKind";
 import { STATES, STATE_LABEL, limitInfo, marginText, offsetText, percent, standardError, stateShares } from "./adapt";
 import type { Marker } from "./EllipsePlot";
 
@@ -20,30 +18,24 @@ const share = (v: number | null) => (v === null || !Number.isFinite(v) ? "n/a" :
 export function ResultStats({ result }: { result: EllipseResult }) {
   const shares = stateShares(result);
   const c = result.convergence;
-  const worst = result.worst;
-  const worstLimit = worst.limiting ? requirementName(worst.limiting, limitInfo(result.scenario, worst.limiting).label) : null;
-  const tone = (s: SampleState, v: number | null) => (s !== "unknown" && (v ?? 0) > 0 ? s : "default");
-  const margin = marginText(worst);
-  const cut = margin.search(/\s\S+$/);
+  const shown = STATES.filter((s) => s !== "unknown" || (shares[s] ?? 0) > 0);
   return (
     <section className="el-stats" aria-label="Verdict summary">
-      <div className="el-stats-row">
-        <span data-testid="pass-fraction">
-          <Stat label="Pass" value={share(shares.pass)} unit="%" tone={tone("pass", shares.pass)} sub={standardError(c, "pass")} />
-        </span>
-        <Stat label="Marginal" value={share(shares.marginal)} unit="%" tone={tone("marginal", shares.marginal)} sub={standardError(c, "marginal")} />
-        <Stat label="Fail" value={share(shares.fail)} unit="%" tone={tone("fail", shares.fail)} sub={standardError(c, "fail")} />
-        <Stat
-          label="Worst margin"
-          value={cut < 0 ? margin : margin.slice(0, cut)}
-          unit={cut < 0 ? undefined : margin.slice(cut + 1)}
-          tone={tone(worst.state, 1)}
-          sub={[kindWord(worst.margin_kind), worstLimit].filter(Boolean).join(" · ") || undefined}
-        />
-      </div>
       <div className="el-stack" role="img" aria-label={STATES.map((s) => `${STATE_LABEL[s]} ${percent(shares[s])}`).join(", ")}>
         {STATES.map((s) => ((shares[s] ?? 0) > 0 ? <span key={s} className={`el-seg el-seg-${s}`} style={{ width: `${(shares[s] ?? 0) * 100}%` }} /> : null))}
       </div>
+      <dl className="el-shares">
+        {shown.map((s) => (
+          <div key={s} className="el-share" data-state={s} data-zero={(shares[s] ?? 0) > 0 ? undefined : true} data-testid={s === "pass" ? "pass-fraction" : undefined}>
+            <dt>{STATE_LABEL[s]}</dt>
+            <dd className="num">
+              {share(shares[s])}
+              <span>%</span>
+            </dd>
+            {s !== "unknown" && <span className="el-share-se num">{standardError(c, s)}</span>}
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }
