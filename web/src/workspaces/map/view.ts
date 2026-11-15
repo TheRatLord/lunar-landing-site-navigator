@@ -1,6 +1,8 @@
 import { tileSpan, type TileGridDef } from "../../lib/projection";
 import { clamp } from "../../lib/scale";
 
+export type ViewGrid = TileGridDef & { contain?: boolean };
+
 export interface MapView {
   cx: number;
   cy: number;
@@ -39,9 +41,8 @@ export function viewBounds(f: Frame): [number, number, number, number] {
   return [f.x0, f.y0 - f.vh * f.upp, f.x0 + f.vw * f.upp, f.y0];
 }
 
-/** The closest zoom the map allows: three levels past the finest tiles. */
-export function maxZoomOf(g: TileGridDef): number {
-  return g.maxZ + 3;
+export function maxZoomOf(g: ViewGrid): number {
+  return g.maxZ + (g.contain ? 0 : 3);
 }
 
 function clampZoom(g: TileGridDef, vp: Viewport, zoom: number): number {
@@ -52,8 +53,15 @@ function clampZoom(g: TileGridDef, vp: Viewport, zoom: number): number {
   return clamp(zoom, fit - 0.35, maxZoomOf(g));
 }
 
-export function clampView(g: TileGridDef, vp: Viewport, v: MapView): MapView {
-  return { zoom: clampZoom(g, vp, v.zoom), cx: clamp(v.cx, g.extent[0], g.extent[2]), cy: clamp(v.cy, g.extent[1], g.extent[3]) };
+function containAxis(c: number, lo: number, hi: number, half: number): number {
+  return 2 * half >= hi - lo ? (lo + hi) / 2 : clamp(c, lo + half, hi - half);
+}
+
+export function clampView(g: ViewGrid, vp: Viewport, v: MapView): MapView {
+  const zoom = clampZoom(g, vp, v.zoom);
+  if (!g.contain) return { zoom, cx: clamp(v.cx, g.extent[0], g.extent[2]), cy: clamp(v.cy, g.extent[1], g.extent[3]) };
+  const upp = unitsPerPx(g, zoom);
+  return { zoom, cx: containAxis(v.cx, g.extent[0], g.extent[2], (vp.w / 2) * upp), cy: containAxis(v.cy, g.extent[1], g.extent[3], (vp.h / 2) * upp) };
 }
 
 export function zoomAbout(g: TileGridDef, vp: Viewport, v: MapView, sx: number, sy: number, zoom: number): MapView {

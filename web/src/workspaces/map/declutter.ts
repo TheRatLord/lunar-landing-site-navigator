@@ -1,4 +1,4 @@
-import { overlaps, type Rect } from "./footprints";
+import { overlaps, type Rect } from "./rect";
 
 export interface ClusterPoint {
   id: string;

@@ -1,12 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { StoreInfo, TilesetDef } from "../../api/terrain";
+import type { TilesetDef } from "../../api/terrain";
 import { useColors } from "../../components/viz/useColors";
 import { formatLat, formatLon } from "../../lib/coords";
 import type { SiteEntry } from "../../scenario/api";
 import type { BlockerMark } from "../../scenario/alternatives";
 import type { CursorBus } from "./cursorBus";
 import type { PinMark, RegionalMark } from "./overlays";
-import { MapEngine, type ActiveLayer, type AltMark, type HoverTarget, type MapMode, type ScenarioMark } from "./engine";
+import { MapEngine, type ActiveLayer, type AltMark, type HoverTarget, type MapMode, type MapOptions, type ScenarioMark, type SearchArea } from "./engine";
 import type { LatLon } from "./measure";
 import { clipName } from "./paint";
 import { KIND_STYLE } from "./sites";
@@ -23,18 +23,17 @@ export interface MapCanvasProps {
   initialView: Partial<MapView> | null;
   tilesets: TilesetDef[] | null;
   renderVersion: string;
-  stores: StoreInfo[];
   sites: SiteEntry[];
   layers: ActiveLayer[];
-  graticule: boolean;
-  showStores: boolean;
-  showSites: boolean;
+  options: MapOptions;
   selectedId: string | null;
   scenario: ScenarioMark | null;
   alternatives: AltMark[];
   blocker: BlockerMark | null;
   pins: PinMark[];
   selectedPin: number | null;
+  area: SearchArea | null;
+  probe: { lat_deg: number; lon_deg: number } | null;
   regional: RegionalMark | null;
   regionalOpacity: number;
   measure: LatLon[];
@@ -43,12 +42,11 @@ export interface MapCanvasProps {
   onEngine(e: MapEngine | null): void;
   onPickSite(id: string | null): void;
   onPickPin(rank: number): void;
+  onPickProbe?(): void;
   onSetSite(lat: number, lon: number): void;
   onMeasure(p: LatLon): void;
-  onView(v: MapView & { kind: ViewKind }): void;
-  onTileProblem(p: TileProblem | null): void;
-  /** Called when the user keeps zooming in at the closest zoom. */
-  onZoomPastLimit?(): void;
+  onView?(v: MapView & { kind: ViewKind }): void;
+  onTileProblem?(p: TileProblem | null): void;
 }
 
 export function MapCanvas(props: MapCanvasProps) {
@@ -72,19 +70,19 @@ export function MapCanvas(props: MapCanvasProps) {
     const engine = new MapEngine(
       canvas,
       {
-        onView: (v) => live.current.onView(v),
+        onView: (v) => live.current.onView?.(v),
         onPickSite: (id) => live.current.onPickSite(id),
         onPickPin: (rank) => live.current.onPickPin(rank),
+        onPickProbe: () => live.current.onPickProbe?.(),
         onSetSite: (la, lo) => live.current.onSetSite(la, lo),
         onMeasure: (p) => live.current.onMeasure(p),
         onCursor: (c) => live.current.bus.emit(c),
         onHover: setHover,
-        onZoomPastLimit: () => live.current.onZoomPastLimit?.(),
         onTileError: (e, url) => {
           const t = tileErrors.current;
           t.count++;
           t.last = `${e instanceof Error ? e.message : String(e)} (${url})`;
-          live.current.onTileProblem({ count: t.count, last: t.last });
+          live.current.onTileProblem?.({ count: t.count, last: t.last });
         },
       },
       kind0.current,
@@ -124,10 +122,12 @@ export function MapCanvas(props: MapCanvasProps) {
   }, [kind, initialView]);
 
   useEffect(() => engineRef.current?.setPalette(colors.get), [colors]);
-  useEffect(() => engineRef.current?.setStores(props.stores), [props.stores]);
   useEffect(() => engineRef.current?.setSites(props.sites), [props.sites]);
   useEffect(() => engineRef.current?.setLayers(props.layers), [props.layers]);
-  useEffect(() => engineRef.current?.setOptions({ graticule: props.graticule, stores: props.showStores, sites: props.showSites }), [props.graticule, props.showStores, props.showSites]);
+  const { graticule, sites: showSites, compass } = props.options;
+  useEffect(() => engineRef.current?.setOptions({ graticule, sites: showSites, compass }), [graticule, showSites, compass]);
+  useEffect(() => engineRef.current?.setSearchArea(props.area), [props.area]);
+  useEffect(() => engineRef.current?.setProbe(props.probe), [props.probe]);
   useEffect(() => engineRef.current?.setSelected(props.selectedId), [props.selectedId]);
   useEffect(() => engineRef.current?.setScenario(props.scenario), [props.scenario]);
   useEffect(() => engineRef.current?.setAlternatives(props.alternatives), [props.alternatives]);
@@ -142,7 +142,7 @@ export function MapCanvas(props: MapCanvasProps) {
     if (hover.type === "site") {
       const s = props.sites.find((x) => x.id === hover.id);
       if (!s) return null;
-      return { title: s.name, lines: [`${KIND_STYLE[s.kind].label} · ${s.confidence}`, `${formatLat(s.lat_deg)}  ${formatLon(s.lon_deg)}`] };
+      return { title: s.name, lines: [KIND_STYLE[s.kind].label] };
     }
     if (hover.type === "cluster") {
       const names = (hover.ids ?? []).flatMap((id) => props.sites.find((x) => x.id === id)?.name ?? []).map((n) => clipName(n, 38));
@@ -150,14 +150,15 @@ export function MapCanvas(props: MapCanvasProps) {
     }
     if (hover.type === "alt") {
       const a = props.alternatives.find((x) => x.id === hover.id);
-      return a ? { title: a.name, lines: ["Pinned for comparison", `${formatLat(a.lat_deg)}  ${formatLon(a.lon_deg)}`] } : null;
+      return a ? { title: a.name, lines: ["In Compare"] } : null;
     }
     if (hover.type === "pin") {
       const pin = props.pins.find((x) => String(x.rank) === hover.id);
-      return pin ? { title: `Site search result ${pin.title}`, lines: pin.lines } : null;
+      return pin ? { title: pin.title, lines: pin.lines } : null;
     }
+    if (hover.type === "probe") return null;
     const sc = props.scenario;
-    return sc ? { title: `Plan site: ${sc.name || "unnamed"}`, lines: [`${formatLat(sc.lat_deg)}  ${formatLon(sc.lon_deg)}`] } : null;
+    return sc ? { title: `Plan site: ${sc.name || `${formatLat(sc.lat_deg, 2)} ${formatLon(sc.lon_deg, 2)}`}`, lines: [] } : null;
   }, [hover, props.sites, props.alternatives, props.pins, props.scenario]);
 
   return (
@@ -167,8 +168,7 @@ export function MapCanvas(props: MapCanvasProps) {
         className="map-canvas"
         tabIndex={0}
         role="application"
-        aria-label="Lunar map. Drag to pan, scroll or plus and minus to zoom, arrow keys to move."
-        aria-describedby="map-hint"
+        aria-label="Lunar map. Click to move the plan site, drag to pan, scroll to zoom."
         onKeyDown={(e) => {
           if (engineRef.current?.handleKey(e.nativeEvent)) e.preventDefault();
         }}

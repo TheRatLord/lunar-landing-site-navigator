@@ -1,12 +1,13 @@
 import type { TilesetDef, TilesetId } from "../../api/terrain";
 import { polarForward, projectionFromProj, type Projection, type TileGridDef } from "../../lib/projection";
+import type { ViewGrid } from "./view";
 import type { ViewKind } from "./urlState";
 
 export interface MapBasis {
   kind: ViewKind;
   tileset: TilesetDef | null;
   proj: Projection;
-  grid: TileGridDef;
+  grid: ViewGrid;
   latLimits: [number, number];
 }
 
@@ -37,11 +38,11 @@ function gridOfTileset(ts: TilesetDef): TileGridDef {
 export function basisFor(kind: ViewKind, tilesets: readonly TilesetDef[] | null): MapBasis {
   const ts = tilesets?.find((t) => t.id === TILESET_OF_VIEW[kind]) ?? null;
   if (ts) {
-    return { kind, tileset: ts, proj: projectionFromProj(ts.proj4), grid: gridOfTileset(ts), latLimits: ts.lat_limits };
+    return { kind, tileset: ts, proj: projectionFromProj(ts.proj4), grid: { ...gridOfTileset(ts), contain: kind === "global" }, latLimits: ts.lat_limits };
   }
   const proj = projectionFromProj(FALLBACK_PROJ[kind]);
   if (kind === "global") {
-    return { kind, tileset: null, proj, grid: { extent: [-180, -90, 180, 90], tilesX0: 2, tilesY0: 1, minZ: 0, maxZ: 6, tileSize: 256 }, latLimits: [-90, 90] };
+    return { kind, tileset: null, proj, grid: { extent: [-180, -90, 180, 90], tilesX0: 2, tilesY0: 1, minZ: 0, maxZ: 6, tileSize: 256, contain: true }, latLimits: [-90, 90] };
   }
   const e = Math.abs(polarForward(kind, kind === "south" ? -60 : 60, 0).y_m);
   return { kind, tileset: null, proj, grid: { extent: [-e, -e, e, e], tilesX0: 1, tilesY0: 1, minZ: 0, maxZ: 11, tileSize: 256 }, latLimits: kind === "south" ? [-90, -60] : [60, 90] };

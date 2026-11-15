@@ -1,4 +1,4 @@
-import { fetchTileBitmap, tileUrl, type StoreInfo, type TileLayerId, type TilesetDef } from "../../api/terrain";
+import { fetchTileBitmap, tileUrl, type TileLayerId, type TilesetDef } from "../../api/terrain";
 import {
   MOON_R_M,
   destination,
@@ -15,7 +15,7 @@ import type { SiteEntry } from "../../scenario/api";
 import { basisFor, type MapBasis } from "./basis";
 import type { PinMark, RegionalMark } from "./overlays";
 import { badgeSpot, clusterPoints, placeLabels, type LabelBox, type LabelSpot } from "./declutter";
-import { pointsBounds, projectRing, selectFootprintLabels, type LabelCandidate, type Rect } from "./footprints";
+import type { Rect } from "./rect";
 import { buildGraticule, dropOverlaps, type GraticuleLabel } from "./graticule";
 import { heightAt, slopeAt, type HeightTile, type PixelGround } from "./heights";
 import { formatBearing, formatDistance, legs, type LatLon } from "./measure";
@@ -55,15 +55,12 @@ import {
   viewBounds,
   visibleTiles,
   zoomAbout,
-  maxZoomOf,
   type Frame,
   type MapView,
   type TileRef,
 } from "./view";
 
-const OVERZOOM_TRIGGER = 0.8;
-
-export type MapMode = "pan" | "set" | "measure" | "choose";
+export type MapMode = "choose" | "measure";
 
 export interface ActiveLayer {
   id: TileLayerId;
@@ -93,7 +90,7 @@ export interface CursorInfo {
 }
 
 export interface HoverTarget {
-  type: "site" | "scenario" | "alt" | "pin" | "cluster";
+  type: "site" | "scenario" | "alt" | "pin" | "cluster" | "probe";
   id: string;
   x: number;
   y: number;
@@ -109,8 +106,19 @@ export interface EngineHooks {
   onCursor(c: CursorInfo | null): void;
   onHover(h: HoverTarget | null): void;
   onTileError(e: unknown, url: string): void;
-  /** The user keeps zooming in at the closest zoom the map allows (optional; the overview opens the ground view). */
-  onZoomPastLimit?(): void;
+  onPickProbe?(): void;
+}
+
+export interface SearchArea {
+  lat_deg: number;
+  lon_deg: number;
+  radius_m: number;
+}
+
+export interface MapOptions {
+  graticule: boolean;
+  sites: boolean;
+  compass: boolean;
 }
 
 interface SiteMarker {
@@ -118,13 +126,6 @@ interface SiteMarker {
   mx: number;
   my: number;
   ok: boolean;
-}
-
-interface StoreShape {
-  id: string;
-  label: string;
-  pts: Float64Array;
-  bounds: [number, number, number, number];
 }
 
 interface Hit {
@@ -162,18 +163,17 @@ export class MapEngine {
 
   private layers: ActiveLayer[] = [];
   private showGraticule = true;
-  private showStoresLayer = false;
   private showSitesLayer = true;
-  private storesRaw: StoreInfo[] = [];
-  private storeShapes: StoreShape[] = [];
-  private pendingFootprints: Array<{ cand: LabelCandidate; text: string }> = [];
+  private showCompass = true;
+  private area: SearchArea | null = null;
+  private probe: { lat: number; lon: number } | null = null;
+  private frameListeners = new Set<() => void>();
   private labelSpots = new Map<string, LabelSpot>();
   private labelTexts = new Map<string, string>();
   private sitesRaw: SiteEntry[] = [];
   private markers: SiteMarker[] = [];
   private selectedId: string | null = null;
   private scenario: ScenarioMark | null = null;
-  private scenarioOverride: { lat: number; lon: number } | null = null;
   private scenarioOutline: Float64Array | null = null;
   private alts: AltMark[] = [];
   private blocker: BlockerMark | null = null;
@@ -184,7 +184,7 @@ export class MapEngine {
   private regionalBake: HTMLCanvasElement | null = null;
   private hatches: Partial<Record<HatchKind, { colour: string; pattern: CanvasPattern }>> = {};
   private measure: LatLon[] = [];
-  private mode: MapMode = "pan";
+  private mode: MapMode = "choose";
   private pal: Palette | null = null;
   private kindColors: Record<SiteKind, string> | null = null;
 
@@ -199,10 +199,8 @@ export class MapEngine {
   private cursorPx: { x: number; y: number } | null = null;
   private cursorDirty = false;
   private pointers = new Map<number, { x: number; y: number }>();
-  private drag: null | { kind: "pan" | "site" | "pinch"; startX: number; startY: number; lastX: number; lastY: number; moved: boolean; pinch?: number } = null;
+  private drag: null | { kind: "pan" | "pinch"; startX: number; startY: number; lastX: number; lastY: number; moved: boolean; pinch?: number } = null;
   private anim: null | { from: MapView; to: MapView; t0: number; ms: number } = null;
-  /** Wheel zoom asked for past the closest zoom, in zoom levels; see `onWheel`. */
-  private overzoom = 0;
   private statusDirty = true;
   private lastStatusAt = 0;
 
@@ -242,7 +240,6 @@ export class MapEngine {
     canvas.addEventListener("pointercancel", this.onPointerUp);
     canvas.addEventListener("pointerleave", this.onPointerLeave);
     canvas.addEventListener("wheel", this.onWheel, { passive: false });
-    canvas.addEventListener("dblclick", this.onDblClick);
   }
 
   destroy(): void {
@@ -255,9 +252,23 @@ export class MapEngine {
     c.removeEventListener("pointercancel", this.onPointerUp);
     c.removeEventListener("pointerleave", this.onPointerLeave);
     c.removeEventListener("wheel", this.onWheel);
-    c.removeEventListener("dblclick", this.onDblClick);
     this.tiles.clear();
     this.heights.clear();
+    this.frameListeners.clear();
+  }
+
+  onFrame(fn: () => void): () => void {
+    this.frameListeners.add(fn);
+    return () => this.frameListeners.delete(fn);
+  }
+
+  screenOf(lat: number, lon: number): { x: number; y: number } | null {
+    if (this.w === 0) return null;
+    return this.onScreen(this.frame(), lat, lon, 0);
+  }
+
+  get kind(): ViewKind {
+    return this.basis.kind;
   }
 
   resize(w: number, h: number, dpr: number): void {
@@ -340,16 +351,20 @@ export class MapEngine {
     this.invalidate();
   }
 
-  setOptions(o: { graticule: boolean; stores: boolean; sites: boolean }): void {
+  setOptions(o: MapOptions): void {
     this.showGraticule = o.graticule;
-    this.showStoresLayer = o.stores;
     this.showSitesLayer = o.sites;
+    this.showCompass = o.compass;
     this.invalidate();
   }
 
-  setStores(stores: StoreInfo[]): void {
-    this.storesRaw = stores;
-    this.rebuildStores();
+  setSearchArea(a: SearchArea | null): void {
+    this.area = a;
+    this.invalidate();
+  }
+
+  setProbe(p: { lat_deg: number; lon_deg: number } | null): void {
+    this.probe = p ? { lat: p.lat_deg, lon: p.lon_deg } : null;
     this.invalidate();
   }
 
@@ -366,7 +381,6 @@ export class MapEngine {
 
   setScenario(s: ScenarioMark | null): void {
     this.scenario = s;
-    this.scenarioOverride = null;
     this.rebuildScenario();
     this.invalidate();
   }
@@ -422,29 +436,8 @@ export class MapEngine {
   }
 
   private rebuildAll(): void {
-    this.rebuildStores();
     this.rebuildSites();
     this.rebuildScenario();
-  }
-
-  private rebuildStores(): void {
-    const { proj, latLimits, kind } = this.basis;
-    const out: StoreShape[] = [];
-    for (const s of this.storesRaw) {
-      if (kind !== "global") {
-        const south = kind === "south";
-        if (s.kind === "polar_stereographic") {
-          if (s.pole !== (south ? -1 : 1)) continue;
-        } else if (!(s.lat_extent_deg[0]! >= latLimits[0] && s.lat_extent_deg[1]! <= latLimits[1])) continue;
-      }
-      if (!s.footprint) continue;
-      const pts = projectRing(s.footprint.coordinates[0] ?? [], proj);
-      const bounds = pointsBounds(pts);
-      if (!bounds) continue;
-      const px = s.pixel_size_m;
-      out.push({ id: s.id, label: `${s.id} · ${px >= 10 ? px.toFixed(0) : px.toPrecision(2)} m`, pts, bounds });
-    }
-    this.storeShapes = out;
   }
 
   private rebuildSites(): void {
@@ -460,7 +453,6 @@ export class MapEngine {
   }
 
   private scenarioPos(): { lat: number; lon: number } | null {
-    if (this.scenarioOverride) return this.scenarioOverride;
     return this.scenario ? { lat: this.scenario.lat_deg, lon: this.scenario.lon_deg } : null;
   }
 
@@ -501,6 +493,7 @@ export class MapEngine {
   fitAround(lat: number, lon: number, radius_m: number): void {
     const pts = [0, 90, 180, 270].map((az) => destination(lat, lon, az, radius_m)).concat([[lat, lon]]);
     const xy = pts.map(([la, lo]) => this.basis.proj.forward(la, lo));
+    if (this.basis.proj.kind === "equirectangular") for (const p of xy) p[0] = lon + ((((p[0] - lon) % 360) + 540) % 360) - 180;
     const xs = xy.map((p) => p[0]);
     const ys = xy.map((p) => p[1]);
     if (!xs.every(Number.isFinite) || !ys.every(Number.isFinite)) return;
@@ -526,10 +519,6 @@ export class MapEngine {
   }
 
   zoomBy(dz: number): void {
-    if (dz > 0 && this.atMaxZoom()) {
-      this.hooks.onZoomPastLimit?.();
-      return;
-    }
     const target = zoomAbout(this.basis.grid, { w: this.w, h: this.h }, this.view, this.w / 2, this.h / 2, this.view.zoom + dz);
     this.flyTo(target, 160);
   }
@@ -610,11 +599,8 @@ export class MapEngine {
   private updateCursorStyle(hit: Hit | null = null): void {
     const c = this.canvas.style;
     if (this.drag?.moved && this.drag.kind === "pan") c.cursor = "grabbing";
-    else if (hit && (this.mode === "pan" || this.mode === "choose")) c.cursor = "pointer";
-    else if (this.mode === "choose") c.cursor = "crosshair";
-    else if (this.mode === "set") c.cursor = hit?.type === "scenario" ? "move" : "crosshair";
-    else if (this.mode === "measure") c.cursor = "crosshair";
-    else c.cursor = "grab";
+    else if (hit && this.mode === "choose") c.cursor = "pointer";
+    else c.cursor = "crosshair";
   }
 
   private onPointerDown = (e: PointerEvent): void => {
@@ -629,8 +615,7 @@ export class MapEngine {
       this.drag = { kind: "pinch", startX: p.x, startY: p.y, lastX: p.x, lastY: p.y, moved: true, pinch: Math.hypot(a.x - b.x, a.y - b.y) };
       return;
     }
-    const sitehit = this.mode === "set" ? this.hitAt(p.x, p.y, "scenario") : null;
-    this.drag = { kind: sitehit ? "site" : "pan", startX: p.x, startY: p.y, lastX: p.x, lastY: p.y, moved: false };
+    this.drag = { kind: "pan", startX: p.x, startY: p.y, lastX: p.x, lastY: p.y, moved: false };
     if (this.hover) {
       this.hover = null;
       this.hooks.onHover(null);
@@ -657,14 +642,8 @@ export class MapEngine {
     if (d) {
       if (!d.moved && Math.hypot(p.x - d.startX, p.y - d.startY) > DRAG_PX) d.moved = true;
       if (d.moved) {
-        if (d.kind === "pan") {
-          this.view = panBy(this.basis.grid, { w: this.w, h: this.h }, this.view, p.x - d.lastX, p.y - d.lastY);
-          this.updateCursorStyle();
-        } else if (d.kind === "site") {
-          const [lat, lon] = this.screenToLatLon(p.x, p.y);
-          this.scenarioOverride = { lat, lon };
-          this.rebuildScenario();
-        }
+        this.view = panBy(this.basis.grid, { w: this.w, h: this.h }, this.view, p.x - d.lastX, p.y - d.lastY);
+        this.updateCursorStyle();
       }
       d.lastX = p.x;
       d.lastY = p.y;
@@ -693,17 +672,6 @@ export class MapEngine {
     }
     this.drag = null;
     if (!d || e.type === "pointercancel") {
-      if (d?.kind === "site") {
-        this.scenarioOverride = null;
-        this.rebuildScenario();
-      }
-      this.updateCursorStyle();
-      this.invalidate();
-      return;
-    }
-    if (d.kind === "site" && d.moved) {
-      const o = this.scenarioOverride;
-      if (o) this.hooks.onSetSite(o.lat, o.lon);
       this.updateCursorStyle();
       this.invalidate();
       return;
@@ -733,23 +701,12 @@ export class MapEngine {
       this.hooks.onMeasure({ lat_deg: lat, lon_deg: lon });
       return;
     }
-    if (this.mode === "set") {
-      const hit = this.hitAt(x, y, "scenario");
-      if (!hit) this.hooks.onSetSite(lat, lon);
-      return;
-    }
     const hit = this.hitAt(x, y);
-    if (this.mode === "choose") {
-      if (hit?.type === "site") this.hooks.onPickSite(hit.id);
-      else if (hit?.type === "cluster") this.openCluster(hit.ids ?? []);
-      else if (hit?.type !== "scenario") this.hooks.onSetSite(lat, lon);
-      return;
-    }
     if (hit?.type === "site") this.hooks.onPickSite(hit.id);
     else if (hit?.type === "cluster") this.openCluster(hit.ids ?? []);
     else if (hit?.type === "pin") this.hooks.onPickPin(Number(hit.id));
-    else if (hit?.type === "scenario") this.fitScenario();
-    else if (!hit) this.hooks.onPickSite(null);
+    else if (hit?.type === "probe") this.hooks.onPickProbe?.();
+    else if (!hit) this.hooks.onSetSite(lat, lon);
   }
 
   private openCluster(ids: readonly string[]): void {
@@ -768,16 +725,6 @@ export class MapEngine {
     const p = this.local(e);
     const unit = e.deltaMode === 1 ? 0.06 : e.deltaMode === 2 ? 1 : 0.0022;
     const dz = clamp(-e.deltaY * unit, -1, 1);
-    // Zooming in on past the limit, by about one level's worth of wheel, asks to go down to the ground.
-    if (dz > 0 && this.atMaxZoom()) {
-      this.overzoom += dz;
-      if (this.overzoom >= OVERZOOM_TRIGGER) {
-        this.overzoom = 0;
-        this.hooks.onZoomPastLimit?.();
-      }
-      return;
-    }
-    this.overzoom = 0;
     this.anim = null;
     this.view = zoomAbout(this.basis.grid, { w: this.w, h: this.h }, this.view, p.x, p.y, this.view.zoom + dz);
     this.cursorPx = p;
@@ -785,15 +732,6 @@ export class MapEngine {
     this.invalidate();
   };
 
-  private atMaxZoom(): boolean {
-    return this.view.zoom >= maxZoomOf(this.basis.grid) - 0.01;
-  }
-
-  private onDblClick = (e: MouseEvent): void => {
-    if (this.mode !== "pan") return;
-    const p = this.local(e);
-    this.flyTo(zoomAbout(this.basis.grid, { w: this.w, h: this.h }, this.view, p.x, p.y, this.view.zoom + 1), 200);
-  };
 
   private async fetchHeights(url: string, signal: AbortSignal): Promise<HeightTile | null> {
     const bmp = await fetchTileBitmap(url, signal);
@@ -884,6 +822,7 @@ export class MapEngine {
       else this.invalidate();
     }
     this.paint();
+    for (const fn of this.frameListeners) fn();
     if (this.cursorDirty) {
       this.cursorDirty = false;
       this.hooks.onCursor(this.cursorInfo());
@@ -912,23 +851,22 @@ export class MapEngine {
     ctx.fillStyle = p.bg;
     ctx.fillRect(0, 0, w, h);
     this.hits.length = 0;
-    this.pendingFootprints = [];
 
     this.paintBase(ctx, f, p);
     this.paintTiles(ctx, f);
     this.paintRegional(ctx, f, p);
-    if (this.showStoresLayer) this.paintStores(ctx, f, p);
     const gridLabels = this.showGraticule ? this.paintGraticule(ctx, f, p) : [];
     this.paintScenarioEllipse(ctx, f, p);
     const taken = this.paintSites(ctx, f, p);
     ctx.font = LABEL_FONT;
     for (const l of dropOverlaps(gridLabels, taken)) {
-      if ((l.x < 210 && l.y > this.h - 56) || (l.x > this.w - 80 && l.y < 80)) continue;
+      if (l.y < 56 || (l.x < 210 && l.y > this.h - 56) || (l.x > this.w - 80 && l.y < 80)) continue;
       haloText(ctx, l.text, l.x, l.y, p.text2, p.bg, l.align, l.baseline);
     }
-    this.paintFootprintLabels(ctx, p, taken);
+    this.paintArea(ctx, f, p);
     this.paintAlternatives(ctx, f, p);
     this.paintPins(ctx, f, p);
+    this.paintProbe(ctx, f, p);
     this.paintBlocker(ctx, f, p);
     this.paintMeasure(ctx, f, p);
     this.paintScenarioMarker(ctx, f, p);
@@ -1026,50 +964,6 @@ export class MapEngine {
     }
   }
 
-  private paintStores(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
-    const b = viewBounds(f);
-    ctx.save();
-    ctx.lineWidth = 1.2;
-    ctx.strokeStyle = p.accent;
-    ctx.fillStyle = p.accentBg;
-    ctx.setLineDash([5, 3]);
-    ctx.font = LABEL_FONT;
-    for (const s of this.storeShapes) {
-      const [x0, y0, x1, y1] = s.bounds;
-      if (x1 < b[0] || x0 > b[2] || y1 < b[1] || y0 > b[3]) continue;
-      if ((x1 - x0) / f.upp < 3 && (y1 - y0) / f.upp < 3) continue;
-      ctx.beginPath();
-      let pen = false;
-      let topX = 0;
-      let topY = Infinity;
-      for (let i = 0; i < s.pts.length; i += 2) {
-        const mx = s.pts[i]!;
-        if (Number.isNaN(mx)) {
-          pen = false;
-          continue;
-        }
-        const sx = (mx - f.x0) / f.upp;
-        const sy = (f.y0 - s.pts[i + 1]!) / f.upp;
-        if (pen) ctx.lineTo(sx, sy);
-        else ctx.moveTo(sx, sy);
-        pen = true;
-        if (sy > 34 && sy < topY && sx > 30 && sx < this.w - 150 && sy < this.h - 40) {
-          topY = sy;
-          topX = sx;
-        }
-      }
-      ctx.globalAlpha = 0.28;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.stroke();
-      if (topY < Infinity) {
-        ctx.font = LABEL_FONT;
-        this.pendingFootprints.push({ cand: { id: s.id, x: topX, y: topY, textW: ctx.measureText(s.label).width, footprintW: (x1 - x0) / f.upp, footprintH: (y1 - y0) / f.upp }, text: s.label });
-      }
-    }
-    ctx.restore();
-  }
-
   private paintGraticule(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): GraticuleLabel[] {
     const g = buildGraticule(this.basis.proj, f, this.basis.grid.extent);
     ctx.lineWidth = 1;
@@ -1142,7 +1036,11 @@ export class MapEngine {
     ctx.font = NAME_FONT_STRONG;
     if (sc) mark(sc.lat, sc.lon, 13, "@scenario", clipName(this.scenario?.name || "Plan site", 34));
     ctx.font = NAME_FONT;
-    for (const a of this.alts) mark(a.lat_deg, a.lon_deg, 10, `@alt:${a.id}`, clipName(a.name, 28));
+    for (const a of this.alts) {
+      const same = sc !== null && Math.abs(a.lat_deg - sc.lat) < 1e-5 && Math.abs(a.lon_deg - sc.lon) < 1e-5;
+      if (same) mark(a.lat_deg, a.lon_deg, 10);
+      else mark(a.lat_deg, a.lon_deg, 10, `@alt:${a.id}`, clipName(a.name, 28));
+    }
     for (const pin of this.pins) mark(pin.lat_deg, pin.lon_deg, 11);
     return { boxes, labels };
   }
@@ -1173,13 +1071,16 @@ export class MapEngine {
     const labels: LabelBox[] = [];
     const texts = new Map<string, string>();
     const fixed = this.fixedMarks(ctx, f, texts);
+    const sc = this.scenarioPos();
+    const scPt = sc ? this.onScreen(f, sc.lat, sc.lon, 30) : null;
     const single = (x: number, y: number, site: SiteEntry, sel: boolean): void => {
       const st = KIND_STYLE[site.kind];
       drawMarker(ctx, st.shape, x, y, st.shape === "dot" ? 5.5 : 6, colors[site.kind], p.bg, site.confidence === "high");
       this.hits.push({ type: "site", id: site.id, x, y, r: 10 });
       markerBoxes.push([x - 8, y - 8, x + 8, y + 8]);
       if (site.kind === "poi" && f.zoom < this.basis.grid.minZ + 5 && !sel) return;
-      const text = clipName(site.name, 28);
+      if (scPt && Math.abs(x - scPt.x) < 3 && Math.abs(y - scPt.y) < 3) return;
+      const text = clipName(site.name.replace(/^Artemis candidate region: /, ""), 28);
       ctx.font = sel ? NAME_FONT_STRONG : NAME_FONT;
       const box: LabelBox = { id: site.id, x, y, r: 8, w: ctx.measureText(text).width, must: sel };
       if (sel) labels.unshift(box);
@@ -1230,12 +1131,54 @@ export class MapEngine {
     return taken;
   }
 
-  private paintFootprintLabels(ctx: CanvasRenderingContext2D, p: Palette, obstacles: readonly Rect[]): void {
-    ctx.font = LABEL_FONT;
-    const byId = new Map(this.pendingFootprints.map((l) => [l.cand.id, l.text]));
-    for (const l of selectFootprintLabels(this.pendingFootprints.map((q) => q.cand), obstacles)) {
-      haloText(ctx, byId.get(l.id)!, l.x, l.y - 3, p.accentText, p.bg, "center");
+  private paintArea(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
+    const a = this.area;
+    if (!a) return;
+    const proj = this.basis.proj;
+    ctx.beginPath();
+    let prevX = NaN;
+    for (let az = 0; az <= 360; az += 4) {
+      const [la, lo] = destination(a.lat_deg, a.lon_deg, az, a.radius_m);
+      const [mx, my] = proj.forward(la, lo);
+      if (!Number.isFinite(mx) || !Number.isFinite(my)) continue;
+      const sx = toScreenX(f, mx);
+      const sy = toScreenY(f, my);
+      if (az === 0 || (proj.kind === "equirectangular" && Math.abs(sx - prevX) > this.w / 2)) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+      prevX = sx;
     }
+    ctx.strokeStyle = p.bg;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.strokeStyle = p.text;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  private paintProbe(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
+    const q = this.probe;
+    if (!q) return;
+    const pt = this.onScreen(f, q.lat, q.lon, 30);
+    if (!pt) return;
+    const { x, y } = pt;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.bezierCurveTo(x - 4, y - 8, x - 9, y - 12, x - 9, y - 19);
+    ctx.arc(x, y - 19, 9, Math.PI, 0);
+    ctx.bezierCurveTo(x + 9, y - 12, x + 4, y - 8, x, y);
+    ctx.closePath();
+    ctx.fillStyle = p.bg;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = p.text;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y - 19, 3.2, 0, Math.PI * 2);
+    ctx.fillStyle = p.text;
+    ctx.fill();
+    this.hits.push({ type: "probe", id: "probe", x, y: y - 16, r: 14 });
   }
 
   private paintAlternatives(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
@@ -1487,11 +1430,8 @@ export class MapEngine {
     const [lat, lon] = proj.inverse(this.view.cx, this.view.cy);
     const g = proj.groundPerUnit(lat);
     const bar = niceScaleBar(f.upp * g.x);
-    if (bar) {
-      const where = `${proj.kind === "polar-stereographic" ? "" : "E–W "}at ${Math.abs(lat).toFixed(1)}°${lat < 0 ? "S" : "N"}`;
-      drawScaleBar(ctx, bar, 18, this.h - 14, where, p);
-    }
-    if (proj.kind === "polar-stereographic") {
+    if (bar) drawScaleBar(ctx, bar, 18, this.h - 14, "", p);
+    if (this.showCompass && proj.kind === "polar-stereographic") {
       const north = this.northDirection(f, lat, lon);
       drawNorthArrow(ctx, this.w - 44, 44, north[0], north[1], p);
     }

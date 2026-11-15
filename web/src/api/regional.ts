@@ -39,9 +39,6 @@ export const CENSOR_BIT: Record<string, number> = { longest_sunlit_h: 1, longest
 
 export const METRIC_BY_KEY: Record<string, MetricSpec> = Object.fromEntries(REGIONAL_METRICS.map((m) => [m.key, m]));
 
-export type BoundKind = "value" | "lo" | "hi";
-export const BOUND_SUFFIX: Record<BoundKind, string> = { value: "", lo: "_lo", hi: "_hi" };
-
 export interface RegionalInput {
   lat_deg: number;
   lon_deg: number;

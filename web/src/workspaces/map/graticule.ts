@@ -1,6 +1,6 @@
 import { polarInverse, type Projection } from "../../lib/projection";
 import { wrap180 } from "../../lib/scale";
-import { overlaps, type Rect } from "./footprints";
+import { overlaps, type Rect } from "./rect";
 import { toScreenX, toScreenY, type Frame } from "./view";
 
 interface GraticuleLine {
@@ -225,6 +225,7 @@ function globalGraticule(f: Frame, extent: [number, number, number, number]): Gr
   const my0 = Math.max(f.y0 - f.vh * f.upp, extent[1]);
   if (mx0 >= mx1 || my0 >= my1) return { lines, labels: [], latStep, lonStep };
   for (const lat of multiples(latStep, my0, my1)) {
+    if (Math.abs(lat) >= 90) continue;
     const y = toScreenY(f, lat);
     lines.push({ kind: "lat", value: lat, major: Math.round(lat / latStep) % 5 === 0, pts: [toScreenX(f, mx0), y, toScreenX(f, mx1), y] });
   }

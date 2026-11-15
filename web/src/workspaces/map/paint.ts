@@ -116,7 +116,10 @@ export function drawCluster(ctx: CanvasRenderingContext2D, x: number, y: number,
 }
 
 export function clipName(name: string, max: number): string {
-  return name.length > max ? `${name.slice(0, max - 1)}…` : name;
+  if (name.length <= max) return name;
+  const cut = name.slice(0, max - 1);
+  const space = cut.search(/\s\S*$/);
+  return `${space > max / 2 ? cut.slice(0, space) : cut}…`;
 }
 
 export function haloText(

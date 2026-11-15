@@ -1,26 +1,6 @@
 import type { components } from "./generated/schema";
-import { ApiError, request } from "./client";
+import { request } from "./client";
 import { awaitJob, type JobWatch } from "./jobs";
-
-const FILE_URL = /\/exports\/files\/([^/?#]+)\/[^/?#]+/;
-
-export function exportDigest(url: string): string | null {
-  const m = FILE_URL.exec(url);
-  return m ? decodeURIComponent(m[1]!) : null;
-}
-
-const problemText = (e: unknown): string =>
-  e instanceof ApiError ? `${e.title}${e.detail ? `: ${e.detail}` : ""}${e.type ? ` (${e.type})` : ""}` : e instanceof Error ? e.message : String(e);
-
-export async function deleteExportOutcome(digest: string): Promise<{ removed: true } | { removed: false; problem: string; error: unknown }> {
-  try {
-    await request(`/exports/files/${encodeURIComponent(digest)}`, { method: "DELETE" });
-    return { removed: true };
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 404) return { removed: true };
-    return { removed: false, problem: `The engine did not delete the files: ${problemText(e)}`, error: e };
-  }
-}
 
 export type ExportManifest = Pick<components["schemas"]["ExportManifest"], "files">;
 

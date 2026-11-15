@@ -1,56 +1,31 @@
-import { createContext, useContext } from "react";
-import { createStore, useStore, type StoreApi } from "zustand";
+import { create } from "zustand";
 import type { LatLon } from "./measure";
 import { KIND_ORDER, type SiteKind } from "./sites";
 import type { MapMode } from "./engine";
+import type { SiteSnapshot } from "./siteMove";
 import type { ViewKind } from "./urlState";
+import type { MapView } from "./view";
 
-export interface LayerState {
-  on: boolean;
-  opacity: number;
-}
-
-export const LAYER_ORDER = ["relief", "elevation", "slope"] as const;
-export type VisualLayerId = (typeof LAYER_ORDER)[number];
-
-export const DEFAULT_LAYERS: Record<VisualLayerId, LayerState> = {
-  relief: { on: true, opacity: 1 },
-  elevation: { on: false, opacity: 0.55 },
-  slope: { on: false, opacity: 0.55 },
-};
-
-export type DockTab = "layers" | "sites" | "measure";
-
-interface SiteSnapshot {
-  lat_deg: number;
-  lon_deg: number;
-  name: string;
-  catalog_id: string | null;
-}
+export type BaseLayer = "relief" | "elevation" | "slope";
+export type DockTab = "layers" | "sites" | "results";
+export type Popup = { kind: "site"; id: string } | { kind: "pin"; rank: number } | { kind: "probe" };
 
 export interface MapStore {
-  kind: ViewKind;
-  layers: Record<VisualLayerId, LayerState>;
+  base: BaseLayer;
+  baseOpacity: number;
   graticule: boolean;
-  stores: boolean;
   sites: boolean;
-  pins: boolean;
-  regional: boolean;
-  regionalOpacity: number;
   kinds: ReadonlySet<SiteKind>;
-  confidence: string | null;
-  status: string | null;
-  query: string;
-  selectedId: string | null;
+  popup: Popup | null;
+  probe: LatLon | null;
   mode: MapMode;
   measure: LatLon[];
   undo: SiteSnapshot[];
   dockOpen: boolean;
   tab: DockTab;
-  shortcuts: boolean;
+  saved: { kind: ViewKind; view: MapView; siteKey: string } | null;
 
-  set(patch: Partial<Omit<MapStore, "set" | "setLayer" | "toggleKind" | "addMeasure" | "popMeasure" | "pushUndo" | "popUndo">>): void;
-  setLayer(id: VisualLayerId, patch: Partial<LayerState>): void;
+  set(patch: Partial<Omit<MapStore, "set" | "toggleKind" | "addMeasure" | "popMeasure" | "pushUndo" | "popUndo">>): void;
   toggleKind(k: SiteKind): void;
   addMeasure(p: LatLon): void;
   popMeasure(): void;
@@ -58,30 +33,22 @@ export interface MapStore {
   popUndo(): SiteSnapshot | null;
 }
 
-export function createMapStore(init: Partial<MapStore>): StoreApi<MapStore> {
-  return createStore<MapStore>((set, get) => ({
-  kind: "south",
-  layers: DEFAULT_LAYERS,
+export const useMapStore = create<MapStore>((set, get) => ({
+  base: "relief",
+  baseOpacity: 0.55,
   graticule: true,
-  stores: false,
   sites: true,
-  pins: true,
-  regional: true,
-  regionalOpacity: 0.7,
   kinds: new Set(KIND_ORDER),
-  confidence: null,
-  status: null,
-  query: "",
-  selectedId: null,
-  mode: "pan",
+  popup: null,
+  probe: null,
+  mode: "choose",
   measure: [],
   undo: [],
   dockOpen: true,
   tab: "layers",
-  shortcuts: false,
+  saved: null,
 
   set: (patch) => set(patch),
-  setLayer: (id, patch) => set((s) => ({ layers: { ...s.layers, [id]: { ...s.layers[id], ...patch } } })),
   toggleKind: (k) =>
     set((s) => {
       const next = new Set(s.kinds);
@@ -98,24 +65,4 @@ export function createMapStore(init: Partial<MapStore>): StoreApi<MapStore> {
     if (last) set({ undo: u.slice(0, -1) });
     return last;
   },
-  ...init,
 }));
-}
-
-export const MapStoreContext = createContext<StoreApi<MapStore> | null>(null);
-
-function identity<T>(x: T): T {
-  return x;
-}
-
-export function useMapStore(): MapStore;
-export function useMapStore<T>(selector: (s: MapStore) => T): T;
-export function useMapStore<T>(selector: (s: MapStore) => T = identity as (s: MapStore) => T): T {
-  return useStore(useMapStoreApi(), selector);
-}
-
-export function useMapStoreApi(): StoreApi<MapStore> {
-  const api = useContext(MapStoreContext);
-  if (!api) throw new Error("useMapStore outside MapStoreContext");
-  return api;
-}
