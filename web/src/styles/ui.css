@@ -107,11 +107,13 @@
 }
 .btn-icon.btn-primary {
   border-radius: 50%;
+  padding: 0;
   background: var(--accent-strong);
   color: var(--on-accent);
 }
 .btn-icon.btn-primary:hover:not(:disabled) {
   background: var(--accent-strong);
+  color: var(--on-accent);
   opacity: 0.86;
 }
 

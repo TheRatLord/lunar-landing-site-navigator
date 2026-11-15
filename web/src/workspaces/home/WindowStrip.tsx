@@ -40,6 +40,8 @@ interface WindowStripProps {
   landingWindow: LandingWindow | null;
   children?: ReactNode;
   tools?: ReactNode;
+  playing: boolean;
+  onPlay(): void;
   onScrub(ms: number): void;
   onCommit(ms: number): void;
 }
@@ -154,7 +156,7 @@ export function PinnedRow({ label, sub, survey, scan, requirements, failed, star
   );
 }
 
-export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, failed, siteName, scan, scanState, best, landingWindow, children, tools, onScrub, onCommit }: WindowStripProps) {
+export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, failed, siteName, scan, scanState, best, landingWindow, children, tools, playing, onPlay, onScrub, onCommit }: WindowStripProps) {
   const dragging = useRef(false);
   const [hover, setHover] = useState<number | null>(null);
   const span = end_ms - start_ms;
@@ -193,6 +195,7 @@ export function WindowStrip({ start_ms, end_ms, timeMs, survey, busy, failed, si
     <div className="ws-strip" data-busy={busy}>
       <div className="ws-row ws-axis-row">
         <div className="ws-gutter ws-gutter-tools">
+          <IconButton className="ws-play" icon={playing ? "pause" : "play"} label={playing ? "Pause" : "Play"} size="sm" variant="primary" onClick={onPlay} />
           <strong className="ws-site" title={siteName}>
             {siteName}
           </strong>

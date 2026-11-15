@@ -39,6 +39,7 @@ import "../../styles/home.css";
 const loadSites = (signal: AbortSignal) => catalogApi.sites({ limit: 1000 }, { signal });
 const MAX_PINS = 4;
 const FALLBACK_MS = Date.UTC(2027, 0, 12);
+const PLAY_SECONDS = 60;
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
 
 function useSurvey(doc: Scenario, site: SurveySite, anchor: number | null) {
@@ -134,6 +135,31 @@ export function HomeWorkspace() {
   const start = anchor;
   const end = start + SPAN_MS;
   const timeMs = clamp(live ?? landingMs, start, end);
+  const [playing, setPlaying] = useState(true);
+  const [shownLanding, setShownLanding] = useState(landingMs);
+  if (shownLanding !== landingMs) {
+    setShownLanding(landingMs);
+    setPlaying(false);
+    setLive(null);
+  }
+  const playFrom = useRef(timeMs);
+  playFrom.current = timeMs;
+  useEffect(() => {
+    if (!playing) return;
+    const rate = (end - start) / PLAY_SECONDS;
+    let t = playFrom.current >= end ? start : playFrom.current;
+    let last = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      t += Math.min(0.25, (now - last) / 1000) * rate;
+      last = now;
+      if (t >= end) t = start;
+      setLive(t);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, start, end]);
 
   const evalBody = useMemo(() => evaluateBody(doc, "auto"), [doc]);
   const evaluation = useAnalysis<EvaluateResult>(SITE_ENDPOINTS.evaluate, evalBody, { debounceMs: 350 });
@@ -167,6 +193,7 @@ export function HomeWorkspace() {
   const answer = useSearchAnswer(site);
   const scrub = useCallback(
     (ms: number) => {
+      setPlaying(false);
       setAsk("when");
       setLive(ms);
     },
@@ -174,6 +201,7 @@ export function HomeWorkspace() {
   );
   const commit = useCallback(
     (ms: number) => {
+      setPlaying(false);
       setAsk("when");
       setLive(null);
       edit(["landing_utc"], toIsoUtc(roundToHour(ms)));
@@ -335,6 +363,8 @@ export function HomeWorkspace() {
         best={best}
         onScrub={scrub}
         onCommit={commit}
+        playing={playing}
+        onPlay={() => setPlaying((p) => !p)}
         landingWindow={landingWindow}
         tools={
           pinned ? null : (
