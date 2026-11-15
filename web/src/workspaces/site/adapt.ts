@@ -1,4 +1,4 @@
-import { outcomeFromJson, type RequirementOutcome } from "../../lib/requirements";
+import { formatQuantity, outcomeFromJson, type RequirementOutcome } from "../../lib/requirements";
 import { wrap360 } from "../../lib/scale";
 import type {
   ConstraintVerdict,
@@ -17,7 +17,7 @@ import type {
   TimelineRow,
   Verdict,
 } from "../../contract/types";
-import { formatNum, withUnit } from "../../lib/format";
+import { formatNum, NBSP, withUnit } from "../../lib/format";
 import { toIsoUtc, parseUtc } from "../../lib/time";
 import { KIND_LABEL } from "../../components/viz/Countdown";
 import { whenText } from "../../components/viz/units";
@@ -321,26 +321,7 @@ export interface VerdictSummary {
   limitingKey: string | null;
   limiting: ConstraintVerdict | null;
   counts: { pass: number; marginal: number; fail: number; unevaluated: number };
-  batteryEveryHeading: boolean;
-  batteryWorst: number | null;
   outcomes: RequirementOutcome[];
-}
-
-function inArc(y: number, [from, to]: Arc): boolean {
-  return wrap360(y - from) <= wrap360(to - from) + 1e-6;
-}
-
-export function batteryFailsEveryHeading(r: Pick<EvaluateResult, "heading">): boolean {
-  const h = r.heading;
-  if (!h) return false;
-  const c = h.constraints.find((x) => x.key === "min_state_of_charge");
-  if (c) return c.none_pass;
-  if (!h.depends) return false;
-  const flat = h.soc_min_heading_only?.[0];
-  if (typeof flat !== "number" || flat > 0.05) return false;
-  const worst = arcs(h.worst_arc_deg);
-  const yaws = h.yaws_deg.filter((y) => Number.isFinite(y));
-  return worst.length > 0 && yaws.length > 0 && yaws.every((y) => worst.some((a) => inArc(y, a)));
 }
 
 export function summarize(r: EvaluateResult): VerdictSummary {
@@ -353,8 +334,6 @@ export function summarize(r: EvaluateResult): VerdictSummary {
     limitingKey: key,
     limiting: key ? (constraints.find((c) => c.id === key) ?? null) : null,
     counts,
-    batteryEveryHeading: batteryFailsEveryHeading(r),
-    batteryWorst: batteryWorst(r),
     outcomes: r.verdict.constraints.filter((c) => c.state === "pass" || c.state === "marginal" || c.state === "fail").map(outcomeFromJson),
   };
 }
@@ -704,32 +683,51 @@ export function limitKey(note: Pick<LimitNoteJson, "id" | "parameters">): string
   return `${note.id} ${canonical(note.parameters)}`;
 }
 
-export interface BatteryRisk {
-  low: number;
-  high: number | null;
-  everyHeading: boolean;
-  depends: boolean;
+const FLAT = 0.05;
+
+const pct = (v: number) => formatQuantity(v, "fraction");
+
+export interface BatteryOutlook {
+  text: string;
+  basis: string;
   suggestedMin: number;
 }
 
-function batteryWorst(r: Pick<EvaluateResult, "metrics">): number | null {
-  const m = r.metrics.find((x) => x.key === "min_state_of_charge");
-  const v = m ? (m.low ?? m.value) : null;
-  return v === null || v === undefined || !Number.isFinite(v) ? null : v;
-}
-
-export function batteryRisk(r: EvaluateResult, scenario: Scenario | null): BatteryRisk | null {
+export function batteryOutlook(r: EvaluateResult, scenario: Scenario | null): BatteryOutlook | null {
   if (!scenario || scenario.constraints.min_state_of_charge) return null;
-  const m = r.metrics.find((x) => x.key === "min_state_of_charge");
-  const low = m ? (m.low ?? m.value) : null;
-  if (low === null || low === undefined || !Number.isFinite(low) || low > 0.05) return null;
-  const dod = scenario.profile.battery?.max_dod;
-  const suggestedMin = typeof dod === "number" && dod > 0 && dod < 1 ? Math.round((1 - dod) * 100) / 100 : 0.2;
-  return { low, high: m?.high ?? null, everyHeading: batteryFailsEveryHeading(r), depends: r.heading?.depends === true, suggestedMin };
-}
+  const soc = r.metrics.find((x) => x.key === "min_state_of_charge");
+  const low = soc ? (soc.low ?? soc.value) : null;
+  if (low === null || low === undefined || !Number.isFinite(low) || low > FLAT) return null;
+  const { battery, loads, origins } = scenario.profile;
+  const estimated = ["battery.capacity_wh", "loads"].some((k) => {
+    const b = origins?.[k]?.basis;
+    return b !== undefined && b !== "published" && b !== "user";
+  });
+  const basis = `${estimated ? "Estimated: " : ""}${Math.round(battery.capacity_wh)}${NBSP}Wh battery, ${Math.round(loads.sunlit_w)}${NBSP}W day and ${Math.round(loads.dark_w)}${NBSP}W night load`;
+  const dod = battery.max_dod;
+  const suggestedMin = dod > 0 && dod < 1 ? Math.round((1 - dod) * 100) / 100 : 0.2;
+  const done = (text: string): BatteryOutlook => ({ text, basis, suggestedMin });
 
-export function batteryNote(b: BatteryRisk): string {
-  if (!b.depends) return "Not checked: the battery can run flat";
-  if (b.everyHeading) return "Not checked: the battery runs flat whichever way the lander faces";
-  return `Not checked: the battery runs flat at some headings, lowest ${Math.round(b.low * 100)}–${Math.round((b.high ?? b.low) * 100)} %`;
+  const dark = r.metrics.find((x) => x.key === "longest_dark_span_h");
+  const darkH = dark ? (dark.value ?? dark.high) : null;
+  const lastsH = loads.dark_w > 0 ? (battery.capacity_wh * battery.discharge_efficiency) / loads.dark_w : Infinity;
+  if (darkH !== null && darkH !== undefined && darkH >= lastsH)
+    return done(`Battery won't last the night: ${formatQuantity(darkH, "h")} dark, a full charge lasts about ${formatQuantity(lastsH, "h")}`);
+
+  const byHeading = (r.heading?.depends ? (r.heading.soc_min_by_heading ?? []) : []).filter((v) => Number.isFinite(v));
+  const best = byHeading.length ? Math.max(...byHeading) : null;
+  const worst = byHeading.length ? Math.min(...byHeading) : null;
+  if (best !== null && worst !== null && best > FLAT && worst <= FLAT) {
+    const flat = byHeading.filter((v) => v <= FLAT).length;
+    return done(`Battery runs flat at ${flat} of ${byHeading.length} lander headings (best keeps ${pct(best)})`);
+  }
+
+  const nominal = soc?.value ?? best;
+  if (nominal !== null && nominal !== undefined && nominal > FLAT)
+    return done(`Battery may run flat if the terrain blocks more Sun than mapped (${pct(nominal)} as mapped)`);
+
+  const load = `${Math.round(loads.sunlit_w)}${NBSP}W`;
+  if (darkH === 0)
+    return done(`Battery runs flat: at times the array makes less than the ${load} load, for too long`);
+  return done(`Battery runs flat: the array can't cover the ${load} load and recharge for the dark`);
 }

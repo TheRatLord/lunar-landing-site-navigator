@@ -121,11 +121,6 @@ function share(o: RequirementOutcome, m: number | null): number {
   return lim > 0 ? m / lim : m;
 }
 
-export interface VerdictContext {
-  batteryEveryHeading?: boolean;
-  batteryWorst?: number | null;
-}
-
 function against(v: number, o: RequirementOutcome): string {
   const text = formatQuantity(v, o.unit);
   const lim = o.limitMin ?? o.limitMax;
@@ -139,15 +134,14 @@ function limitOf(o: RequirementOutcome): string {
   return formatLimit(o.limitMin, o.limitMax, o.unit);
 }
 
-function failBits(o: RequirementOutcome, ctx: VerdictContext): { lead: string; limit: string } {
+function failBits(o: RequirementOutcome): { lead: string; limit: string } {
   const name = requirementName(o.key, o.label);
-  if (o.key === "min_state_of_charge" && ctx.batteryEveryHeading) return { lead: `${name} ${formatQuantity(ctx.batteryWorst ?? o.worstValue ?? o.value ?? 0, o.unit)} at every heading`, limit: formatQuantity(o.limitMin ?? o.limitMax, o.unit) };
   const v = o.headingDependent ? (o.worstValue ?? o.value) : o.value;
   return { lead: `${name}${v !== null ? ` ${against(v, o)}` : ""}`, limit: limitOf(o) };
 }
 
-function failPart(o: RequirementOutcome, ctx: VerdictContext): string {
-  const b = failBits(o, ctx);
+function failPart(o: RequirementOutcome): string {
+  const b = failBits(o);
   return `${b.lead}${b.limit ? ` (limit ${b.limit})` : ""}`;
 }
 
@@ -159,8 +153,8 @@ export interface VerdictHeadline {
   notes: string[];
 }
 
-export function verdictHeadline(overall: string, outcomes: readonly RequirementOutcome[], ctx: VerdictContext = {}): VerdictHeadline | null {
-  const s = verdictSentence(overall, outcomes, ctx);
+export function verdictHeadline(overall: string, outcomes: readonly RequirementOutcome[]): VerdictHeadline | null {
+  const s = verdictSentence(overall, outcomes);
   if (!s) return null;
   const n = outcomes.length;
   if (overall === "pass") return { word: s.word, lead: n === 1 ? "Requirement met" : n === 2 ? "Both requirements met" : `All ${n} requirements met`, notes: [] };
@@ -168,7 +162,7 @@ export function verdictHeadline(overall: string, outcomes: readonly RequirementO
     const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
     const first = failing[0];
     if (!first) return { word: s.word, lead: null, notes: [] };
-    const b = failBits(first, ctx);
+    const b = failBits(first);
     const count = `${failing.length} of ${n} requirement${n === 1 ? "" : "s"} failed`;
     return { word: s.word, lead: b.lead, notes: b.limit ? [`Limit ${b.limit}`, count] : [count] };
   }
@@ -176,13 +170,13 @@ export function verdictHeadline(overall: string, outcomes: readonly RequirementO
   return m ? { word: s.word, lead: m[1]!, notes: [`Limit ${m[2]!}`] } : { word: s.word, lead: s.detail, notes: [] };
 }
 
-export function verdictSentence(overall: string, outcomes: readonly RequirementOutcome[], ctx: VerdictContext = {}): { word: string; detail: string | null } | null {
+export function verdictSentence(overall: string, outcomes: readonly RequirementOutcome[]): { word: string; detail: string | null } | null {
   const n = outcomes.length;
   if (overall === "pass") return { word: "Pass", detail: n === 1 ? "requirement met" : n === 2 ? "both requirements met" : `all ${n} requirements met` };
   if (overall === "fail") {
     const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
     if (failing.length === 0) return { word: "Fail", detail: null };
-    return { word: "Fail", detail: `${failing.length} of ${n}: ${failing.map((o) => failPart(o, ctx)).join("; ")}` };
+    return { word: "Fail", detail: `${failing.length} of ${n}: ${failing.map((o) => failPart(o)).join("; ")}` };
   }
   if (overall === "marginal") {
     const marginal = outcomes.filter((o) => o.state === "marginal").sort((a, b) => share(a, a.marginWorst ?? a.margin) - share(b, b.marginWorst ?? b.margin));
@@ -191,7 +185,6 @@ export function verdictSentence(overall: string, outcomes: readonly RequirementO
     const name = requirementName(o.key, o.label);
     const lim = limitOf(o);
     const tail = lim ? ` (limit ${lim})` : "";
-    if (o.key === "min_state_of_charge" && ctx.batteryEveryHeading) return { word: "Marginal", detail: failPart(o, ctx) };
     const w = o.worstValue ?? (o.marginWorst !== null ? (o.limitMax !== null ? o.limitMax - o.marginWorst : o.limitMin !== null ? o.limitMin + o.marginWorst : null) : null);
     if (w === null) return { word: "Marginal", detail: `${name}${tail}` };
     const dir = o.limitMax !== null && o.limitMin === null ? "up to" : o.limitMin !== null && o.limitMax === null ? "down to" : "at";
@@ -200,8 +193,8 @@ export function verdictSentence(overall: string, outcomes: readonly RequirementO
   return null;
 }
 
-export function verdictText(overall: string, outcomes: readonly RequirementOutcome[], ctx: VerdictContext = {}): string | null {
-  const s = verdictSentence(overall, outcomes, ctx);
+export function verdictText(overall: string, outcomes: readonly RequirementOutcome[]): string | null {
+  const s = verdictSentence(overall, outcomes);
   if (!s) return null;
   return s.detail ? `${s.word} · ${s.detail}` : s.word;
 }

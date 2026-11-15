@@ -2,18 +2,16 @@ import { Link } from "react-router-dom";
 import type { EvaluateResult } from "../../api/site";
 import type { AnalysisControls, AnalysisState } from "../../api/useAnalysis";
 import { AnalysisStatus } from "../../components/AnalysisStatus";
-import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Spinner } from "../../components/ui/Progress";
-import { useScenario } from "../../scenario/store";
-import type { Limit, Scenario } from "../../scenario/types";
+import type { Scenario } from "../../scenario/types";
 import { useEllipsePassShare } from "../ellipse/store";
 import { DownloadMenu } from "../ReportButton";
 import { explorerHref } from "../../learn/planPlace";
 import { verdictHeadline } from "../../lib/requirements";
 import { siteLabel } from "../../lib/siteName";
-import { batteryNote, batteryRisk, type VerdictSummary } from "./adapt";
+import type { VerdictSummary } from "./adapt";
 import { Assumptions } from "./Assumptions";
 import { SiteTabs } from "./SiteTabs";
 
@@ -25,32 +23,14 @@ interface SiteHeaderProps {
   run: AnalysisState<EvaluateResult> & AnalysisControls;
 }
 
-function Notes({ doc, result }: { doc: Scenario; result: EvaluateResult | null }) {
-  const edit = useScenario((s) => s.edit);
+function Notes({ doc }: { doc: Scenario }) {
   const share = useEllipsePassShare(doc);
-  const battery = result ? batteryRisk(result, doc) : null;
-  if (!battery && share === null) return null;
-  const addBattery = () => {
-    if (!battery) return;
-    const limit: Limit = { min: battery.suggestedMin, max: null, unit: "", label: "Minimum battery state of charge", origin: { basis: "user", label: "", source_url: null, note: "" }, margin_scale: 1 };
-    edit(["constraints", "min_state_of_charge"], limit);
-  };
+  if (share === null) return null;
   return (
     <div className="vs-notes">
-      {battery && (
-        <span className="vs-note vs-note-warn">
-          <Icon name="battery" size={12} />
-          {batteryNote(battery)}
-          <Button size="sm" variant="ghost" onClick={addBattery}>
-            Make it a requirement
-          </Button>
-        </span>
-      )}
-      {share !== null && (
-        <Link to="/site/ellipse" className="vs-note vs-note-link">
-          {Math.round(share * 100)}% of the landing ellipse passes
-        </Link>
-      )}
+      <Link to="/site/ellipse" className="vs-note vs-note-link">
+        {Math.round(share * 100)}% of the landing ellipse passes
+      </Link>
     </div>
   );
 }
@@ -58,7 +38,7 @@ function Notes({ doc, result }: { doc: Scenario; result: EvaluateResult | null }
 export function SiteHeader({ doc, evaluated, result, summary, run }: SiteHeaderProps) {
   const computing = run.phase === "running";
   const known = summary && summary.overall !== "unknown";
-  const head = known && !run.stale ? verdictHeadline(summary.overall, summary.outcomes, { batteryEveryHeading: summary.batteryEveryHeading, batteryWorst: summary.batteryWorst }) : null;
+  const head = known && !run.stale ? verdictHeadline(summary.overall, summary.outcomes) : null;
   return (
     <>
       <PageHeader
@@ -95,7 +75,7 @@ export function SiteHeader({ doc, evaluated, result, summary, run }: SiteHeaderP
           <p className="site-headline site-headline-wait">Not evaluated</p>
         )}
       </section>
-      {!run.stale && <Notes doc={doc} result={result} />}
+      {!run.stale && <Notes doc={doc} />}
     </>
   );
 }

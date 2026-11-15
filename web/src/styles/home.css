@@ -126,7 +126,7 @@
   .home-figures { left: var(--sp-5); }
   .home-cta-quiet { display: none; }
   .home-figure dd { font-size: 26px; }
-  .home-headline-sub:not(.home-unchecked):not(:has(.home-warn)) { display: none; }
+  .home-headline-sub:not(:has(.home-warn)) { display: none; }
   .home-figure-extra { display: none; }
   .ws-axis span:nth-child(even) { display: none; }
 }
@@ -150,8 +150,6 @@
 .home-figure .home-jump { text-decoration-color: transparent; }
 .home-figure .home-jump:hover { text-decoration-color: currentColor; }
 .home-cta-quiet { color: var(--text-2); padding: 0 var(--sp-3); }
-.home-unchecked { display: flex; align-items: center; gap: var(--sp-1-5); }
-.home-unchecked > svg { flex: none; color: var(--c-marginal); }
 .ws-pin-name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ws-best:not([data-top]) { opacity: 0.45; transition: opacity var(--dur-fast) var(--ease); }
 .ws-req:hover .ws-best, .ws-best:focus-visible { opacity: 1; }

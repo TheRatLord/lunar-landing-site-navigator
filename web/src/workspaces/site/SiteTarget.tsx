@@ -39,6 +39,7 @@ import {
   timelineRows,
 } from "./adapt";
 import { AttributionBar } from "./Attribution";
+import { BatteryWarning } from "./Battery";
 import { HeadingPanel } from "./HeadingPanel";
 import { SiteHeader } from "./SiteHeader";
 import { MetricsTable } from "./Tables";
@@ -186,7 +187,7 @@ export function SiteTarget() {
                 )}
               </div>
 
-              <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" />
+              <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" extra={!stale && <BatteryWarning doc={doc} evaluated={evaluated} result={result} />} />
             </div>
 
             <aside className="site-rail" aria-label="Requirements and events">

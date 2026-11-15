@@ -76,10 +76,7 @@ function quantity(v: number, unit: string): string {
 export function rowVerdict(row: SlipRow): string | null {
   if (!row.verdict || (row.state !== "pass" && row.state !== "marginal" && row.state !== "fail")) return null;
   const outcomes = row.verdict.constraints.filter((c) => c.state === "pass" || c.state === "marginal" || c.state === "fail").map(outcomeFromJson);
-  const soc = row.verdict.constraints.find((c) => c.key === "min_state_of_charge" && c.heading_dependent);
-  const best = soc?.heading_best?.value;
-  const everyHeading = !!soc && typeof best === "number" && soc.limit_min !== null && best < soc.limit_min;
-  return verdictSentence(row.state, outcomes, { batteryEveryHeading: everyHeading })?.detail ?? null;
+  return verdictSentence(row.state, outcomes)?.detail ?? null;
 }
 
 const finite = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);

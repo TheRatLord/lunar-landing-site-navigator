@@ -271,6 +271,7 @@ class HeadingResult(Model):
     soc_min_total: list[float] | None = Field(description="(pessimistic, optimistic) minimum state of charge under the full bound.")
     soc_min_heading_only: list[float] | None
     soc_min_horizon_only: list[float] | None
+    soc_min_by_heading: list[float]
     cause: str = Field(description="`heading`, `terrain`, `both` or `none`: which bound moved the minimum state of charge.")
 
 

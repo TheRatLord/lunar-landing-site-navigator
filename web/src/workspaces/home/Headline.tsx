@@ -7,8 +7,7 @@ import { Spinner } from "../../components/ui/Progress";
 import type { Verdict } from "../../contract/types";
 import { verdictHeadline } from "../../lib/requirements";
 import { VERDICT_LABEL } from "../../lib/verdict";
-import { useScenario } from "../../scenario/store";
-import { batteryNote, batteryRisk, type VerdictSummary } from "../site/adapt";
+import type { VerdictSummary } from "../site/adapt";
 import { nextPass, scanAt, type BestLanding, type YearScan } from "./scan";
 import { spanText } from "../../components/viz/units";
 import { formatDeg } from "../../lib/format";
@@ -40,13 +39,11 @@ interface VerdictLine {
 
 function exactLine(s: VerdictSummary): VerdictLine {
   if (s.overall === "unknown") return { tone: "unknown", word: "Not evaluated", lead: null, notes: [] };
-  const v = verdictHeadline(s.overall, s.outcomes, { batteryEveryHeading: s.batteryEveryHeading, batteryWorst: s.batteryWorst });
+  const v = verdictHeadline(s.overall, s.outcomes);
   return { tone: s.overall, word: VERDICT_LABEL[s.overall], lead: v?.lead ?? null, notes: v?.notes ?? [] };
 }
 
 export function Headline({ blockRef, survey, failed, onRetry, timeMs, dragging, requirements, summary, evaluation, scan, best, onJump }: HeadlineProps) {
-  const doc = useScenario((s) => s.doc);
-  const battery = summary && evaluation.result && !evaluation.stale ? batteryRisk(evaluation.result, doc) : null;
   const sky = survey ? skyFacts(survey, timeMs) : null;
   const preview = scan && (dragging || (!summary && evaluation.phase === "running")) ? scanAt(scan, timeMs) : null;
   const line: VerdictLine | null =
@@ -95,11 +92,6 @@ export function Headline({ blockRef, survey, failed, onRetry, timeMs, dragging, 
             {n}
           </p>
         ))}
-        {battery && (
-          <p className="home-headline-sub home-unchecked">
-            <Icon name="battery" size={12} /> {batteryNote(battery)}
-          </p>
-        )}
         {requirements === 0 ? (
           sky?.events.map((e) => (
             <p key={e} className="home-headline-sub">

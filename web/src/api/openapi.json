@@ -10729,6 +10729,13 @@
             ],
             "title": "Soc Min Horizon Only"
           },
+          "soc_min_by_heading": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Soc Min By Heading"
+          },
           "cause": {
             "type": "string",
             "title": "Cause",
@@ -10751,6 +10758,7 @@
           "soc_min_total",
           "soc_min_heading_only",
           "soc_min_horizon_only",
+          "soc_min_by_heading",
           "cause"
         ],
         "title": "HeadingResult",

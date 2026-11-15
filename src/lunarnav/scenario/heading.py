@@ -140,6 +140,7 @@ class HeadingAnalysis:
     """(pessimistic, optimistic) minimum state of charge under the full bound."""
     soc_min_heading_only: tuple[float, float] | None
     soc_min_horizon_only: tuple[float, float] | None
+    soc_min_by_heading: tuple[float, ...]
     cause: str
     """`heading`, `terrain`, `both` or `none`: which bound moved the minimum state of charge."""
 
@@ -162,6 +163,7 @@ class HeadingAnalysis:
                 "soc_min_total": None if self.soc_min_total is None else list(self.soc_min_total),
                 "soc_min_heading_only": None if self.soc_min_heading_only is None else list(self.soc_min_heading_only),
                 "soc_min_horizon_only": None if self.soc_min_horizon_only is None else list(self.soc_min_horizon_only),
+                "soc_min_by_heading": list(self.soc_min_by_heading),
                 "cause": self.cause}
 
 
@@ -205,9 +207,11 @@ def analyse_heading(power: PowerSignals, profile: LanderProfile, constraints: Co
     best = worst = None
     worst_arc: tuple[tuple[float, float], ...] = ()
     h_only = z_only = None
+    by_heading: tuple[float, ...] = ()
     cause = "terrain" if total[1] - total[0] > CAUSE_TOLERANCE else "none"
     if power.heading_depends:
         vals = np.array([_soc_min(t, row, sunlit, q, d_s, profile) for row in power.yaw_power_w])
+        by_heading = tuple(float(v) for v in vals)
         best, worst = float(yaws[int(np.argmax(vals))]), float(yaws[int(np.argmin(vals))])
         circular = (not att.heading_known) or att.yaw_uncertainty_deg >= 180.0
 
@@ -230,4 +234,5 @@ def analyse_heading(power: PowerSignals, profile: LanderProfile, constraints: Co
         known=att.heading_known, nominal_yaw_deg=att.yaw_deg, nominal_basis=nominal_basis,
         uncertainty_deg=att.yaw_uncertainty_deg if att.heading_known else 0.0, depends=power.heading_depends,
         yaws_deg=tuple(float(y) for y in yaws), best_yaw_deg=best, worst_yaw_deg=worst, worst_arc_deg=worst_arc, constraints=tuple(cons),
-        soc_min_total=total, soc_min_heading_only=h_only, soc_min_horizon_only=z_only, cause=cause)
+        soc_min_total=total, soc_min_heading_only=h_only, soc_min_horizon_only=z_only,
+        soc_min_by_heading=by_heading, cause=cause)

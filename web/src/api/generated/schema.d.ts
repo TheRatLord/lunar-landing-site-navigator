@@ -1671,6 +1671,7 @@ export interface components {
             soc_min_total: number[] | null;
             soc_min_heading_only: number[] | null;
             soc_min_horizon_only: number[] | null;
+            soc_min_by_heading: number[];
             cause: string;
         };
         HeadingWorst: {

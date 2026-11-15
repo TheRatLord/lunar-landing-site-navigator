@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import type { Interval, LineMark, LineRow, TimelineRow } from "../../contract/types";
 import { bandEnvelope, minMaxEnvelope } from "../../lib/decimate";
 import { formatNum, tickDecimals } from "../../lib/format";
@@ -19,6 +19,7 @@ export interface TimelineProps {
   timeMs: number;
   onTimeChange: (ms: number) => void;
   title?: string;
+  extra?: ReactNode;
 }
 
 const GUTTER = 190;
@@ -131,7 +132,7 @@ function drawMark(ctx: CanvasRenderingContext2D, world: string, x: number, y: nu
   ctx.strokeStyle = c.get("bg");
   ctx.stroke();
 }
-export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline" }: TimelineProps) {
+export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline", extra }: TimelineProps) {
   const colors = useColors();
   const [size, setSize] = useState<Size>({ w: 0, h: 0 });
   const [view, setView] = useState<Range>(extent);
@@ -475,6 +476,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
       className="viz-panel timeline-panel"
       actions={
         <>
+          {extra}
           <div className="toolstrip">
             <IconButton icon="plus" size="sm" label="Zoom in" onClick={() => zoom(1.5)} />
             <IconButton icon="minus" size="sm" label="Zoom out" onClick={() => zoom(1 / 1.5)} />
