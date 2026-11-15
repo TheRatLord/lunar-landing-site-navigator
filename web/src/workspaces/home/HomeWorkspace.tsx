@@ -135,7 +135,7 @@ export function HomeWorkspace() {
   const start = anchor;
   const end = start + SPAN_MS;
   const timeMs = clamp(live ?? landingMs, start, end);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [shownLanding, setShownLanding] = useState(landingMs);
   if (shownLanding !== landingMs) {
     setShownLanding(landingMs);
