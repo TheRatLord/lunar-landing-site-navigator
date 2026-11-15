@@ -6,18 +6,18 @@ import { Spinner } from "../components/ui/Progress";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { CONSTRAINT_META } from "../scenario/editor/fieldSpecs";
 import { TimeSection } from "../scenario/editor/TimeSection";
-import { effectiveWindow, usePlanSearch } from "../scenario/planSearch";
+import { effectiveWindow, isYear, usePlanSearch, yearText } from "../scenario/planSearch";
 import { useSearchSite } from "../scenario/searchAnchor";
 import { useScenario } from "../scenario/store";
 import type { Limit } from "../scenario/types";
-import { hoursOrDays } from "../scenario/when";
+import { hoursOrDays, spanText } from "../scenario/when";
 import { SETUP_WORKSPACE } from "../workspaces/registry";
-import { Card } from "./plan/Card";
+import { Card, type CardRow } from "./plan/Card";
 import { landerName, sameProfile } from "./plan/landerFacts";
 import { usePresets } from "../scenario/editor/usePresets";
 import { LanderPicker } from "./plan/LanderPicker";
 import { RequirementsPicker } from "./plan/RequirementsPicker";
-import { WindowControl, windowText } from "./plan/Widen";
+import { WindowControl } from "./plan/Widen";
 import { formatLimit } from "../lib/requirements";
 
 const SitePicker = lazy(() => import("./plan/SitePicker").then((m) => ({ default: m.SitePicker })));
@@ -41,9 +41,16 @@ export function PlanPanel() {
 
   const siteName = siteLabel(centre?.name ?? doc.site.name) || "Unnamed site";
   const active = CONSTRAINT_META.filter((m) => doc.constraints[m.key]);
-  const span = windowText(effectiveWindow(doc, win));
+  const window = effectiveWindow(doc, win);
   const preset = presets.status === "ready" ? presets.data.profiles.find((e) => e.profile.id === doc.profile.id) : undefined;
   const landerTitle = `${landerName(doc.profile.name)}${preset && !sameProfile(preset.profile, doc.profile) ? " (edited)" : ""}`;
+  const limits: CardRow[] =
+    active.length === 0
+      ? [{ v: "None set" }]
+      : [
+          ...active.slice(0, MAX_LISTED).map((m) => ({ k: m.short, v: limitText(doc.constraints[m.key] as Limit) })),
+          ...(active.length > MAX_LISTED ? [{ v: `+${active.length - MAX_LISTED} more` }] : []),
+        ];
 
   return (
     <aside className="plan-side" aria-label="Requirements">
@@ -55,9 +62,11 @@ export function PlanPanel() {
           field="site"
           icon="pin"
           label="Where"
-          value={siteName}
           width={onMap ? 360 : 860}
-          lines={radius === null ? undefined : <span className="plan-card-line">{`Within ${radius} km`}</span>}
+          rows={[
+            { k: "Site", v: siteName },
+            { k: "Area", v: radius === null ? "Site only" : `Within ${radius} km` },
+          ]}
         >
           <Suspense
             fallback={
@@ -70,7 +79,16 @@ export function PlanPanel() {
           </Suspense>
         </Card>
 
-        <Card field="time" icon="calendar" label="When" value={span} width={420} lines={<span className="plan-card-line">{`${hoursOrDays(doc.mission_duration_h)} on the surface`}</span>}>
+        <Card
+          field="time"
+          icon="calendar"
+          label="When"
+          width={420}
+          rows={[
+            { k: "Window", v: isYear(window) ? yearText(window) : spanText(window.first_ms, window.last_ms) },
+            { k: "Stay", v: hoursOrDays(doc.mission_duration_h) },
+          ]}
+        >
           <div className="plan-pick">
             <div className="plan-pick-scroll plan-pick-form">
               <WindowControl />
@@ -79,28 +97,11 @@ export function PlanPanel() {
           </div>
         </Card>
 
-        <Card field="lander" icon="lander" label="Lander" value={landerTitle} width={480}>
+        <Card field="lander" icon="lander" label="Lander" width={480} rows={[{ v: landerTitle }]}>
           <LanderPicker />
         </Card>
 
-        <Card
-          field="constraints"
-          icon="checklist"
-          label="Limits"
-          value={active.length === 0 ? "None set" : `${active.length} set`}
-          width={520}
-          lines={
-            <>
-              {active.slice(0, MAX_LISTED).map((m) => (
-                <span key={m.key} className="plan-card-req">
-                  <span>{m.short}</span>
-                  <span className="num">{limitText(doc.constraints[m.key] as Limit)}</span>
-                </span>
-              ))}
-              {active.length > MAX_LISTED && <span className="plan-card-line">+{active.length - MAX_LISTED} more</span>}
-            </>
-          }
-        >
+        <Card field="constraints" icon="checklist" label="Limits" width={520} rows={limits}>
           <RequirementsPicker />
         </Card>
       </div>
