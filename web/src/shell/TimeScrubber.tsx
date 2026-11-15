@@ -6,13 +6,18 @@ import { planStay, useScenario } from "../scenario/store";
 import { whenText } from "../scenario/when";
 import { useApp } from "../state/store";
 
-export function togglePlay(): void {
+export function startPlay(): void {
   const { playing, timeMs, setTime, setPlaying } = useApp.getState();
   const doc = useScenario.getState().doc;
   const stay = doc ? planStay(doc) : null;
-  if (!stay) return;
-  if (!playing && (timeMs < stay.start_ms || timeMs >= stay.end_ms)) setTime(stay.start_ms);
-  setPlaying(!playing);
+  if (!stay || playing) return;
+  if (timeMs < stay.start_ms || timeMs >= stay.end_ms) setTime(stay.start_ms);
+  setPlaying(true);
+}
+
+export function togglePlay(): void {
+  if (useApp.getState().playing) useApp.getState().setPlaying(false);
+  else startPlay();
 }
 
 export function TimeScrubber() {

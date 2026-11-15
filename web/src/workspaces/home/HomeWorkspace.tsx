@@ -1,5 +1,5 @@
 import { siteLabel } from "../../lib/siteName";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { PLANNING_ENDPOINTS, type ScanResult } from "../../api/planning";
 import { useReportPlanning } from "../../api/report";
@@ -154,7 +154,8 @@ export function HomeWorkspace() {
       t += Math.min(0.25, (now - last) / 1000) * rate;
       last = now;
       if (t >= end) t = start;
-      setLive(t);
+      const at = t;
+      startTransition(() => setLive(at));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);

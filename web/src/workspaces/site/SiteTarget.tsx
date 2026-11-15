@@ -1,6 +1,6 @@
 import { clamp } from "../../lib/scale";
 import { requirementName } from "../../lib/requirements";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { usePublishScreenContext } from "../../ask/screenContext";
 import type { CountdownKind } from "../../contract/types";
 import { ApiError } from "../../api/client";
@@ -18,6 +18,7 @@ import { Spinner } from "../../components/ui/Progress";
 import { useScenario } from "../../scenario/store";
 import { useOverlays } from "../../scenario/alternatives";
 import { useApp } from "../../state/store";
+import { startPlay } from "../../shell/TimeScrubber";
 import {
   adaptConstraints,
   adaptHorizon,
@@ -65,6 +66,7 @@ export function SiteTarget() {
   const setTime = useApp((s) => s.setTime);
   const bounds = useApp((s) => s.bounds);
   const blocker = useOverlays((s) => s.blocker);
+  useEffect(() => startPlay(), []);
 
   const [view, setViewState] = useState<View>(() => keptView);
   const setView = (v: View) => {
