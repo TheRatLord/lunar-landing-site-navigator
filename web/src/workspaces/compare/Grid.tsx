@@ -4,7 +4,7 @@ import { IconButton } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { MS_HOUR } from "../../lib/time";
 import { delayLabels } from "./delays";
-import { STATE_WORD, dateText, dayText, limitingName, limitingShort, nextText, works, type SiteRef } from "./gridModel";
+import { STATE_WORD, dateText, dayText, limitingName, limitingShort, nextText, type SiteRef } from "./gridModel";
 import { BASELINE_SITE } from "./options";
 
 export interface Cell {
@@ -145,7 +145,7 @@ export function Grid({
                     </td>
                   );
                 })}
-                <td className="cmp-grid-end num">{known.length === slips.length ? `${known.filter((x) => works(x.state)).length}/${slips.length}` : ""}</td>
+                <td className="cmp-grid-end num">{known.length === slips.length ? `${known.filter((x) => x.state === "pass").length}/${slips.length}` : ""}</td>
               </tr>
             );
           })}

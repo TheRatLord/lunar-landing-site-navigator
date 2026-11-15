@@ -117,7 +117,7 @@ function Compare() {
         if (works(row.state)) {
           ok += 1;
           if (row.state === "marginal") marginal += 1;
-          okSites.add(site.key);
+          else okSites.add(site.key);
         }
       }
     return { total, ok, marginal, okSites: okSites.size };

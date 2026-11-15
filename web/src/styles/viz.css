@@ -209,4 +209,4 @@
 }
 .viz-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-4); }
 .viz-foot > .legend { flex: 1 1 320px; min-width: 0; }
-.viz-tools { flex: none; padding: 2px; border-radius: var(--r-pill); background: var(--fill); }
+.viz-tools { flex: none; margin-left: auto; padding: 2px; border-radius: var(--r-pill); background: var(--fill); }
