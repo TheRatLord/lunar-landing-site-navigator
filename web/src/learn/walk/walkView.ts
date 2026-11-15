@@ -45,6 +45,7 @@ export class WalkView {
   private readonly props = new PropSet();
   private near: PropId | null = null;
   onNear: ((id: PropId | null) => void) | null = null;
+  onModelReady: (() => void) | null = null;
   private body: WalkBody = "astronaut";
   private frame: SceneFrame | null = null;
   private siteId = "";
@@ -52,6 +53,7 @@ export class WalkView {
   onEdge: ((atEdge: boolean) => void) | null = null;
 
   constructor(shared: Shared) {
+    this.rover.onModelReady = () => this.onModelReady?.();
     this.sky = new WalkSky(shared);
     this.light.castShadow = true;
     this.light.shadow.mapSize.set(2048, 2048);

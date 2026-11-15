@@ -174,6 +174,7 @@ export class LearnScene {
   private ensureWalk(): WalkView {
     if (!this.walk) {
       this.walk = new WalkView(this.shared);
+      this.walk.onModelReady = () => this.requestRender();
       this.walk.input.onActive = () => {
         this.requestRender();
         this.onWalkActive?.();

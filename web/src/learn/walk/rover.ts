@@ -1,4 +1,7 @@
-import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, SphereGeometry, SpotLight, Vector3 } from "three";
+import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, SphereGeometry, SpotLight, Vector3, type Object3D, type Quaternion } from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import roverUrl from "./models/improved_rover.glb?url";
+import cockpitUrl from "./models/improved_cockpit.glb?url";
 import { clamp } from "../../lib/scale";
 import { RAD } from "../geometry";
 import { clampRadius, pushOut, type Obstacle } from "./collide";
@@ -12,6 +15,8 @@ const TURN = 40;
 const HALF_TRACK = 0.95;
 const HALF_BASE = 1.25;
 const WHEEL_R = 0.42;
+const WHEEL_AXIS = new Vector3(1, 0, 0);
+const WHEEL_NAMES = ["Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR"];
 export const ROVER_HOME = new Vector3(-0.6, 0, 1.2);
 export const ROVER_HEADING = 310;
 
@@ -33,14 +38,22 @@ export class Rover {
   heading = ROVER_HEADING;
   atEdge = false;
   private readonly chassis = new Group();
-  private readonly wheels: Mesh[] = [];
+  private readonly model = new Group();
+  private readonly lights = new Group();
+  private readonly wheels: Object3D[] = [];
+  private readonly wheelRest: Quaternion[] = [];
   private speed = 0;
   private roll = 0;
   private readonly mast: Mesh[] = [];
+  private readonly modelMast: Object3D[] = [];
   private readonly lamps: SpotLight[] = [];
+  private inside = false;
+  onModelReady: (() => void) | null = null;
 
   setInside(on: boolean): void {
+    this.inside = on;
     for (const m of this.mast) m.visible = !on;
+    for (const m of this.modelMast) m.visible = !on;
   }
 
   setLights(on: boolean): void {
@@ -71,7 +84,7 @@ export class Rover {
       const lamp = new SpotLight(0xfff2dc, 0, 45, 0.55, 0.6, 0);
       lamp.position.set(x, 0.9, -1.5);
       lamp.target.position.set(x * 3, 0, -16);
-      c.add(lamp, lamp.target);
+      this.lights.add(lamp, lamp.target);
       this.lamps.push(lamp);
     }
     const wheelGeo = new CylinderGeometry(WHEEL_R, WHEEL_R, 0.3, 20).rotateZ(Math.PI / 2);
@@ -84,10 +97,12 @@ export class Rover {
       const w = new Mesh(wheelGeo, tyre);
       w.position.set(x, WHEEL_R, z);
       this.wheels.push(w);
+      this.wheelRest.push(w.quaternion.clone());
       c.add(w);
       c.add(box(0.36, 0.06, 0.95, white, x, WHEEL_R + 0.48, z));
     }
-    this.object.add(c);
+    this.model.visible = false;
+    this.object.add(c, this.model, this.lights);
     this.object.traverse((o) => {
       if (o instanceof Mesh) {
         o.castShadow = true;
@@ -96,6 +111,49 @@ export class Rover {
     });
     this.object.rotation.order = "YXZ";
     this.reset();
+    this.loadModels();
+  }
+
+  private loadModels(): void {
+    const loader = new GLTFLoader();
+    void Promise.all([loader.loadAsync(roverUrl), loader.loadAsync(cockpitUrl)]).then(([rover, cockpit]) => {
+      const wheels: Object3D[] = [];
+      for (const name of WHEEL_NAMES) {
+        const wheel = rover.scene.getObjectByName(name);
+        if (!wheel) throw new Error(`Missing rover wheel ${name}`);
+        wheels.push(wheel);
+      }
+      const mast: Object3D[] = [];
+      for (const name of ["MastPole", "MastCameraHousing", "MastCameraLens"]) {
+        const part = rover.scene.getObjectByName(name);
+        if (!part) throw new Error(`Missing rover mast part ${name}`);
+        mast.push(part);
+      }
+      for (const name of ["Screen_Nav", "Screen_Status", "Screen_Comms"]) {
+        if (!cockpit.scene.getObjectByName(name)) throw new Error(`Missing cockpit screen ${name}`);
+      }
+      this.model.add(rover.scene, cockpit.scene);
+      this.model.traverse((o) => {
+        if (o instanceof Mesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      this.wheels.splice(0, this.wheels.length, ...wheels);
+      this.wheelRest.splice(0, this.wheelRest.length, ...wheels.map((wheel) => wheel.quaternion.clone()));
+      this.modelMast.push(...mast);
+      this.chassis.visible = false;
+      this.model.visible = true;
+      this.setInside(this.inside);
+      this.syncWheels();
+      this.onModelReady?.();
+    }).catch((error: unknown) => console.warn("Rover models unavailable; using procedural fallback", error));
+  }
+
+  private syncWheels(): void {
+    for (let i = 0; i < this.wheels.length; i++) {
+      this.wheels[i]!.quaternion.setFromAxisAngle(WHEEL_AXIS, -this.roll).multiply(this.wheelRest[i]!);
+    }
   }
 
   reset(): void {
@@ -157,6 +215,6 @@ export class Rover {
     p.y = (fl + fr + bl + br) / 4;
     this.object.position.copy(p);
     this.object.rotation.set(pitch, -h, -roll);
-    for (const w of this.wheels) w.rotation.x = -this.roll;
+    this.syncWheels();
   }
 }
