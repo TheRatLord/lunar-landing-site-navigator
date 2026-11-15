@@ -3,6 +3,7 @@ import { latArg, useLive } from "../derive";
 import { skyAt } from "../geometry";
 import { chapterOf, useLearn } from "../store";
 import { powerWord } from "../timeline";
+import { Pop } from "./Pop";
 import { BatteryIcon, CloseIcon, BehindHillIcon, EclipseIcon, GlobeIcon, NightIcon, PeekIcon, SunIcon } from "./icons";
 
 function Chip({ tone, on, icon, label }: { tone: string; on: boolean; icon: ReactNode; label: string }) {
@@ -61,24 +62,29 @@ function Battery() {
   );
 }
 
-function StatusSum({ showBattery }: { showBattery: boolean }) {
+function ExploreStatus({ walk }: { walk: boolean }) {
   const { sky, battery } = useLive();
   const sun = sky.sunlight > 0.05;
   const earth = sky.earth.frac > 0.05;
   const seg = Number.isNaN(battery) || battery <= 0 ? 0 : Math.ceil(battery * 5 - 1e-6);
-  const say = `${sun ? "Sun up" : "No Sun"}, ${earth ? "Earth in the sky" : "no Earth"}${showBattery ? `, battery ${seg} of 5` : ""}. Show details`;
   return (
-    <button type="button" className="l-fold-sum l-status-sum" aria-label={say}>
-      <span className={sun ? "is-on tone-sun" : "is-off"}>{sun ? <SunIcon size={16} /> : <NightIcon size={16} />}</span>
-      <span className={earth ? "is-on tone-earth" : "is-off"}>
-        <GlobeIcon size={16} hollow={!earth} />
-      </span>
-      {showBattery && (
-        <span className="tone-power">
-          <BatteryIcon segments={seg} size={26} height={16} />
-        </span>
+    <div className="l-readouts l-status" role="group" aria-label="Right now">
+      <Pop side="down" align="end" label={sun ? "Sun: up" : "Sun: not up"} summary={<span className={sun ? "tone-sun" : "is-off"}>{sun ? <SunIcon size={18} /> : <NightIcon size={18} />}</span>}>
+        <p className="l-pop-title">The Sun</p>
+        <SunChip />
+        <p className="l-pop-note">{sun ? "Sunlight here means warmth and solar power." : "No sunlight here right now: cold, and no solar power."}</p>
+      </Pop>
+      <Pop side="down" align="end" label={earth ? "Earth: in the sky" : "Earth: not in the sky"} summary={<span className={earth ? "tone-earth" : "is-off"}><GlobeIcon size={18} hollow={!earth} /></span>}>
+        <p className="l-pop-title">Earth</p>
+        <EarthChip />
+        <p className="l-pop-note">{earth ? "With Earth in the sky, a lander can talk straight to home." : "Earth is below the horizon, so there is no direct link home."}</p>
+      </Pop>
+      {walk && (
+        <Pop side="down" align="end" label={`Battery: ${seg} of 5`} summary={<span className="tone-power"><BatteryIcon segments={seg} size={28} height={18} /></span>}>
+          <Battery />
+        </Pop>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -87,9 +93,9 @@ export function Readouts() {
   const chips = chapterOf(useLearn((s) => s.chapter)).chips;
   const walk = useLearn((s) => s.view === "walk");
   const explore = useLearn((s) => s.chapter === "explore");
+  if (explore) return <ExploreStatus walk={walk} />;
   return (
-    <div className={`l-readouts${explore ? " l-fold" : ""}`} role="group" aria-label="Right now">
-      {explore && <StatusSum showBattery={walk} />}
+    <div className="l-readouts" role="group" aria-label="Right now">
       <div className="l-chips">
         {chips.includes("sun") && <SunChip />}
         {chips.includes("earth") && <EarthChip />}

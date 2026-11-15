@@ -140,7 +140,7 @@ export function Stage() {
     let ro: ResizeObserver | null = null;
     const layout = () => {
       const r = el.getBoundingClientRect();
-      const bar = main?.querySelector(".l-dock") ?? main?.querySelector(".l-timebar");
+      const bar = main?.querySelector(".l-popbar") ?? main?.querySelector(".l-timebar");
       if (bar) ro?.observe(bar);
       const above = Math.round(Math.max(0, bar ? r.bottom - bar.getBoundingClientRect().top : 0) + 12);
       main?.style.setProperty("--l-above", `${above}px`);
