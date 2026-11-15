@@ -298,7 +298,7 @@ export function Stage() {
         <div className="l-stage-top">
           {!panel && <ShowPanel />}
           <TruthNote view={view} site={siteId} chapter={chapter} crater={craterTerrain} />
-          {chapter === "explore" && <SiteStory site={siteId} />}
+          {chapter === "explore" && <SiteStory key={siteId} site={siteId} />}
           {chapter === "explore" && siteId !== "custom" && (
             <Link className="l-pill l-to-planner" to={plannerHref(siteId)}>
               Analyse in Planner <ArrowRightIcon size={16} />

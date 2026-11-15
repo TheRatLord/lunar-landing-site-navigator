@@ -8,7 +8,6 @@ export function SiteStory({ site }: { site: SiteId }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const box = useRef<HTMLDivElement>(null);
-  useEffect(() => setOpen(false), [site]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
