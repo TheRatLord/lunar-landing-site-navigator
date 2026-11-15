@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lunar model comparison</title>
+  <style>
+    :root { color-scheme: dark; font: 15px/1.5 system-ui, sans-serif; background: #08111d; color: #eef4f9; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { padding: 28px clamp(20px, 4vw, 56px) 18px; border-bottom: 1px solid #23384e; background: linear-gradient(115deg, #14283b, #08111d 60%); }
+    .eyebrow { text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 800; color: #88c6d4; }
+    h1 { font-size: clamp(24px, 3vw, 38px); line-height: 1.15; margin: 8px 0; letter-spacing: -.035em; }
+    p { color: #afc3d3; margin: 6px 0 0; max-width: 75ch; }
+    main { padding: 20px clamp(20px, 4vw, 56px) 48px; max-width: 1800px; margin: auto; }
+    .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .group { display: flex; gap: 7px; flex-wrap: wrap; }
+    button { background: #182c40; color: #dce9f2; border: 1px solid #31506b; border-radius: 9px; padding: 9px 13px; font: inherit; cursor: pointer; }
+    button:hover, button:focus-visible { border-color: #8bc4d1; outline: none; }
+    button[aria-pressed="true"] { background: #a4d7dd; color: #0b2432; border-color: #a4d7dd; font-weight: 700; }
+    .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card { background: #111f2e; border: 1px solid #294056; border-radius: 14px; overflow: hidden; min-width: 0; }
+    .cardhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 16px; }
+    .cardhead strong { font-size: 17px; }
+    .cardhead span { font-size: 12px; color: #a0b5c5; text-align: right; }
+    .viewport { height: min(49vw, 490px); min-height: 320px; position: relative; background: radial-gradient(circle at 50% 38%, #293c50, #101a27 72%); }
+    .viewport canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    .hint { padding: 9px 16px 13px; color: #aabfce; font-size: 12px; }
+    h2 { font-size: 20px; margin: 28px 0 6px; }
+    .angles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    figure { margin: 0; background: #111f2e; border: 1px solid #294056; border-radius: 12px; overflow: hidden; }
+    figure img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; }
+    figcaption { padding: 8px 11px; color: #b5c6d4; text-transform: capitalize; font-size: 12px; }
+    .note { font-size: 12px; margin-top: 13px; }
+    @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } .viewport { height: 55vw; min-height: 290px; } .angles { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+  <script type="importmap">
+    {"imports":{"three":"/web/node_modules/three/build/three.module.js","three/addons/":"/web/node_modules/three/examples/jsm/"}}
+  </script>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">NASA Space Apps · Model review</div>
+    <h1>Rover and cockpit comparison</h1>
+    <p>Drag either model to orbit. Scroll to zoom. Use the view buttons to align both cameras. The left models reconstruct the current procedural geometry for comparison.</p>
+  </header>
+  <main>
+    <div class="toolbar">
+      <div class="group" id="modelButtons">
+        <button data-model="rover" aria-pressed="true">Rover</button>
+        <button data-model="cockpit" aria-pressed="false">Inside view</button>
+      </div>
+      <div class="group" id="angleButtons">
+        <button data-angle="three_quarter" aria-pressed="true">Three quarter</button>
+        <button data-angle="front" aria-pressed="false">Front</button>
+        <button data-angle="side" aria-pressed="false">Side</button>
+        <button data-angle="top" aria-pressed="false">Top</button>
+        <button data-angle="pov" aria-pressed="false" hidden>Driver view</button>
+      </div>
+    </div>
+    <div class="pair">
+      <section class="card">
+        <div class="cardhead"><strong>Current</strong><span id="oldStats">Loading…</span></div>
+        <div class="viewport" id="oldViewer"></div>
+        <div class="hint">Current rover / bare Inside area reconstructed from site code</div>
+      </section>
+      <section class="card">
+        <div class="cardhead"><strong>Proposed</strong><span id="newStats">Loading…</span></div>
+        <div class="viewport" id="newViewer"></div>
+        <div class="hint">New GLB model · still separate from the site</div>
+      </section>
+    </div>
+    <h2>Matching render angles</h2>
+    <p>Fixed camera positions make the old and new designs easy to compare.</p>
+    <div class="angles" id="renders"></div>
+    <p class="note">The current site has no cockpit GLB. Its comparison model shows only the existing simple seat and front housing geometry. Screen surfaces in the new model are separately named for a future integration.</p>
+  </main>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const base = '/tools/models/';
+    const names = {rover: ['current_rover', 'improved_rover'], cockpit: ['current_inside', 'improved_cockpit']};
+    const positions = {front: [0, 2.2, -6.5], side: [6.5, 2.2, 0], top: [0, 7.5, 0], three_quarter: [4.8, 3.3, -5]};
+    const cockpitPositions = {front: [0, 2.5, -5], side: [5, 2.4, 0], top: [0, 6, 0], three_quarter: [4, 2.9, 4.3]};
+    const loader = new GLTFLoader();
+    const manifest = await fetch(base + 'out/manifest.json').then(r => r.json());
+    let model = 'rover';
+    let angle = 'three_quarter';
+    let serial = 0;
+
+    function viewer(id) {
+      const element = document.getElementById(id);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x182839);
+      scene.fog = new THREE.Fog(0x182839, 8, 20);
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 100);
+      const renderer = new THREE.WebGLRenderer({antialias: true});
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      element.append(renderer.domElement);
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.minDistance = 0.3;
+      controls.maxDistance = 13;
+      scene.add(new THREE.HemisphereLight(0xc9e6ff, 0x4c5362, 2.4));
+      for (const [x, y, z, intensity] of [[-4, 7, -5, 110], [5, 5, 4, 75]]) {
+        const light = new THREE.PointLight(0xffffff, intensity);
+        light.position.set(x, y, z);
+        scene.add(light);
+      }
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({color: 0x415265, roughness: 1}));
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
+      new ResizeObserver(() => {
+        const w = element.clientWidth, h = element.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+      }).observe(element);
+      const tick = () => { controls.update(); renderer.render(scene, camera); requestAnimationFrame(tick); };
+      tick();
+      return {scene, camera, controls, floor, mesh: null};
+    }
+
+    const viewers = [viewer('oldViewer'), viewer('newViewer')];
+
+    function setCamera(v) {
+      if (angle === 'pov' && model === 'cockpit') {
+        v.camera.position.set(-0.38, 1.75, -0.1);
+        v.controls.target.set(-0.38, 1.75, -2);
+        v.camera.fov = 55;
+      } else {
+        const where = (model === 'rover' ? positions : cockpitPositions)[angle];
+        const target = new THREE.Vector3(0, model === 'rover' ? 1 : 1.45, model === 'rover' ? 0 : -0.2);
+        const position = new THREE.Vector3(...where);
+        if (model === 'cockpit') position.sub(target).multiplyScalar(0.63).add(target);
+        v.camera.position.copy(position);
+        v.controls.target.copy(target);
+        v.camera.fov = 45;
+      }
+      v.camera.updateProjectionMatrix();
+      v.controls.update();
+    }
+
+    async function load() {
+      const request = ++serial;
+      const selected = names[model];
+      for (const [i, v] of viewers.entries()) {
+        const key = selected[i];
+        document.getElementById(i ? 'newStats' : 'oldStats').textContent = `${manifest[key].triangles.toLocaleString()} triangles · ${(manifest[key].bytes / 1024).toFixed(0)} KB`;
+        if (v.mesh) { v.scene.remove(v.mesh); v.mesh = null; }
+        v.floor.position.y = model === 'rover' ? -0.015 : i ? 0.89 : 0.525;
+        setCamera(v);
+        try {
+          const gltf = await loader.loadAsync(base + 'out/' + manifest[key].glb);
+          if (request !== serial) return;
+          v.mesh = gltf.scene;
+          v.scene.add(v.mesh);
+        } catch (error) {
+          document.getElementById(i ? 'newStats' : 'oldStats').textContent = 'Could not load model';
+          console.error(error);
+        }
+      }
+      document.getElementById('renders').replaceChildren(...['front', 'side', 'top', 'three_quarter'].map(view => {
+        const card = document.createElement('figure');
+        card.innerHTML = `<img loading="lazy" src="${base}previews/${selected[0]}_${view}.png" alt="Current ${model}, ${view.replace('_',' ')} view"><figcaption>Current · ${view.replace('_',' ')}</figcaption><img loading="lazy" src="${base}previews/${selected[1]}_${view}.png" alt="Proposed ${model}, ${view.replace('_',' ')} view"><figcaption>Proposed · ${view.replace('_',' ')}</figcaption>`;
+        return card;
+      }));
+    }
+
+    function pressed(group, data, value) {
+      for (const button of document.querySelectorAll(`#${group} button`)) button.setAttribute('aria-pressed', String(button.dataset[data] === value));
+    }
+    document.getElementById('modelButtons').addEventListener('click', event => {
+      const next = event.target.closest('button')?.dataset.model;
+      if (!next) return;
+      model = next;
+      angle = 'three_quarter';
+      pressed('modelButtons', 'model', model);
+      pressed('angleButtons', 'angle', angle);
+      document.querySelector('[data-angle="pov"]').hidden = model !== 'cockpit';
+      load();
+    });
+    document.getElementById('angleButtons').addEventListener('click', event => {
+      const next = event.target.closest('button')?.dataset.angle;
+      if (!next) return;
+      angle = next;
+      pressed('angleButtons', 'angle', angle);
+      viewers.forEach(setCamera);
+    });
+    load();
+  </script>
+</body>
+</html>

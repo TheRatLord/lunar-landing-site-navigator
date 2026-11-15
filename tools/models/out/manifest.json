@@ -1,0 +1,22 @@
+{
+  "current_rover": {
+    "triangles": 768,
+    "bytes": 64792,
+    "glb": "current_rover.glb"
+  },
+  "improved_rover": {
+    "triangles": 10564,
+    "bytes": 557352,
+    "glb": "improved_rover.glb"
+  },
+  "current_inside": {
+    "triangles": 96,
+    "bytes": 13276,
+    "glb": "current_inside.glb"
+  },
+  "improved_cockpit": {
+    "triangles": 4018,
+    "bytes": 218828,
+    "glb": "improved_cockpit.glb"
+  }
+}
