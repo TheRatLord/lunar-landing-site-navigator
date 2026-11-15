@@ -17,10 +17,7 @@ export function FrontDoor() {
       <main className="front-main" id="main">
         <header className="front-head">
           <h1>Where can a lander work on the Moon?</h1>
-          <p>
-            Sunlight for power and a clear line to Earth for radio decide where and when a lander can land. This
-            site works both out from NASA terrain and orbit data. Choose how you want to use it.
-          </p>
+          <p>Sunlight and a view of Earth decide it.</p>
         </header>
 
         <div className="front-doors">
@@ -32,19 +29,16 @@ export function FrontDoor() {
                 Planner · for mission teams
               </span>
               <h2>Plan a landing</h2>
-              <p>
-                Check a landing site, date and lander against your requirements: days of sunlight with an Earth link,
-                the longest dark span, the slope. Compare sites across the year and export a report.
-              </p>
               <ul className="front-points">
-                <li>Answers from SPICE ephemerides and LOLA terrain</li>
-                <li>Every number with its uncertainty</li>
+                <li>Check sunlight, Earth link and slope</li>
+                <li>Compare sites and dates</li>
+                <li>Export reports</li>
               </ul>
               <span className="front-go">
-                Open the Planner
+                Open Planner
                 <Icon name="chevronRight" size={14} />
               </span>
-              <span className="front-wide">Needs a laptop or larger screen</span>
+              <span className="front-wide">Needs a larger screen</span>
             </div>
           </Link>
 
@@ -62,13 +56,10 @@ export function FrontDoor() {
                 Explorer · for everyone
               </span>
               <h2>Explore the Moon</h2>
-              <p>
-                Drive a rover where Apollo 11 landed, watch the Sun skim the horizon at the south pole, and see why
-                some crater floors never get daylight. No background needed.
-              </p>
               <ul className="front-points">
-                <li>Five short lessons with a question each</li>
-                <li>Or roam free: walk, drive, fly out to space</li>
+                <li>Drive a rover and walk in 3D</li>
+                <li>Visit Apollo 11 and the south pole</li>
+                <li>5 short lessons</li>
               </ul>
               <span className="front-go">
                 Start exploring
@@ -79,7 +70,7 @@ export function FrontDoor() {
         </div>
 
         <footer className="front-foot">
-          <Link to={EVIDENCE_WORKSPACE.path}>How every number was checked</Link>
+          <Link to={EVIDENCE_WORKSPACE.path}>How we check the numbers</Link>
           <span aria-hidden="true">·</span>
           <span>Built for the NASA Space Apps Challenge 2026</span>
         </footer>

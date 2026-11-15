@@ -24,7 +24,7 @@
   outline: none;
 }
 .front-head {
-  max-width: 720px;
+  max-width: 880px;
 }
 .front-head h1 {
   margin: 0 0 var(--sp-3);
@@ -108,11 +108,6 @@
   line-height: var(--lh-tight);
   letter-spacing: var(--tracking-tight);
 }
-.front-body p {
-  margin: 0;
-  color: var(--text-2);
-  font-size: var(--fs-md);
-}
 .front-points {
   display: grid;
   gap: var(--sp-1);
@@ -120,7 +115,7 @@
   padding: 0;
   list-style: none;
   color: var(--text-2);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
 }
 .front-points li::before {
   content: "";
