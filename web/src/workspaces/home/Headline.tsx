@@ -73,7 +73,7 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
             <Wait text="Computing the year" />
           )
         ) : line ? (
-          <p className="home-headline-text" data-preview={!summary || undefined}>
+          <p key={`${line.word} ${line.lead ?? ""}`} className="home-headline-text" data-preview={!summary || undefined}>
             <strong className="verdict-word" data-tone={line.tone}>
               {line.word}.
             </strong>
@@ -97,7 +97,24 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
         ) : null}
       </section>
 
+      {scan && (
+        <dl className="home-figures">
+          <Figure label={scan.passFraction > 0 ? "of landing dates this year work" : "No date this year works"} value={`${Math.round(scan.passFraction * 100)}%`} />
+          {next !== null && <Figure label="Next date that works" value={dayText(next)} onClick={() => onJump(next)} />}
+          {showTop && <Figure label={top.verdict === "marginal" ? "Best date (marginal)" : "Best date this year"} value={dayText(top.t_ms)} onClick={() => onJump(top.t_ms)} />}
+        </dl>
+      )}
+
       <div className="home-actions">
+        {failing && next !== null && (
+          <Link className="btn btn-ghost home-cta home-cta-quiet" to="/map">
+            Find a site nearby
+          </Link>
+        )}
+        <Link className={`btn home-cta ${failing ? "btn-default" : "btn-primary"}`} to="/site">
+          {requirements === 0 || !summary || summary.overall === "unknown" ? "Open Site" : summary.overall === "pass" ? "See margins" : "See why"}
+          <Icon name="chevronRight" size={14} />
+        </Link>
         {failing && next !== null ? (
           <button type="button" className="btn btn-primary home-cta" onClick={() => onJump(next)}>
             Land {dayText(next)}
@@ -107,26 +124,7 @@ export function Headline({ subject, blockRef, survey, failed, onRetry, timeMs, d
             Find a site nearby
           </Link>
         ) : null}
-        <Link className={`btn home-cta ${failing ? "btn-default" : "btn-primary"}`} to="/site">
-          {requirements === 0 || !summary || summary.overall === "unknown" ? "Open Site" : summary.overall === "pass" ? "See margins" : "See why"}
-          <Icon name="chevronRight" size={14} />
-        </Link>
       </div>
-
-      {scan && (
-        <dl className="home-figures">
-          <Figure label={scan.passFraction > 0 ? "of landing dates this year work" : "No date this year works"} value={`${Math.round(scan.passFraction * 100)}%`} />
-          {next !== null && <Figure label="Next date that works" value={dayText(next)} onClick={() => onJump(next)} />}
-          {showTop && <Figure label={top.verdict === "marginal" ? "Best date (marginal)" : "Best date this year"} value={dayText(top.t_ms)} onClick={() => onJump(top.t_ms)} />}
-          {failing && next !== null && (
-            <div className="home-figure home-figure-link">
-              <Link to="/map">
-                Find a site nearby <Icon name="chevronRight" size={12} />
-              </Link>
-            </div>
-          )}
-        </dl>
-      )}
     </>
   );
 }

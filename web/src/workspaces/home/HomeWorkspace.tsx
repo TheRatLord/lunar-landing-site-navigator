@@ -165,14 +165,17 @@ export function HomeWorkspace() {
   const fresh = survey !== null;
   const theme = useApp((st) => st.theme);
   const verdictRef = useRef<HTMLElement>(null);
+  const locatorRef = useRef<HTMLDivElement>(null);
   const [skyPad, setSkyPad] = useState(190);
   useEffect(() => {
     const el = verdictRef.current;
     if (!el) return;
-    const measure = () => setSkyPad(Math.round(el.offsetTop + el.offsetHeight + SKY_GAP));
+    const locator = locatorRef.current;
+    const measure = () => setSkyPad(Math.round(Math.max(el.offsetTop + el.offsetHeight, locator ? locator.offsetTop + locator.offsetHeight : 0) + SKY_GAP));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
+    if (locator) ro.observe(locator);
     return () => ro.disconnect();
   }, []);
   const sunWindow = useMemo(() => trackWindow(survey?.sunTrack ?? null, timeMs), [survey, timeMs]);
@@ -220,7 +223,7 @@ export function HomeWorkspace() {
           best={best}
           onJump={commit}
         />
-        <div className="home-locator" data-theme={theme}>
+        <div ref={locatorRef} className="home-locator" data-theme={theme}>
           <HomeMap site={site} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} radiusKm={radiusKm} />
         </div>
         {survey?.smooth && (

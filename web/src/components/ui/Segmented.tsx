@@ -1,4 +1,5 @@
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useThumb } from "./useThumb";
 
 interface SegmentedOption {
   value: string;
@@ -18,6 +19,7 @@ export function Segmented({ label, value, onChange, options, size = "md" }: Segm
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
   const enabled = options.filter((o) => !o.disabled);
   const current = enabled.some((o) => o.value === value) ? value : enabled[0]?.value;
+  const track = useThumb<HTMLDivElement>('[aria-checked="true"]', `${value}:${options.length}`);
 
   const onKey = (e: KeyboardEvent) => {
     const i = enabled.findIndex((o) => o.value === value);
@@ -34,7 +36,7 @@ export function Segmented({ label, value, onChange, options, size = "md" }: Segm
   };
 
   return (
-    <div role="radiogroup" aria-label={label} className={`segmented segmented-${size}`} onKeyDown={onKey}>
+    <div ref={track} role="radiogroup" aria-label={label} className={`segmented segmented-${size} has-thumb`} onKeyDown={onKey}>
       {options.map((o) => (
         <button
           key={o.value}

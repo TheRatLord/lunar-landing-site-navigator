@@ -31,7 +31,7 @@
   padding: 0 var(--sp-3);
   background: transparent;
   border: 0;
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   color: var(--text-2);
   font-size: var(--fs-md);
   text-align: left;

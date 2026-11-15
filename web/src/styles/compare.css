@@ -7,7 +7,7 @@
 .cmp-notice { display: flex; align-items: center; gap: var(--sp-2); margin: 0 var(--sp-3); padding: var(--sp-2) var(--sp-4); border-radius: var(--r-lg); background: var(--c-fail-bg); font-size: var(--fs-sm); color: var(--c-fail); }
 
 .cmp-add-date { display: flex; align-items: center; gap: var(--sp-1); min-width: 0; }
-.cmp-add-date-input { width: 250px; height: var(--control-h); border-radius: var(--r-pill); }
+.cmp-add-date-input { width: 250px; height: var(--control-h-sm); border-radius: var(--r-pill); }
 
 .cmp-add { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); }
 .cmp-add-search { display: flex; align-items: center; gap: var(--sp-2); height: var(--control-h); padding: 0 var(--sp-3); border: 0; border-radius: var(--r-md); background: var(--input-bg); color: var(--text-3); }
@@ -31,15 +31,15 @@
 .cmp-more-r .cmp-grid-end::before, .cmp-more-l .cmp-grid-site::after, .cmp-more-l .cmp-grid-corner::after { content: ""; position: absolute; top: 0; bottom: 0; width: 32px; pointer-events: none; }
 .cmp-more-r .cmp-grid-end::before { right: 100%; background: linear-gradient(to right, transparent, var(--bg)); }
 .cmp-more-l .cmp-grid-site::after, .cmp-more-l .cmp-grid-corner::after { left: 100%; background: linear-gradient(to left, transparent, var(--bg)); }
-.cmp-grid { border-collapse: separate; border-spacing: 6px; font-size: var(--fs-sm); }
+.cmp-grid { border-collapse: separate; border-spacing: 6px; width: 100%; max-width: 1320px; font-size: var(--fs-sm); }
 .cmp-grid th { background: var(--bg); font-weight: var(--fw-regular); }
 .cmp-grid thead th { position: sticky; top: 0; z-index: 2; padding: 0 var(--sp-1) var(--sp-2); text-align: center; white-space: nowrap; vertical-align: bottom; }
-.cmp-grid-corner, .cmp-grid-site { position: sticky; left: 0; z-index: 1; min-width: 160px; max-width: 220px; text-align: left; }
+.cmp-grid-corner, .cmp-grid-site { position: sticky; left: 0; z-index: 1; width: 230px; min-width: 180px; max-width: 260px; text-align: left; }
 .cmp-grid thead .cmp-grid-corner { z-index: 3; }
 .cmp-col-head { display: flex; align-items: center; justify-content: center; min-height: var(--control-h-sm); }
 .cmp-col-head .cmp-x { position: absolute; top: 0; right: 0; }
 .cmp-col-date { font-size: var(--fs-md); font-weight: var(--fw-semibold); color: var(--text); }
-.cmp-col-sub { display: block; font-size: var(--fs-xs); color: var(--text-3); }
+.cmp-col-sub { display: block; min-height: 16px; font-size: var(--fs-xs); color: var(--text-3); }
 .cmp-x.btn-icon { width: 20px; height: 20px; color: var(--text-3); opacity: 0.4; }
 .cmp-col:hover .cmp-x, .cmp-grid-site:hover .cmp-x, .cmp-on .cmp-x, .cmp-x:focus-visible { opacity: 1; }
 .cmp-x.btn-icon:hover { color: var(--text); }
@@ -50,19 +50,19 @@
 .cmp-site .ellipsis { flex: 1; min-width: 0; }
 .cmp-pin { flex: none; color: var(--accent-text); }
 .cmp-cell { padding: 0; }
-.cmp-btn { all: unset; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 124px; height: 60px; padding: 0 var(--sp-2); border-radius: var(--r-md); background: var(--panel); cursor: pointer; text-align: center; line-height: var(--lh-tight); transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); }
+.cmp-btn { all: unset; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 100%; height: 60px; padding: 0 var(--sp-2); border-radius: var(--r-md); background: var(--panel); cursor: pointer; text-align: center; line-height: var(--lh-tight); transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); min-width: 124px; }
 .cmp-btn:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: var(--focus-offset); }
 .cmp-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); }
 .cmp-cell-word { font-size: var(--fs-title); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); color: var(--text-2); white-space: nowrap; }
 .cmp-cell-sub { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-xs); color: var(--text-2); }
 .cmp-btn.cmp-s-empty { cursor: default; background: transparent; box-shadow: inset 0 0 0 var(--hairline) var(--border); }
-.cmp-btn.cmp-s-pass { background: var(--c-pass-fill); }
-.cmp-btn.cmp-s-pass .cmp-cell-word { color: #04240d; }
-.cmp-btn.cmp-s-marginal { background: var(--c-marginal-fill); }
-.cmp-btn.cmp-s-marginal .cmp-cell-word { color: #2e2500; }
+.cmp-btn.cmp-s-pass { background: color-mix(in srgb, var(--c-pass-fill) 22%, var(--panel)); }
+.cmp-btn.cmp-s-pass .cmp-cell-word { color: var(--c-pass); }
+.cmp-btn.cmp-s-marginal { background: color-mix(in srgb, var(--c-marginal-fill) 22%, var(--panel)); }
+.cmp-btn.cmp-s-marginal .cmp-cell-word { color: var(--c-marginal); }
 .cmp-btn.cmp-s-fail { background: var(--panel); }
-.cmp-btn.cmp-s-fail .cmp-cell-word { color: var(--c-fail); }
-button.cmp-btn:hover { box-shadow: inset 0 0 0 1.5px var(--border-strong); }
+.cmp-btn.cmp-s-fail .cmp-cell-word { color: var(--text-2); }
+
 .cmp-hint { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); color: var(--text-3); }
 
 .cmp-detail { flex: none; position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-5); margin: 0 var(--sp-3) var(--sp-3); padding: var(--sp-3) 48px var(--sp-3) var(--sp-5); border: 0; border-radius: var(--r-xl); background: var(--panel); }
@@ -76,8 +76,8 @@ button.cmp-btn:hover { box-shadow: inset 0 0 0 1.5px var(--border-strong); }
 .cmp-margin { color: var(--text-2); }
 .cmp-detail-act { margin-left: auto; }
 .cmp-detail-close.btn-icon { position: absolute; top: var(--sp-1-5); right: var(--sp-1-5); color: var(--text-3); }
-.cmp-btn.cmp-s-pass .cmp-cell-sub { color: rgba(4, 36, 13, 0.78); }
-.cmp-btn.cmp-s-marginal .cmp-cell-sub { color: rgba(46, 37, 0, 0.8); }
+
 .cmp-head { display: flex; flex-direction: column; gap: var(--sp-1-5); padding: var(--sp-2) var(--sp-5) var(--sp-3); }
 .cmp-title { margin: 0; font-size: clamp(26px, 2.6vw, 38px); font-weight: var(--fw-semibold); line-height: 1.08; letter-spacing: -0.022em; color: var(--text); }
 .cmp-sub { margin: 0; font-size: var(--fs-lg); font-weight: var(--fw-medium); letter-spacing: var(--tracking-tight); color: var(--text-2); }
+button.cmp-btn:hover:not([aria-pressed="true"]) { box-shadow: inset 0 0 0 1.5px var(--border-strong); }

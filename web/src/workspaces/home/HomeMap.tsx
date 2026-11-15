@@ -15,7 +15,7 @@ import "../../styles/map.css";
 const loadTilesets = (signal: AbortSignal) => terrainApi.tilesets({ signal });
 
 const LAYERS: ActiveLayer[] = [{ id: "relief", opacity: 1 }];
-const OPTIONS: MapOptions = { graticule: false, sites: true, compass: false, scale: false };
+const OPTIONS: MapOptions = { graticule: false, sites: false, compass: false, scale: false };
 const FOCUS_RADIUS_M = 45_000;
 const noop = () => undefined;
 

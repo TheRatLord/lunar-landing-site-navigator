@@ -9,7 +9,7 @@ import { IconButton } from "../ui/Button";
 import { Panel } from "../ui/Panel";
 import { Canvas } from "./canvas";
 import { spanText, whenText } from "./units";
-import { MONO, SANS, drawReadout, fitText, localPoint, type Size, type ThemeColors } from "./draw";
+import { SANS, drawReadout, fitText, localPoint, type Size, type ThemeColors } from "./draw";
 import { useColors } from "./useColors";
 import { describeInterval, describeLine, gutterReadout } from "./timelineText";
 
@@ -21,7 +21,7 @@ export interface TimelineProps {
   title?: string;
 }
 
-const GUTTER = 176;
+const GUTTER = 190;
 const PAD_R = 14;
 const AXIS_H = 26;
 const INTERVAL_H = 26;
@@ -70,6 +70,9 @@ function fillOpen(ctx: CanvasRenderingContext2D, xs: number, xe: number, y: numb
   }
   ctx.globalAlpha = alpha;
 }
+
+const FILL_TOKEN: Record<string, string> = { "c-sun": "c-sun-fill", "c-earth": "c-earth-fill", "c-uncertainty": "c-dark" };
+const fillOf = (c: ThemeColors, token: string): string => c.get(FILL_TOKEN[token] ?? token);
 
 function drawIntervals(
   ctx: CanvasRenderingContext2D,
@@ -186,19 +189,19 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
       const plotBottom = rowsTop + rowsH;
       const hovering = hover !== null && hover.x >= plotX0 && hover.x <= plotX1 && hover.y >= plotTop && hover.y <= plotBottom;
 
-      ctx.font = `11px ${MONO}`;
+      ctx.font = `500 11px ${SANS}`;
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
       const ticks = timeTicks(t0, t1, Math.max(3, Math.floor(plotW / 100)));
       ctx.lineWidth = 1;
       for (const t of ticks) {
         const x = Math.round(tx(t.ms)) + 0.5;
-        ctx.strokeStyle = t.major ? c.get("grid-strong") : c.get("grid");
+        ctx.strokeStyle = t.major ? c.get("grid") : c.get("grid-strong");
         ctx.beginPath();
         ctx.moveTo(x, AXIS_H - 6);
-        ctx.lineTo(x, plotBottom);
+        ctx.lineTo(x, t.major ? plotBottom : AXIS_H - 2);
         ctx.stroke();
-        ctx.fillStyle = t.major ? c.get("text") : c.get("text-3");
+        ctx.fillStyle = t.major ? c.get("text-2") : c.get("text-3");
         ctx.fillText(t.label, x, 10);
       }
       ctx.textAlign = "left";
@@ -209,19 +212,16 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
       let y = rowsTop;
       rows.forEach((row) => {
         const h = rowHeight(row);
-        ctx.strokeStyle = c.get("border");
-        ctx.beginPath();
-        ctx.moveTo(0, Math.round(y) + 0.5);
-        ctx.lineTo(sz.w, Math.round(y) + 0.5);
-        ctx.stroke();
         ctx.textAlign = "left";
         ctx.textBaseline = row.kind === "line" ? "top" : "middle";
-        ctx.font = `500 12px ${SANS}`;
+        ctx.font = `500 13px ${SANS}`;
         ctx.fillStyle = c.get("text");
         const labelY = row.kind === "line" ? y + 8 : y + h / 2;
-        ctx.fillText(fitText(ctx, row.label, GUTTER - 24 - 8), 24, labelY);
-        ctx.fillStyle = c.get(row.color);
-        ctx.fillRect(8, row.kind === "line" ? y + 10 : y + h / 2 - 5, 8, 10);
+        ctx.fillText(fitText(ctx, row.label, GUTTER - 28 - 8), 28, labelY);
+        ctx.fillStyle = fillOf(c, row.color);
+        ctx.beginPath();
+        ctx.arc(16, row.kind === "line" ? y + 15 : y + h / 2, 4, 0, Math.PI * 2);
+        ctx.fill();
 
         ctx.save();
         ctx.beginPath();
@@ -229,14 +229,24 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
         ctx.clip();
 
         if (row.kind === "intervals") {
-          const color = c.get(row.color);
-          const bh = 12;
+          const color = fillOf(c, row.color);
+          const bh = 10;
           const by = y + (h - bh) / 2;
+          ctx.fillStyle = c.get("c-neutral-bg");
+          ctx.beginPath();
+          ctx.roundRect(plotX0, by, plotW, bh, bh / 2);
+          ctx.fill();
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(plotX0, by - 5, plotW, bh + 10, 5);
+          ctx.clip();
           ctx.fillStyle = color;
-          ctx.globalAlpha = 1;
           drawIntervals(ctx, row.best, t0, t1, tx, by, bh);
-          if (row.optimistic) drawIntervals(ctx, row.optimistic, t0, t1, tx, by - 4, 3);
-          if (row.pessimistic) drawIntervals(ctx, row.pessimistic, t0, t1, tx, by + bh + 1, 3);
+          ctx.globalAlpha = 0.5;
+          if (row.optimistic) drawIntervals(ctx, row.optimistic, t0, t1, tx, by - 4, 2);
+          if (row.pessimistic) drawIntervals(ctx, row.pessimistic, t0, t1, tx, by + bh + 2, 2);
+          ctx.globalAlpha = 1;
+          ctx.restore();
         } else {
           const [e0, e1] = lineExtents.get(row.id)!;
           const top = y + 22;
@@ -244,7 +254,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
           const yv = (v: number) => bottom - ((v - e0) / (e1 - e0)) * (bottom - top);
           ctx.restore();
           ctx.save();
-          ctx.font = `10px ${MONO}`;
+          ctx.font = `500 10px ${SANS}`;
           ctx.fillStyle = c.get("text-3");
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
@@ -296,7 +306,7 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
             ctx.lineTo(plotX1, Math.round(ty) + 0.5);
             ctx.stroke();
             ctx.setLineDash([]);
-            ctx.font = `10px ${MONO}`;
+            ctx.font = `500 10px ${SANS}`;
             ctx.fillStyle = c.get("c-fail");
             ctx.textAlign = "right";
             ctx.textBaseline = "bottom";
@@ -317,8 +327,9 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
             pen = true;
           }
           ctx.strokeStyle = c.get(row.color);
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.75;
           ctx.lineJoin = "round";
+          ctx.lineCap = "round";
           ctx.stroke();
           for (const mk of row.marks ?? []) {
             const mx = tx(mk.t_ms);
@@ -331,50 +342,33 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
           ctx.textBaseline = "top";
           const at = hovering ? tFromX(hover.x) : timeMs;
           const cur = gutterReadout(row, at);
-          ctx.font = `500 13px ${MONO}`;
-          ctx.fillStyle = c.get("text");
-          ctx.fillText(cur, 24, y + 27);
-          let nx = 24 + ctx.measureText(cur).width + 4;
+          ctx.font = `600 15px ${SANS}`;
+          ctx.fillStyle = hovering ? c.get("text-2") : c.get("text");
+          ctx.fillText(cur, 28, y + 28);
           if (row.unit) {
-            ctx.font = `10px ${SANS}`;
+            const nx = 28 + ctx.measureText(cur).width + 4;
+            ctx.font = `500 11px ${SANS}`;
             ctx.fillStyle = c.get("text-3");
-            ctx.fillText(row.unit, nx, y + 31);
-            nx += ctx.measureText(row.unit).width + 8;
-          } else nx += 4;
-          ctx.beginPath();
-          ctx.arc(nx, y + 34, 3, 0, Math.PI * 2);
-          if (hovering) {
-            ctx.strokeStyle = c.get("text-2");
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
-          } else {
-            ctx.fillStyle = c.get("c-sun");
-            ctx.fill();
+            ctx.fillText(row.unit, nx, y + 32);
           }
         }
         ctx.restore();
         y += h;
       });
 
-      ctx.strokeStyle = c.get("border");
-      ctx.beginPath();
-      ctx.moveTo(0, Math.round(plotBottom) + 0.5);
-      ctx.lineTo(sz.w, Math.round(plotBottom) + 0.5);
-      ctx.stroke();
-
       ctx.save();
       ctx.beginPath();
       ctx.rect(plotX0, plotTop, plotW, rowsH);
       ctx.clip();
       const cx = Math.round(tx(timeMs)) + 0.5;
-      ctx.strokeStyle = c.get("c-sun");
+      ctx.strokeStyle = c.get("text");
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(cx, AXIS_H - 6);
       ctx.lineTo(cx, plotBottom);
       ctx.stroke();
       ctx.restore();
-      ctx.fillStyle = c.get("c-sun");
+      ctx.fillStyle = c.get("text");
       ctx.beginPath();
       ctx.moveTo(cx - 5, AXIS_H - 8);
       ctx.lineTo(cx + 5, AXIS_H - 8);
@@ -384,14 +378,14 @@ export function Timeline({ rows, extent, timeMs, onTimeChange, title = "Timeline
 
       if (hovering) {
         const t = tFromX(hover.x);
-        ctx.strokeStyle = c.get("text-2");
+        ctx.strokeStyle = c.get("text-3");
         ctx.lineWidth = 1;
-        ctx.setLineDash([2, 3]);
+        ctx.globalAlpha = 0.6;
         ctx.beginPath();
         ctx.moveTo(hover.x + 0.5, plotTop);
         ctx.lineTo(hover.x + 0.5, plotBottom);
         ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
         const lines: Array<[string, string]> = [["Time", whenText(t)]];
         for (const r of rows) lines.push([r.label, r.kind === "intervals" ? describeInterval(r, t) : describeLine(r, t)]);
         drawReadout(ctx, lines, hover.x, hover.y, sz, c);

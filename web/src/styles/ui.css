@@ -267,11 +267,7 @@
 }
 
 .tab:hover:not(:disabled) { color: var(--text); }
-.tab[aria-selected="true"] {
-  color: var(--text);
-  background: var(--seg-on);
-  box-shadow: var(--shadow-raised);
-}
+.tab[aria-selected="true"] { color: var(--text); }
 
 .tab:focus-visible {
   color: var(--text);
@@ -321,11 +317,7 @@
 .seg:hover:not(:disabled):not([aria-checked="true"]) {
   color: var(--text);
 }
-.seg[aria-checked="true"] {
-  background: var(--seg-on);
-  color: var(--text);
-  box-shadow: var(--shadow-raised);
-}
+.seg[aria-checked="true"] { color: var(--text); }
 
 .seg:disabled {
   opacity: 0.4;
@@ -1459,4 +1451,28 @@ button.cmp-btn:hover { filter: none; }
 }
 .verdict-word[data-tone="fail"] {
   color: var(--c-fail);
+}
+.has-thumb {
+  position: relative;
+  isolation: isolate;
+}
+.has-thumb::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  width: var(--thumb-w, 0);
+  border-radius: var(--r-pill);
+  background: var(--thumb-bg, var(--seg-on));
+  box-shadow: var(--shadow-raised);
+  transform: translateX(var(--thumb-x, 0));
+  opacity: 0;
+}
+.has-thumb[data-thumb="on"]::before {
+  opacity: 1;
+}
+.has-thumb[data-thumb-ready]::before {
+  transition: transform 340ms cubic-bezier(0.32, 0.72, 0, 1), width 340ms cubic-bezier(0.32, 0.72, 0, 1), opacity var(--dur) var(--ease);
 }

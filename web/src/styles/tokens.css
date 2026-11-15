@@ -117,11 +117,11 @@
   --c-terrain: #8e8e93;
   --c-terrain-fill: #19191c;
   --c-terrain-fill-top: #3c3c41;
-  --map-dim: rgba(0, 0, 0, 0.24);
+  --map-dim: rgba(0, 0, 0, 0.36);
   --map-vignette: rgba(0, 0, 0, 0.5);
   --c-terrain-line: #c7c7cc;
   --c-uncertainty: #b992ff;
-  --c-uncertainty-soft: rgba(185, 146, 255, 0.26);
+  --c-uncertainty-soft: rgba(255, 255, 255, 0.12);
   --c-dark: #5d6068;
   --c-power: #c7e86d;
   --c-toggle: #32d74b;
@@ -193,11 +193,11 @@
   --c-terrain: #6d7078;
   --c-terrain-fill: #dcdce0;
   --c-terrain-fill-top: #c2c2c8;
-  --map-dim: rgba(0, 0, 0, 0);
+  --map-dim: rgba(60, 60, 67, 0.08);
   --map-vignette: rgba(0, 0, 0, 0.14);
   --c-terrain-line: #3e4047;
   --c-uncertainty: #7a45d6;
-  --c-uncertainty-soft: rgba(122, 69, 214, 0.2);
+  --c-uncertainty-soft: rgba(0, 0, 0, 0.1);
   --c-dark: #8d9098;
   --c-power: #5c7f00;
   --c-toggle: #34c759;

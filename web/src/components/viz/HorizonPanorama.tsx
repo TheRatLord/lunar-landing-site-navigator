@@ -87,6 +87,7 @@ const INSET_GUTTER = INSET_W + 12;
 const DISC_R = 22;
 const MAX_VEXAG = 60;
 const DEFAULT_VEXAG = 15;
+const SCENE_VEXAG = 20;
 const STATION_HIT_PX = 9;
 const CARDINALS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
@@ -127,7 +128,7 @@ function makeLayout(size: Size, view: View, extent: [number, number], gutter: nu
     ({ vexag, elCenter } = view.manual);
   } else {
     const span = Math.max(3, extent[1] - extent[0]);
-    vexag = clamp(plotH / (span * pxX), 1, bleed ? MAX_VEXAG : DEFAULT_VEXAG);
+    vexag = clamp(plotH / (span * pxX), 1, bleed ? SCENE_VEXAG : DEFAULT_VEXAG);
     elCenter = (extent[0] + extent[1]) / 2;
   }
   return { x0, x1, y0, y1, cy0: bleed ? 0 : y0, cy1: bleed ? size.h : y1, w: size.w, h: size.h, pxX, pxY: pxX * vexag, vexag, elCenter, azCenter: view.azCenter, azSpan: view.azSpan };
@@ -280,7 +281,7 @@ function drawInset(
   const cy = y + 46;
   ctx.save();
   roundRect(ctx, x, y, W, H, 12);
-  ctx.fillStyle = c.get("panel-2");
+  ctx.fillStyle = c.get("panel");
   ctx.fill();
   ctx.clip();
 
@@ -341,7 +342,7 @@ function drawInset(
   ctx.stroke();
 
   const fy = y + H - INSET_FOOT;
-  ctx.fillStyle = c.get("panel-2");
+  ctx.fillStyle = c.get("panel");
   ctx.fillRect(x, fy, W, INSET_FOOT);
 
   ctx.textBaseline = "top";
@@ -443,8 +444,8 @@ export function HorizonPanorama({
       ctx.clip();
 
       const sky = ctx.createLinearGradient(0, L.cy0, 0, L.cy1);
-      sky.addColorStop(0, compact ? "#000000" : c.get("sky"));
-      sky.addColorStop(1, compact ? "#08080b" : c.get("sky-low"));
+      sky.addColorStop(0, compact ? "#000000" : c.get("panel"));
+      sky.addColorStop(1, compact ? "#08080b" : c.get("panel"));
       ctx.fillStyle = sky;
       ctx.fillRect(L.x0, L.cy0, L.x1 - L.x0, L.cy1 - L.cy0);
 
@@ -491,10 +492,10 @@ export function HorizonPanorama({
       const ridgeTop = Math.min(...best.map((q) => q[1]));
       const ground = ctx.createLinearGradient(0, ridgeTop, 0, L.cy1);
       if (compact) {
-        ground.addColorStop(0, "#6b6b72");
-        ground.addColorStop(0.12, "#434348");
-        ground.addColorStop(0.45, "#232327");
-        ground.addColorStop(1, "#0b0b0d");
+        ground.addColorStop(0, "rgba(150, 150, 158, 0.6)");
+        ground.addColorStop(0.05, "#2e2e33");
+        ground.addColorStop(0.32, "#141416");
+        ground.addColorStop(1, "#060607");
       } else {
         ground.addColorStop(0, c.get("c-terrain-fill-top"));
         ground.addColorStop(1, c.get("c-terrain-fill"));
@@ -504,8 +505,22 @@ export function HorizonPanorama({
       ctx.lineTo(best[best.length - 1]![0], L.cy1 + 2);
       ctx.lineTo(best[0]![0], L.cy1 + 2);
       ctx.closePath();
-      ctx.fillStyle = ground;
+      ctx.fillStyle = compact ? "#060607" : ground;
       ctx.fill();
+      if (compact) {
+        ctx.fillStyle = ground;
+        ctx.fill();
+        const sp = sun ? interpTrack(sun, timeMs) : null;
+        if (sp && sp.el_deg >= horizonAt(horizon.elev_deg, sp.az_deg)) {
+          const gx = toX(L, sp.az_deg + Math.round((L.azCenter - sp.az_deg) / 360) * 360);
+          const gy = toY(L, horizonAt(horizon.elev_deg, sp.az_deg));
+          const wash = ctx.createRadialGradient(gx, gy, 0, gx, gy, Math.max(260, (L.x1 - L.x0) * 0.3));
+          wash.addColorStop(0, "rgba(255, 176, 96, 0.16)");
+          wash.addColorStop(1, "rgba(255, 176, 96, 0)");
+          ctx.fillStyle = wash;
+          ctx.fill();
+        }
+      }
 
       if (!compact) {
         ctx.beginPath();
@@ -600,7 +615,9 @@ export function HorizonPanorama({
         const cy = toY(L, p.el_deg);
         const rx = compact ? 7 : p.ang_radius_deg * L.pxX;
         drawDisc(ctx, cx, cy, rx, compact ? 7 : p.ang_radius_deg * L.pxY, style, clipAbove, compact ? 26 : 10);
-        if (cy >= L.cy0 && cy <= L.cy1 && cx >= L.x0 && cx <= L.x1 && p.el_deg >= horizonAt(horizon.elev_deg, p.az_deg)) labels.push({ text: style.name, color: c.get("text"), font: `600 ${compact ? 12 : 11}px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) + (compact ? 4 : 0) });
+        const up = p.el_deg >= horizonAt(horizon.elev_deg, p.az_deg);
+        if (compact && !up && cy >= L.cy0 && cy <= L.cy1 - 40 && cx >= L.x0 && cx <= L.x1) labels.push({ text: `${style.name} below the horizon`, color: c.get("text-3"), font: `500 11px ${SANS}`, ax: cx, ay: cy, gap: 12 });
+        if (cy >= L.cy0 && cy <= L.cy1 && cx >= L.x0 && cx <= L.x1 && up) labels.push({ text: style.name, color: c.get("text"), font: `600 ${compact ? 12 : 11}px ${SANS}`, ax: cx, ay: cy, gap: Math.max(rx, 8) + (compact ? 4 : 0) });
         return p;
       };
       const sunStyle: BodyStyle = { color: c.get("c-sun"), soft: c.get("c-sun-soft"), highlight: c.get("on-accent"), name: "Sun" };
@@ -643,7 +660,7 @@ export function HorizonPanorama({
       for (const e of elTicks) {
         const y = toY(L, e);
         if (compact ? e !== 0 : y < L.y0 + 4 || y > L.y1 - 4) continue;
-        ctx.fillText(`${formatNum(e, elDecimals)}°`, compact ? L.x0 + 18 : L.x0 - 8, compact ? y - 4 : y);
+        ctx.fillText(compact ? `0° · heights ×${L.vexag.toFixed(0)}` : `${formatNum(e, elDecimals)}°`, compact ? L.x0 + 18 : L.x0 - 8, compact ? y - 5 : y);
       }
 
       ctx.textBaseline = "middle";
@@ -654,9 +671,10 @@ export function HorizonPanorama({
         if (x < L.x0 + 14 || x > L.x1 - 14) continue;
         const deg = wrap360(a);
         const main = deg % 90 === 0;
-        ctx.font = `600 ${main ? 12 : 11}px ${SANS}`;
-        ctx.fillStyle = main ? c.get("text-2") : c.get("text-3");
-        ctx.fillText(CARDINALS[deg / 45]!, x, compact ? L.cy1 - 16 : L.y0 - 14);
+        if (compact && !main) continue;
+        ctx.font = `600 ${compact ? 10 : main ? 12 : 11}px ${SANS}`;
+        ctx.fillStyle = compact ? "rgba(255, 255, 255, 0.42)" : main ? c.get("text-2") : c.get("text-3");
+        ctx.fillText(CARDINALS[deg / 45]!, x, compact ? Math.min(L.cy1 - 12, Math.max(toY(L, 0), toY(L, horizonAt(horizon.elev_deg, deg))) + 16) : L.y0 - 14);
         if (!compact) {
           ctx.strokeStyle = c.get("grid-strong");
           ctx.lineWidth = 1;
@@ -703,8 +721,8 @@ export function HorizonPanorama({
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 3]);
         ctx.beginPath();
-        ctx.moveTo(hover.x + 0.5, L.cy0);
-        ctx.lineTo(hover.x + 0.5, L.cy1);
+        ctx.moveTo(hover.x + 0.5, compact ? L.y0 - 12 : L.cy0);
+        ctx.lineTo(hover.x + 0.5, compact ? L.y1 + 12 : L.cy1);
         ctx.stroke();
         ctx.setLineDash([]);
         const hz = horizonAt(horizon.elev_deg, az);
@@ -862,7 +880,7 @@ export function HorizonPanorama({
           onKeyDown={onKey}
           onDoubleClick={resetView}
         >
-          <div className="viz-float toolstrip toolstrip-float" role="group" aria-label="View controls" style={{ top: L.y0 + 10, right: Math.max(10, size.w - L.x1 + 10) }}>
+          <div className="viz-float toolstrip toolstrip-float" role="group" aria-label="View controls" style={{ bottom: Math.max(10, size.h - L.y1 + 10), right: Math.max(10, size.w - L.x1 + 10) }}>
             <IconButton icon="target" label="True-size Sun and Earth discs" size="sm" pressed={inset} onClick={() => setInset((v) => !v)} />
             <span className="toolstrip-sep" aria-hidden="true" />
             <div className="viz-float-slider">

@@ -1081,7 +1081,7 @@ export class MapEngine {
     };
     const sc = this.scenarioPos();
     ctx.font = NAME_FONT_STRONG;
-    if (sc) mark(sc.lat, sc.lon, 13, "@scenario", clipName(this.scenario?.name || "Plan site", 34));
+    if (sc) mark(sc.lat, sc.lon, 13, "@scenario", clipName(siteLabel(this.scenario?.name ?? "") || "Plan site", 34));
     ctx.font = NAME_FONT;
     for (const a of this.alts) {
       const same = sc !== null && Math.abs(a.lat_deg - sc.lat) < 1e-5 && Math.abs(a.lon_deg - sc.lon) < 1e-5;

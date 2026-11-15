@@ -42,12 +42,12 @@ function Notes({ doc, result }: { doc: Scenario; result: EvaluateResult | null }
         <span className="vs-note vs-note-warn">
           <Icon name="battery" size={12} />
           {!battery.depends
-            ? "Battery can run flat (not a requirement)"
+            ? "Not checked: the battery can run flat"
             : battery.everyHeading
-              ? "Battery runs flat at every heading (not a requirement)"
-              : `Battery runs flat at some headings (not a requirement), lowest ${Math.round(battery.low * 100)}–${Math.round((battery.high ?? battery.low) * 100)} %`}
+              ? "Not checked: the battery runs flat whichever way the lander faces"
+              : `Not checked: the battery runs flat at some headings, lowest ${Math.round(battery.low * 100)}–${Math.round((battery.high ?? battery.low) * 100)} %`}
           <Button size="sm" variant="ghost" onClick={addBattery}>
-            Add as requirement
+            Make it a requirement
           </Button>
         </span>
       )}

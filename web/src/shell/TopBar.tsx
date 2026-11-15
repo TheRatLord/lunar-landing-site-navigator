@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useThumb } from "../components/ui/useThumb";
 import { ASK_BUTTON_ID, useAsk } from "../ask/askStore";
 import { Icon } from "../components/ui/Icon";
 import { IconButton } from "../components/ui/Button";
@@ -43,8 +44,10 @@ function AskButton() {
 }
 
 export function PlannerNav() {
+  const { pathname } = useLocation();
+  const track = useThumb<HTMLElement>(".active", pathname);
   return (
-    <nav className="tb-nav" aria-label="Pages">
+    <nav ref={track} className="tb-nav has-thumb" aria-label="Pages">
       {VIEW_WORKSPACES.map((w) => (
         <NavLink key={w.id} to={w.path} title={w.hotkey ? `Alt+${w.hotkey}` : undefined} className={({ isActive }) => `tb-tab${isActive ? " active" : ""}`} aria-keyshortcuts={w.hotkey ? `Alt+${w.hotkey}` : undefined}>
           <Icon name={w.icon} size={14} />

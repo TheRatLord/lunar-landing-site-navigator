@@ -1,3 +1,4 @@
+import { useThumb } from "./useThumb";
 import { useId, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { clamp } from "../../lib/scale";
 
@@ -49,6 +50,7 @@ export interface TabsProps {
 
 export function Tabs({ tabs, value, onChange, label, panels }: TabsProps) {
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const track = useThumb<HTMLDivElement>('[aria-selected="true"]', `${value}:${tabs.length}`);
   const onKey = (e: KeyboardEvent) => {
     const enabled = tabs.filter((t) => !t.disabled);
     const i = enabled.findIndex((t) => t.id === value);
@@ -64,7 +66,7 @@ export function Tabs({ tabs, value, onChange, label, panels }: TabsProps) {
     refs.current[t.id]?.focus();
   };
   return (
-    <div role="tablist" aria-label={label} className="tabs" onKeyDown={onKey}>
+    <div ref={track} role="tablist" aria-label={label} className="tabs has-thumb" onKeyDown={onKey}>
       {tabs.map((t) => (
         <button
           key={t.id}

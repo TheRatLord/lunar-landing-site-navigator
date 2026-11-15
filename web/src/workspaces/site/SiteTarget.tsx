@@ -1,3 +1,4 @@
+import { clamp } from "../../lib/scale";
 import { requirementName } from "../../lib/requirements";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { usePublishScreenContext } from "../../ask/screenContext";
@@ -136,8 +137,6 @@ export function SiteTarget() {
         <div className={`site-body ${stale ? "is-stale" : ""}`}>
           <div className="site-grid">
             <div className="site-main">
-              <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" />
-
               <div className="site-toolbar">
                 <Tabs tabs={VIEW_TABS} value={view} onChange={(v) => setView(v as View)} label="Site view" />
                 {view === "panorama" && (
@@ -154,6 +153,8 @@ export function SiteTarget() {
                 )}
                 <span className="grow" />
               </div>
+
+              <AttributionBar state={attr.state} scenario={evaluated} onClear={attr.clear} onShow3D={view === "terrain" ? null : () => setView("terrain")} />
 
               <div className="site-visual">
                 {view === "panorama" &&
@@ -185,7 +186,7 @@ export function SiteTarget() {
                 )}
               </div>
 
-              <AttributionBar state={attr.state} scenario={evaluated} onClear={attr.clear} onShow3D={view === "terrain" ? null : () => setView("terrain")} />
+              <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" />
             </div>
 
             <aside className="site-rail" aria-label="Requirements and events">
@@ -195,7 +196,7 @@ export function SiteTarget() {
                 onShow={(id) => {
                   const span = spans.get(id);
                   if (!span) return;
-                  setTime(span[0]);
+                  setTime(clamp(span[0], extent[0], extent[1]));
                 }}
               />
               {unevaluated.length > 0 && <p className="site-unevaluated">Not evaluated: {unevaluated.map((c) => requirementName(c.key, c.label)).join(", ")}</p>}

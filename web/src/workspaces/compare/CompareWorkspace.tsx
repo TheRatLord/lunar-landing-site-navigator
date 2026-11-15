@@ -223,7 +223,7 @@ function Detail({ site, row, slip_h, landingMs, stale, onDone }: { site: SiteRef
         {!ok && (
           <div>
             <dt>Next date</dt>
-            <dd className="num">{nextMs !== null ? dateText(nextMs) : `No date in the next ${SEARCH_DAYS} d`}</dd>
+            <dd className="num">{nextMs !== null ? dateText(nextMs) : "No date within a year"}</dd>
           </div>
         )}
       </dl>

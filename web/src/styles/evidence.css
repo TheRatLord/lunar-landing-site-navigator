@@ -7,7 +7,7 @@
 .evi-list { display: flex; flex-direction: column; gap: var(--sp-3); margin: 0 var(--gutter) 0 0; padding: var(--sp-3) var(--sp-2); border-radius: var(--r-xl); background: var(--panel); box-shadow: var(--shadow-card); overflow: auto; }
 .evi-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-0); }
 .evi-group-title { margin: 0; padding: 0 var(--sp-2) var(--sp-1); font-size: var(--fs-xs); font-weight: var(--fw-medium); color: var(--text-3); }
-.evi-item { display: flex; align-items: center; width: 100%; min-height: var(--control-h); padding: var(--sp-1) var(--sp-2); text-align: left; font: inherit; font-size: var(--fs-md); line-height: var(--lh-tight); color: var(--text-2); background: none; border: 0; border-radius: var(--r-sm); cursor: pointer; overflow-wrap: anywhere; }
+.evi-item { display: flex; align-items: center; width: 100%; min-height: var(--control-h); padding: var(--sp-1) var(--sp-3); text-align: left; font: inherit; font-size: var(--fs-md); line-height: var(--lh-tight); color: var(--text-2); background: none; border: 0; border-radius: var(--r-pill); cursor: pointer; overflow-wrap: anywhere; }
 .evi-item:hover { background: var(--fill); color: var(--text); }
 .evi-item[aria-current="page"] { background: var(--fill-strong); color: var(--text); font-weight: var(--fw-medium); }
 
