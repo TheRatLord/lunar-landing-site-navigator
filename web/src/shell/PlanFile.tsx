@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import { Button } from "../components/ui/Button";
-import { Icon } from "../components/ui/Icon";
 import { Menu, type MenuItem } from "../components/ui/Menu";
 import { Spinner } from "../components/ui/Progress";
 import { toast } from "../state/toasts";
@@ -8,6 +7,7 @@ import { useEditorUi } from "../scenario/editor/editorUi";
 import { useField } from "../scenario/editor/fieldState";
 import { useConfirm } from "../scenario/editor/useConfirm";
 import { exportScenarioJson } from "../scenario/editor/scenarioActions";
+import { importPlanFile, selectSearchDirty, usePlanSearch } from "../scenario/planSearch";
 import { planLink } from "../scenario/scenarioUrl";
 import { selectDirty, useScenario } from "../scenario/store";
 
@@ -31,7 +31,7 @@ function PlanName() {
 
 export async function copyPlanLink(): Promise<void> {
   const s = useScenario.getState();
-  if (!s.saved || selectDirty(s)) {
+  if (!s.saved || selectDirty(s) || selectSearchDirty(usePlanSearch.getState())) {
     if (!(await s.save())) return;
   }
   const link = planLink();
@@ -47,9 +47,11 @@ export async function copyPlanLink(): Promise<void> {
 export function PlanFile() {
   const doc = useScenario((s) => s.doc);
   const saved = useScenario((s) => s.saved);
-  const dirty = useScenario(selectDirty);
+  const docDirty = useScenario(selectDirty);
+  const searchDirty = usePlanSearch(selectSearchDirty);
+  const dirty = docDirty || searchDirty;
   const phase = useScenario((s) => s.phase);
-  const { save, close, importText } = useScenario.getState();
+  const { save, close } = useScenario.getState();
   const setDialog = useEditorUi((s) => s.setDialog);
   const { confirm, dialog } = useConfirm();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -63,7 +65,7 @@ export function PlanFile() {
     { id: "import", label: "Open plan file…", icon: "file", onSelect: () => fileRef.current?.click() },
     { id: "export", label: "Download plan file", icon: "download", divider: true, onSelect: exportScenarioJson },
     { id: "link", label: "Copy link", icon: "link", onSelect: () => void copyPlanLink() },
-    { id: "reset", label: "Reset", icon: "reset", divider: true, onSelect: () => void discard("Reset").then((ok) => ok && close()) },
+    { id: "new", label: "New plan", icon: "plus", divider: true, onSelect: () => void discard("New plan").then((ok) => ok && close()) },
   ];
 
   const busy = phase === "saving" || phase === "loading";
@@ -71,34 +73,35 @@ export function PlanFile() {
 
   return (
     <div className="pf" role="group" aria-label="Plan file">
-      <label className="pf-title">
-        <Icon name="file" size={16} />
+      <div className="pf-title">
         <PlanName />
-      </label>
-      <div className="pf-row">
-        {busy ? (
-          <span className="pf-state" role="status">
-            <Spinner size={12} /> {phase === "saving" ? "Saving" : "Opening"}
-          </span>
-        ) : dirty ? (
-          <span className="pf-state" role="status">
-            <span className="tb-dot dirty" aria-hidden="true" />
-            Unsaved
-          </span>
-        ) : saved ? (
-          <span className="pf-state" role="status">
-            <span className="tb-dot saved" aria-hidden="true" />
-            Saved
-          </span>
-        ) : null}
-        <span className="grow" />
-        {showSave && (
-          <Button size="sm" variant="primary" onClick={() => void save()}>
-            Save
-          </Button>
-        )}
         <Menu text="Plans" icon="folder" label="Plan actions" align="start" width={200} items={items} />
       </div>
+      {(busy || dirty || saved) && (
+        <div className="pf-row">
+          {busy ? (
+            <span className="pf-state" role="status">
+              <Spinner size={12} /> {phase === "saving" ? "Saving" : "Opening"}
+            </span>
+          ) : dirty ? (
+            <span className="pf-state" role="status">
+              <span className="tb-dot dirty" aria-hidden="true" />
+              Unsaved
+            </span>
+          ) : (
+            <span className="pf-state" role="status">
+              <span className="tb-dot saved" aria-hidden="true" />
+              Saved
+            </span>
+          )}
+          <span className="grow" />
+          {showSave && (
+            <Button size="sm" variant="primary" onClick={() => void save()}>
+              Save
+            </Button>
+          )}
+        </div>
+      )}
       <input
         ref={fileRef}
         type="file"
@@ -107,7 +110,7 @@ export function PlanFile() {
         onChange={(e) => {
           const f = e.target.files?.[0];
           e.target.value = "";
-          if (f) void discard("Open").then((ok) => ok && void f.text().then(importText));
+          if (f) void discard("Open").then((ok) => ok && void f.text().then(importPlanFile));
         }}
       />
       {dialog}

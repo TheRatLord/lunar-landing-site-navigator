@@ -1,6 +1,6 @@
 import { useScenario } from "../store";
-import { CheckField, ChoiceField, GroupHead, NumberField, OriginMark } from "./controls";
-import { ECLIPSE_FIELDS, SAMPLING_FIELDS, TERRAIN_ERROR_FIELDS, type NumSpec } from "./fieldSpecs";
+import { CheckField, ChoiceField, GroupHead, NumberField } from "./controls";
+import { ECLIPSE_FIELDS, TERRAIN_ERROR_FIELDS, type NumSpec } from "./fieldSpecs";
 import { EvaluationSettings } from "./ConstraintsSection";
 import { TerrainStackControl } from "./TerrainStackControl";
 
@@ -22,16 +22,12 @@ export function ModelSection() {
     <div className="sc-section">
       <TerrainStackControl />
       <div className="sc-group">
-        <GroupHead title="Terrain error">
-          <OriginMark origin={terr.origin} />
-        </GroupHead>
+        <GroupHead title="Terrain error" />
         <CheckField path={["terrain_error", "enabled"]} label="Apply" />
         <Fields base="terrain_error" specs={TERRAIN_ERROR_FIELDS} />
       </div>
       <div className="sc-group">
-        <GroupHead title="Eclipse">
-          <OriginMark origin={eclipse.origin} />
-        </GroupHead>
+        <GroupHead title="Eclipse" />
         <ChoiceField
           path={["eclipse", "shadow"]}
           label="Shadow"
@@ -43,10 +39,6 @@ export function ModelSection() {
         <Fields base="eclipse" specs={ECLIPSE_FIELDS} />
       </div>
       <EvaluationSettings />
-      <div className="sc-group">
-        <GroupHead title="Sampling" />
-        <Fields base="sampling" specs={SAMPLING_FIELDS} />
-      </div>
     </div>
   );
 }

@@ -34,7 +34,6 @@ export const PROFILE_LOADS: NumSpec[] = [
 export const PROFILE_ATTITUDE: NumSpec[] = [
   { field: "attitude.yaw_deg", label: "Yaw", unit: "°", step: 1, nullable: true, placeholder: "Unknown" },
   { field: "attitude.yaw_uncertainty_deg", label: "Yaw uncertainty", unit: "°", min: 0, max: 180, step: 1 },
-  { field: "attitude.yaw_samples", label: "Yaw samples", min: 1, max: 361, step: 2 },
   { field: "attitude.tilt_deg", label: "Tilt", unit: "°", min: 0, max: 180, step: 1 },
   { field: "attitude.tilt_az_deg", label: "Tilt azimuth", unit: "°", step: 1 },
 ];
@@ -59,16 +58,9 @@ export const ELLIPSE_FIELDS: NumSpec[] = [
 export const TERRAIN_ERROR_FIELDS: NumSpec[] = [
   { field: "sigma_z_m", label: "Vertical error, 1σ", unit: "m", min: 0, step: 0.5 },
   { field: "sigma_xy_m", label: "Horizontal error, 1σ", unit: "m", min: 0, step: 1 },
-  { field: "k_sigma", label: "Bound multiple", unit: "σ", min: 0, step: 0.5 },
-];
-
-export const SAMPLING_FIELDS: NumSpec[] = [
-  { field: "step_s", label: "Time step", unit: "s", min: 0, exclusiveMin: true, max: 3600, step: 60 },
-  { field: "lookback_h", label: "Look-back before landing", unit: "h", min: 0, step: 24 },
 ];
 
 export const ECLIPSE_FIELDS: NumSpec[] = [
-  { field: "earth_radius_km", label: "Earth radius override", unit: "km", min: 0, exclusiveMin: true, step: 1, nullable: true, placeholder: "Default" },
   { field: "atmosphere_km", label: "Atmosphere allowance", unit: "km", min: 0, step: 1 },
 ];
 
@@ -90,25 +82,26 @@ export interface ConstraintMeta {
   unit: string;
   side: "min" | "max";
   decimals: number;
+  start: number;
   what: string;
   needsTerrain?: boolean;
   scale?: number;
 }
 
 export const CONSTRAINT_META: ConstraintMeta[] = [
-  { key: "min_total_sunlit_h", title: "Sunlight during the stay", short: "Sunlight", unit: "h", side: "min", decimals: 1, scale: 24, what: "Total hours the solar array is sunlit during the surface mission. The hours need not be continuous." },
-  { key: "min_total_contact_h", title: "Earth link during the stay", short: "Earth link", unit: "h", side: "min", decimals: 1, scale: 24, what: "Total hours with a direct link to Earth during the surface mission: a ground station in contact, or Earth above the antenna horizon when the plan has no ground stations." },
-  { key: "min_total_sunlit_contact_h", title: "Sunlight and Earth link together", short: "Sun and Earth", unit: "h", side: "min", decimals: 1, scale: 24, what: "Total hours during the surface mission that are sunlit with an Earth link at the same time." },
-  { key: "landing_sun_elevation_deg", title: "Sun elevation at landing", short: "Sun elevation", unit: "°", side: "min", decimals: 1, what: "Apparent Sun-centre elevation above the local horizontal at landing." },
-  { key: "landing_hours_after_sunrise", title: "Time after local sunrise at landing", short: "After sunrise", unit: "h", side: "min", decimals: 1, what: "Hours since the array last rose above the sunlit flux fraction." },
-  { key: "dte_at_landing_deg", title: "Earth elevation at landing", short: "Earth elevation", unit: "°", side: "min", decimals: 1, what: "Direct-to-Earth clearance at landing above the antenna horizon plus the antenna terrain margin (best station, or Earth centre without ground stations)." },
-  { key: "min_sunlit_hours_after_landing", title: "Continuous sunlight after landing", short: "Sunlight after landing", unit: "h", side: "min", decimals: 1, what: "Continuous sunlit hours from landing." },
-  { key: "max_dark_span_h", title: "Longest dark span", short: "Dark span", unit: "h", side: "max", decimals: 1, what: "Longest dark span of the array during the surface mission." },
-  { key: "min_state_of_charge", title: "Battery charge", short: "Battery", unit: "", side: "min", decimals: 2, what: "Minimum battery state of charge (fraction) during the mission." },
-  { key: "min_contact_fraction", title: "Share of the stay with an Earth link", short: "Link share", unit: "", side: "min", decimals: 2, what: "Fraction of the mission with a ground station in contact." },
-  { key: "max_contact_gap_h", title: "Longest Earth-link gap", short: "Link gap", unit: "h", side: "max", decimals: 1, what: "Longest span with no ground station in contact." },
-  { key: "min_link_margin_db", title: "Link margin", short: "Link margin", unit: "dB", side: "min", decimals: 1, what: "Lowest downlink margin while in contact." },
-  { key: "max_slope_deg", title: "Slope", short: "Slope", unit: "°", side: "max", decimals: 1, what: "Terrain slope over the slope baseline; needs terrain data.", needsTerrain: true },
+  { key: "min_total_sunlit_h", title: "Sunlight during the stay", short: "Sunlight", unit: "h", side: "min", decimals: 1, scale: 24, start: 168, what: "Total hours the solar array is sunlit during the surface mission. The hours need not be continuous." },
+  { key: "min_total_contact_h", title: "Earth link during the stay", short: "Earth link", unit: "h", side: "min", decimals: 1, scale: 24, start: 168, what: "Total hours with a direct link to Earth during the surface mission: a ground station in contact, or Earth above the antenna horizon when the plan has no ground stations." },
+  { key: "min_total_sunlit_contact_h", title: "Sunlight and Earth link together", short: "Sun and Earth", unit: "h", side: "min", decimals: 1, scale: 24, start: 168, what: "Total hours during the surface mission that are sunlit with an Earth link at the same time." },
+  { key: "landing_sun_elevation_deg", title: "Sun elevation at landing", short: "Sun elevation", unit: "°", side: "min", decimals: 1, start: 2, what: "Apparent Sun-centre elevation above the local horizontal at landing." },
+  { key: "landing_hours_after_sunrise", title: "Time after local sunrise at landing", short: "After sunrise", unit: "h", side: "min", decimals: 1, start: 24, what: "Hours since the array last rose above the sunlit flux fraction." },
+  { key: "dte_at_landing_deg", title: "Earth elevation at landing", short: "Earth elevation", unit: "°", side: "min", decimals: 1, start: 5, what: "Direct-to-Earth clearance at landing above the antenna horizon plus the antenna terrain margin (best station, or Earth centre without ground stations)." },
+  { key: "min_sunlit_hours_after_landing", title: "Continuous sunlight after landing", short: "Sunlight after landing", unit: "h", side: "min", decimals: 1, start: 48, what: "Continuous sunlit hours from landing." },
+  { key: "max_dark_span_h", title: "Longest dark span", short: "Dark span", unit: "h", side: "max", decimals: 1, start: 50, what: "Longest dark span of the array during the surface mission." },
+  { key: "min_state_of_charge", title: "Battery charge", short: "Battery", unit: "", side: "min", decimals: 2, start: 0.2, what: "Minimum battery state of charge (fraction) during the mission." },
+  { key: "min_contact_fraction", title: "Share of the stay with an Earth link", short: "Link share", unit: "", side: "min", decimals: 2, start: 0.5, what: "Fraction of the mission with a ground station in contact." },
+  { key: "max_contact_gap_h", title: "Longest Earth-link gap", short: "Link gap", unit: "h", side: "max", decimals: 1, start: 50, what: "Longest span with no ground station in contact." },
+  { key: "min_link_margin_db", title: "Link margin", short: "Link margin", unit: "dB", side: "min", decimals: 1, start: 3, what: "Lowest downlink margin while in contact." },
+  { key: "max_slope_deg", title: "Slope", short: "Slope", unit: "°", side: "max", decimals: 1, start: 15, what: "Terrain slope over the slope baseline; needs terrain data.", needsTerrain: true },
 ];
 
 export const PARAMETER_META: Array<{ key: ParameterKey; title: string; unit: string; min?: number; max?: number; step: number}> = [

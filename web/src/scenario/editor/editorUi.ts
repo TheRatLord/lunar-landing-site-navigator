@@ -3,7 +3,7 @@ import type { IconName } from "../../components/ui/Icon";
 
 export const MISSION_SECTIONS = [
   { id: "lander", label: "Lander details", icon: "lander", about: "" },
-  { id: "network", label: "Ground stations", icon: "antenna", about: "Antennas on Earth." },
+  { id: "network", label: "Ground stations", icon: "antenna", about: "" },
   { id: "model", label: "Model", icon: "terrain", about: "" },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; icon: IconName; about: string }>;
 

@@ -50,7 +50,7 @@ export function DraftNotice() {
             Open theirs
           </Button>
           <Button size="sm" onClick={() => void saveAsNew()}>
-            Save mine as a new plan
+            Save mine as a copy
           </Button>
         </div>
       )}

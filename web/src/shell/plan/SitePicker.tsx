@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useLoad } from "../../api/useLoad";
 import { Disclosure } from "../../components/ui/Disclosure";
 import { Icon } from "../../components/ui/Icon";
@@ -42,6 +43,7 @@ export function SitePicker() {
   const sitesLoad = useLoad(loadSites);
   const sites = useMemo(() => (sitesLoad.state.status === "ready" ? sitesLoad.state.data.items : []), [sitesLoad.state]);
   const [query, setQuery] = useState("");
+  const onMap = useLocation().pathname.startsWith("/map");
   const [focus] = useState<MapFocus>(() => ({ lat_deg: site?.lat_deg ?? -89.5, lon_deg: site?.lon_deg ?? 0, nonce: 0 }));
 
   const featured = useMemo<Option[]>(() => {
@@ -117,7 +119,7 @@ export function SitePicker() {
   const suggestions = [...pinned, ...featured.filter((o) => !pinnedIds.has(o.site.catalog_id))];
 
   return (
-    <div className="plan-site">
+    <div className="plan-site" data-map={onMap ? "off" : "on"}>
       <div className="plan-site-list">
         <form
           role="search"
@@ -159,9 +161,11 @@ export function SitePicker() {
           <SiteSection />
         </Disclosure>
       </div>
-      <div className="plan-site-map">
-        <HomeMap site={{ lat_deg: site.lat_deg, lon_deg: site.lon_deg, name: site.name ?? "" }} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} radiusKm={radiusKm} />
-      </div>
+      {!onMap && (
+        <div className="plan-site-map">
+          <HomeMap site={{ lat_deg: site.lat_deg, lon_deg: site.lon_deg, name: site.name ?? "" }} focus={focus} sites={sites} pinned={pinMarks} onPickSite={pickCatalogSite} onSetPoint={setPoint} radiusKm={radiusKm} />
+        </div>
+      )}
     </div>
   );
 }

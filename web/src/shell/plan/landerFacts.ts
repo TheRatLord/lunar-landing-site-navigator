@@ -15,3 +15,7 @@ export function landerFacts(p: LanderProfile): string {
   const array = (layout && SHORT.find(([re]) => re.test(layout))?.[1]) ?? `${panels} solar panel${panels === 1 ? "" : "s"}`;
   return `${array} · antenna ${p.antenna_height_m} m`;
 }
+
+export const landerName = (name: string): string => name.replace(/\s+lander\s+\(estimated\)$/i, "").replace(/\s+\(estimated\)$/i, "");
+
+export const sameProfile = (a: LanderProfile, b: LanderProfile): boolean => JSON.stringify(a) === JSON.stringify(b);

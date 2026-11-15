@@ -15,6 +15,7 @@
 }
 .shell[data-plan="none"] {
   --plan-w: 0px;
+  min-width: 0;
 }
 
 .narrow-gate {
@@ -28,6 +29,10 @@
   background: var(--bg);
   color: var(--text-2);
   text-align: center;
+}
+.narrow-gate-app {
+  color: var(--text);
+  font-size: var(--fs-lg);
 }
 .narrow-gate p {
   margin: 0;
@@ -251,13 +256,16 @@
   color: var(--text-3);
   white-space: nowrap;
 }
+.scrub-start span {
+  transform: none;
+}
 .scrub-handle {
   position: absolute;
   z-index: 2;
-  top: -10px;
+  top: -6px;
   box-sizing: content-box;
   width: 4px;
-  height: 18px;
+  height: 12px;
   margin-left: -10px;
   background-color: var(--c-sun);
   border: 0 solid transparent;
@@ -367,7 +375,7 @@
   height: var(--control-h);
   padding: 0 var(--sp-1-5);
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: var(--r-sm);
   color: var(--text);
   font: inherit;
@@ -703,6 +711,12 @@
   height: min(520px, calc(100vh - 140px));
   min-height: 0;
 }
+.plan-site[data-map="off"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.plan-site[data-map="off"] .plan-site-list {
+  border-right: 0;
+}
 .plan-site-list {
   display: flex;
   flex-direction: column;
@@ -820,4 +834,11 @@
 }
 .narrow-gate .btn {
   text-decoration: none;
+}
+
+@media (max-width: 1023.98px) {
+  .shell[data-plan="none"] .tb-nav,
+  .shell[data-plan="none"] .brand-text {
+    display: none;
+  }
 }

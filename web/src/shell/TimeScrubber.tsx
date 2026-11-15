@@ -73,7 +73,10 @@ export function TimeScrubber() {
       <IconButton icon={playing ? "pause" : "play"} label={playing ? "Pause" : "Play"} shortcut="Space" variant="primary" disabled={!stay} onClick={togglePlay} />
       <div className="scrub-track">
         <div ref={rail} className="scrub-rail" onPointerDown={startDrag}>
-          {ticks.map((t) => (
+          <div className="scrub-tick major scrub-start" style={{ left: "0%" }}>
+            <span>Landing</span>
+          </div>
+          {ticks.filter((t) => frac(t.ms) > 7).map((t) => (
             <div key={t.ms} className={`scrub-tick ${t.major ? "major" : ""}`} style={{ left: `${frac(t.ms)}%` }}>
               <span>{t.label}</span>
             </div>

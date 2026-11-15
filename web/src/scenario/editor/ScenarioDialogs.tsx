@@ -62,11 +62,6 @@ function OpenDialog({ onClose }: { onClose: () => void }) {
       title="Open plan"
       onClose={onClose}
       width={520}
-      footer={
-        <Button variant="ghost" onClick={onClose}>
-          Close
-        </Button>
-      }
     >
       {plans === null && <Spinner size={14} />}
       {plans?.length === 0 && <EmptyState icon="folder" title="No saved plans yet" />}
@@ -77,13 +72,13 @@ function OpenDialog({ onClose }: { onClose: () => void }) {
               <span className="sc-list-name">{p.name}</span>
               <span className="dim num sc-list-date">{whenText(parseUtc(p.updated_utc) ?? 0)}</span>
               {p.id === current ? (
-                <span className="chip chip-pass">Open</span>
+                <span className="dim sc-list-current">Current</span>
               ) : (
                 <Button size="sm" onClick={() => openOne(p)}>
                   Open
                 </Button>
               )}
-              <IconButton icon="close" label={`Remove ${p.name} from this list`} size="sm" onClick={() => remove(p)} />
+              <IconButton icon="minus" label={`Remove ${p.name} from this list`} size="sm" onClick={() => remove(p)} />
             </li>
           ))}
         </ul>

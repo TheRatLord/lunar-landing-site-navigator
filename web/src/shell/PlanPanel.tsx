@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { Icon } from "../components/ui/Icon";
 import { Spinner } from "../components/ui/Progress";
 import { formatLat, formatLon } from "../lib/coords";
@@ -7,13 +7,14 @@ import { MS_DAY, parseUtc } from "../lib/time";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { CONSTRAINT_META } from "../scenario/editor/fieldSpecs";
 import { TimeSection } from "../scenario/editor/TimeSection";
-import { usePlanSearch } from "../scenario/planSearch";
+import { DEFAULT_RANK, effectiveRank, rankLabel, usePlanSearch } from "../scenario/planSearch";
 import { shiftPlanLanding, useScenario } from "../scenario/store";
 import type { Limit } from "../scenario/types";
 import { hoursOrDays, whenText } from "../scenario/when";
 import { SETUP_WORKSPACE } from "../workspaces/registry";
 import { Card } from "./plan/Card";
-import { landerFacts } from "./plan/landerFacts";
+import { landerFacts, landerName, sameProfile } from "./plan/landerFacts";
+import { usePresets } from "../scenario/editor/usePresets";
 import { LanderPicker } from "./plan/LanderPicker";
 import { RequirementsPicker } from "./plan/RequirementsPicker";
 import { WindowControl, areaText, windowText } from "./plan/Widen";
@@ -31,7 +32,7 @@ function limitText(limit: Limit): string {
   if (has(limit.min) && has(limit.max)) return `${text(limit.min)} to ${text(limit.max)}`;
   if (has(limit.max)) return `≤ ${text(limit.max)}`;
   if (has(limit.min)) return `≥ ${text(limit.min)}`;
-  return "no limit yet";
+  return "";
 }
 
 export function PlanPanel() {
@@ -39,6 +40,9 @@ export function PlanPanel() {
   const show = useEditorUi((s) => s.show);
   const radius = usePlanSearch((s) => s.radius_km);
   const win = usePlanSearch((s) => s.window);
+  const rankBy = usePlanSearch((s) => s.rankBy);
+  const onMap = useLocation().pathname.startsWith("/map");
+  const presets = usePresets();
 
   if (!doc) return <aside className="plan-side" aria-hidden="true" />;
 
@@ -47,6 +51,10 @@ export function PlanPanel() {
   const active = CONSTRAINT_META.filter((m) => doc.constraints[m.key]);
   const area = areaText(radius);
   const span = windowText(win);
+  const coordText = `${formatLat(doc.site.lat_deg, 2)} ${formatLon(doc.site.lon_deg, 2)}`;
+  const rank = effectiveRank(rankBy, doc);
+  const preset = presets.status === "ready" ? presets.data.profiles.find((e) => e.profile.id === doc.profile.id) : undefined;
+  const landerTitle = `${landerName(doc.profile.name)}${preset && !sameProfile(preset.profile, doc.profile) ? " (edited)" : ""}`;
 
   return (
     <aside className="plan-side" aria-label="Plan">
@@ -58,10 +66,10 @@ export function PlanPanel() {
           icon="pin"
           label="Site"
           value={siteName}
-          width={860}
+          width={onMap ? 360 : 860}
           lines={
             <>
-              <span className="plan-card-line num">{`${formatLat(doc.site.lat_deg, 2)} ${formatLon(doc.site.lon_deg, 2)}`}</span>
+              {coordText !== siteName && <span className="plan-card-line num">{coordText}</span>}
               {area && <span className="plan-card-line plan-card-widen">{area}</span>}
             </>
           }
@@ -108,7 +116,7 @@ export function PlanPanel() {
           </div>
         </Card>
 
-        <Card field="lander" icon="lander" label="Lander" value={doc.profile.name} width={480} lines={<span className="plan-card-line">{landerFacts(doc.profile)}</span>}>
+        <Card field="lander" icon="lander" label="Lander" value={landerTitle} width={480} lines={<span className="plan-card-line">{landerFacts(doc.profile)}</span>}>
           <LanderPicker />
         </Card>
 
@@ -127,6 +135,7 @@ export function PlanPanel() {
                 </span>
               ))}
               {active.length > MAX_LISTED && <span className="plan-card-line">+{active.length - MAX_LISTED} more</span>}
+              {rank !== DEFAULT_RANK && <span className="plan-card-line plan-card-widen">{`Ranked by ${rankLabel(rank)}`}</span>}
             </>
           }
         >

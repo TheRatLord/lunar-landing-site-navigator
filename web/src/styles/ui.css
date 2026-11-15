@@ -1072,9 +1072,11 @@ input[type="radio"]:disabled {
 .palette-title {
   flex: 1;
 }
-.palette-group {
+.palette-list li.palette-heading {
+  padding: var(--sp-2) var(--sp-3) var(--sp-1);
   font-size: var(--fs-xs);
   color: var(--text-3);
+  cursor: default;
 }
 .palette-empty {
   padding: var(--sp-4);

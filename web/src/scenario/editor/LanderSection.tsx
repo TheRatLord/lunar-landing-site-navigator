@@ -3,8 +3,8 @@ import { Disclosure } from "../../components/ui/Disclosure";
 import { Toggle } from "../../components/ui/Fields";
 import { useScenario } from "../store";
 import type { LanderProfile, PanelSpec } from "../types";
-import { GroupHead, NumberField, OriginMark, TextField } from "./controls";
-import { USER_ORIGIN, editedOrigin } from "./fieldState";
+import { GroupHead, NumberField } from "./controls";
+import { editedOrigin } from "./fieldState";
 import { PANEL_FIELDS, PROFILE_ATTITUDE, PROFILE_BATTERY, PROFILE_HEIGHTS, PROFILE_LINK, PROFILE_LOADS, type NumSpec } from "./fieldSpecs";
 
 function ProfileNumber({ spec }: { spec: NumSpec }) {
@@ -13,19 +13,16 @@ function ProfileNumber({ spec }: { spec: NumSpec }) {
   const relabel = () => {
     if (origin && origin.basis !== "user") edit(["profile", "origins", spec.field], editedOrigin(origin));
   };
-  return <NumberField {...spec} path={["profile", ...spec.field.split(".")]} origin={origin ?? USER_ORIGIN} onCommit={relabel} />;
+  return <NumberField {...spec} path={["profile", ...spec.field.split(".")]} onCommit={relabel} />;
 }
 
 function PanelsBlock() {
   const panels = useScenario((s) => s.doc?.profile.panels ?? []);
-  const origin = useScenario((s) => s.doc?.profile.origins?.panels);
   const edit = useScenario((s) => s.edit);
   const blank: PanelSpec = { name: `panel ${panels.length + 1}`, normal_body: [0, 0, 1], area_m2: 1, efficiency: 0.28, tracking: false };
   return (
     <div className="sc-group">
-      <GroupHead title="Solar panels">
-        <OriginMark origin={origin ?? USER_ORIGIN} />
-      </GroupHead>
+      <GroupHead title="Solar panels" />
       <Disclosure title={panels.map((p) => p.name).join(", ") || "None"} count={panels.length}>
         <div className="sc-panels">
           {panels.map((p, i) => (
@@ -73,26 +70,16 @@ export function LanderSection() {
   if (!profile) return null;
   return (
     <div className="sc-section">
-      <Group title="Observer heights" specs={PROFILE_HEIGHTS} />
+      <Group title="Heights" specs={PROFILE_HEIGHTS} />
       <PanelsBlock />
       <Group title="Attitude" specs={PROFILE_ATTITUDE} />
       <Group title="Battery" specs={PROFILE_BATTERY} />
       <Group title="Loads" specs={PROFILE_LOADS} />
-      {profile.link ? (
+      {profile.link && (
         <Group title="Link budget" specs={PROFILE_LINK}>
           <IconButton icon="trash" label="Remove link model" size="sm" onClick={() => edit(["profile", "link"], null)} />
         </Group>
-      ) : (
-        <div className="sc-group">
-          <GroupHead title="Link budget">
-            <span className="chip">None</span>
-          </GroupHead>
-        </div>
       )}
-      <div className="sc-group">
-        <GroupHead title="Notes" />
-        <TextField path={["profile", "description"]} label="Description" multiline />
-      </div>
     </div>
   );
 }

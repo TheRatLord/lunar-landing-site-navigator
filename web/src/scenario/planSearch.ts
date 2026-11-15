@@ -25,7 +25,7 @@ export const MAX_RADIUS_KM = 200;
 export const RADIUS_PRESETS_KM = [1, 5, 20, 50];
 export const DEFAULT_RADIUS_KM = 5;
 const DEFAULT_WINDOW_DAYS = 90;
-const DEFAULT_RANK: RankBy = "sunlit_contact_h";
+export const DEFAULT_RANK: RankBy = "sunlit_contact_h";
 
 export interface LandingWindow {
   first_ms: number;
@@ -38,7 +38,11 @@ interface Stored {
   rankBy: RankBy;
 }
 
-interface PlanSearch extends Stored {
+interface Kept extends Stored {
+  base: string;
+}
+
+interface PlanSearch extends Kept {
   setRadius(km: number | null): void;
   setWindow(w: LandingWindow | null): void;
   setRankBy(r: RankBy): void;
@@ -73,11 +77,16 @@ function readAll(): Record<string, unknown> {
   }
 }
 
-function readFor(key: string): Stored {
-  return parse(readAll()[key]);
+const keyOf = (v: Stored): string => JSON.stringify([v.radius_km, v.window?.first_ms ?? null, v.window?.last_ms ?? null, v.rankBy]);
+const kept = (v: Stored, base?: string): Kept => ({ radius_km: v.radius_km, window: v.window, rankBy: v.rankBy, base: base ?? keyOf(v) });
+
+function readFor(key: string): Kept {
+  const raw = readAll()[key];
+  const base = raw && typeof raw === "object" && "base" in raw && typeof raw.base === "string" ? raw.base : undefined;
+  return kept(parse(raw), base);
 }
 
-function writeFor(key: string, value: Stored | null): void {
+function writeFor(key: string, value: Kept | null): void {
   try {
     const all = readAll();
     if (value === null) delete all[key];
@@ -121,9 +130,9 @@ const link = { id: startParams.get("scenario"), search: startParams.has("scenari
 
 const planKey = (s: { saved: { id: string } | null }): string => s.saved?.id ?? DRAFT;
 
-function settingsFor(key: string): Stored {
-  if (link.search && (link.id === null ? key === DRAFT : link.id === key)) {
-    const v = link.search;
+function settingsFor(key: string): Kept {
+  if (link.search && (link.id === null || link.id === key)) {
+    const v = kept(link.search);
     link.search = null;
     writeFor(key, v);
     return v;
@@ -140,24 +149,44 @@ export const usePlanSearch = create<PlanSearch>((set) => ({
   setRankBy: (rankBy) => set({ rankBy }),
 }));
 
-usePlanSearch.subscribe(({ radius_km, window, rankBy }) => writeFor(currentKey, { radius_km, window, rankBy }));
+usePlanSearch.subscribe(({ radius_km, window, rankBy, base }) => writeFor(currentKey, { radius_km, window, rankBy, base }));
 
 useScenario.subscribe((s, prev) => {
   if (s.phase === "loading") return;
   const key = planKey(s);
-  if (key === currentKey && s.session === prev.session) return;
+  if (s.session === prev.session && s.saved !== null && s.saved !== prev.saved && s.saved.id === prev.saved?.id) {
+    usePlanSearch.setState({ base: keyOf(usePlanSearch.getState()) });
+    return;
+  }
+  if (key === currentKey && (s.session === prev.session || !prev.doc)) return;
   const carry = s.session === prev.session && prev.saved?.id !== s.saved?.id;
   const from = currentKey;
   currentKey = key;
   if (carry) {
-    const { radius_km, window, rankBy } = usePlanSearch.getState();
-    writeFor(key, { radius_km, window, rankBy });
+    const cur = usePlanSearch.getState();
+    const next = kept(cur);
+    writeFor(key, next);
+    usePlanSearch.setState({ base: next.base });
     if (from === DRAFT) writeFor(DRAFT, null);
     return;
   }
   if (key === DRAFT) writeFor(DRAFT, null);
   usePlanSearch.setState(settingsFor(key));
 });
+
+export function importPlanFile(text: string): void {
+  if (!useScenario.getState().importText(text)) return;
+  let raw: unknown = null;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return;
+  }
+  const search = raw && typeof raw === "object" && "search" in raw ? parse(raw.search) : null;
+  if (search) usePlanSearch.setState(kept(search));
+}
+
+export const selectSearchDirty = (s: PlanSearch): boolean => keyOf(s) !== s.base;
 
 export function currentSearch(): Stored {
   const { radius_km, window, rankBy } = usePlanSearch.getState();

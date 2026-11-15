@@ -19,7 +19,7 @@ import { useCommands } from "./useCommands";
 
 const AskDock = lazy(() => import("../ask/AskDock").then((m) => ({ default: m.AskDock })));
 
-const NARROW = "(max-width: 759.98px)";
+const NARROW = "(max-width: 1023.98px)";
 const PLAY_SECONDS = 40;
 
 function subscribeNarrow(cb: () => void): () => void {
@@ -31,13 +31,15 @@ const isNarrow = () => window.matchMedia(NARROW).matches;
 
 export function AppShell() {
   const narrow = useSyncExternalStore(subscribeNarrow, isNarrow);
-  if (narrow) return <NarrowGate />;
+  const { pathname } = useLocation();
+  if (narrow && !pathname.startsWith("/evidence")) return <NarrowGate />;
   return <Planner />;
 }
 
 function NarrowGate() {
   return (
     <div className="narrow-gate">
+      <strong className="narrow-gate-app">Lunar Landing Site Navigator</strong>
       <p>Planner needs a wider screen</p>
       <Link className="btn btn-primary" to="/learn">
         Open Explorer

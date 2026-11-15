@@ -6,9 +6,10 @@ import { toast } from "../state/toasts";
 import { useApp } from "../state/store";
 import { scenarioApi } from "./api";
 import { fieldErrorCount, useFieldErrors } from "./fieldErrors";
-import { forgetPlan, rememberPlan } from "./myPlans";
-import { starterScenario } from "./starter";
+import { createdHere, forgetPlan, markCreated, rememberPlan } from "./myPlans";
+import { EXAMPLE_NAME, starterScenario } from "./starter";
 import { readDraftText, type Draft, type DraftProblem, type DraftRead, type SavedRef } from "./draft";
+import { CONSTRAINT_META } from "./editor/fieldSpecs";
 import { formatProblems, normalizeScenario, schemaDefaults } from "./normalize";
 import { pathKey, setIn, type Path } from "./path";
 import type { Ellipse, Scenario, ScenarioRecord } from "./types";
@@ -47,7 +48,7 @@ export interface ScenarioStore {
   save(): Promise<boolean>;
   saveAsNew(): Promise<boolean>;
   clearIssues(): void;
-  importText(text: string): void;
+  importText(text: string): boolean;
   keepThisTab(): void;
   takeOtherTabDraft(): void;
   discardDraft(): void;
@@ -72,7 +73,18 @@ function draftTab(raw: string | null): string | undefined {
   return d.kind === "ok" ? d.draft.tab : undefined;
 }
 
+function fillEmptyLimits(doc: Scenario): Scenario {
+  let constraints = doc.constraints;
+  for (const m of CONSTRAINT_META) {
+    const limit = constraints[m.key];
+    if (!limit || (limit.min ?? null) !== null || (limit.max ?? null) !== null) continue;
+    constraints = { ...constraints, [m.key]: { ...limit, [m.side]: m.start } };
+  }
+  return constraints === doc.constraints ? doc : { ...doc, constraints };
+}
+
 const initial = readStorage();
+if (initial.kind === "ok") initial.draft.doc = fillEmptyLimits(initial.draft.doc);
 const initialDraft: Draft | null = initial.kind === "ok" ? initial.draft : null;
 if (initialDraft?.saved) rememberPlan(initialDraft.saved.id);
 
@@ -143,12 +155,14 @@ export const useScenario = create<ScenarioStore>((set, get) => ({
       const doc = "document" in raw && raw.document && typeof raw.document === "object" ? raw.document : raw;
       if (!("site" in doc) || !("landing_utc" in doc)) throw new Error("This does not look like a plan file (no site or landing_utc).");
       const n = intake(doc, "The imported file", "Import failed");
-      if (!n) return;
+      if (!n) return false;
       get().open(n.scenario, null);
       set({ droppedFields: droppedOf(n) });
       toast({ kind: "info", title: "Plan file opened" });
+      return true;
     } catch (e) {
       toast({ kind: "error", title: "Could not import the plan", detail: e instanceof Error ? e.message : String(e) });
+      return false;
     }
   },
 
@@ -204,6 +218,21 @@ useScenario.subscribe((s) => {
 });
 setTimeout(startPlan, 0);
 
+function adoptNewerSaved(): void {
+  const s = useScenario.getState();
+  const saved = s.saved;
+  if (!saved || selectDirty(s) || s.phase !== "idle") return;
+  const session = s.session;
+  scenarioApi.get(saved.id).then(
+    (rec) => {
+      const now = useScenario.getState();
+      if (rec.version > saved.version && now.session === session && now.saved?.id === saved.id && !selectDirty(now) && now.phase === "idle") adopt(rec);
+    },
+    () => undefined,
+  );
+}
+setTimeout(adoptNewerSaved, 0);
+
 type Intake = { scenario: Scenario; unknownFields: string[]; source: string };
 
 function intake(raw: unknown, source: string, title = "Could not use the plan"): Intake | null {
@@ -212,7 +241,7 @@ function intake(raw: unknown, source: string, title = "Could not use the plan"):
     toast({ kind: "error", title, detail: `${source} is not a valid plan: ${formatProblems(n.problems).join("; ")}` });
     return null;
   }
-  return { scenario: n.scenario, unknownFields: n.unknownFields, source };
+  return { scenario: fillEmptyLimits(n.scenario), unknownFields: n.unknownFields, source };
 }
 
 const droppedOf = (n: Intake): DroppedFields | null => (n.unknownFields.length ? { source: n.source, fields: n.unknownFields } : null);
@@ -238,14 +267,20 @@ async function saveDoc(asNew: boolean): Promise<boolean> {
     toast({ kind: "error", title: "Fix the marked fields first" });
     return false;
   }
-  if (!current.name.trim()) useScenario.getState().edit(["name"], "Untitled plan");
+  const inPlace = saved !== null && !asNew && createdHere(saved.id);
+  const copyOfShared = saved !== null && !asNew && !inPlace;
+  const name = current.name.trim();
+  if (!name) useScenario.getState().edit(["name"], "Untitled plan");
+  else if (!saved && name === EXAMPLE_NAME) useScenario.getState().edit(["name"], (current.site.name || name).replace(/^Artemis candidate region:\s*/i, ""));
+  else if (asNew) useScenario.getState().edit(["name"], `${name} (copy)`);
   const doc = useScenario.getState().doc ?? current;
   useScenario.setState({ phase: "saving", error: null, issues: [], conflictVersion: null });
   try {
-    const rec = saved && !asNew ? await scenarioApi.update(saved.id, saved.version, doc) : await scenarioApi.create(doc);
+    const rec = inPlace ? await scenarioApi.update(saved.id, saved.version, doc) : await scenarioApi.create(doc);
+    if (!inPlace) markCreated(rec.id);
     rememberPlan(rec.id);
     finishSave(rec, doc, session);
-    toast({ kind: "success", title: `Saved “${rec.name}”` });
+    toast({ kind: "success", title: copyOfShared ? "Saved as your copy" : `Saved “${rec.name}”` });
     return true;
   } catch (e) {
     handleSaveError(e);

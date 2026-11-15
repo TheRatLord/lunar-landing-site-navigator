@@ -6,10 +6,11 @@ import { Icon } from "../../components/ui/Icon";
 import { catalogApi, type StationEntry } from "../api";
 import { useScenario } from "../store";
 import type { NetworkStation } from "../types";
-import { ChoiceField, GroupHead, NumberField, OriginMark, TextField } from "./controls";
-import { USER_ORIGIN, errorText, useSearch } from "./fieldState";
+import { ChoiceField, GroupHead, NumberField, TextField } from "./controls";
+import { errorText, useSearch } from "./fieldState";
 import { STATION_FIELDS } from "./fieldSpecs";
-import { PresetBar } from "./PresetBar";
+import { ServiceNotice } from "../../components/ServiceNotice";
+import { usePresets } from "./usePresets";
 
 function fromCatalogue(s: StationEntry): NetworkStation {
   return {
@@ -32,6 +33,8 @@ function fromCatalogue(s: StationEntry): NetworkStation {
   };
 }
 
+const shortLabel = (label: string): string => label.replace(/^All catalogue stations of\s+/i, "");
+
 const DIRECTION: Record<string, string> = { downlink: "downlink", uplink: "uplink", two_way: "two-way" };
 
 function NetworkHead() {
@@ -39,30 +42,37 @@ function NetworkHead() {
   const label = useScenario((s) => s.doc?.network.label ?? "");
   const count = useScenario((s) => s.doc?.network.stations.length ?? 0);
   const direction = useScenario((s) => s.doc?.network.direction ?? "");
+  const presets = usePresets();
+  const nets = presets.status === "ready" ? presets.data.networks : [];
+  const current = nets.find((p) => JSON.stringify(p.network) === JSON.stringify(useScenario.getState().doc?.network));
   return (
     <div className="sc-group">
       <p className="sc-summary">
-        <b>{label || "Custom stations"}</b>
+        <b>{shortLabel(label) || "Custom stations"}</b>
         <span className="dim num">
           {count} station{count === 1 ? "" : "s"}
-          {DIRECTION[direction] ? ` · ${DIRECTION[direction]}` : ""}
+          {DIRECTION[direction] ? `, ${DIRECTION[direction]}` : ""}
         </span>
       </p>
-      <PresetBar
-        label="Station set"
-        what="Station sets"
-        options={(data) =>
-          data.networks.map((p) => (
+      {presets.status === "error" && <ServiceNotice error={presets.error} what="Station sets" />}
+      {nets.length > 0 && (
+        <select
+          className="select"
+          aria-label="Station set"
+          value={current?.id ?? ""}
+          onChange={(e) => {
+            const p = nets.find((x) => x.id === e.target.value);
+            if (p) edit(["network"], p.network);
+          }}
+        >
+          {!current && <option value="">Custom</option>}
+          {nets.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.label} ({p.station_ids.length})
+              {shortLabel(p.label)} ({p.station_ids.length})
             </option>
-          ))
-        }
-        onApply={(choice, data) => {
-          const p = data.networks.find((x) => x.id === choice);
-          if (p) edit(["network"], p.network);
-        }}
-      />
+          ))}
+        </select>
+      )}
     </div>
   );
 }
@@ -142,7 +152,6 @@ export function NetworkSection() {
                     <span className="dim">{s.network}</span>
                   </span>
                   <span className="grow" />
-                  <OriginMark origin={s.origin ?? USER_ORIGIN} />
                   <IconButton icon="trash" label={`Remove ${s.name || s.id}`} size="sm" onClick={() => edit(["network", "stations"], stations.filter((_, k) => k !== i))} />
                 </div>
                 <div className="sc-fields3">

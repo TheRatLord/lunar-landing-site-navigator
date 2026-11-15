@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { metaApi } from "../api/endpoints";
 import type { components } from "../api/generated/schema";
+import { formatLat, formatLon } from "../lib/coords";
 import { formatNum } from "../lib/format";
 import { clamp } from "../lib/scale";
 
@@ -46,21 +47,16 @@ export function storeCovers(s: TerrainStoreInfo, latDeg: number, lonDeg: number)
   return Math.acos(clamp(cos, -1, 1)) / rad <= c.radius_deg;
 }
 
-export function storeFacts(s: TerrainStoreInfo): string {
-  const parts: string[] = [];
-  if (s.pixel_size_m != null) parts.push(`pixel ${formatNum(s.pixel_size_m, s.pixel_size_m < 10 ? 1 : 0)} m`);
-  const sig: string[] = [];
-  if (s.sigma_z_m != null) sig.push(`σz ${formatNum(s.sigma_z_m, 2)} m${s.error_basis_z ? ` (${s.error_basis_z})` : ""}`);
-  if (s.sigma_xy_m != null) sig.push(`σxy ${formatNum(s.sigma_xy_m, 2)} m`);
-  if (sig.length) parts.push(sig.join(", "));
+export function storePlace(s: TerrainStoreInfo): string {
   const c = s.coverage;
-  if (c?.whole_moon) parts.push("whole Moon");
-  else if (c && c.radius_deg !== null && c.centre_lat_deg !== null && c.centre_lon_deg !== null) {
-    const lat = `${formatNum(Math.abs(c.centre_lat_deg), 1)}°${c.centre_lat_deg < 0 ? "S" : "N"}`;
-    const lon = `${formatNum(Math.abs(c.centre_lon_deg), 1)}°${c.centre_lon_deg < 0 ? "W" : "E"}`;
-    parts.push(`within ${formatNum(c.radius_deg, 1)}° of ${lat} ${lon}`);
+  if (c?.whole_moon) return "Whole Moon";
+  if (!c || c.centre_lat_deg === null || c.centre_lon_deg === null || c.radius_deg === null) return "Unknown area";
+  if (Math.abs(c.centre_lat_deg) > 89.99) {
+    const edge = formatNum(90 - c.radius_deg, 1);
+    return c.centre_lat_deg < 0 ? `South pole to ${edge}°S` : `North pole to ${edge}°N`;
   }
-  return parts.join(" · ");
+  const lon = ((((c.centre_lon_deg + 180) % 360) + 360) % 360) - 180;
+  return `Around ${formatLat(c.centre_lat_deg, 2)} ${formatLon(lon, 2)}`;
 }
 
 export const sortedStores = (ids: readonly string[]): string[] => [...ids].sort();

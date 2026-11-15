@@ -7,10 +7,7 @@ import { useEditorUi } from "../../scenario/editor/editorUi";
 import { useConfirm } from "../../scenario/editor/useConfirm";
 import { usePresets } from "../../scenario/editor/usePresets";
 import { useScenario } from "../../scenario/store";
-import type { LanderProfile } from "../../scenario/types";
-import { landerFacts } from "./landerFacts";
-
-const same = (a: LanderProfile, b: LanderProfile): boolean => JSON.stringify(a) === JSON.stringify(b);
+import { landerFacts, landerName, sameProfile } from "./landerFacts";
 
 export function LanderPicker() {
   const profile = useScenario((s) => s.doc?.profile);
@@ -23,7 +20,7 @@ export function LanderPicker() {
 
   const entries = presets.status === "ready" ? presets.data.profiles : [];
   const match = entries.find((e) => e.profile.id === profile.id);
-  const customised = match ? !same(match.profile, profile) : entries.length > 0;
+  const customised = match ? !sameProfile(match.profile, profile) : entries.length > 0;
 
   const apply = (e: ProfileEntry) => {
     if (match === e && !customised) return openField(null);
@@ -34,12 +31,12 @@ export function LanderPicker() {
     });
   };
 
-  const group = (title: string, source: ProfileEntry["source"]) => {
+  const group = (title: string | null, source: ProfileEntry["source"]) => {
     const list = entries.filter((e) => e.source === source);
     return (
       list.length > 0 && (
         <>
-          <p className="plan-list-group">{title}</p>
+          {title && <p className="plan-list-group">{title}</p>}
           <ul className="plan-list">
             {list.map((e) => {
               const on = match === e;
@@ -49,7 +46,7 @@ export function LanderPicker() {
                     <span className="plan-option-mark">{on && <Icon name="check" size={14} />}</span>
                     <span className="plan-option-text plan-option-stack">
                       <strong>
-                        {e.name}
+                        {landerName(e.name)}
                         {on && customised && <span className="chip chip-marginal">Edited</span>}
                       </strong>
                       <span>{landerFacts(e.profile)}</span>
@@ -78,7 +75,7 @@ export function LanderPicker() {
             Custom: <strong>{profile.name}</strong>
           </p>
         )}
-        {group("Real landers", "catalog")}
+        {group(null, "catalog")}
         {group("Generic (estimates)", "generic")}
       </div>
       <div className="plan-pop-foot plan-pop-foot-end">

@@ -76,11 +76,14 @@ export function TopBar({ nav, tools }: { nav: ReactNode; tools?: ReactNode }) {
       <span className="grow" />
 
       {tools}
-      <IconButton
-        icon={theme === "dark" ? "sun" : "moon"}
-        label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+      <button
+        type="button"
+        className="btn btn-icon btn-ghost btn-md"
+        aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      />
+      >
+        <Icon name={theme === "dark" ? "sun" : "moon"} size={16} />
+      </button>
     </header>
   );
 }

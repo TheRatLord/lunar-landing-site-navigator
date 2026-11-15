@@ -22,6 +22,8 @@ const NETWORK_ID = "dsn-all";
 const SURFACE_HOURS = 336;
 const SUN_AND_EARTH_MIN_H = 168;
 
+export const EXAMPLE_NAME = "Example plan";
+
 export async function starterScenario(): Promise<Scenario> {
   const [site, presets] = await Promise.all([catalogApi.site(SITE.id), loadPresets()]);
   const profile = presets.profiles.find((p) => p.id === PROFILE_ID) ?? presets.profiles[0];
@@ -32,7 +34,7 @@ export async function starterScenario(): Promise<Scenario> {
     min_total_sunlit_contact_h: { min: SUN_AND_EARTH_MIN_H, max: null, unit: "h", label: "Sunlight and Earth link together", origin: { basis: "user", label: "", source_url: null, note: "" }, margin_scale: 24 },
   };
   return buildScenario({
-    name: "Example plan",
+    name: EXAMPLE_NAME,
     site: { ...site, name: SITE.name },
     landing_utc: LANDING_UTC,
     mission_duration_h: SURFACE_HOURS,

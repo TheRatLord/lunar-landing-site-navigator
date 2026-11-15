@@ -18,6 +18,11 @@ export function Card({ field, icon, label, value, width, lines, extra, children 
   const open = useEditorUi((s) => s.field === field);
   const openField = useEditorUi((s) => s.openField);
   const anchor = useRef<HTMLDivElement>(null);
+  const close = () => {
+    const invalid = document.querySelector<HTMLElement>(".plan-pop [aria-invalid='true']");
+    if (invalid) return invalid.focus();
+    openField(null);
+  };
   return (
     <div ref={anchor} className="plan-card" data-field={field} data-open={open}>
       <button
@@ -27,7 +32,7 @@ export function Card({ field, icon, label, value, width, lines, extra, children 
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={`${label}: ${value}`}
-        onClick={() => openField(open ? null : field)}
+        onClick={() => (open ? close() : openField(field))}
       >
         <Icon name={icon} size={16} className="plan-card-icon" />
         <span className="plan-card-text">
@@ -37,7 +42,7 @@ export function Card({ field, icon, label, value, width, lines, extra, children 
         <Icon name="chevronRight" size={12} className="plan-card-chevron" />
       </button>
       {extra}
-      <PopoverPanel open={open} anchor={anchor} onClose={() => openField(null)} label={label} side="right" width={width} className="plan-pop">
+      <PopoverPanel open={open} anchor={anchor} onClose={close} label={label} side="right" width={width} className="plan-pop">
         {open && children}
       </PopoverPanel>
     </div>

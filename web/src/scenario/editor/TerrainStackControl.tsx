@@ -1,11 +1,11 @@
-import { Disclosure } from "../../components/ui/Disclosure";
+import { useState } from "react";
 import { Icon } from "../../components/ui/Icon";
 import { Segmented } from "../../components/ui/Segmented";
 import { Spinner } from "../../components/ui/Progress";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { formatNum } from "../../lib/format";
 import { useScenario } from "../store";
-import { sortedStores, storeCovers, storeFacts, useTerrainStores, type TerrainStoreInfo } from "../terrainStack";
+import { sortedStores, storeCovers, storePlace, useTerrainStores, type TerrainStoreInfo } from "../terrainStack";
 import { GroupHead } from "./controls";
 
 export function TerrainStackControl() {
@@ -20,11 +20,12 @@ export function TerrainStackControl() {
       .map((i) => i.msg)
       .join("; "),
   );
-  const restricted = chosen !== null;
+  const [customView, setCustomView] = useState(false);
+  const restricted = chosen !== null || customView;
 
-  const set = (ids: readonly string[] | null) => edit(["terrain_stores"], ids === null ? null : sortedStores(ids));
+  const set = (ids: readonly string[] | null) => edit(["terrain_stores"], ids === null ? undefined : sortedStores(ids));
   const toggle = (demId: string, on: boolean) => {
-    const cur = chosen ?? [];
+    const cur = chosen ?? (stores ?? []).filter(usable).map((s) => s.dem_id);
     set(on ? [...cur.filter((x) => x !== demId), demId] : cur.filter((x) => x !== demId));
   };
   const usable = (s: TerrainStoreInfo) => !s.error;
@@ -40,7 +41,10 @@ export function TerrainStackControl() {
           label="Terrain stack"
           size="sm"
           value={restricted ? "custom" : "default"}
-          onChange={(v) => set(v === "default" ? null : (stores ?? []).filter(usable).map((s) => s.dem_id))}
+          onChange={(v) => {
+            setCustomView(v === "custom");
+            if (v === "default" && chosen !== null) set(null);
+          }}
           options={[
             { value: "default", label: "Default" },
             { value: "custom", label: "Custom" },
@@ -55,16 +59,16 @@ export function TerrainStackControl() {
       {!restricted && <p className="dim sc-summary">Best available at the site</p>}
       {restricted && stores === null && !error && <Spinner size={14} />}
       {restricted && rows.length > 0 && (
-        <ol className="sc-stores" aria-label="Terrain stack DEMs, in precedence order">
-          {rows.map((s, i) => {
+        <ol className="sc-stores" aria-label="Terrain data">
+          {[...rows].sort((a, b) => Number(storeCovers(a, lat, lon) === false) - Number(storeCovers(b, lat, lon) === false)).map((s) => {
             const on = !chosen || chosen.includes(s.dem_id);
             const out = storeCovers(s, lat, lon) === false;
-            const disabled = !restricted || (!on && (out || !usable(s)));
+            const disabled = !on && (out || !usable(s));
             return (
               <li key={s.dem_id} className={`sc-store ${on ? "" : "off"} ${out ? "out" : ""}`}>
                 <label>
                   <input type="checkbox" checked={on} disabled={disabled} onChange={(e) => toggle(s.dem_id, e.target.checked)} />
-                  <span className="sc-store-id num">{s.dem_id}</span>
+                  <span className="sc-store-id">{storePlace(s)}</span>
                 </label>
                 {out && (
                   <Tooltip content="No coverage">
@@ -79,26 +83,12 @@ export function TerrainStackControl() {
                 ) : (
                   <span className="dim num sc-store-facts">
                     {s.pixel_size_m != null && `${formatNum(s.pixel_size_m, s.pixel_size_m < 10 ? 1 : 0)} m/px`}
-                    {s.sigma_z_m != null && ` · σ ${formatNum(s.sigma_z_m, 2)} m`}
                   </span>
                 )}
-                <span className="faint num sc-store-rank">#{s.precedence ?? i + 1}</span>
               </li>
             );
           })}
         </ol>
-      )}
-      {restricted && rows.length > 0 && (
-        <Disclosure title="Coverage" count={rows.length}>
-          <ul className="sc-coverage">
-            {rows.map((s) => (
-              <li key={s.dem_id}>
-                <span className="num">{s.dem_id}</span>
-                <span className="dim">{storeFacts(s) || "No metadata"}</span>
-              </li>
-            ))}
-          </ul>
-        </Disclosure>
       )}
       {chosen?.length === 0 && (
         <p className="sc-msg" role="alert">

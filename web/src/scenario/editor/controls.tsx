@@ -51,23 +51,17 @@ export function OriginBadge({ origin }: { origin: Origin | undefined }) {
   );
 }
 
-/** The origin chip for headings and lists; user-entered values carry no mark. */
-export function OriginMark({ origin }: { origin: Origin | undefined }) {
-  return origin && origin.basis !== "user" && origin.basis !== "default" ? <OriginBadge origin={origin} /> : null;
-}
-
 interface RowProps {
   label: ReactNode | null;
   htmlFor?: string;
   error?: string | null;
-  origin?: Origin;
   top?: boolean;
   children: ReactNode;
 }
 
-export function Row({ label, htmlFor, error, origin, top, children }: RowProps) {
+export function Row({ label, htmlFor, error, top, children }: RowProps) {
   return (
-    <div className={`sc-row ${origin ? "has-origin" : ""} ${error ? "has-error" : ""} ${top ? "top" : ""}`}>
+    <div className={`sc-row ${error ? "has-error" : ""} ${top ? "top" : ""}`}>
       {label === null ? (
         <span />
       ) : htmlFor ? (
@@ -78,11 +72,6 @@ export function Row({ label, htmlFor, error, origin, top, children }: RowProps) 
         <span className="sc-label">{label}</span>
       )}
       <div className="sc-control">{children}</div>
-      {origin && (
-        <div className="sc-origin">
-          <OriginMark origin={origin} />
-        </div>
-      )}
       {error && (
         <div className="sc-msg" id={htmlFor ? `${htmlFor}-msg` : undefined} role="alert">
           {error}
@@ -160,12 +149,11 @@ interface NumberFieldProps {
   step?: number;
   nullable?: boolean;
   placeholder?: string;
-  origin?: Origin;
   onCommit?: (value: number | null) => void;
   layout?: "row" | "stacked";
 }
 
-export function NumberField({ path, label, unit, min, max, exclusiveMin, step = 1, nullable, placeholder, origin, onCommit, layout = "row" }: NumberFieldProps) {
+export function NumberField({ path, label, unit, min, max, exclusiveMin, step = 1, nullable, placeholder, onCommit, layout = "row" }: NumberFieldProps) {
   const id = useId();
   const { value, issue, set } = useField<number | null>(path);
   const [local, setLocal] = useState<string | null>(null);
@@ -225,7 +213,7 @@ export function NumberField({ path, label, unit, min, max, exclusiveMin, step = 
     );
   }
   return (
-    <Row label={label} htmlFor={id} error={error} origin={origin}>
+    <Row label={label} htmlFor={id} error={error}>
       {field}
     </Row>
   );

@@ -34,7 +34,7 @@ export function readDraftText(raw: string | null): DraftRead {
   try {
     parsed = JSON.parse(raw);
   } catch (e) {
-    return { kind: "bad", problem: { summary: "The stored draft is not valid JSON (it may have been cut short).", details: [e instanceof Error ? e.message : String(e)] } };
+    return { kind: "bad", problem: { summary: "", details: [e instanceof Error ? e.message : String(e)] } };
   }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return { kind: "bad", problem: { summary: "The stored draft is not a draft record.", details: ["expected an object with a “doc” field"] } };
