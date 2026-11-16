@@ -288,7 +288,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1-5);
-  height: var(--control-h);
+  height: var(--topbar-seg-h);
   padding: 0 var(--sp-4);
   border: 0;
   border-radius: var(--r-pill);
