@@ -19,14 +19,14 @@ function AskButton() {
     <button
       type="button"
       id={ASK_BUTTON_ID}
-      className="btn btn-sm btn-ghost tb-ask"
+      className="tb-ask"
       aria-expanded={open}
       aria-controls="ask-dock"
       title={`Ask (Alt+A)${hint ? `: ${hint}` : ""}`}
       onClick={toggle}
     >
       <Icon name="analyst" size={14} />
-      <span className="tb-label">Ask</span>
+      <span>Ask AI</span>
       {running && (
         <span className="tb-ask-badge" data-kind="running">
           <Spinner size={10} />
@@ -46,15 +46,19 @@ function AskButton() {
 export function PlannerNav() {
   const { pathname } = useLocation();
   const track = useThumb<HTMLElement>(".active", pathname);
+  const askEnabled = useAsk((s) => s.enabled);
   return (
-    <nav ref={track} className="tb-nav has-thumb" aria-label="Pages">
-      {VIEW_WORKSPACES.map((w) => (
-        <NavLink key={w.id} to={w.path} title={w.hotkey ? `Alt+${w.hotkey}` : undefined} className={({ isActive }) => `tb-tab${isActive ? " active" : ""}`} aria-keyshortcuts={w.hotkey ? `Alt+${w.hotkey}` : undefined}>
-          <Icon name={w.icon} size={14} />
-          {w.label}
-        </NavLink>
-      ))}
-    </nav>
+    <div className="tb-center">
+      <nav ref={track} className="tb-nav has-thumb" aria-label="Pages">
+        {VIEW_WORKSPACES.map((w) => (
+          <NavLink key={w.id} to={w.path} title={w.hotkey ? `Alt+${w.hotkey}` : undefined} className={({ isActive }) => `tb-tab${isActive ? " active" : ""}`} aria-keyshortcuts={w.hotkey ? `Alt+${w.hotkey}` : undefined}>
+            <Icon name={w.icon} size={14} />
+            {w.label}
+          </NavLink>
+        ))}
+      </nav>
+      {askEnabled && <AskButton />}
+    </div>
   );
 }
 
@@ -101,14 +105,12 @@ export function TopBar({ nav, tools, modes = true }: { nav?: ReactNode; tools?: 
 
 export function PlannerTools() {
   const setPaletteOpen = useApp((s) => s.setPaletteOpen);
-  const askEnabled = useAsk((s) => s.enabled);
   return (
     <>
       <NavLink to={EVIDENCE_WORKSPACE.path} title={EVIDENCE_WORKSPACE.label} aria-label={EVIDENCE_WORKSPACE.label} className={({ isActive }) => `btn btn-sm btn-ghost tb-link${isActive ? " active" : ""}`}>
         <Icon name={EVIDENCE_WORKSPACE.icon} size={14} />
         <span className="tb-label">{EVIDENCE_WORKSPACE.label}</span>
       </NavLink>
-      {askEnabled && <AskButton />}
       <IconButton icon="command" label="Command palette" shortcut="Ctrl K" className="tb-palette" onClick={() => setPaletteOpen(true)} />
     </>
   );

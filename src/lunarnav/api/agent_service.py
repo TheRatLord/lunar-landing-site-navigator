@@ -230,6 +230,7 @@ class AgentService:
         out["live"] = live is not None
         out["budget_usd"] = meta.get("max_budget_usd")
         out["busy"] = bool(live and live.busy)
+        out["shared"] = self._shared(meta["run_id"])
         if out["busy"]:
             out["state"] = "running"
         if paths is not None:
@@ -237,9 +238,9 @@ class AgentService:
         return out
 
     def list_runs(self, owner: str | None = None) -> list[dict[str, Any]]:
-        """Metadata of every run on disk, newest first; with `owner`, only the runs that visitor started."""
+        """Metadata of every run on disk, newest first; with `owner`, only the runs that visitor started and the shared ones."""
         return [self._decorate(m) for m in list_runs(self.runs_dir)
-                if "run_id" in m and (owner is None or self._owner_of(m["run_id"]) == owner)]
+                if "run_id" in m and (owner is None or self._owner_of(m["run_id"]) == owner or self._shared(m["run_id"]))]
 
     def _owner_file(self, run_id: str) -> Path:
         return self.settings.service_dir / "agent-owners" / run_id
@@ -267,9 +268,18 @@ class AgentService:
                              kind="total-budget-spent", budget_usd=cap)
         return left
 
-    def check_owner(self, run_id: str, owner: str) -> None:
-        if self._owner_of(run_id) != owner:
+    def _shared(self, run_id: str) -> bool:
+        showcase = self.settings.agent_showcase_owner
+        return showcase is not None and self._owner_of(run_id) == showcase
+
+    def check_owner(self, run_id: str, owner: str, write: bool) -> None:
+        if self._owner_of(run_id) == owner:
+            return
+        if not self._shared(run_id):
             raise ApiProblem(404, "Run not found", f"No run {run_id!r}.")
+        if write:
+            raise ApiProblem(403, "Shared example", "This thread is a shared example and can only be read. Start a new thread to ask your own question.",
+                             kind="shared-read-only")
 
     def check_budget(self, budget_usd: float | None) -> None:
         """422 (field-level) for a requested cap above the service's ceiling."""

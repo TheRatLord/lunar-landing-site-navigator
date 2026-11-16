@@ -15,6 +15,7 @@ interface Stored {
   runId: string | null;
   tab: DetailTab;
   lastContext: Record<string, string>;
+  exampleShown: boolean;
 }
 
 interface AskStatus {
@@ -26,6 +27,7 @@ interface AskStore extends Stored {
   enabled: boolean;
   access: AgentAccess | null;
   markCreditSpent(): void;
+  showExample(runId: string): void;
   status: AskStatus;
   setOpen(open: boolean): void;
   toggle(): void;
@@ -39,7 +41,7 @@ interface AskStore extends Stored {
 
 const KEY = "lunarnav.ask";
 const TABS: readonly DetailTab[] = ["instructions", "assumptions", "inbox", "provenance", "artefacts"];
-const DEFAULTS: Stored = { open: false, mode: "dock", view: "conversation", runId: null, tab: "instructions", lastContext: {} };
+const DEFAULTS: Stored = { open: false, mode: "dock", view: "conversation", runId: null, tab: "instructions", lastContext: {}, exampleShown: false };
 const KEEP_CONTEXTS = 50;
 
 function read(): Stored {
@@ -58,6 +60,7 @@ function read(): Stored {
       runId: typeof r["runId"] === "string" && r["runId"] !== "" ? r["runId"] : null,
       tab: TABS.find((t) => t === r["tab"]) ?? "instructions",
       lastContext: last,
+      exampleShown: r["exampleShown"] === true,
     };
   } catch {
     return DEFAULTS;
@@ -75,6 +78,7 @@ export const useAsk = create<AskStore>((set) => ({
   setMode: (mode) => set({ mode }),
   setView: (view) => set({ view }),
   setTab: (tab) => set({ tab }),
+  showExample: (runId) => set((s) => (s.exampleShown ? s : { exampleShown: true, ...(s.runId === null ? { runId, view: "conversation" as const } : {}) })),
   select: (runId) => set({ runId, view: "conversation", status: { pending: null, running: false } }),
   rememberContext: (runId, text) =>
     set((s) => {
@@ -84,9 +88,9 @@ export const useAsk = create<AskStore>((set) => ({
   setStatus: (status) => set((s) => (s.status.pending === status.pending && s.status.running === status.running ? s : { status })),
 }));
 
-useAsk.subscribe(({ open, mode, view, runId, tab, lastContext }) => {
+useAsk.subscribe(({ open, mode, view, runId, tab, lastContext, exampleShown }) => {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ open, mode, view, runId, tab, lastContext } satisfies Stored));
+    localStorage.setItem(KEY, JSON.stringify({ open, mode, view, runId, tab, lastContext, exampleShown } satisfies Stored));
   } catch {
   }
 });

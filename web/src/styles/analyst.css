@@ -119,6 +119,7 @@
 .ask-error { margin: 0; font-size: var(--fs-sm); color: var(--c-fail); overflow-wrap: anywhere; }
 .ask-follow { flex: none; display: flex; flex-direction: column; gap: var(--sp-2); width: 100%; max-width: var(--chat-w); margin: 0 auto; padding: var(--sp-2) var(--sp-3) var(--sp-3); }
 .ask-send { border-radius: 999px; }
+.ask-example { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: var(--fs-sm); color: var(--text-2); border-top: var(--hairline) solid var(--border); padding-top: var(--sp-3); }
 .ask-banner { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border-bottom: var(--hairline) solid var(--border); }
 .ask-credit { display: flex; gap: var(--sp-2); align-items: flex-start; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); background: var(--c-marginal-bg); font-size: var(--fs-sm); line-height: var(--lh-body); }
 .ask-credit > svg { flex: none; margin-top: 3px; color: var(--c-marginal); }

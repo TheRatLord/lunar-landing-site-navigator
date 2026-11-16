@@ -281,10 +281,29 @@
   text-align: right;
 }
 
+.tb-center { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
 .tb-ask {
   position: relative;
-  gap: var(--sp-1);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1-5);
+  height: var(--control-h);
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
 }
+.tb-ask:hover { background: var(--accent-strong); }
+.tb-ask[aria-expanded="true"] { background: var(--fill-strong); color: var(--text); }
+.tb-ask:focus-visible { outline: var(--focus-w) solid var(--focus); outline-offset: 2px; }
 .tb-ask-badge {
   display: inline-flex;
   align-items: center;

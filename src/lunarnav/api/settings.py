@@ -17,6 +17,8 @@ from lunarnav.agent.config import find_repo_root
 
 LOOPBACK_NAMES = frozenset({"localhost", "127.0.0.1", "::1"})
 
+SHOWCASE_OWNER_SHA256 = "f1bb729718295ac5f6be5b05a7c5e0e5801ae4ed2436ddc5fe3c586fdb20a23e"
+
 
 def _env(name: str, default: str) -> str:
     return os.environ.get(name, default).strip() or default
@@ -129,6 +131,7 @@ class Settings:
     sse_ping_s: float = 15.0
     agent_enabled: bool = False
     agent_total_budget_usd: float | None = None
+    agent_showcase_owner: str | None = SHOWCASE_OWNER_SHA256
     agent_runs_dir: Path | None = None
     agent_max_live: int = 4
     agent_budget_ceiling_usd: float = 25.0
@@ -210,6 +213,7 @@ class Settings:
             cache_max_bytes=_env_int("LUNARNAV_API_CACHE_MAX_MB", 2048, 16, 1_000_000) * 1024**2,
             agent_enabled=_env_bool("LUNARNAV_API_AGENT_ENABLED"),
             agent_total_budget_usd=_total_budget(os.environ.get("LUNARNAV_API_AGENT_TOTAL_BUDGET_USD")),
+            agent_showcase_owner=os.environ.get("LUNARNAV_API_AGENT_SHOWCASE_OWNER", defaults.agent_showcase_owner) or None,
             agent_runs_dir=Path(runs_env) if runs_env else None,
             agent_budget_ceiling_usd=_positive(os.environ.get("LUNARNAV_API_AGENT_BUDGET_CEILING_USD"), defaults.agent_budget_ceiling_usd),
             agent_max_live=_env_int("LUNARNAV_API_AGENT_MAX_LIVE", defaults.agent_max_live, 1, 32),

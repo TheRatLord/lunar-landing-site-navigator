@@ -58,7 +58,7 @@ def _owner(request: Request, ctx: Annotated[ServiceContext, Depends(get_ctx)]) -
     owner = owner_id(token)
     run_id = request.path_params.get("run_id")
     if run_id is not None:
-        ctx.agents.check_owner(run_id, owner)
+        ctx.agents.check_owner(run_id, owner, write=request.method not in ("GET", "HEAD"))
     return owner
 
 
@@ -66,7 +66,7 @@ router = APIRouter(
     prefix="/agent", tags=["agent"], responses={404: PROBLEM_RESPONSES[404], 409: PROBLEM_RESPONSES[409]},
     dependencies=[Depends(_require_enabled)],
 )
-gated = APIRouter(responses={401: {"description": "No visitor cookie; request `GET /agent/access` first."}}, dependencies=[Depends(_owner)])
+gated = APIRouter(responses={401: {"description": "No visitor cookie; request `GET /agent/access` first."}, 403: {"description": "The run is a shared example, which other visitors can only read."}}, dependencies=[Depends(_owner)])
 Ctx = Annotated[ServiceContext, Depends(get_ctx)]
 Owner = Annotated[str, Depends(_owner)]
 

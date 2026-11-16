@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,4 +27,5 @@ if (url) {
 
 const gen = spawnSync("bunx", ["openapi-typescript", spec, "-o", out], { cwd: root, stdio: "inherit" });
 if (gen.status !== 0) process.exit(gen.status ?? 1);
+writeFileSync(out, readFileSync(out, "utf8").replace(/^[ \t]*\/\*\*[\s\S]*?\*\/\n/gm, ""));
 console.log(`wrote ${out}`);

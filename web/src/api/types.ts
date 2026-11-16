@@ -241,6 +241,7 @@ export interface RunSummary {
   status?: string;
   live?: boolean;
   busy?: boolean;
+  shared?: boolean;
   sandbox?: SandboxInfo | null;
   model: string;
   created_at?: Timestamp;

@@ -265,6 +265,7 @@ class RunMeta(BaseModel):
     workspace: str | None = None
     live: bool = Field(description="A session for this run is connected in this service process.")
     busy: bool = Field(description="A turn is running.")
+    shared: bool = Field(default=False, description="A shared example: every visitor can read it, only its owner can continue it.")
     sandbox: dict[str, Any] | None = Field(default=None, description="Sandbox status from the latest run_start event.")
 
 

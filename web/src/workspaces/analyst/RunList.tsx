@@ -44,6 +44,7 @@ function RunItem({ run, selected, onSelect }: { run: RunSummary; selected: boole
       <button type="button" className={`run-item ${selected ? "is-selected" : ""}`} aria-current={selected ? "true" : undefined} onClick={onSelect}>
         <span className="run-prompt">{runTitle(run)}</span>
         <span className="run-meta">
+          {run.shared && <Chip tone="pass">Example</Chip>}
           <RunStateChips state={run.state} status={run.status} />
           <span className="mono dim ellipsis">{run.model}</span>
         </span>

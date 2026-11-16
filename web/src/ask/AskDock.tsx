@@ -157,7 +157,13 @@ export function AskDock() {
   const inboxList = useLedger<InboxList>(runId, state.ledgerRevision, inboxApi.list);
   const artefactList = useLedger<LedgerList<ArtifactRecord>>(runId, state.ledgerRevision, agentApi.artifacts);
 
-  const awaiting = runId && assumptionList.data ? summariseAssumptions(assumptionList.data.assumptions).pending : null;
+  const example = runs.runs?.find((r) => r.shared)?.run_id;
+  useEffect(() => {
+    if (example) useAsk.getState().showExample(example);
+  }, [example]);
+  const readOnly = summary?.shared === true;
+
+  const awaiting = runId && !readOnly && assumptionList.data ? summariseAssumptions(assumptionList.data.assumptions).pending : null;
   const isRunningNow = runId !== null && running;
   useEffect(() => useAsk.getState().setStatus({ pending: awaiting, running: isRunningNow }), [awaiting, isRunningNow]);
 
@@ -288,7 +294,16 @@ export function AskDock() {
           {showStream && (
             <>
               <ActivityStream blocks={state.blocks} actions={actions} live={running} />
-              <FollowUp key={runId} runId={runId} running={running} onSent={conn.follow} costUsd={costUsd} budgetUsd={summary?.budget_usd} text={drafts[runId] ?? ""} onText={setDraft} />
+              {readOnly ? (
+                <div className="ask-follow ask-example" data-testid="example-bar">
+                  <span>This is an example chat that every visitor can read.</span>
+                  <Button variant="primary" icon="plus" onClick={() => select(null)}>
+                    Ask your own question
+                  </Button>
+                </div>
+              ) : (
+                <FollowUp key={runId} runId={runId} running={running} onSent={conn.follow} costUsd={costUsd} budgetUsd={summary?.budget_usd} text={drafts[runId] ?? ""} onText={setDraft} />
+              )}
             </>
           )}
         </section>

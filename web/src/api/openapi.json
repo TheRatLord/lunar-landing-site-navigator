@@ -2538,6 +2538,16 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Unexpected failure in the service.",
             "content": {
@@ -2596,6 +2606,16 @@
           },
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
+          },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "500": {
             "description": "Unexpected failure in the service.",
@@ -2656,6 +2676,16 @@
           },
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
+          },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "500": {
             "description": "Unexpected failure in the service.",
@@ -2722,8 +2752,8 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2732,8 +2762,8 @@
               }
             }
           },
-          "403": {
-            "description": "Refused: the request looks like a cross-site browser request.",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2819,6 +2849,16 @@
           },
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
+          },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -2908,8 +2948,8 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2918,8 +2958,8 @@
               }
             }
           },
-          "403": {
-            "description": "Refused: the request looks like a cross-site browser request.",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3025,8 +3065,8 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3035,8 +3075,8 @@
               }
             }
           },
-          "403": {
-            "description": "Refused: the request looks like a cross-site browser request.",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3123,8 +3163,8 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3133,8 +3173,8 @@
               }
             }
           },
-          "403": {
-            "description": "Refused: the request looks like a cross-site browser request.",
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3281,6 +3321,16 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3358,6 +3408,16 @@
           },
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
+          },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -3465,6 +3525,16 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -3542,6 +3612,16 @@
           },
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
+          },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -3640,8 +3720,8 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
-          "422": {
-            "description": "Validation failed.",
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3650,8 +3730,8 @@
               }
             }
           },
-          "403": {
-            "description": "Refused: the request looks like a cross-site browser request.",
+          "422": {
+            "description": "Validation failed.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3736,6 +3816,16 @@
           },
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
+          },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -3826,6 +3916,16 @@
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
           },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "413": {
             "description": "File larger than the inbox limit (1 GiB) or the run's inbox total.",
             "content": {
@@ -3848,16 +3948,6 @@
           },
           "422": {
             "description": "Validation failed.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Refused: the request looks like a cross-site browser request.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3943,6 +4033,16 @@
           },
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
+          },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -4045,6 +4145,16 @@
           },
           "401": {
             "description": "No visitor cookie; request `GET /agent/access` first."
+          },
+          "403": {
+            "description": "The run is a shared example, which other visitors can only read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -15836,6 +15946,12 @@
             "type": "boolean",
             "title": "Busy",
             "description": "A turn is running."
+          },
+          "shared": {
+            "type": "boolean",
+            "title": "Shared",
+            "description": "A shared example: every visitor can read it, only its owner can continue it.",
+            "default": false
           },
           "sandbox": {
             "anyOf": [
