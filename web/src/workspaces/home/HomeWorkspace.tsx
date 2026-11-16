@@ -25,13 +25,13 @@ import { useSearchResults } from "../search/results";
 import { useCompareOptions } from "../compare/options";
 import { compareRequest } from "../compare/request";
 import { GlobeSearch } from "./globe/GlobeSearch";
-import { adaptLattice, type Cell } from "./globe/lattice";
+import { adaptLattice, type Cell } from "../search/lattice";
 import { MoonGlobe, type GlobeFocus } from "./globe/MoonGlobe";
 import { useSubpoints } from "./globe/subpoints";
 import { OptionList } from "./OptionList";
 import { closestOption, hereOptions, pinOption, samePlace, sortOptions, spotOptions, type LandingOption, type Place } from "./options";
 import { adaptScan, limitingAt, scanIndexAt, scanParams, verdictAt, yearScanBody, type YearScan } from "./scan";
-import { adaptSurvey, surveyBody } from "./survey";
+import { STAY_FALLBACK_MS, adaptSurvey, stayBody, surveyBody } from "./survey";
 import { useClockDriver, type Stay } from "./clock";
 import { Selection, type StayLight } from "./Selection";
 import { YearBar } from "./YearBar";
@@ -39,7 +39,6 @@ import "../../styles/home.css";
 
 const loadSites = (signal: AbortSignal) => catalogApi.sites({ limit: 1000 }, { signal });
 const MAX_PINS = 4;
-const FALLBACK_MS = Date.UTC(2027, 0, 1);
 const round5 = (v: number): number => Math.round(v * 1e5) / 1e5;
 const sameWindow = (a: LandingWindow, b: LandingWindow): boolean => a.first_ms === b.first_ms && a.last_ms === b.last_ms;
 const overlaps = (a: LandingWindow, b: LandingWindow): boolean => a.first_ms < b.last_ms && b.first_ms < a.last_ms;
@@ -93,7 +92,7 @@ export function HomeWorkspace() {
   const chosen = useMemo<Place>(() => ({ lat_deg: cLat, lon_deg: cLon, name: cName, catalog_id: cId }), [cLat, cLon, cName, cId]);
   const chosenName = siteLabel(cName) || pointName(cLat, cLon);
   const away = !samePlace(chosen, site);
-  const landingMs = parseUtc(doc.landing_utc) ?? FALLBACK_MS;
+  const landingMs = parseUtc(doc.landing_utc) ?? STAY_FALLBACK_MS;
 
   const win = effectiveWindow(doc, planWindow);
   const [view, setView] = useState<LandingWindow>(() => (isYear(win) ? win : yearFrom(win.first_ms)));
@@ -193,7 +192,7 @@ export function HomeWorkspace() {
   const previewStay = useMemo<Stay | null>(() => (previewStart === null ? null : { start_ms: previewStart, end_ms: previewStart + stayMs }), [previewStart, stayMs]);
   useClockDriver(previewStay ?? stay);
 
-  const lightReq = useMemo(() => surveyBody(doc, chosen, landingMs, landingMs + stayMs), [doc, chosen, landingMs, stayMs]);
+  const lightReq = useMemo(() => stayBody(doc), [doc]);
   const lightRun = useAnalysis<EvaluateResult>(SITE_ENDPOINTS.evaluate, lightReq, { debounceMs: 250 });
   const light = useMemo<StayLight | null>(() => {
     if (!lightRun.result || lightRun.stale) return null;

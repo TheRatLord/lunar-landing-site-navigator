@@ -10,7 +10,7 @@ import { KIND_STYLE, type SiteKind } from "../../map/sites";
 import { pointName } from "../../map/siteMove";
 import { useFindOutOfDate, useFindPlan } from "../../search/findSites";
 import { useSearchResults } from "../../search/results";
-import { CELL_COLOR, type Lattice } from "./lattice";
+import { CELL_COLOR, type Lattice } from "../../search/lattice";
 
 const SITE_KEYS: SiteKind[] = ["landed", "planned", "not_landed", "impact", "region"];
 

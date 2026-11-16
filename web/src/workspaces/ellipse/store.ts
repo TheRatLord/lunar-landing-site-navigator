@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { create } from "zustand";
 import { isAbort } from "../../api/client";
-import { ELLIPSE_ENDPOINT, type EllipseBody, type EllipseResult } from "../../api/ellipse";
+import { ELLIPSE_ENDPOINT, type EllipseBody, type EllipseParams, type EllipseResult } from "../../api/ellipse";
 import { runAnalysis } from "../../api/jobs";
 import { queueInfoFrom, type QueueInfo } from "../../api/queue";
 import { useReportSurveys } from "../../api/report";
@@ -9,6 +9,15 @@ import type { JobStatus } from "../../contract/types";
 import type { Scenario } from "../../scenario/types";
 
 export const DEFAULT_POINTS = 64;
+
+export const ellipseParams = (points: string): EllipseParams => ({
+  n_samples: points.trim() === "" ? Number.NaN : Number(points),
+  seed: 0,
+  truncate: true,
+  map_cells: null,
+  hazard_slope_deg: null,
+  hazard_roughness_m: null,
+});
 
 type Phase = "idle" | "running" | "done" | "error";
 

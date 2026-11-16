@@ -9,7 +9,8 @@ import type { SiteEntry } from "../../../scenario/api";
 import type { AltMark } from "../../map/engine";
 import { STATE_WORD } from "../../map/overlays";
 import { dayText } from "../survey";
-import { CELL_COLOR, cellAt, circle, latticeMesh, type Cell, type Lattice } from "./lattice";
+import { circle, latticeMesh } from "./lattice";
+import { CELL_COLOR, cellAt, cellWords, type Cell, type Lattice } from "../../search/lattice";
 import { MoonScene, type Hit, type Marker, type ViewInfo } from "./MoonScene";
 import type { Rect } from "../../map/rect";
 import { EARTH_COLOR, PICK_COLOR, PIN_COLOR, PLAN_COLOR, bySalience, clusterRect, clusterSites, labelCandidates, layoutClusters, layoutLabels, siteLines, siteMarkers, siteSummary, spreadOf, type SiteGroup } from "./marks";
@@ -63,20 +64,6 @@ const contextView = (r: number | null): number => Math.max(20_000, (r ?? 0) * 4)
 const tightView = (r: number): number => Math.max(3_000, r * 1.35);
 const SITE_VIEW_M = 15_000;
 
-function utcText(ms: number): string {
-  const d = new Date(ms);
-  return `${dayText(ms, true)}, ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
-}
-
-function cellWords(c: Cell): { title: string; lines: string[] } {
-  if (c.status === "steep") return { title: "Too steep or rough", lines: ["Left out before the full check: the slope limit rules it out."] };
-  if (c.status !== "full") return { title: "Not checked in full", lines: ["A quick, optimistic first pass ranked it too low to check in full. Treat it as unknown, not as a fail."] };
-  const lines: string[] = [];
-  if (c.best_ms !== null) lines.push(`${c.nEpochs > 1 ? "Best landing" : "Landing"} ${utcText(c.best_ms)}`);
-  if (c.nEpochs > 1 && c.nPass !== null) lines.push(`Passes at ${c.nPass} of ${c.nEpochs} landing times searched`);
-  if (c.slope_deg !== null) lines.push(`Slope ${c.slope_deg.toFixed(1)}°`);
-  return { title: STATE_WORD[c.state], lines };
-}
 
 export function MoonGlobe(props: MoonGlobeProps) {
   const { site, focus, sites, pins, timeMs, sub, areaRadius_m, lattice, latticeStale, ranked } = props;

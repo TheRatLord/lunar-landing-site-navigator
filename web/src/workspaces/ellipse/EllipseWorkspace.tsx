@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { usePublishScreenContext } from "../../ask/screenContext";
-import { ELLIPSE_LIMITS, ellipseBody, type EllipseParams, type EllipseResult } from "../../api/ellipse";
+import { ELLIPSE_LIMITS, ellipseBody, type EllipseResult } from "../../api/ellipse";
 import { AnalysisStatus, OutOfDate } from "../../components/AnalysisStatus";
 import { Button, IconButton } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -22,21 +22,12 @@ import { countStates, limitInfo, marginText, plotHalfWidth, samplesCsv, stateSha
 import { EllipsePlot, type Marker } from "./EllipsePlot";
 import { ConstraintTable, PointsPanel, ResultDetails, ResultStats, Warnings } from "./Results";
 import { useBackdrop } from "./useBackdrop";
-import { useEllipseRun } from "./store";
-
-const paramsFor = (points: string): EllipseParams => ({
-  n_samples: points.trim() === "" ? Number.NaN : Number(points),
-  seed: 0,
-  truncate: true,
-  map_cells: null,
-  hazard_slope_deg: null,
-  hazard_roughness_m: null,
-});
+import { ellipseParams, useEllipseRun } from "./store";
 
 export function EllipseWorkspace() {
   const doc = useScenario((s) => s.doc)!;
   const run = useEllipseRun();
-  const params = useMemo(() => paramsFor(run.points), [run.points]);
+  const params = useMemo(() => ellipseParams(run.points), [run.points]);
   const problems = useMemo(() => {
     const n = params.n_samples;
     const { min, max } = ELLIPSE_LIMITS.nSamples;

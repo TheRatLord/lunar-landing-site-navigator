@@ -1,7 +1,7 @@
 import type { EvaluateResult, IntervalJson } from "../../api/site";
 import type { HorizonProfile, Interval, TargetTrack } from "../../contract/types";
 import { arrMax, arrMin } from "../../lib/track";
-import { MS_HOUR, MS_MIN, toIsoUtc } from "../../lib/time";
+import { MS_HOUR, MS_MIN, parseUtc, toIsoUtc } from "../../lib/time";
 import { CONSTRAINT_KEYS, type Scenario } from "../../scenario/types";
 import { adaptHorizon, adaptTrack, parseSec } from "../site/adapt";
 
@@ -27,6 +27,19 @@ export function surveyBody(doc: Scenario, site: SurveySite, startMs: number, end
     transfer: undefined,
   };
   return { scenario, terrain: "auto" as const, max_points: 6000, with_bounds: false };
+}
+
+export const STAY_FALLBACK_MS = Date.UTC(2027, 0, 1);
+
+export function stayOf(doc: Scenario): { start_ms: number; end_ms: number } {
+  const start_ms = parseUtc(doc.landing_utc) ?? STAY_FALLBACK_MS;
+  return { start_ms, end_ms: start_ms + doc.mission_duration_h * MS_HOUR };
+}
+
+export function stayBody(doc: Scenario) {
+  const { start_ms, end_ms } = stayOf(doc);
+  const s = doc.site;
+  return surveyBody(doc, { lat_deg: s.lat_deg, lon_deg: s.lon_deg, name: s.name ?? "", catalog_id: s.catalog_id ?? null }, start_ms, end_ms);
 }
 
 export interface Survey {
