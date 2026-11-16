@@ -2445,7 +2445,8 @@
         "tags": [
           "agent"
         ],
-        "summary": "Whether this browser may use the agent",
+        "summary": "Open this browser's workspace and report whether the agent can take work",
+        "description": "Sets the visitor cookie (HttpOnly, SameSite=Strict) that every other agent route needs; a browser sees only the threads started with its own cookie. `available` is false once the service's total spend cap is used up.",
         "operationId": "access_api_v1_agent_access_get",
         "responses": {
           "200": {
@@ -2482,178 +2483,6 @@
           },
           "500": {
             "description": "Unexpected failure in the service.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "agent"
-        ],
-        "summary": "Unlock the agent with an access code",
-        "operationId": "unlock_api_v1_agent_access_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AccessCode"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessState"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found.",
-            "content": {
-              "application/problem+json": {},
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict.",
-            "content": {
-              "application/problem+json": {},
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "The code is not recognised.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many wrong codes in the last minute.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected failure in the service.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "The request body is larger than the service accepts.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "agent"
-        ],
-        "summary": "Forget this browser's access code",
-        "operationId": "lock_api_v1_agent_access_delete",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessState"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found.",
-            "content": {
-              "application/problem+json": {},
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict.",
-            "content": {
-              "application/problem+json": {},
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Refused: the request looks like a cross-site browser request.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected failure in the service.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "The request body is larger than the service accepts.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2707,7 +2536,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "500": {
             "description": "Unexpected failure in the service.",
@@ -2766,7 +2595,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "500": {
             "description": "Unexpected failure in the service.",
@@ -2826,7 +2655,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "500": {
             "description": "Unexpected failure in the service.",
@@ -2891,7 +2720,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -2989,7 +2818,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3077,7 +2906,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3194,7 +3023,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3292,7 +3121,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3450,7 +3279,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3528,7 +3357,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3634,7 +3463,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3712,7 +3541,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3809,7 +3638,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation failed.",
@@ -3906,7 +3735,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -3995,7 +3824,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "413": {
             "description": "File larger than the inbox limit (1 GiB) or the run's inbox total.",
@@ -4113,7 +3942,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -4215,7 +4044,7 @@
             }
           },
           "401": {
-            "description": "Access code missing or not recognised."
+            "description": "No visitor cookie; request `GET /agent/access` first."
           },
           "422": {
             "description": "Validation Error",
@@ -7133,37 +6962,30 @@
   },
   "components": {
     "schemas": {
-      "AccessCode": {
-        "properties": {
-          "code": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Code"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "code"
-        ],
-        "title": "AccessCode"
-      },
       "AccessState": {
         "properties": {
-          "required": {
+          "available": {
             "type": "boolean",
-            "title": "Required"
+            "title": "Available",
+            "description": "Whether a new thread or a follow-up can be started now."
           },
-          "granted": {
-            "type": "boolean",
-            "title": "Granted"
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "budget-spent"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why not: `budget-spent` when the service's total spend cap (`LUNARNAV_API_AGENT_TOTAL_BUDGET_USD`) is used up."
           }
         },
         "type": "object",
         "required": [
-          "required",
-          "granted"
+          "available"
         ],
         "title": "AccessState"
       },

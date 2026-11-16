@@ -1,12 +1,12 @@
 """Agent endpoints: runs, messages, live event stream, ledgers, artefacts, instructions.
 
-Single-trusted-operator surface: a run executes model-written Python on this machine.
+Open to any visitor of the service: a run executes model-written Python on this machine, inside the harness sandbox.
 """
 
 from __future__ import annotations
 
 import asyncio
-import hmac
+import secrets
 from typing import Annotated, Literal
 from urllib.parse import quote
 
@@ -15,12 +15,11 @@ from fastapi.responses import Response, StreamingResponse
 from sse_starlette import EventSourceResponse
 
 from lunarnav.agent.events import event_schema
-from lunarnav.api.agent_service import INLINE_TYPES, artifact_media_type, frame, owner_id
+from lunarnav.api.agent_service import INLINE_TYPES, MIN_BUDGET_ROOM_USD, artifact_media_type, frame, owner_id
 from lunarnav.api.context import ServiceContext, get_ctx
 from lunarnav.api.errors import PROBLEM_RESPONSES, ApiProblem
 from lunarnav.api.routes.jobs import last_event_id
 from lunarnav.api.schemas import (
-    AccessCode,
     AccessState,
     AssumptionItem,
     AssumptionList,
@@ -41,27 +40,22 @@ def _require_enabled(ctx: Annotated[ServiceContext, Depends(get_ctx)]) -> None:
         raise ApiProblem(404, "Agent disabled", "The analysis agent is turned off on this server (LUNARNAV_API_AGENT_ENABLED).")
 
 
-CODE_COOKIE = "lunarnav_agent_code"
-CODE_COOKIE_MAX_AGE_S = 30 * 24 * 3600
-CODE_COOKIE_PATH = "/api/v1/agent"
+VISITOR_COOKIE = "lunarnav_agent_code"
+VISITOR_COOKIE_MAX_AGE_S = 400 * 24 * 3600
+VISITOR_COOKIE_PATH = "/api/v1/agent"
+VISITOR_TOKEN_MAX = 200
 
 
-def _known_code(given: str | None, codes: tuple[str, ...]) -> bool:
-    if not given:
-        return False
-    given_bytes = given.encode()
-    return any(hmac.compare_digest(given_bytes, code.encode()) for code in codes)
+def _visitor_token(request: Request) -> str | None:
+    token = request.cookies.get(VISITOR_COOKIE)
+    return token if token and len(token) <= VISITOR_TOKEN_MAX else None
 
 
-def _owner(request: Request, ctx: Annotated[ServiceContext, Depends(get_ctx)]) -> str | None:
-    codes = ctx.settings.agent_codes
-    if not codes:
-        return None
-    given = request.cookies.get(CODE_COOKIE)
-    if not _known_code(given, codes):
-        raise ApiProblem(401, "Access code needed", "Enter your access code to use the assistant.", kind="code-required")
-    assert given is not None
-    owner = owner_id(given)
+def _owner(request: Request, ctx: Annotated[ServiceContext, Depends(get_ctx)]) -> str:
+    token = _visitor_token(request)
+    if token is None:
+        raise ApiProblem(401, "No visitor cookie", "Request GET /api/v1/agent/access first and send the cookie it sets.", kind="visitor-required")
+    owner = owner_id(token)
     run_id = request.path_params.get("run_id")
     if run_id is not None:
         ctx.agents.check_owner(run_id, owner)
@@ -72,42 +66,24 @@ router = APIRouter(
     prefix="/agent", tags=["agent"], responses={404: PROBLEM_RESPONSES[404], 409: PROBLEM_RESPONSES[409]},
     dependencies=[Depends(_require_enabled)],
 )
-gated = APIRouter(responses={401: {"description": "Access code missing or not recognised."}}, dependencies=[Depends(_owner)])
+gated = APIRouter(responses={401: {"description": "No visitor cookie; request `GET /agent/access` first."}}, dependencies=[Depends(_owner)])
 Ctx = Annotated[ServiceContext, Depends(get_ctx)]
-Owner = Annotated[str | None, Depends(_owner)]
+Owner = Annotated[str, Depends(_owner)]
 
 
-def _access_state(request: Request, ctx: ServiceContext, granted: bool | None = None) -> AccessState:
-    codes = ctx.settings.agent_codes
-    if granted is None:
-        granted = not codes or _known_code(request.cookies.get(CODE_COOKIE), codes)
-    return AccessState(required=bool(codes), granted=granted)
-
-
-@router.get("/access", response_model=AccessState, summary="Whether this browser may use the agent")
-async def access(request: Request, ctx: Ctx) -> AccessState:
-    return _access_state(request, ctx)
-
-
-@router.post("/access", response_model=AccessState, summary="Unlock the agent with an access code",
-             responses={403: {"description": "The code is not recognised."}, 429: {"description": "Too many wrong codes in the last minute."}})
-async def unlock(body: AccessCode, request: Request, response: Response, ctx: Ctx) -> AccessState:
-    code = body.code.strip()
-    if ctx.settings.agent_codes:
-        ctx.agents.check_code_rate()
-        if not _known_code(code, ctx.settings.agent_codes):
-            ctx.agents.note_code_failure()
-            raise ApiProblem(403, "Code not recognised", "Check the access code and try again.", kind="code-wrong")
+@router.get(
+    "/access", response_model=AccessState, summary="Open this browser's workspace and report whether the agent can take work",
+    description="Sets the visitor cookie (HttpOnly, SameSite=Strict) that every other agent route needs; a browser sees only "
+                "the threads started with its own cookie. `available` is false once the service's total spend cap is used up.",
+)
+async def access(request: Request, response: Response, ctx: Ctx) -> AccessState:
+    token = _visitor_token(request) or secrets.token_urlsafe(32)
     https = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
-    response.set_cookie(CODE_COOKIE, code, max_age=CODE_COOKIE_MAX_AGE_S, path=CODE_COOKIE_PATH,
+    response.set_cookie(VISITOR_COOKIE, token, max_age=VISITOR_COOKIE_MAX_AGE_S, path=VISITOR_COOKIE_PATH,
                         httponly=True, secure=https, samesite="strict")
-    return _access_state(request, ctx, granted=True)
-
-
-@router.delete("/access", response_model=AccessState, summary="Forget this browser's access code")
-async def lock(request: Request, response: Response, ctx: Ctx) -> AccessState:
-    response.delete_cookie(CODE_COOKIE, path=CODE_COOKIE_PATH)
-    return _access_state(request, ctx, granted=not ctx.settings.agent_codes)
+    left = await asyncio.to_thread(ctx.agents.budget_left)
+    spent = left is not None and left < MIN_BUDGET_ROOM_USD
+    return AccessState(available=not spent, reason="budget-spent" if spent else None)
 
 
 @gated.get("/instructions", response_model=Instructions, summary="What the agent is told and allowed")

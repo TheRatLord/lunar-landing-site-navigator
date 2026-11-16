@@ -220,13 +220,10 @@ class RevisionInfo(BaseModel):
 MODEL_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._:\-\[\]]{0,79}$"
 
 
-class AccessCode(Strict):
-    code: str = Field(min_length=1, max_length=200)
-
-
 class AccessState(BaseModel):
-    required: bool
-    granted: bool
+    available: bool = Field(description="Whether a new thread or a follow-up can be started now.")
+    reason: Literal["budget-spent"] | None = Field(
+        default=None, description="Why not: `budget-spent` when the service's total spend cap (`LUNARNAV_API_AGENT_TOTAL_BUDGET_USD`) is used up.")
 
 
 class RunCreate(Strict):

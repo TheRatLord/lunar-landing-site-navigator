@@ -18,7 +18,7 @@ import mimetypes
 import os
 import threading
 import time
-from collections import OrderedDict, deque
+from collections import OrderedDict
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -57,9 +57,8 @@ RESULT_LIMIT_BYTES = 262_144
 """Largest stored tool result the ledger-result route returns whole (compact JSON); a larger one is served as skeleton plus rows."""
 HUB_QUEUE_MAX = 10_000
 MAX_STREAMS_PER_RUN = 8
+MIN_BUDGET_ROOM_USD = 0.05
 """Concurrent event-stream connections one run accepts (the next is `429`); each holds a queue of up to HUB_QUEUE_MAX events."""
-CODE_FAILURE_WINDOW_S = 60.0
-CODE_FAILURES_PER_WINDOW = 30
 INLINE_TYPES = frozenset(
     {"image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf", "application/json", "text/plain", "text/csv"}
 )
@@ -185,7 +184,6 @@ class AgentService:
         self._upload_locks: dict[str, asyncio.Lock] = {}
         self._lock = asyncio.Lock()
         self._sandbox_probe: dict[str, Any] | None = None
-        self._code_failures: deque[float] = deque()
 
 
     def config(self, model: str | None = None, budget_usd: float | None = None) -> AgentConfig:
@@ -239,7 +237,7 @@ class AgentService:
         return out
 
     def list_runs(self, owner: str | None = None) -> list[dict[str, Any]]:
-        """Metadata of every run on disk, newest first; with `owner`, only the runs started under that access code."""
+        """Metadata of every run on disk, newest first; with `owner`, only the runs that visitor started."""
         return [self._decorate(m) for m in list_runs(self.runs_dir)
                 if "run_id" in m and (owner is None or self._owner_of(m["run_id"]) == owner)]
 
@@ -254,26 +252,17 @@ class AgentService:
         except OSError:
             return None
 
-    def check_code_rate(self) -> None:
-        now = time.monotonic()
-        while self._code_failures and now - self._code_failures[0] > CODE_FAILURE_WINDOW_S:
-            self._code_failures.popleft()
-        if len(self._code_failures) >= CODE_FAILURES_PER_WINDOW:
-            raise ApiProblem(429, "Too many attempts", "Too many wrong access codes were tried just now. Wait a minute and try again.",
-                             kind="code-attempts")
-
-    def note_code_failure(self) -> None:
-        self._code_failures.append(time.monotonic())
-
     def total_spent(self) -> float:
         return sum(float(m.get("cost_usd") or 0.0) for m in list_runs(self.runs_dir))
 
-    def _budget_room(self) -> float | None:
+    def budget_left(self) -> float | None:
         cap = self.settings.agent_total_budget_usd
-        if cap is None:
-            return None
-        left = cap - self.total_spent()
-        if left < 0.05:
+        return None if cap is None else cap - self.total_spent()
+
+    def _budget_room(self) -> float | None:
+        left = self.budget_left()
+        if left is not None and left < MIN_BUDGET_ROOM_USD:
+            cap = self.settings.agent_total_budget_usd
             raise ApiProblem(409, "Assistant budget spent", f"The assistant has used the {cap:.2f} USD set aside for it on this server.",
                              kind="total-budget-spent", budget_usd=cap)
         return left
@@ -281,7 +270,6 @@ class AgentService:
     def check_owner(self, run_id: str, owner: str) -> None:
         if self._owner_of(run_id) != owner:
             raise ApiProblem(404, "Run not found", f"No run {run_id!r}.")
-
 
     def check_budget(self, budget_usd: float | None) -> None:
         """422 (field-level) for a requested cap above the service's ceiling."""
@@ -292,7 +280,7 @@ class AgentService:
                              errors=[{"loc": ["body", "budget_usd"], "msg": msg, "type": "budget_ceiling"}], ceiling_usd=ceiling)
 
     async def start_run(self, prompt: str, model: str | None, budget_usd: float | None = None, owner: str | None = None) -> dict[str, Any]:
-        """Create a run, connect its session and start the first turn; `owner` records the access code it was started under."""
+        """Create a run, connect its session and start the first turn; `owner` records the visitor who started it."""
         self.check_budget(budget_usd)
         room = await asyncio.to_thread(self._budget_room)
         if room is not None:
@@ -668,8 +656,8 @@ class AgentService:
         }
 
 
-def owner_id(code: str) -> str:
-    return hashlib.sha256(code.encode()).hexdigest()
+def owner_id(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def _latest_sandbox(transcript: Path) -> dict[str, Any] | None:

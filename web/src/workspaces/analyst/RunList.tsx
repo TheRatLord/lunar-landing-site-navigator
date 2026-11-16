@@ -34,7 +34,7 @@ const runTitle = (r: Pick<RunSummary, "first_prompt" | "run_id">): string => (r.
 
 export function ThreadTitle({ runs, selected }: { runs: RunSummary[] | null; selected: string | null }) {
   const current = selected === null ? undefined : runs?.find((r) => r.run_id === selected);
-  return <span className="ellipsis">{selected === null ? "New thread" : current ? runTitle(current) : selected}</span>;
+  return <span className="ellipsis">{selected === null ? "New chat" : current ? runTitle(current) : selected}</span>;
 }
 
 function RunItem({ run, selected, onSelect }: { run: RunSummary; selected: boolean; onSelect: () => void }) {
@@ -69,7 +69,7 @@ function RunItems({ data, selected, onSelect }: { data: RunsData; selected: stri
           <Spinner size={12} />
         </p>
       )}
-      {data.runs?.length === 0 && <EmptyState icon="history" title="No threads yet" />}
+      {data.runs?.length === 0 && <EmptyState icon="history" title="No chats yet" />}
       <ul className="runlist-items" aria-label="Threads">
         {data.runs?.map((r) => (
           <RunItem key={r.run_id} run={r} selected={r.run_id === selected} onSelect={() => onSelect(r.run_id)} />
@@ -84,7 +84,7 @@ export function RunList({ data, selected, onSelect, onNew }: { data: RunsData; s
     <div className="runlist">
       <div className="runlist-actions">
         <Button size="sm" icon="plus" className="grow" onClick={onNew}>
-          New thread
+          New chat
         </Button>
         <IconButton icon="refresh" size="sm" label="Refresh threads" onClick={data.refresh} />
       </div>
@@ -116,7 +116,7 @@ export function RunMenu({ data, selected, onSelect, buttonRef }: { data: RunsDat
       <PopoverPanel open={open} anchor={buttonRef} onClose={() => setOpen(false)} label="Threads" width={380}>
         <button type="button" className="run-item run-new" aria-current={selected === null ? "true" : undefined} onClick={() => pick(null)}>
           <Icon name="plus" size={14} />
-          <span>New thread</span>
+          <span>New chat</span>
         </button>
         <RunItems data={data} selected={selected} onSelect={pick} />
       </PopoverPanel>

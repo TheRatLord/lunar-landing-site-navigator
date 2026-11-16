@@ -1,6 +1,6 @@
 # Decision 0006: on the public site, the assistant is open to access-code holders, one workspace per code
 
-**Status:** accepted on 2026-11-15 by the owner. It narrows decision 0001 for the deployment and builds on decision 0003.
+**Status:** superseded on 2026-11-15 by decision 0007, which removes the access codes; the spend cap, the key handling and the sandbox below still hold. It narrowed decision 0001 for the deployment and builds on decision 0003.
 
 ## What we decided
 

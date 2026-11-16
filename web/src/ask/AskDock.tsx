@@ -25,7 +25,6 @@ import { ArtefactsPanel, ProvenancePanel } from "../workspaces/analyst/LedgerPan
 import { RunList, RunMenu, RunStateChips, ThreadTitle } from "../workspaces/analyst/RunList";
 import { useLedger } from "../workspaces/analyst/useLedger";
 import { ASK_BUTTON_ID, useAsk, type DetailTab } from "./askStore";
-import { AccessGate } from "./AccessGate";
 import { FollowUp } from "./FollowUp";
 import { useAlternatives } from "../scenario/alternatives";
 import { useScenario } from "../scenario/store";
@@ -35,6 +34,12 @@ import { useCompareOptions } from "../workspaces/compare/options";
 import { planCompareAdd, type SiteFact } from "./siteFacts";
 
 const NEW_RUN = "";
+const STARTERS = [
+  "How much sunlight does this site get over the mission?",
+  "When can the lander see Earth from this site?",
+  "What are the main risks of landing here?",
+  "Is there a better-lit site within 20 km?",
+];
 
 function addToCompare(facts: readonly SiteFact[]): void {
   const doc = useScenario.getState().doc;
@@ -86,7 +91,7 @@ function SpendMeter({ cost, cap, turns, detail, reached }: { cost: number | null
   );
 }
 
-function AskDockBody() {
+export function AskDock() {
   const { open, mode, view, runId, tab } = useAsk();
   const full = mode === "full";
   const runs = useRuns();
@@ -195,7 +200,7 @@ function AskDockBody() {
             value={view}
             onChange={(v) => useAsk.getState().setView(v as "conversation" | "details")}
             options={[
-              { value: "conversation", label: "Conversation" },
+              { value: "conversation", label: "Chat" },
               { value: "details", label: "Details" },
             ]}
           />
@@ -213,53 +218,32 @@ function AskDockBody() {
         </aside>
 
         <section className="analyst-main" aria-label="Conversation" hidden={!full && view !== "conversation"}>
-          {runId && (
-            <header className="analyst-head">
-              <div className="analyst-head-row">
-                <span className="analyst-title mono">{runId}</span>
-                <StreamChip conn={conn} running={running} />
-              </div>
-              {summary && (
-                <div className="analyst-head-row">
-                  <RunStateChips state={summary.state} status={summary.status} />
-                  <span className="mono faint ellipsis">{summary.model}</span>
-                  <span className="grow" />
-                  <SpendMeter cost={costUsd} cap={summary.budget_usd} turns={state.totals.turns || summary.turns || 0} detail={spend.detail} reached={spend.capReached} />
-                </div>
+          {showStream && (stream.status === "reconnecting" || stream.status === "failed" || (resumeBanner && stream.status === "open")) && (
+            <div className="ask-banner">
+              {stream.status === "reconnecting" && (
+                <Chip tone="marginal" busy role="status" className="num">
+                  Reconnecting · {stream.attempt ?? 1}
+                </Chip>
               )}
-              {showStream && (stream.status === "reconnecting" || stream.status === "failed" || (resumeBanner && stream.status === "open") || state.runStarts.length > 1) && (
-                <div className="analyst-head-row">
-                  {stream.status === "reconnecting" && (
-                    <Chip tone="marginal" busy role="status" className="num">
-                      Reconnecting · {stream.attempt ?? 1}
-                    </Chip>
-                  )}
-                  {stream.status === "failed" && (
-                    <>
-                      <Chip tone={conn.streamsBusy ? "marginal" : "fail"} icon="plug" role="alert">
-                        {conn.streamsBusy ? "Too many streams" : `Stream lost${stream.error ? `: ${stream.error.message}` : ""}`}
-                      </Chip>
-                      <Button size="sm" icon="refresh" onClick={conn.reload}>
-                        Reconnect
-                      </Button>
-                    </>
-                  )}
-                  {resumeBanner && stream.status === "open" && (
-                    <>
-                      <Chip tone="pass" icon="check" role="status" className="num">
-                        Resumed after #{conn.lastResumeSeq}
-                      </Chip>
-                      <IconButton icon="close" size="sm" label="Dismiss" onClick={() => setDismissedResume(conn.recoveries)} />
-                    </>
-                  )}
-                  {state.runStarts.length > 1 && (
-                    <Chip icon="info" className="num">
-                      Restarted ×{state.runStarts.length - 1}
-                    </Chip>
-                  )}
-                </div>
+              {stream.status === "failed" && (
+                <>
+                  <Chip tone={conn.streamsBusy ? "marginal" : "fail"} icon="plug" role="alert">
+                    {conn.streamsBusy ? "Too many streams" : `Stream lost${stream.error ? `: ${stream.error.message}` : ""}`}
+                  </Chip>
+                  <Button size="sm" icon="refresh" onClick={conn.reload}>
+                    Reconnect
+                  </Button>
+                </>
               )}
-            </header>
+              {resumeBanner && stream.status === "open" && (
+                <>
+                  <Chip tone="pass" icon="check" role="status" className="num">
+                    Resumed after #{conn.lastResumeSeq}
+                  </Chip>
+                  <IconButton icon="close" size="sm" label="Dismiss" onClick={() => setDismissedResume(conn.recoveries)} />
+                </>
+              )}
+            </div>
           )}
 
           {conn.loadError && runId && (
@@ -274,7 +258,22 @@ function AskDockBody() {
           )}
 
           {!runId && (
-            <div className="analyst-center">
+            <>
+              <div className="ask-empty">
+                <div className="stream-col">
+                  <h3 className="ask-empty-title">Ask about your landing plan</h3>
+                  <p className="ask-empty-text">The assistant runs the Moonwalker engine for you and cites every number it reports.</p>
+                  <ul className="ask-starters" aria-label="Example questions">
+                    {STARTERS.map((q) => (
+                      <li key={q}>
+                        <button type="button" className="ask-starter" onClick={() => { setDraft(q); document.getElementById("composer-prompt")?.focus(); }}>
+                          {q}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
               <Composer
                 prompt={drafts[NEW_RUN] ?? ""}
                 onPrompt={setDraft}
@@ -283,7 +282,7 @@ function AskDockBody() {
                   runs.refresh();
                 }}
               />
-            </div>
+            </>
           )}
 
           {showStream && (
@@ -295,6 +294,27 @@ function AskDockBody() {
         </section>
 
         <aside className="analyst-side" aria-label="Thread details" hidden={!full && view !== "details"}>
+          {runId && (
+            <header className="analyst-head">
+              <div className="analyst-head-row">
+                <span className="analyst-title mono">{runId}</span>
+                <StreamChip conn={conn} running={running} />
+                {state.runStarts.length > 1 && (
+                  <Chip icon="info" className="num">
+                    Restarted ×{state.runStarts.length - 1}
+                  </Chip>
+                )}
+              </div>
+              {summary && (
+                <div className="analyst-head-row">
+                  <RunStateChips state={summary.state} status={summary.status} />
+                  <span className="mono faint ellipsis">{summary.model}</span>
+                  <span className="grow" />
+                  <SpendMeter cost={costUsd} cap={summary.budget_usd} turns={state.totals.turns || summary.turns || 0} detail={spend.detail} reached={spend.capReached} />
+                </div>
+              )}
+            </header>
+          )}
           <div className="side-head">
             <Tabs tabs={tabs} value={activeTab} onChange={(t) => useAsk.getState().setTab(t as DetailTab)} label="Thread details" panels />
           </div>
@@ -311,9 +331,4 @@ function AskDockBody() {
       </div>
     </section>
   );
-}
-
-export function AskDock() {
-  const access = useAsk((s) => s.access);
-  return access && !access.granted ? <AccessGate /> : <AskDockBody />;
 }

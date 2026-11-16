@@ -37,3 +37,9 @@ export function budgetSpentProblem(e: unknown): BudgetSpent | null {
 export function isBudgetSpent(costUsd: number | null | undefined, budgetUsd: number | null | undefined): boolean {
   return typeof costUsd === "number" && typeof budgetUsd === "number" && costUsd >= budgetUsd;
 }
+
+export function isCreditSpentProblem(e: unknown): boolean {
+  return e instanceof ApiError && e.status === 409 && /\/total-budget-spent$/.test(e.type ?? "");
+}
+
+export const isCreditError = (message: string): boolean => /credit balance|billing/i.test(message);

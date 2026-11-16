@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { budgetFieldError, parseBudgetInput } from "../../agent/budget";
+import { budgetFieldError, isCreditSpentProblem, parseBudgetInput } from "../../agent/budget";
 import { useServiceInstructions } from "../../agent/useRuns";
 import { ApiError, reportError } from "../../api/client";
 import { agentApi } from "../../api/endpoints";
@@ -7,6 +7,7 @@ import { useAsk } from "../../ask/askStore";
 import { ComposeBox } from "../../ask/ComposeBox";
 import { questionRoom, withContext } from "../../ask/contextBlock";
 import { ContextChip, ReachState } from "../../ask/ContextChip";
+import { CreditNotice } from "../../ask/CreditNotice";
 import { useAskContext } from "../../ask/useAskContext";
 import { ServiceNotice } from "../../components/ServiceNotice";
 import { IconButton } from "../../components/ui/Button";
@@ -30,6 +31,7 @@ export function Composer({ prompt, onPrompt, onStarted }: { prompt: string; onPr
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [ctxOn, setCtxOn] = useState(true);
+  const noCredit = useAsk((s) => s.access?.available === false);
   const ctx = useAskContext();
   const { instructions } = useServiceInstructions();
   const defaultCap = typeof instructions?.max_budget_usd === "number" ? instructions.max_budget_usd : null;
@@ -37,7 +39,7 @@ export function Composer({ prompt, onPrompt, onStarted }: { prompt: string; onPr
 
   const submit = async () => {
     const text = prompt.trim();
-    if (!text || busy) return;
+    if (!text || busy || noCredit) return;
     const cap = parseBudgetInput(budget);
     setBudgetError(cap.error);
     if (cap.error) return;
@@ -51,6 +53,7 @@ export function Composer({ prompt, onPrompt, onStarted }: { prompt: string; onPr
     } catch (e) {
       const onField = budgetFieldError(e);
       if (onField) setBudgetError(onField);
+      else if (isCreditSpentProblem(e)) useAsk.getState().markCreditSpent();
       else {
         if (e instanceof ApiError) setError(e);
         reportError(e, "Could not start the thread");
@@ -63,8 +66,9 @@ export function Composer({ prompt, onPrompt, onStarted }: { prompt: string; onPr
   const chosen = [model, budget.trim() ? `$${budget.trim()}` : ""].filter(Boolean).join(" · ");
 
   return (
-    <div className="ask-new">
+    <div className="ask-follow">
       <ReachState ctx={ctx} />
+      {noCredit && <CreditNotice />}
       <ComposeBox
         id="composer-prompt"
         label="Question for the assistant"
@@ -73,8 +77,7 @@ export function Composer({ prompt, onPrompt, onStarted }: { prompt: string; onPr
         onSubmit={() => void submit()}
         placeholder="Ask about this plan…"
         maxLength={questionRoom(attach?.length ?? 0)}
-        rows={6}
-        fill
+        disabled={noCredit}
         tools={
           <>
             <ContextChip ctx={ctx} on={ctxOn} onChange={setCtxOn} unchanged={false} />
@@ -105,7 +108,7 @@ export function Composer({ prompt, onPrompt, onStarted }: { prompt: string; onPr
             </Popover>
           </>
         }
-        actions={<IconButton icon="send" size="sm" variant="primary" label="Ask" shortcut="Ctrl+Enter" disabled={!prompt.trim() || busy} onClick={() => void submit()} />}
+        actions={<IconButton icon="send" size="sm" variant="primary" className="ask-send" label="Send" shortcut="Enter" disabled={!prompt.trim() || busy || noCredit} onClick={() => void submit()} />}
       />
       {budgetError && (
         <p id="composer-budget-msg" className="ask-error" role="alert">

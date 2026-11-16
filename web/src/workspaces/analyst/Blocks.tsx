@@ -5,9 +5,11 @@ import { citationTarget, SOURCE_LABEL } from "../../agent/citations";
 import { formatBytes, formatCost, formatMs, formatToolInput, formatToolResult, formatTokens, parseToolResultMeta, shortHash, shortToolName, turnStatusLabel, type ToolResultMeta } from "../../agent/format";
 import { CodeBlock } from "../../components/content/CodeBlock";
 import { Markdown } from "../../components/content/Markdown";
+import { isCreditError } from "../../agent/budget";
 import { classifyLimits } from "../../agent/limits";
 import { AddToCompare } from "../../ask/AddToCompare";
 import { splitContext } from "../../ask/contextBlock";
+import { CreditNotice } from "../../ask/CreditNotice";
 import { sitesOfToolCall, siteFromDigest, type SiteFact } from "../../ask/siteFacts";
 import { parseResult } from "../../agent/rows";
 import { AnswerLimits, Ids } from "./AttachedLimits";
@@ -36,15 +38,15 @@ function Time({ ts }: { ts: Block["ts"] }) {
   );
 }
 
+function stamp(ts: Block["ts"]): string | undefined {
+  const ms = toMs(ts);
+  return ms === undefined ? undefined : formatUtc(ms);
+}
+
 function UserCard({ b }: { b: UserBlock }) {
   const { question, context } = splitContext(b.text);
   return (
-    <article className="ev ev-user" aria-label="Your prompt">
-      <header className="ev-head">
-        <span className="ev-who">You</span>
-        <span className="faint num">Turn {b.turn}</span>
-        <Time ts={b.ts} />
-      </header>
+    <article className="ev ev-user" aria-label="Your message" title={stamp(b.ts)}>
       <p className="ev-user-text">{question}</p>
       {context && (
         <Disclosure title="Context">
@@ -70,21 +72,6 @@ function AssistantText({ b, mark, sources, outstanding, actions }: { b: TextBloc
   );
   return (
     <article className={`ev ev-text ${mark ? `ev-answer-${mark.kind}` : ""}`} aria-label={mark?.kind === "unverified" ? "Assistant answer, not verified" : mark?.kind === "final" ? "Assistant final answer" : "Assistant response"} aria-busy={b.streaming}>
-      <header className="ev-head">
-        <span className="ev-who">Assistant</span>
-        {b.streaming && (
-          <Chip tone="live" busy>
-            Streaming
-          </Chip>
-        )}
-        {tag && (
-          <Chip tone={tag.tone} icon={tag.icon} className="chip-verdict">
-            {tag.label}
-            <span className="sr-only">: {tag.sr}</span>
-          </Chip>
-        )}
-        <Time ts={b.ts} />
-      </header>
       {outstanding && outstanding.length > 0 && (
         <div className="ev-outstanding" data-testid="outstanding-issues">
           <p className="ev-sub">
@@ -95,6 +82,14 @@ function AssistantText({ b, mark, sources, outstanding, actions }: { b: TextBloc
       )}
       <Markdown source={b.text} onCite={onCite} citeKind={citeKind} />
       {b.streaming && <span className="ev-caret" aria-hidden />}
+      {tag && (
+        <footer className="ev-msg-foot" title={stamp(b.ts)}>
+          <Chip tone={tag.tone} icon={tag.icon} className="chip-verdict">
+            {tag.label}
+            <span className="sr-only">: {tag.sr}</span>
+          </Chip>
+        </footer>
+      )}
     </article>
   );
 }
@@ -399,6 +394,7 @@ function Inbox({ b, actions }: { b: InboxBlock; actions: BlockActions }) {
 }
 
 function ErrorCard({ b }: { b: ErrorBlock }) {
+  if (isCreditError(b.message)) return <CreditNotice />;
   return (
     <article className="ev ev-error" role="alert">
       <Icon name="cross" size={14} />
@@ -529,15 +525,17 @@ function TurnEnd({ b }: { b: TurnEndBlock }) {
   const unverified = b.status === "completed" && b.outstanding.length > 0;
   const tone = b.status === "completed" && !unverified ? "ok" : b.status === "completed" || b.status === "interrupted" ? "warn" : "error";
   return (
-    <div className={`ev ev-turnend tone-${tone}`} role="separator" aria-label={`End of turn ${b.turn}`}>
+    <div
+      className={`ev ev-turnend tone-${tone}`}
+      role="separator"
+      aria-label={`End of turn ${b.turn}`}
+      title={`${formatTokens(u.input_tokens + u.cache_read_tokens + u.cache_creation_tokens)} tokens in, ${formatTokens(u.output_tokens)} out${b.numModelTurns !== undefined ? `, ${b.numModelTurns} model ${b.numModelTurns === 1 ? "turn" : "turns"}` : ""}`}
+    >
       <span className="ev-turnend-status">
-        <Icon name={tone === "ok" ? "check" : tone === "warn" ? "warn" : "cross"} size={12} /> Turn {b.turn} {turnStatusLabel(b.status, b.outstanding.length)}
+        <Icon name={tone === "ok" ? "check" : tone === "warn" ? "warn" : "cross"} size={12} /> {turnStatusLabel(b.status, b.outstanding.length)}
       </span>
       <span>{formatMs(u.duration_ms ?? undefined)}</span>
       <span>{formatCost(u.cost_usd)}</span>
-      <span>{formatTokens(u.input_tokens + u.cache_read_tokens + u.cache_creation_tokens)} in</span>
-      <span>{formatTokens(u.output_tokens)} out</span>
-      {b.numModelTurns !== undefined && <span>{b.numModelTurns} model {b.numModelTurns === 1 ? "turn" : "turns"}</span>}
       {b.denials > 0 && (
         <span className="ev-turnend-denials">
           <Icon name="shield" size={12} /> {b.denials} denied
@@ -610,4 +608,43 @@ export const BlockView = memo(function BlockView({ block, actions, mark, sources
     case "system":
       return <System b={block} actions={actions} />;
   }
+});
+
+function workLabel(blocks: readonly Block[], live: boolean): string {
+  const tools = blocks.filter((b) => b.kind === "tool");
+  if (live) {
+    const last = blocks[blocks.length - 1];
+    if (last?.kind === "tool" && !last.result && !last.denial) return `Running ${shortToolName(last.name)}`;
+    if (last?.kind === "reasoning") return "Thinking";
+    return "Working";
+  }
+  if (tools.length > 0) return `Used ${tools.length} ${tools.length === 1 ? "tool" : "tools"}`;
+  if (blocks.some((b) => b.kind === "reasoning")) return "Thought it through";
+  if (blocks.every((b) => b.kind === "guard")) return "Answer check";
+  return `${blocks.length} ${blocks.length === 1 ? "step" : "steps"}`;
+}
+
+export const WorkGroup = memo(function WorkGroup({ blocks, actions, live }: { blocks: readonly Block[]; actions: BlockActions; live: boolean }) {
+  const [open, setOpen] = useState(false);
+  const failed = blocks.filter((b) => b.kind === "tool" && (b.denial || b.result?.isError)).length;
+  const flagged = blocks.some((b) => b.kind === "guard" && b.event.status !== "passed");
+  return (
+    <section className="ev ev-work" aria-label="Assistant activity" data-testid="work-group">
+      <button type="button" className="ev-row ev-work-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        {live ? <Spinner size={12} /> : <Icon name="chevronRight" size={12} className="ev-chevron" />}
+        <span className="ev-work-label">{workLabel(blocks, live)}</span>
+        {failed > 0 && <Chip tone="fail">{failed} failed</Chip>}
+        {flagged && <Chip tone="marginal">Check flagged</Chip>}
+        <span className="grow" />
+        {live && <Icon name="chevronRight" size={12} className="ev-chevron" />}
+      </button>
+      {open && (
+        <div className="ev-work-body">
+          {blocks.map((b) => (
+            <BlockView key={b.key} block={b} actions={actions} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
 });

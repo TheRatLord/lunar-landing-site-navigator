@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { budgetSpentProblem, isBudgetSpent, type BudgetSpent } from "../agent/budget";
+import { budgetSpentProblem, isBudgetSpent, isCreditSpentProblem, type BudgetSpent } from "../agent/budget";
 import { formatCost } from "../agent/format";
 import { reportError } from "../api/client";
 import { agentApi } from "../api/endpoints";
@@ -10,6 +10,7 @@ import { useAsk } from "./askStore";
 import { ComposeBox } from "./ComposeBox";
 import { questionRoom, withContext } from "./contextBlock";
 import { ContextChip, ReachState } from "./ContextChip";
+import { CreditNotice } from "./CreditNotice";
 import { useAskContext } from "./useAskContext";
 
 interface Props {
@@ -27,6 +28,8 @@ export function FollowUp({ runId, running, onSent, costUsd, budgetUsd, text, onT
   const [ctxOn, setCtxOn] = useState(true);
   const [refused, setRefused] = useState<BudgetSpent | null>(null);
   const spent: BudgetSpent | null = isBudgetSpent(costUsd, budgetUsd) ? { costUsd: costUsd ?? undefined, budgetUsd: budgetUsd ?? undefined, detail: refused?.detail } : refused;
+  const noCredit = useAsk((s) => s.access?.available === false);
+  const closed = spent !== null || noCredit;
   const ctx = useAskContext();
   const lastSent = useAsk((s) => s.lastContext[runId]);
   const unchanged = ctx.block !== null && ctx.block === lastSent;
@@ -34,7 +37,7 @@ export function FollowUp({ runId, running, onSent, costUsd, budgetUsd, text, onT
 
   const send = async () => {
     const prompt = text.trim();
-    if (!prompt || busy || running || spent !== null) return;
+    if (!prompt || busy || running || closed) return;
     setBusy(true);
     try {
       await agentApi.sendMessage(runId, withContext(prompt, attach));
@@ -45,6 +48,7 @@ export function FollowUp({ runId, running, onSent, costUsd, budgetUsd, text, onT
     } catch (e) {
       const bs = budgetSpentProblem(e);
       if (bs) setRefused(bs);
+      else if (isCreditSpentProblem(e)) useAsk.getState().markCreditSpent();
       else reportError(e, "Could not send the message");
     } finally {
       setBusy(false);
@@ -63,16 +67,16 @@ export function FollowUp({ runId, running, onSent, costUsd, budgetUsd, text, onT
   return (
     <div className="ask-follow">
       <ReachState ctx={ctx} />
+      {noCredit && <CreditNotice />}
       <ComposeBox
         id="followup-text"
         label="Follow-up message"
         value={text}
         onChange={onText}
         onSubmit={() => void send()}
-        placeholder={running ? "Answering…" : "Ask a follow-up…"}
+        placeholder={running ? "Answering…" : "Reply…"}
         maxLength={questionRoom(attach?.length ?? 0)}
-        rows={2}
-        disabled={spent !== null}
+        disabled={closed}
         tools={
           <>
             <ContextChip ctx={ctx} on={ctxOn} onChange={setCtxOn} unchanged={unchanged} />
@@ -89,8 +93,11 @@ export function FollowUp({ runId, running, onSent, costUsd, budgetUsd, text, onT
         }
         actions={
           <>
-            {running && <IconButton icon="stop" size="sm" label="Stop the answer" onClick={() => void interrupt()} />}
-            <IconButton icon="send" size="sm" variant="primary" label="Send" shortcut="Ctrl+Enter" disabled={!text.trim() || busy || running || spent !== null} onClick={() => void send()} />
+            {running ? (
+              <IconButton icon="stop" size="sm" variant="primary" className="ask-send" label="Stop the answer" onClick={() => void interrupt()} />
+            ) : (
+              <IconButton icon="send" size="sm" variant="primary" className="ask-send" label="Send" shortcut="Enter" disabled={!text.trim() || busy || closed} onClick={() => void send()} />
+            )}
           </>
         }
       />

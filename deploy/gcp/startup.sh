@@ -63,11 +63,10 @@ secret() { gcloud secrets versions access latest --secret="$1" 2>/dev/null || tr
 
 start() {
   local agent=()
-  local key codes
+  local key
   key="$(secret anthropic-api-key)"
-  codes="$(secret agent-codes | tr -s ' \n' ',' | sed 's/^,//; s/,$//')"
   rm -rf /mnt/data/agent-key
-  if [[ -n "$key" && -n "$codes" ]]; then
+  if [[ -n "$key" ]]; then
     install -d -m 700 -o 1000 -g 1000 /mnt/data/agent-key /mnt/data/home
     install -m 600 -o 1000 -g 1000 /dev/null /mnt/data/agent-key/key
     printf '%s' "$key" > /mnt/data/agent-key/key
@@ -77,7 +76,6 @@ start() {
       --security-opt seccomp=unconfined --security-opt apparmor=unconfined --security-opt systempaths=unconfined
       -e HOME=/data/home
       -e LUNARNAV_API_AGENT_ENABLED=1
-      -e LUNARNAV_API_AGENT_CODES="$codes"
       -e LUNARNAV_API_AGENT_TOTAL_BUDGET_USD="$(meta instance/attributes/lunarnav-agent-budget 2>/dev/null || echo 60)"
       -e LUNARNAV_AGENT_API_KEY_FILE=/data/agent-key/key
       -e LUNARNAV_AGENT_CONFIG=/data/agent.yaml

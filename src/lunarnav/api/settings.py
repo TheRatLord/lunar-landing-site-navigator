@@ -128,7 +128,6 @@ class Settings:
     job_max_points: int = 500_000
     sse_ping_s: float = 15.0
     agent_enabled: bool = False
-    agent_codes: tuple[str, ...] = ()
     agent_total_budget_usd: float | None = None
     agent_runs_dir: Path | None = None
     agent_max_live: int = 4
@@ -211,7 +210,6 @@ class Settings:
             cache_max_bytes=_env_int("LUNARNAV_API_CACHE_MAX_MB", 2048, 16, 1_000_000) * 1024**2,
             agent_enabled=_env_bool("LUNARNAV_API_AGENT_ENABLED"),
             agent_total_budget_usd=_total_budget(os.environ.get("LUNARNAV_API_AGENT_TOTAL_BUDGET_USD")),
-            agent_codes=tuple(c.strip() for c in os.environ.get("LUNARNAV_API_AGENT_CODES", "").split(",") if c.strip()),
             agent_runs_dir=Path(runs_env) if runs_env else None,
             agent_budget_ceiling_usd=_positive(os.environ.get("LUNARNAV_API_AGENT_BUDGET_CEILING_USD"), defaults.agent_budget_ceiling_usd),
             agent_max_live=_env_int("LUNARNAV_API_AGENT_MAX_LIVE", defaults.agent_max_live, 1, 32),

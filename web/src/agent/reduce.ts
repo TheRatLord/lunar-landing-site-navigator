@@ -390,3 +390,7 @@ export const answerSources = (blocks: readonly Block[], marks: ReadonlyMap<strin
 
 export const answerOutstanding = (blocks: readonly Block[], marks: ReadonlyMap<string, AnswerMark>): ReadonlyMap<string, readonly TurnIssue[]> =>
   perAnswer(blocks, marks, (end) => (end.outstanding.length > 0 ? end.outstanding : null));
+
+const WORK_KINDS: ReadonlySet<Block["kind"]> = new Set(["reasoning", "tool", "assumption", "artifact", "signoff", "guard", "inbox", "system"]);
+
+export const isWorkBlock = (b: Block): boolean => WORK_KINDS.has(b.kind);

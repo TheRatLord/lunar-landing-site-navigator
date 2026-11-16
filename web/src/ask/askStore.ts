@@ -25,7 +25,7 @@ interface AskStatus {
 interface AskStore extends Stored {
   enabled: boolean;
   access: AgentAccess | null;
-  setAccess(access: AgentAccess): void;
+  markCreditSpent(): void;
   status: AskStatus;
   setOpen(open: boolean): void;
   toggle(): void;
@@ -68,7 +68,7 @@ export const useAsk = create<AskStore>((set) => ({
   ...read(),
   enabled: false,
   access: null,
-  setAccess: (access) => set({ access }),
+  markCreditSpent: () => set({ access: { available: false, reason: "budget-spent" } }),
   status: { pending: null, running: false },
   setOpen: (open) => set((s) => ({ open: open && s.enabled })),
   toggle: () => set((s) => ({ open: s.enabled && !s.open })),
@@ -97,8 +97,8 @@ export function loadAskAvailability(): Promise<void> {
   availability ??= metaApi.get().then(
     async (meta) => {
       const enabled = (meta as Partial<components["schemas"]["MetaResponse"]>).agent_enabled === true;
-      useAsk.setState({ enabled });
-      if (enabled) useAsk.setState({ access: await agentApi.access().catch(() => null) });
+      const access = enabled ? await agentApi.access().catch(() => null) : null;
+      useAsk.setState({ enabled, access });
     },
     () => {
       availability = null;
