@@ -15,7 +15,7 @@ export const KIND_MARK: Record<SiteKind, { shape: MarkerShape; color: string; si
   poi: { shape: "dot", color: "#e5e5ea", size: 13, prio: 1 },
 };
 
-export const PLAN_COLOR = "#ffffff";
+export const PLAN_COLOR = "#ff2e93";
 export const PIN_COLOR = "#d08cff";
 export const EARTH_COLOR = "#64d2ff";
 export const PICK_COLOR = "#ffd60a";
@@ -78,7 +78,7 @@ function textWidth(text: string, plan: boolean): number {
 }
 
 export function labelCandidates(sites: readonly SiteEntry[], pins: ReadonlyArray<{ id: string; name: string; lat_deg: number; lon_deg: number }>, plan: { lat_deg: number; lon_deg: number; name: string }): LabelCand[] {
-  const out: LabelCand[] = [{ id: "plan", text: siteLabel(plan.name) || "Plan site", lat_deg: plan.lat_deg, lon_deg: plan.lon_deg, r: 11, prio: 100, must: true, tone: "plan" }];
+  const out: LabelCand[] = [{ id: "plan", text: siteLabel(plan.name) || "Plan site", lat_deg: plan.lat_deg, lon_deg: plan.lon_deg, r: 21, prio: 100, must: true, tone: "plan" }];
   for (const p of pins) out.push({ id: `pin:${p.id}`, text: short(siteLabel(p.name)), lat_deg: p.lat_deg, lon_deg: p.lon_deg, r: 8, prio: 50, must: false, tone: "pin" });
   for (const s of sites) {
     const k = KIND_MARK[s.kind];
@@ -130,7 +130,7 @@ export interface SiteGroup {
 
 export const CLUSTER_PX = 34;
 
-const PLAN_CLEAR_PX = 15;
+const PLAN_CLEAR_PX = 23;
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 function pinSize(n: number): { w: number; h: number; cy: number } {

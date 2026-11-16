@@ -60,7 +60,8 @@ const CAP_DEG = 22;
 const sameView = (a: ViewInfo, b: ViewInfo): boolean =>
   Math.abs(a.lat_deg - b.lat_deg) < 0.02 && Math.abs(((a.lon_deg - b.lon_deg + 540) % 360) - 180) < 0.05 && Math.abs(a.half_m / b.half_m - 1) < 0.05 && a.px === b.px;
 const MAX_DETAIL_M = 700_000;
-const contextView = (r: number | null): number => Math.max(20_000, (r ?? 0) * 4);
+const CONTEXT_MIN_M = 150_000;
+const contextView = (r: number | null): number => Math.max(CONTEXT_MIN_M, (r ?? 0) * 4);
 const tightView = (r: number): number => Math.max(3_000, r * 1.35);
 const SITE_VIEW_M = 15_000;
 
@@ -118,6 +119,7 @@ export function MoonGlobe(props: MoonGlobeProps) {
   }, [popup]);
 
   const clusterHost = useRef<HTMLDivElement>(null);
+  const planRef = useRef<HTMLDivElement>(null);
   const groupsRef = useRef<SiteGroup[]>([]);
   const drawn = useRef<{ key: string; of: SiteEntry[] | null; index: number[] }>({ key: "", of: null, index: [] });
 
@@ -125,6 +127,12 @@ export function MoonGlobe(props: MoonGlobeProps) {
     if (!scene) return;
     const lab = labelRef.current;
     const box = lab?.parentElement;
+    const mark = planRef.current;
+    if (mark) {
+      const at = scene.screenOf(site.lat_deg, site.lon_deg);
+      mark.style.display = at ? "" : "none";
+      if (at) mark.style.transform = `translate(${Math.round(at[0])}px, ${Math.round(at[1])}px)`;
+    }
     if (lab && box) {
       const { groups, clustered } = clusterSites(shown, (la, lo) => scene.screenOf(la, lo), box.clientWidth, box.clientHeight, scene.screenOf(site.lat_deg, site.lon_deg));
       groupsRef.current = groups;
@@ -367,6 +375,11 @@ export function MoonGlobe(props: MoonGlobeProps) {
       <canvas ref={canvasRef} className="globe-canvas" role="img" aria-label="3D Moon with the plan's site, catalogue sites and search results. Drag to turn, scroll to zoom, click a point for details." />
       <div ref={labelRef} className="globe-labels" aria-hidden />
       <div ref={clusterHost} className="globe-clusters" onClick={openCluster} />
+      <div className="globe-plan-layer" aria-hidden>
+        <div ref={planRef} className="globe-plan">
+          <i />
+        </div>
+      </div>
       {tip && !popup && (
         <div className="globe-tip" style={{ transform: `translate(${tip.x + 12}px, ${tip.y - 28}px)` }} aria-hidden>
           {tip.text}

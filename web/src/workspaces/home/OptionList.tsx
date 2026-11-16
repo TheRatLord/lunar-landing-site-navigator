@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Button, IconButton } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Progress";
+import { Segmented } from "../../components/ui/Segmented";
 import { formatQuantity } from "../../lib/requirements";
 import { hoursText, type RankBy } from "../../scenario/planSearch";
 import { dayText } from "../../scenario/when";
@@ -38,42 +39,56 @@ const VALUES: Array<{ key: RankBy; label: string }> = [
   { key: "margin", label: "Margin" },
 ];
 
+const BESIDE: Record<RankBy, RankBy> = { sunlit_h: "contact_h", contact_h: "sunlit_h", sunlit_contact_h: "sunlit_h", margin: "sunlit_contact_h" };
+
+const labelOf = (key: RankBy): string => VALUES.find((v) => v.key === key)!.label;
+
+function amount(o: LandingOption, key: RankBy): number | null {
+  const v = key === "margin" ? o.margin : o.totals[key];
+  return v !== null && Number.isFinite(v) ? v : null;
+}
+
 function value(o: LandingOption, key: RankBy): string {
   if (key === "margin") return o.margin === null ? "–" : formatQuantity(o.margin, o.marginUnit, { sign: true });
   return hoursText(o.totals[key]);
 }
 
-function Row({ o, n, rank, values, requirements, selected, previewing, onSelect, onPreview, onOpen, tools }: { o: LandingOption; n: number | null; rank: RankBy; values: typeof VALUES; requirements: number; selected: boolean; previewing: boolean; onSelect(): void; onPreview(on: boolean): void; onOpen(): void; tools: ReactNode }) {
-  const tone = o.pending || o.failed ? "wait" : requirements === 0 ? "none" : (o.verdict ?? "none");
+function Row({ o, n, rank, top, values, requirements, withSite, selected, previewing, onSelect, onPreview, onOpen, tools }: { o: LandingOption; n: number | null; rank: RankBy; top: number; values: typeof VALUES; requirements: number; withSite: boolean; selected: boolean; previewing: boolean; onSelect(): void; onPreview(on: boolean): void; onOpen(): void; tools: ReactNode }) {
   const blank = o.pending || o.failed;
-  const when =
-    o.failed ? "Couldn't compute" : o.pending ? "Checking the year" : o.t_ms === null ? (o.note ?? "No landing time") : (
-      <span>
-        {dayText(o.t_ms)} <span className="ot-time">{new Date(o.t_ms).toISOString().slice(11, 16)}</span>
-      </span>
-    );
+  const time = o.t_ms === null ? null : new Date(o.t_ms).toISOString().slice(11, 16);
+  const state = o.failed ? "Couldn't compute" : o.pending ? "Checking the year" : o.t_ms === null ? (o.note ?? "No landing time") : null;
+  const pin = n === null;
+  const lead = pin ? o.label : (state ?? dayText(o.t_ms!));
+  const rest = pin ? (state ?? `${dayText(o.t_ms!)} ${time}`) : state ? (withSite ? o.label : null) : withSite ? `${time} ${o.label}` : time;
+  const got = blank ? null : amount(o, rank);
+  const share = got === null || top <= 0 ? 0 : Math.max(0, Math.min(1, got / top));
+  const flagged = !blank && requirements > 0 && o.verdict !== null && o.verdict !== "pass";
+  const all = values.map((v) => `${v.label} ${value(o, v.key)}`).join(", ");
   return (
-    <tr className="ot-row" data-tone={tone} data-blank={blank || o.t_ms === null || undefined} aria-current={selected || undefined} data-preview={previewing || undefined} onClick={onSelect} onMouseEnter={() => onPreview(true)} onMouseLeave={() => onPreview(false)} title={o.note ?? undefined}>
-      <td className="ot-n-cell">
-        <span className="ot-n num">{n === null ? <Icon name="pin" size={12} /> : n}</span>
-      </td>
-      <td className="ot-when">
-        <button type="button" className="ot-pick num" title={o.note ?? (o.t_ms === null ? undefined : "Use this site and landing time")}>
+    <tr className="ol-row" data-kind={pin ? "pin" : "rank"} data-blank={blank || o.t_ms === null || undefined} aria-current={selected || undefined} data-preview={previewing || undefined} onClick={onSelect} onMouseEnter={() => onPreview(true)} onMouseLeave={() => onPreview(false)} title={o.note ?? undefined}>
+      <td className="ol-n num">{pin ? <Icon name="pin" size={13} /> : n}</td>
+      <td className="ol-main">
+        <button type="button" className="ol-pick num" title={o.note ?? (o.t_ms === null ? o.place.name : `Use ${o.place.name} at this landing time`)}>
           {o.pending ? <Spinner size={10} /> : null}
-          {when}
+          <b>{lead}</b>
+          {rest && <span>{rest}</span>}
         </button>
       </td>
-      <td className="ot-site" title={o.place.name}>
-        {o.label}
+      <td className="ol-bar">{!blank && <i style={{ width: `${share * 100}%` }} />}</td>
+      <td className="ol-val num">{blank ? "" : value(o, rank)}</td>
+      <td className="ol-side num" title={blank ? undefined : all}>
+        {blank ? (
+          ""
+        ) : flagged ? (
+          <>
+            <span data-tone={o.verdict!}>{VERDICT_LABEL[o.verdict!]}</span>
+            {o.limiting ? ` ${o.limiting}` : ""}
+          </>
+        ) : (
+          `${labelOf(BESIDE[rank])} ${value(o, BESIDE[rank])}`
+        )}
       </td>
-      {requirements > 0 && <td className="ot-verdict">{!blank && o.verdict ? <span data-tone={o.verdict}>{VERDICT_LABEL[o.verdict]}</span> : "–"}</td>}
-      <td className="ot-limit">{blank ? "" : (o.limiting ?? "–")}</td>
-      {values.map((v) => (
-        <td key={v.key} className="ot-val num" data-rank={v.key === rank || undefined}>
-          {blank ? "" : value(o, v.key)}
-        </td>
-      ))}
-      <td className="ot-tools" onClick={(e) => e.stopPropagation()}>
+      <td className="ol-tools" onClick={(e) => e.stopPropagation()}>
         <span>
           {tools}
           <IconButton icon="chevronRight" size="sm" variant="ghost" label={`Open ${o.label} in Site`} disabled={o.pending} onClick={onOpen} />
@@ -86,16 +101,19 @@ function Row({ o, n, rank, values, requirements, selected, previewing, onSelect,
 export function OptionList({ pinned, ranked, rank, requirements, selectedKey, previewKey, onPreview, notice, search, bar, selection, scope, onRank, onSelect, onOpen, onPin, onUnpin, canPin }: OptionListProps) {
   const [all, setAll] = useState(false);
   const values = VALUES.filter((v) => !(requirements === 0 && v.key === "margin"));
-  const cols = 5 + values.length + (requirements > 0 ? 1 : 0);
   const shown = all ? ranked : ranked.slice(0, SHOWN);
+  const top = Math.max(0, ...[...pinned, ...ranked].map((o) => (o.pending || o.failed ? 0 : (amount(o, rank) ?? 0))));
+  const withSite = ranked.some((o) => o.kind !== "here");
   const row = (o: LandingOption, n: number | null) => (
     <Row
       key={o.key}
       o={o}
       n={n}
       rank={rank}
+      top={top}
       values={values}
       requirements={requirements}
+      withSite={withSite}
       selected={o.key === selectedKey}
       previewing={o.key === previewKey && o.key !== selectedKey}
       onSelect={() => onSelect(o)}
@@ -112,59 +130,48 @@ export function OptionList({ pinned, ranked, rank, requirements, selectedKey, pr
   );
   return (
     <section className="opts" aria-label="Landing options">
-      <h2 className="sr-only">Landing options</h2>
       {selection}
       {bar}
-      <div className="ot-wrap">
-        <table className="ot">
-          <caption className="sr-only">Landing options for {scope}</caption>
-          <thead>
-            <tr>
-              <th scope="col" className="ot-n-cell">
-                <span className="sr-only">Rank</span>#
-              </th>
-              <th scope="col">Landing (UTC)</th>
-              <th scope="col">Site</th>
-              {requirements > 0 && <th scope="col">Verdict</th>}
-              <th scope="col">Limited by</th>
-              {values.map((v) => (
-                <th key={v.key} scope="col" className="ot-val" data-rank={v.key === rank || undefined} aria-sort={v.key === rank ? "descending" : undefined}>
-                  <button type="button" className="ot-sort" title={`Rank by ${v.label.toLowerCase()}`} onClick={() => onRank(v.key)}>
-                    {v.key === rank && <Icon name="chevronDown" size={12} />}
-                    {v.label}
-                  </button>
-                </th>
-              ))}
-              <th scope="col" className="ot-tools">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          {pinned.length > 0 && (
-            <tbody>
-              <tr className="ot-group">
-                <th scope="colgroup" colSpan={cols}>
-                  Pinned
-                </th>
-              </tr>
-              {pinned.map((o) => row(o, null))}
-            </tbody>
-          )}
+      <header className="ol-head">
+        <h2 className="ol-title">Landing options</h2>
+        <Segmented label="Rank by" size="sm" value={rank} onChange={(v) => onRank(v as RankBy)} options={values.map((v) => ({ value: v.key, label: v.label }))} />
+      </header>
+      <table className="ol" data-rank={rank}>
+        <caption className="sr-only">Landing options for {scope}</caption>
+        <thead className="sr-only">
+          <tr>
+            <th scope="col">Rank</th>
+            <th scope="col">Landing (UTC)</th>
+            <th scope="col">Share of the best</th>
+            <th scope="col">{labelOf(rank)}</th>
+            <th scope="col">Notes</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        {pinned.length > 0 && (
           <tbody>
-            <tr className="ot-group">
-              <th scope="colgroup" colSpan={cols}>
-                Ranked
+            <tr className="ol-group">
+              <th scope="colgroup" colSpan={6}>
+                Pinned sites
               </th>
             </tr>
-            {notice && (
-              <tr className="ot-notice">
-                <td colSpan={cols}>{notice}</td>
-              </tr>
-            )}
-            {shown.map((o, i) => row(o, i + 1))}
+            {pinned.map((o) => row(o, null))}
           </tbody>
-        </table>
-      </div>
+        )}
+        <tbody>
+          <tr className="ol-group">
+            <th scope="colgroup" colSpan={6}>
+              Ranked landings
+            </th>
+          </tr>
+          {notice && (
+            <tr className="ol-notice">
+              <td colSpan={6}>{notice}</td>
+            </tr>
+          )}
+          {shown.map((o, i) => row(o, i + 1))}
+        </tbody>
+      </table>
       <footer className="opts-foot">
         {ranked.length > SHOWN && (
           <Button size="sm" variant="ghost" className="opts-more" onClick={() => setAll((a) => !a)}>
