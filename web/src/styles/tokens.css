@@ -54,6 +54,8 @@
   --icon-sm: 14px;
   --icon-md: 16px;
   --topbar-h: 60px;
+  --topbar-seg-h: 40px;
+  --topbar-seg-pad: 3px;
   --plan-w: 304px;
   --plan-rail-w: 52px;
   --scrubber-h: 68px;
