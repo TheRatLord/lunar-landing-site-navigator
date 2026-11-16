@@ -41,7 +41,7 @@ export function AppShell() {
 function NarrowGate() {
   return (
     <div className="narrow-gate">
-      <strong className="narrow-gate-app">Moonwalkr</strong>
+      <strong className="narrow-gate-app">Moonwalker</strong>
       <p>The planner needs a wider screen.</p>
       <Link className="btn btn-primary" to="/learn">
         Open Explorer

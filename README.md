@@ -1,6 +1,6 @@
-# Moonwalkr
+# Moonwalker
 
-Moonwalkr is a planning tool for lunar landing sites and dates, built for the NASA Space Apps Challenge 2026
+Moonwalker is a planning tool for lunar landing sites and dates, built for the NASA Space Apps Challenge 2026
 [Lunar Landing Site Navigator](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/)
 challenge ([problem statement](problem-statement.md)).
 
@@ -16,7 +16,7 @@ landing-ellipse statistics, slip analysis and site search. Every number carries 
 Evidence shows how each part was checked. Explorer is for everyone else: drive a rover and walk around famous landing
 sites in 3D, with five short lessons on why sunlight and Earth in the sky decide where a lander can work.
 
-The same example every time: [moonwalkr.cinne.dev/demo](https://moonwalkr.cinne.dev/demo) opens a fresh demo plan with three
+The same example every time: [moonwalker.cinne.dev/demo](https://moonwalker.cinne.dev/demo) opens a fresh demo plan with three
 south-pole sites compared. The plan menu in the top bar switches between the demo (an editable copy kept in this
 browser), a blank plan and your saved plans.
 

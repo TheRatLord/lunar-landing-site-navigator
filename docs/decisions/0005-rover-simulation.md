@@ -5,7 +5,7 @@
 
 ## Where we start
 
-Moonwalkr answers "is this landing viable?" for a lander that stays put. A rover moves, so its horizon,
+Moonwalker answers "is this landing viable?" for a lander that stays put. A rover moves, so its horizon,
 power and Earth link change along its path. The team's other entry, Sightline (`../sightline`), has a 3D
 terrain stage we want to reuse in approach and feel:
 
@@ -25,7 +25,7 @@ terrain stage we want to reuse in approach and feel:
   one control for time (the time river, whose track shows Sun, Earth and both-up bands), drawers float
   over it, and the co-pilot's answers move the stage.
 
-Moonwalkr already has the pieces underneath: the LNP1 elevation patch (`/api/v1/terrain/patch`, with
+Moonwalker already has the pieces underneath: the LNP1 elevation patch (`/api/v1/terrain/patch`, with
 sources and error), `LanderProfile` with yaw and tilt, the power, battery and direct-to-Earth models, VIPER
 constraints with sources (`scenario/profiles.py`), and the analysis agent with its answer guard. Its own 3D
 view (`web/src/workspaces/site/terrain3d/`) uses a CPU shadow mask on a single patch.
@@ -66,7 +66,7 @@ view (`web/src/workspaces/site/terrain3d/`) uses a CPU shadow mask on a single p
 
 - Waypoints with precomputed playback keep every frame computable ahead of time and checkable, which the
   honesty rules require, and they reuse Sightline's strongest moment: drag time, watch it happen.
-- A catalogued profile with `Origin`s is how Moonwalkr already treats landers, so rover numbers carry
+- A catalogued profile with `Origin`s is how Moonwalker already treats landers, so rover numbers carry
   the same provenance to the screen, the report and the agent.
 - The CPU shadow mask in `terrain3d/` does not reach the 250 km a grazing polar Sun needs; Sightline's CSM
   setup already does, and is measured there.

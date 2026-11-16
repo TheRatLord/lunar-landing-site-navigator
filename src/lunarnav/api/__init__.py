@@ -1,4 +1,4 @@
-"""HTTP service for Moonwalkr (FastAPI).
+"""HTTP service for Moonwalker (FastAPI).
 
 `create_app` is imported lazily so that pool worker processes importing `lunarnav.api.jobworker` do not
 pay for FastAPI.

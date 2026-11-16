@@ -57,7 +57,7 @@ shadow.
 ## Constraints
 
 - Repo rules are in `AGENTS.md`: no code comments, no tests; push straight to `main` after `git fetch` and a
-  rebase; `uv sync --frozen` and `cd web && bun run build` must pass. Pushing deploys https://moonwalkr.cinne.dev.
+  rebase; `uv sync --frozen` and `cd web && bun run build` must pass. Pushing deploys https://moonwalker.cinne.dev.
 - React 19 + TypeScript strict + Three.js, run with bun. Keep new files small; `groundView.ts` (705 lines) is
   not a pattern to repeat.
 - Explorer must keep working with no engine: the polar terrain patch is a bonus when `/terrain/patch`

@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Moonwalkr service",
+    "title": "Moonwalker service",
     "description": "Deterministic Sun, Earth and terrain-horizon geometry for lunar landing replanning.\n\n**Single trusted operator.** The agent endpoints start a model that writes and runs Python on this machine;\nthe service binds to loopback only and refuses other addresses unless explicitly allowed.\n\n**Conventions.** Times are ISO-8601 UTC with `Z` suffix (internal: TDB seconds past J2000, field suffix\n`_tdb_s`). Latitude/longitude are planetocentric, east-positive degrees in the mean-Earth/polar-axis frame.\nThe reference surface is a sphere of radius 1 737 400 m; heights are relative to it. Azimuth is degrees\nclockwise from local north; elevation is degrees above the plane perpendicular to the Moon-centre radial\nthrough the observer. Directions are apparent (light time and stellar aberration). Units are in field names\n(`_deg`, `_m`, `_km`, `_s`, `_utc`). Errors are `application/problem+json`.\n",
     "version": "1.0.0"
   },

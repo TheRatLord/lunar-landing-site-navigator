@@ -4,7 +4,7 @@ The oracle suite is the one exception. Its expected values never come from the c
 
 ## How changes ship
 
-- **Code:** whatever lands on `main` deploys. The `images` workflow builds the Docker image (API plus UI) and pushes it to Artifact Registry. Within a minute the GCP VM pulls it, swaps the container, and rolls back if the new one doesn't report healthy. The site is https://moonwalkr.cinne.dev; `deploy/README.md` has the details.
+- **Code:** whatever lands on `main` deploys. The `images` workflow builds the Docker image (API plus UI) and pushes it to Artifact Registry. Within a minute the GCP VM pulls it, swaps the container, and rolls back if the new one doesn't report healthy. The site is https://moonwalker.cinne.dev; `deploy/README.md` has the details.
 - **Terrain data:** stores are built from NASA sources, not committed. To change the shared data, merge the code change, then run the `data` workflow from the Actions tab: `all`, or the store ids to rebuild. It builds them in Cloud Build, publishes them to `gs://lunarnav-1114-19887-data`, and the VM picks them up within a few minutes.
 - **Local development:** `scripts/data.sh pull` fetches the built stores from the public bucket (no login needed). `scripts/data.sh build <id>` builds one from NASA locally. Nobody uploads data by hand.
 - **Contributing:** commit and push straight to `main`; no branch or pull request is needed. Before pushing, `git fetch`. If `origin/main` has moved ahead, rebase your commits onto it and reconcile them with what landed: resolve every conflict so that both your change and the other one still work, not by picking a side wholesale. Then rerun the checks and push. Never force-push `main`.

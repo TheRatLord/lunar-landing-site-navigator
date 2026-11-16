@@ -1,6 +1,6 @@
 # Deployment
 
-Moonwalkr is live at https://moonwalkr.cinne.dev and runs on Google Cloud (project `lunarnav-1114-19887`, VM `lunarnav` in `us-central1-a`).
+Moonwalker is live at https://moonwalker.cinne.dev and runs on Google Cloud (project `lunarnav-1114-19887`, VM `lunarnav` in `us-central1-a`).
 
 - **Every push to `main` deploys automatically**, usually within about 10 minutes:
   1. The `images` workflow builds the Docker image (the API plus the built UI) and pushes it to Artifact Registry as `:latest` and `:main-<sha7>-<commit time>`. GitHub signs in to Google Cloud with Workload Identity Federation, which accepts only `main` of this repository, so no keys are stored in GitHub.
@@ -13,7 +13,7 @@ Moonwalkr is live at https://moonwalkr.cinne.dev and runs on Google Cloud (proje
 
 ## How requests flow
 
-`moonwalkr.cinne.dev` is served by the Cloudflare Worker in `deploy/worker`. The former address, `lunar.cinne.dev`, is a second domain of the same Worker, which answers it with a permanent redirect (308) to the same path on `moonwalkr.cinne.dev`. The Worker forwards every other request through a Workers VPC binding to the `lunarnav` Cloudflare Tunnel, whose connector runs on the VM. It also caches the hashed `/assets/*` files at Cloudflare's edge. The API listens on `127.0.0.1:8100` on the VM. The VM accepts no inbound traffic except SSH through IAP. The API changes state only for browser pages whose origin is listed in the VM's `lunarnav-origin` metadata (comma separated; it holds both addresses), which the updater reads each time it starts the container. The Worker only changes when `deploy/worker` changes; deploy it with `bunx cf deploy` from that directory.
+`moonwalker.cinne.dev` is served by the Cloudflare Worker in `deploy/worker`. The former addresses, `moonwalkr.cinne.dev` and `lunar.cinne.dev`, are further domains of the same Worker, which answers them with a permanent redirect (308) to the same path on `moonwalker.cinne.dev`. The Worker forwards every other request through a Workers VPC binding to the `lunarnav` Cloudflare Tunnel, whose connector runs on the VM. It also caches the hashed `/assets/*` files at Cloudflare's edge. The API listens on `127.0.0.1:8100` on the VM. The VM accepts no inbound traffic except SSH through IAP. The API changes state only for browser pages whose origin is listed in the VM's `lunarnav-origin` metadata (comma separated; it holds all three addresses), which the updater reads each time it starts the container. The Worker only changes when `deploy/worker` changes; deploy it with `bunx cf deploy` from that directory.
 
 ## The VM
 
