@@ -61,6 +61,8 @@ export class WalkView {
   private nearRover = false;
   private frame: SceneFrame | null = null;
   private siteId = "";
+  private active = false;
+  private introPending = false;
   private edge = false;
   onEdge: ((atEdge: boolean) => void) | null = null;
 
@@ -110,11 +112,25 @@ export class WalkView {
   }
 
   setActive(on: boolean): void {
+    this.active = on;
     this.input.setEnabled(on);
+    if (!on && this.cam.introActive) {
+      this.cam.cancelLandingIntro();
+      this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
+    }
+  }
+
+  private startLandingIntro(): void {
+    if (!this.active || !this.introPending || !this.frame) return;
+    this.introPending = false;
+    this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
+    this.cam.startLandingIntro(this.focus, this.heading(), this.frame.reducedMotion);
   }
 
   setControl(control: WalkControl): void {
     if (control.body === this.control.body && control.seated === this.control.seated) return;
+    const interruptedIntro = this.cam.introActive;
+    this.cam.cancelLandingIntro();
     if (this.control.seated && !control.seated && control.body === "astronaut") this.exitAstronaut();
     this.control = control;
     this.input.clear();
@@ -125,7 +141,7 @@ export class WalkView {
     this.aim();
     this.applyLayers();
     this.updateRoverNear();
-    if (this.frame?.reducedMotion || this.cam.pov === "first") this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
+    if (interruptedIntro || this.frame?.reducedMotion || this.cam.pov === "first") this.cam.snap(this.focus, this.eye, this.heading(), this.ground);
   }
 
   private exitAstronaut(): void {
@@ -166,6 +182,7 @@ export class WalkView {
 
   lookAt(azDeg: number, elDeg: number): void {
     if (this.cam.pov !== "first") return;
+    this.cam.cancelLandingIntro();
     if (this.control.body === "astronaut") {
       this.astronaut.kneeling = false;
       this.astronaut.heading = azDeg;
@@ -190,6 +207,7 @@ export class WalkView {
       this.astronaut.reset();
       this.rover.reset();
       this.settle();
+      this.introPending = true;
       this.updateRoverNear();
     }
     this.props.place(this.terrain);
@@ -258,6 +276,7 @@ export class WalkView {
       this.onEdge?.(edge);
     }
     this.aim();
+    this.startLandingIntro();
     const cp = this.camera.position;
     this.camera.getWorldDirection(this.look);
     const near = this.props.nearest(this.focus.x, this.focus.z, 9, (px, pz) => {
