@@ -274,7 +274,8 @@ class AgentService:
         owner = self.settings.agent_showcase_owner
         if owner is None:
             return None
-        mine = [m for m in list_runs(self.runs_dir) if "run_id" in m and self._owner_of(m["run_id"]) == owner]
+        mine = [m for m in list_runs(self.runs_dir)
+                if "run_id" in m and m.get("status") == "completed" and m.get("turns") and self._owner_of(m["run_id"]) == owner]
         return max(mine, key=lambda m: str(m.get("created_at") or ""))["run_id"] if mine else None
 
     def owns(self, run_id: str, owner: str) -> bool:
