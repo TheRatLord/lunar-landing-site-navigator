@@ -22,7 +22,7 @@ from .store import RunPaths, iter_events, list_runs, read_jsonl, run_integrity_p
 from .tools import default_registry, describe_tools
 
 app = typer.Typer(
-    add_completion=False, no_args_is_help=True, help="Crater analysis agent."
+    add_completion=False, no_args_is_help=True, help="Moonwalkr analysis agent."
 )
 
 ConfigOpt = Annotated[Path | None, typer.Option("--config", help="YAML file overriding AgentConfig fields.")]

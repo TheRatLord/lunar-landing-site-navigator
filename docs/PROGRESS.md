@@ -94,7 +94,7 @@ Spec `docs/superpowers/specs/2026-11-14-explorer-walk-design.md`, plan `docs/sup
 
 Commits on `main` since 2026-11-14 were checked against each other and against the live site.
 
-- [x] Planner on https://lunar.cinne.dev computes on Overview, Site and Compare; the evaluator, MCP server and
+- [x] Planner on https://moonwalkr.cinne.dev computes on Overview, Site and Compare; the evaluator, MCP server and
       `/review-site` skill are untouched
 - [x] Planner tabs are now Overview, Site (with the landing ellipse), Map and Compare, plus Setup and
       Evidence; the calendar became the Overview year strip, area analysis and the Sites tab were removed

@@ -96,7 +96,7 @@ def create_app(
             yield
 
     app = FastAPI(
-        title="Crater service",
+        title="Moonwalkr service",
         version=meta.SERVICE_VERSION,
         description=DESCRIPTION,
         openapi_tags=TAGS,

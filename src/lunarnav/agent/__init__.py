@@ -1,4 +1,4 @@
-"""Claude Agent SDK harness for the Crater analysis agent.
+"""Claude Agent SDK harness for the Moonwalkr analysis agent.
 
 Entry points: `AgentSession` (run, follow up, interrupt, resume), `ToolRegistry` and `agent_tool`
 (plug engine tools in), the event models in `lunarnav.agent.events`, and the CLI

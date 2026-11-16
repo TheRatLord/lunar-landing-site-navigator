@@ -65,12 +65,19 @@ export function TopBar({ nav, tools, modes = true }: { nav?: ReactNode; tools?: 
   return (
     <header className="topbar">
       <div className="tb-side">
-        <Link to="/" state={{ front: true }} className="brand" aria-label="Crater, home">
+        <Link to="/" state={{ front: true }} className="brand" aria-label="Moonwalkr, home">
           <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
-            <circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" strokeWidth="3" />
-            <path d="M22.55 11.41A8 8 0 0 1 11.41 22.55A16 16 0 0 0 22.55 11.41Z" fill="var(--c-sun)" />
+            <g transform="rotate(16 16 16)">
+              <clipPath id="brand-sole">
+                <path d="M15 2.5C19.5 2.5 22.5 6 22.5 11C22.5 14.5 21 16.5 21 19.5C21 22 22 23.5 22 25.5C22 28 19.8 29.5 17 29.5C14 29.5 12 28 12 25.5C12 23 12.5 21.5 12 19C11.5 16 9 14.5 9 10.5C9 5.5 11.5 2.5 15 2.5Z" />
+              </clipPath>
+              <g clipPath="url(#brand-sole)" fill="none" strokeWidth="3">
+                <path d="M6 4H26M6 8.6H26M6 13.2H26M6 17.8H26" stroke="currentColor" />
+                <path d="M6 22.4H26M6 27H26" stroke="var(--c-sun)" />
+              </g>
+            </g>
           </svg>
-          <span className="brand-text">Crater</span>
+          <span className="brand-text">Moonwalkr</span>
         </Link>
         {modes && <ModeSwitch />}
       </div>

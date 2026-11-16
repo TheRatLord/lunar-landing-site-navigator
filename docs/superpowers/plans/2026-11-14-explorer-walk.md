@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - `AGENTS.md`: no code comments, no tests. Verification is `bun run build` plus headless screenshots.
-- Before every push: `git fetch`, rebase onto `origin/main`, reconcile conflicts, then `uv sync --frozen` and `cd web && bun run build` pass. Push to `main`, never force-push. A push deploys https://lunar.cinne.dev.
+- Before every push: `git fetch`, rebase onto `origin/main`, reconcile conflicts, then `uv sync --frozen` and `cd web && bun run build` pass. Push to `main`, never force-push. A push deploys https://moonwalkr.cinne.dev.
 - Explorer must open and Walk must work with no engine reachable.
 - No NASA logos or agency insignia on any model. National flags are allowed.
 - URLs and code identifiers stay `learn`; only visible text says Explorer.

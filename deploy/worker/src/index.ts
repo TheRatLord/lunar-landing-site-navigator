@@ -2,6 +2,8 @@ interface Env {
   API: { fetch(input: Request): Promise<Response> };
 }
 
+const SITE = "moonwalkr.cinne.dev";
+const FORMER = "lunar.cinne.dev";
 const IMMUTABLE = /^\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/;
 
 async function forward(request: Request, env: Env, url: URL): Promise<Response> {
@@ -23,6 +25,9 @@ async function forward(request: Request, env: Env, url: URL): Promise<Response> 
 export default {
   async fetch(request: Request, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<Response> {
     const url = new URL(request.url);
+    if (url.hostname === FORMER) {
+      return Response.redirect(`https://${SITE}${url.pathname}${url.search}`, 308);
+    }
     if (request.method !== "GET" || !IMMUTABLE.test(url.pathname)) {
       return forward(request, env, url);
     }
