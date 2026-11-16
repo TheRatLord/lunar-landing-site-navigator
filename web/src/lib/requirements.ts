@@ -149,25 +149,32 @@ const byShare = (a: RequirementOutcome, b: RequirementOutcome): number => share(
 
 export interface VerdictHeadline {
   word: string;
-  lead: string | null;
-  notes: string[];
+  reason: string | null;
+}
+
+function overLimit(o: RequirementOutcome): string {
+  const name = requirementName(o.key, o.label);
+  const v = o.headingDependent ? (o.worstValue ?? o.value) : o.value;
+  const value = v !== null ? ` is ${against(v, o)}` : "";
+  if (o.limitMax !== null && (o.limitMin === null || (v !== null && v > o.limitMax))) return `${name}${value}, over the ${formatQuantity(o.limitMax, o.unit)} limit`;
+  if (o.limitMin !== null) return `${name}${value}, under the ${formatQuantity(o.limitMin, o.unit)} minimum`;
+  return `${name}${value}`;
 }
 
 export function verdictHeadline(overall: string, outcomes: readonly RequirementOutcome[]): VerdictHeadline | null {
   const s = verdictSentence(overall, outcomes);
   if (!s) return null;
   const n = outcomes.length;
-  if (overall === "pass") return { word: s.word, lead: n === 1 ? "Requirement met" : n === 2 ? "Both requirements met" : `All ${n} requirements met`, notes: [] };
+  if (overall === "pass") return { word: "Passes", reason: n === 1 ? "Meets the requirement" : n === 2 ? "Meets both requirements" : `Meets all ${n} requirements` };
   if (overall === "fail") {
     const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
     const first = failing[0];
-    if (!first) return { word: s.word, lead: null, notes: [] };
-    const b = failBits(first);
-    const count = `${failing.length} of ${n} requirement${n === 1 ? "" : "s"} failed`;
-    return { word: s.word, lead: b.lead, notes: b.limit ? [`Limit ${b.limit}`, count] : [count] };
+    if (!first) return { word: "Fails", reason: null };
+    const more = failing.length - 1;
+    return { word: "Fails", reason: `${overLimit(first)}${more > 0 ? `, and ${more} more requirement${more === 1 ? "" : "s"} fail${more === 1 ? "s" : ""}` : ""}` };
   }
   const m = s.detail ? /^(.*) \(limit (.*)\)$/.exec(s.detail) : null;
-  return m ? { word: s.word, lead: m[1]!, notes: [`Limit ${m[2]!}`] } : { word: s.word, lead: s.detail, notes: [] };
+  return { word: s.word, reason: m ? `${m[1]!}, close to the ${m[2]!.replace(/^[≤≥]\s*/, "")} limit` : s.detail };
 }
 
 export function verdictSentence(overall: string, outcomes: readonly RequirementOutcome[]): { word: string; detail: string | null } | null {
