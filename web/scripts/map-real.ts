@@ -42,12 +42,14 @@ async function settle(what: string, ok: Locator, failed: Locator): Promise<void>
 }
 
 export async function runRealSearch(page: Page, base: string): Promise<void> {
-  await page.goto(`${base}/map?radius=0.3`);
-  await page.locator("canvas.map-canvas").waitFor();
-  const find = page.getByRole("button", { name: /^Find sites.* km/ });
+  await page.goto(`${base}/overview?radius=0.3`);
+  const find = page.getByRole("button", { name: /^Search within/ });
   await find.waitFor({ timeout: 60_000 });
   await find.click();
-  const results = page.getByRole("complementary", { name: "Results" });
-  await settle("search", results.getByRole("list", { name: "Sites found" }).or(results.locator(".se-none")), results.locator(".se-error"));
+  const options = page.getByRole("region", { name: "Landing options" });
+  await settle("search", options.locator(".ot tbody tr").nth(1).or(options.getByText(/^No better spot/)), options.locator(".opts-search .opts-note"));
+  await page.getByRole("link", { name: "Map", exact: true }).click();
+  await page.locator("canvas.map-canvas").waitFor();
+  await page.getByRole("complementary", { name: "Selected landing" }).getByRole("list").nth(1).waitFor({ timeout: 60_000 });
   await page.waitForTimeout(400);
 }

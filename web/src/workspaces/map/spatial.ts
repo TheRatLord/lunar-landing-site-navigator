@@ -96,6 +96,7 @@ function ridgeAt(h: HorizonProfile, az: number): { el: number; dist: number | nu
 export interface BodyNow {
   body: "sun" | "earth";
   open: boolean;
+  behind: boolean;
   el_deg: number;
   az_deg: number;
   ridge_el_deg: number | null;
@@ -137,7 +138,8 @@ export function bodiesAt(sky: Sky, t: number): BodyNow[] {
     const pos = tr ? trackAt(tr, t) : null;
     if (!pos) return;
     const ridge = h ? ridgeAt(h, pos.az) : null;
-    out.push({ body, open: inside(ivs, t), el_deg: pos.el, az_deg: pos.az, ridge_el_deg: ridge?.el ?? null, ridge_m: sky.smooth ? null : (ridge?.dist ?? null) });
+    const behind = !sky.smooth && ridge !== null && pos.el < ridge.el;
+    out.push({ body, open: inside(ivs, t), behind, el_deg: pos.el, az_deg: pos.az, ridge_el_deg: ridge?.el ?? null, ridge_m: sky.smooth ? null : (ridge?.dist ?? null) });
   };
   add("sun", sky.sunTrack, sky.array, sky.sun);
   add("earth", sky.earthTrack, sky.antenna, sky.earth);
@@ -175,7 +177,7 @@ export function skyLayer(lat_deg: number, lon_deg: number, sky: Sky, bodies: rea
   }
   const rays: SkyRay[] = bodies.map((b) => {
     const w = bodyWords(b);
-    return { body: b.body, az_deg: b.az_deg, ridge_m: b.ridge_m, open: b.open, label: [w.state, w.detail] };
+    return { body: b.body, az_deg: b.az_deg, ridge_m: b.ridge_m, open: b.open, behind: b.behind, label: [w.state, w.detail] };
   });
   return { lat_deg, lon_deg, outline, rays };
 }

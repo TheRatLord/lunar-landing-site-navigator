@@ -130,6 +130,7 @@ export interface SkyRay {
   az_deg: number;
   ridge_m: number | null;
   open: boolean;
+  behind: boolean;
   label: string[];
 }
 
@@ -146,11 +147,15 @@ export interface SampleDot {
   state: "pass" | "marginal" | "fail" | "unknown";
 }
 
+type Affine = [number, number, number, number, number, number];
+
 interface GridImage {
   canvas: HTMLCanvasElement;
-  m: [number, number, number, number, number, number];
+  blocks: Array<{ i0: number; j0: number; w: number; h: number; m: Affine }>;
   faded: boolean;
 }
+
+const GRID_BLOCK = 24;
 
 export interface MapOptions {
   graticule: boolean;
@@ -501,45 +506,58 @@ export class MapEngine {
 
   private rebuildGrid(): void {
     const g = this.grid;
-    if (!g || g.nx < 1 || g.ny < 1) {
-      this.gridImage = null;
-      return;
-    }
-    const proj = this.basis.proj;
-    const steps = 6;
-    const rows: number[][] = [];
-    const xs: number[] = [];
-    const ys: number[] = [];
-    const [, lon0] = g.node((g.nx - 1) / 2, (g.ny - 1) / 2);
-    for (let a = 0; a <= steps; a++) {
-      for (let b = 0; b <= steps; b++) {
-        const i = ((g.nx - 1) * a) / steps;
-        const j = ((g.ny - 1) * b) / steps;
-        const [la, lo] = g.node(i, j);
-        const [mx, my] = proj.forward(la, lo);
-        if (!Number.isFinite(mx) || !Number.isFinite(my)) continue;
-        rows.push([i, j, 1]);
-        xs.push(proj.kind === "equirectangular" ? lon0 + ((((mx - lon0) % 360) + 540) % 360) - 180 : mx);
-        ys.push(my);
-      }
-    }
-    const fx = leastSquares3(rows, xs);
-    const fy = leastSquares3(rows, ys);
-    if (!fx || !fy) {
-      this.gridImage = null;
-      return;
-    }
+    this.gridImage = null;
+    if (!g || g.nx < 1 || g.ny < 1) return;
     const canvas = document.createElement("canvas");
     canvas.width = g.nx;
     canvas.height = g.ny;
     const c = canvas.getContext("2d");
-    if (!c) {
-      this.gridImage = null;
-      return;
-    }
+    if (!c) return;
     c.putImageData(new ImageData(new Uint8ClampedArray(g.rgba), g.nx, g.ny), 0, 0);
-    this.gridImage = { canvas, m: [fx[0], fx[1], fx[2], fy[0], fy[1], fy[2]], faded: g.faded };
+    const blocks: GridImage["blocks"] = [];
+    const place = (i0: number, j0: number, w: number, h: number): void => {
+      const m = this.fitBlock(g, i0 - 0.5, j0 - 0.5, i0 + w - 0.5, j0 + h - 0.5);
+      if (m) blocks.push({ i0, j0, w, h, m });
+      else if (w > 2 || h > 2) {
+        const hw = Math.ceil(w / 2);
+        const hh = Math.ceil(h / 2);
+        place(i0, j0, hw, hh);
+        if (w > hw) place(i0 + hw, j0, w - hw, hh);
+        if (h > hh) place(i0, j0 + hh, hw, h - hh);
+        if (w > hw && h > hh) place(i0 + hw, j0 + hh, w - hw, h - hh);
+      }
+    };
+    for (let j0 = 0; j0 < g.ny; j0 += GRID_BLOCK) {
+      for (let i0 = 0; i0 < g.nx; i0 += GRID_BLOCK) place(i0, j0, Math.min(GRID_BLOCK, g.nx - i0), Math.min(GRID_BLOCK, g.ny - j0));
+    }
+    this.gridImage = { canvas, blocks, faded: g.faded };
   }
+
+  private fitBlock(g: GridLayer, ia: number, ja: number, ib: number, jb: number): Affine | null {
+    const proj = this.basis.proj;
+    const [, lonC] = g.node((ia + ib) / 2, (ja + jb) / 2);
+    const pts: Array<[number, number, number, number]> = [];
+    for (let a = 0; a <= 4; a++) {
+      for (let b = 0; b <= 4; b++) {
+        const i = ia + ((ib - ia) * a) / 4;
+        const j = ja + ((jb - ja) * b) / 4;
+        const [la, lo] = g.node(i, j);
+        const [mx, my] = proj.forward(la, lo);
+        if (!Number.isFinite(mx) || !Number.isFinite(my)) return null;
+        pts.push([i, j, proj.kind === "equirectangular" ? lonC + ((((mx - lonC) % 360) + 540) % 360) - 180 : mx, my]);
+      }
+    }
+    const rows = pts.map(([i, j]) => [i, j, 1]);
+    const fx = leastSquares3(rows, pts.map((p) => p[2]));
+    const fy = leastSquares3(rows, pts.map((p) => p[3]));
+    if (!fx || !fy) return null;
+    const cell = Math.min(Math.hypot(fx[0], fy[0]), Math.hypot(fx[1], fy[1]));
+    if (!(cell > 0)) return null;
+    let worst = 0;
+    for (const [i, j, x, y] of pts) worst = Math.max(worst, Math.hypot(fx[0] * i + fx[1] * j + fx[2] - x, fy[0] * i + fy[1] * j + fy[2] - y));
+    return worst / cell > 0.5 ? null : [fx[0], fx[1], fx[2], fy[0], fy[1], fy[2]];
+  }
+
 
   private rebuildSites(): void {
     const { proj, grid } = this.basis;
@@ -1149,15 +1167,19 @@ export class MapEngine {
   private paintGrid(ctx: CanvasRenderingContext2D, f: Frame): void {
     const g = this.gridImage;
     if (!g) return;
-    const [a, b, c, d, e, k] = g.m;
     const u = f.upp;
     ctx.save();
-    ctx.transform(a / u, -d / u, b / u, -e / u, (c - f.x0) / u, (f.y0 - k) / u);
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = g.faded ? 0.45 : 1;
-    ctx.drawImage(g.canvas, -0.5, -0.5);
+    for (const k of g.blocks) {
+      const [a, b, c, d, e, h] = k.m;
+      ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      ctx.transform(a / u, -d / u, b / u, -e / u, (c - f.x0) / u, (f.y0 - h) / u);
+      ctx.drawImage(g.canvas, k.i0, k.j0, k.w, k.h, k.i0 - 0.5, k.j0 - 0.5, k.w, k.h);
+    }
     ctx.restore();
   }
+
 
   private paintSamples(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
     if (this.samples.length === 0) return;
@@ -1261,7 +1283,7 @@ export class MapEngine {
           ctx.strokeStyle = r.body === "sun" ? p.bg : color;
           ctx.stroke();
         }
-      } else if (at) {
+      } else if (at && r.behind) {
         for (const [col, lw] of [[p.bg, 5], [color, 2.4]] as const) {
           ctx.beginPath();
           ctx.moveTo(at.x - 6, at.y - 6);

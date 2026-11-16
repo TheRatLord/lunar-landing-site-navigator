@@ -119,7 +119,7 @@ function SiteSearch({ present }: { present: readonly SiteRef[] }) {
         <button type="button" className="cmp-add-opt cmp-add-top" onClick={() => freshTop.forEach(add)}>
           <Icon name="plus" size={14} />
           <span className="cmp-add-text">
-            <strong>{freshTop.length === 1 ? "Add the top site from Find sites" : `Add top ${freshTop.length} from Find sites`}</strong>
+            <strong>{freshTop.length === 1 ? "Add the top site from the search" : `Add top ${freshTop.length} from the search`}</strong>
           </span>
         </button>
       )}

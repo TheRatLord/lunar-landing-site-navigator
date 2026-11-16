@@ -16,7 +16,7 @@ function since(t: number, start: number): string {
   return `Landing + ${d > 0 ? `${d} d ` : ""}${h % 24} h`;
 }
 
-const pct = (v: number): string => `${Math.round(v * 100)}%`;
+const pct = (v: number): string => (v > 0 && v < 0.005 ? "<1%" : `${Math.round(v * 100)}%`);
 
 function Group({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
   return (
@@ -132,7 +132,7 @@ export function LandingPanel(p: LandingPanelProps) {
           <p className="mp-hint">
             {p.smooth
               ? "No terrain data here: the horizon is a smooth sphere, so no ridge line is drawn."
-              : "White lines trace the ridges that form the horizon. Each ray points at the Sun or Earth and ends with a cross where terrain hides it."}
+              : "White lines trace the ridges that form the horizon. Each ray points at the Sun or Earth; a cross marks the ridge where it sits above the body."}
           </p>
         </Group>
 

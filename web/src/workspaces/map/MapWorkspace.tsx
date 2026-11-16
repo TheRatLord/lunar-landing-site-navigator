@@ -129,7 +129,8 @@ export function MapWorkspace() {
   const skyMarks = useMemo(() => (s.skyLayer && site && sky && bodies ? skyLayer(site.lat_deg, site.lon_deg, sky, bodies) : null), [s.skyLayer, site, sky, bodies]);
 
   const ellRun = useEllipseRun();
-  const ellCurrent = ellRun.result !== null && samePlan(ellRun.resultBody?.scenario, doc);
+  const ellBody = ellRun.resultBody;
+  const ellCurrent = useMemo(() => ellRun.result !== null && samePlan(ellBody?.scenario, doc), [ellRun.result, ellBody, doc]);
   const samples = useMemo(() => (ellCurrent && ellipse ? sampleDots(ellRun.result?.samples) : []), [ellCurrent, ellipse, ellRun.result]);
 
   const popup = s.popup;

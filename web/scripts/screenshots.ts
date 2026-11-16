@@ -162,7 +162,7 @@ async function mapCurated(browser: Browser): Promise<void> {
     await withContext(browser, theme, SIZE_1440, theme, doc, async (open) => {
       const page = await open();
       await runRealSearch(page, BASE);
-      await page.getByRole("button", { name: "Zoom to plan site" }).click();
+      await page.getByRole("button", { name: "Zoom to the selected site" }).click();
       await fontsReady(page);
       await page.waitForFunction(() => document.querySelector<HTMLCanvasElement>("canvas.map-canvas")?.dataset["tilesLoading"] === "0", undefined, { timeout: 30_000 });
       await page.waitForTimeout(900);
@@ -175,14 +175,12 @@ async function mapCurated(browser: Browser): Promise<void> {
       if (/not yet validated/i.test(body)) errors.push(`${theme}: the page says "not yet validated"`);
       await page.screenshot({ path: `${CURATED}map-south-results-${theme}.png` });
 
-      const first = page.getByRole("list", { name: "Sites found" }).getByRole("button").first();
-      if ((await first.count()) > 0) {
-        await first.click();
-        await page.waitForTimeout(1000);
+      await page.mouse.click(box.x + box.width / 2 + 30, box.y + box.height / 2 - 30);
+      if (await page.locator(".map-popup").first().isVisible({ timeout: 2000 }).catch(() => false)) {
         await page.mouse.move(box.x + 24, box.y + box.height - 24);
         await page.waitForTimeout(300);
-        if (/E2E/.test(await page.locator("body").innerText())) errors.push(`${theme}: the result pin page shows an "E2E" name`);
-        await page.screenshot({ path: `${CURATED}map-south-pin-${theme}.png` });
+        if (/E2E/.test(await page.locator("body").innerText())) errors.push(`${theme}: the cell popup page shows an "E2E" name`);
+        await page.screenshot({ path: `${CURATED}map-south-cell-${theme}.png` });
       }
     });
   }
