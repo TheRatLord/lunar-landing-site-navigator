@@ -35,9 +35,15 @@ function describe(c: CursorInfo): Record<Cell["key"], string> {
   };
 }
 
-export function Readout({ bus }: { bus: CursorBus }) {
+export function Readout({ bus, at }: { bus: CursorBus; at?: (lat: number, lon: number) => string | null }) {
   const root = useRef<HTMLDListElement>(null);
   const refs = useRef<Partial<Record<Cell["key"], HTMLElement | null>>>({});
+  const extra = useRef<HTMLDivElement>(null);
+  const extraText = useRef<HTMLElement>(null);
+  const atRef = useRef(at);
+  useEffect(() => {
+    atRef.current = at;
+  });
 
   useEffect(() => {
     const paint = (c: CursorInfo | null) => {
@@ -48,6 +54,9 @@ export function Readout({ bus }: { bus: CursorBus }) {
         const el = refs.current[cell.key];
         if (el && el.textContent !== d[cell.key]) el.textContent = d[cell.key];
       }
+      const word = atRef.current?.(c.lat_deg, c.lon_deg) ?? null;
+      if (extra.current) extra.current.hidden = word === null;
+      if (extraText.current && word !== null && extraText.current.textContent !== word) extraText.current.textContent = word;
     };
     paint(bus.last);
     return bus.subscribe(paint);
@@ -65,6 +74,10 @@ export function Readout({ bus }: { bus: CursorBus }) {
           />
         </div>
       ))}
+      <div ref={extra} className="map-readout-cell" hidden>
+        <dt>Search</dt>
+        <dd ref={extraText} />
+      </div>
     </dl>
   );
 }

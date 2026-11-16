@@ -117,6 +117,41 @@ export interface SearchArea {
   faded?: boolean;
 }
 
+export interface GridLayer {
+  nx: number;
+  ny: number;
+  rgba: Uint8ClampedArray;
+  node(i: number, j: number): [number, number];
+  faded: boolean;
+}
+
+export interface SkyRay {
+  body: "sun" | "earth";
+  az_deg: number;
+  ridge_m: number | null;
+  open: boolean;
+  label: string[];
+}
+
+export interface SkyLayer {
+  lat_deg: number;
+  lon_deg: number;
+  outline: ReadonlyArray<ReadonlyArray<readonly [number, number]>> | null;
+  rays: SkyRay[];
+}
+
+export interface SampleDot {
+  lat_deg: number;
+  lon_deg: number;
+  state: "pass" | "marginal" | "fail" | "unknown";
+}
+
+interface GridImage {
+  canvas: HTMLCanvasElement;
+  m: [number, number, number, number, number, number];
+  faded: boolean;
+}
+
 export interface MapOptions {
   graticule: boolean;
   sites: boolean;
@@ -138,6 +173,26 @@ interface Hit {
   y: number;
   r: number;
   ids?: readonly string[];
+}
+
+function leastSquares3(rows: readonly number[][], v: readonly number[]): [number, number, number] | null {
+  const a = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const b = [0, 0, 0];
+  rows.forEach((r, k) => {
+    for (let i = 0; i < 3; i++) {
+      b[i]! += r[i]! * v[k]!;
+      for (let j = 0; j < 3; j++) a[i * 3 + j]! += r[i]! * r[j]!;
+    }
+  });
+  const det = (m: number[]) => m[0]! * (m[4]! * m[8]! - m[5]! * m[7]!) - m[1]! * (m[3]! * m[8]! - m[5]! * m[6]!) + m[2]! * (m[3]! * m[7]! - m[4]! * m[6]!);
+  const d = det(a);
+  if (!Number.isFinite(d) || Math.abs(d) < 1e-12) return null;
+  const col = (i: number) => {
+    const m = [...a];
+    for (let r = 0; r < 3; r++) m[r * 3 + i] = b[r]!;
+    return det(m) / d;
+  };
+  return [col(0), col(1), col(2)];
 }
 
 const TILE_CAPACITY = 480;
@@ -182,6 +237,10 @@ export class MapEngine {
   private pinsFaded = false;
   private selectedPin: number | null = null;
   private measure: LatLon[] = [];
+  private grid: GridLayer | null = null;
+  private gridImage: GridImage | null = null;
+  private sky: SkyLayer | null = null;
+  private samples: readonly SampleDot[] = [];
   private mode: MapMode = "choose";
   private pal: Palette | null = null;
   private kindColors: Record<SiteKind, string> | null = null;
@@ -407,7 +466,21 @@ export class MapEngine {
     this.invalidate();
   }
 
+  setGrid(g: GridLayer | null): void {
+    this.grid = g;
+    this.rebuildGrid();
+    this.invalidate();
+  }
 
+  setSky(s: SkyLayer | null): void {
+    this.sky = s;
+    this.invalidate();
+  }
+
+  setSamples(d: readonly SampleDot[]): void {
+    this.samples = d;
+    this.invalidate();
+  }
 
   setMeasure(points: LatLon[]): void {
     this.measure = points;
@@ -423,6 +496,49 @@ export class MapEngine {
   private rebuildAll(): void {
     this.rebuildSites();
     this.rebuildScenario();
+    this.rebuildGrid();
+  }
+
+  private rebuildGrid(): void {
+    const g = this.grid;
+    if (!g || g.nx < 1 || g.ny < 1) {
+      this.gridImage = null;
+      return;
+    }
+    const proj = this.basis.proj;
+    const steps = 6;
+    const rows: number[][] = [];
+    const xs: number[] = [];
+    const ys: number[] = [];
+    const [, lon0] = g.node((g.nx - 1) / 2, (g.ny - 1) / 2);
+    for (let a = 0; a <= steps; a++) {
+      for (let b = 0; b <= steps; b++) {
+        const i = ((g.nx - 1) * a) / steps;
+        const j = ((g.ny - 1) * b) / steps;
+        const [la, lo] = g.node(i, j);
+        const [mx, my] = proj.forward(la, lo);
+        if (!Number.isFinite(mx) || !Number.isFinite(my)) continue;
+        rows.push([i, j, 1]);
+        xs.push(proj.kind === "equirectangular" ? lon0 + ((((mx - lon0) % 360) + 540) % 360) - 180 : mx);
+        ys.push(my);
+      }
+    }
+    const fx = leastSquares3(rows, xs);
+    const fy = leastSquares3(rows, ys);
+    if (!fx || !fy) {
+      this.gridImage = null;
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = g.nx;
+    canvas.height = g.ny;
+    const c = canvas.getContext("2d");
+    if (!c) {
+      this.gridImage = null;
+      return;
+    }
+    c.putImageData(new ImageData(new Uint8ClampedArray(g.rgba), g.nx, g.ny), 0, 0);
+    this.gridImage = { canvas, m: [fx[0], fx[1], fx[2], fy[0], fy[1], fy[2]], faded: g.faded };
   }
 
   private rebuildSites(): void {
@@ -902,8 +1018,10 @@ export class MapEngine {
     edge.addColorStop(1, p.vignette);
     ctx.fillStyle = edge;
     ctx.fillRect(0, 0, w, h);
+    this.paintGrid(ctx, f);
     const gridLabels = this.showGraticule ? this.paintGraticule(ctx, f, p) : [];
     this.paintScenarioEllipse(ctx, f, p);
+    this.paintSamples(ctx, f, p);
     const taken = this.paintSites(ctx, f, p);
     ctx.font = LABEL_FONT;
     for (const l of dropOverlaps(gridLabels, taken)) {
@@ -911,6 +1029,7 @@ export class MapEngine {
       haloText(ctx, l.text, l.x, l.y, p.text2, p.bg, l.align, l.baseline);
     }
     this.paintArea(ctx, f, p);
+    this.paintSky(ctx, f, p);
     this.paintAlternatives(ctx, f, p);
     this.paintPins(ctx, f, p);
     this.paintProbe(ctx, f, p);
@@ -1025,6 +1144,145 @@ export class MapEngine {
       ctx.stroke();
     }
     return g.labels;
+  }
+
+  private paintGrid(ctx: CanvasRenderingContext2D, f: Frame): void {
+    const g = this.gridImage;
+    if (!g) return;
+    const [a, b, c, d, e, k] = g.m;
+    const u = f.upp;
+    ctx.save();
+    ctx.transform(a / u, -d / u, b / u, -e / u, (c - f.x0) / u, (f.y0 - k) / u);
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = g.faded ? 0.45 : 1;
+    ctx.drawImage(g.canvas, -0.5, -0.5);
+    ctx.restore();
+  }
+
+  private paintSamples(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
+    if (this.samples.length === 0) return;
+    const pos = this.scenarioPos();
+    const e = this.scenario?.ellipse;
+    if (!pos || !e || Math.max(e.semi_major_m, e.semi_minor_m) / (f.upp * this.basis.proj.groundPerUnit(pos.lat).x) < 24) return;
+    const fill: Record<SampleDot["state"], string> = { pass: p.pass, marginal: p.marginal, fail: p.fail, unknown: p.text3 };
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = p.bg;
+    for (const d of this.samples) {
+      const pt = this.onScreen(f, d.lat_deg, d.lon_deg, 4);
+      if (!pt) continue;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 2.6, 0, Math.PI * 2);
+      ctx.fillStyle = fill[d.state];
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  private trace(ctx: CanvasRenderingContext2D, f: Frame, lat: number, lon: number, az: number, from_m: number, to_m: number): { x: number; y: number } | null {
+    const proj = this.basis.proj;
+    const n = 24;
+    let end: { x: number; y: number } | null = null;
+    for (let i = 0; i <= n; i++) {
+      const [la, lo] = destination(lat, lon, az, from_m + ((to_m - from_m) * i) / n);
+      const [mx, my] = proj.forward(la, lo);
+      if (!Number.isFinite(mx) || !Number.isFinite(my)) continue;
+      const pt = { x: toScreenX(f, mx), y: toScreenY(f, my) };
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+      end = pt;
+    }
+    return end;
+  }
+
+  private paintSky(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {
+    const s = this.sky;
+    if (!s) return;
+    const proj = this.basis.proj;
+    if (s.outline && s.outline.length > 0) {
+      ctx.beginPath();
+      for (const run of s.outline) {
+        let prevX = NaN;
+        let started = false;
+        for (const [la, lo] of run) {
+          const [mx, my] = proj.forward(la, lo);
+          if (!Number.isFinite(mx) || !Number.isFinite(my)) continue;
+          const x = toScreenX(f, mx);
+          const y = toScreenY(f, my);
+          if (!started || (proj.kind === "equirectangular" && Math.abs(x - prevX) > this.w / 2)) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+          started = true;
+          prevX = x;
+        }
+      }
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.strokeStyle = p.bg;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.strokeStyle = p.text;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.lineCap = "butt";
+    }
+    const [cx, cy] = proj.forward(s.lat_deg, s.lon_deg);
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return;
+    const reach_m = 150 * f.upp * proj.groundPerUnit(s.lat_deg).x;
+    for (const r of s.rays) {
+      const color = r.body === "sun" ? p.sun : p.earth;
+      const ridge = r.ridge_m !== null && Number.isFinite(r.ridge_m) && r.ridge_m > 0 ? r.ridge_m : null;
+      const near = ridge ?? reach_m;
+      ctx.beginPath();
+      const at = this.trace(ctx, f, s.lat_deg, s.lon_deg, r.az_deg, 0, near);
+      ctx.lineCap = "round";
+      ctx.strokeStyle = p.bg;
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.4;
+      ctx.globalAlpha = r.open ? 1 : 0.7;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      let tip = at;
+      if (r.open) {
+        const far = Math.max(near * 1.35, near + reach_m * 0.5);
+        ctx.beginPath();
+        tip = this.trace(ctx, f, s.lat_deg, s.lon_deg, r.az_deg, near, far) ?? at;
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        if (tip) {
+          ctx.beginPath();
+          ctx.arc(tip.x, tip.y, 6, 0, Math.PI * 2);
+          ctx.fillStyle = r.body === "sun" ? color : p.bg;
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = r.body === "sun" ? p.bg : color;
+          ctx.stroke();
+        }
+      } else if (at) {
+        for (const [col, lw] of [[p.bg, 5], [color, 2.4]] as const) {
+          ctx.beginPath();
+          ctx.moveTo(at.x - 6, at.y - 6);
+          ctx.lineTo(at.x + 6, at.y + 6);
+          ctx.moveTo(at.x + 6, at.y - 6);
+          ctx.lineTo(at.x - 6, at.y + 6);
+          ctx.strokeStyle = col;
+          ctx.lineWidth = lw;
+          ctx.stroke();
+        }
+      }
+      ctx.lineCap = "butt";
+      if (tip && r.label.length > 0) {
+        const dx = tip.x - toScreenX(f, cx);
+        const dy = tip.y - toScreenY(f, cy);
+        const n = Math.hypot(dx, dy) || 1;
+        const lx = clamp(tip.x + (dx / n) * 34, 90, this.w - 90);
+        const ly = clamp(tip.y + (dy / n) * 22, 76, this.h - 76);
+        plateText(ctx, r.label, lx, ly, p, this.w, this.h, color, [this.w - 80, 0, this.w, 80]);
+      }
+    }
   }
 
   private paintScenarioEllipse(ctx: CanvasRenderingContext2D, f: Frame, p: Palette): void {

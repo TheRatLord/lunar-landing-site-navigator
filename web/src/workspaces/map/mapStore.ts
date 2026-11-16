@@ -14,6 +14,8 @@ export interface MapStore {
   baseOpacity: number;
   graticule: boolean;
   sites: boolean;
+  searchLayer: boolean;
+  skyLayer: boolean;
   kinds: ReadonlySet<SiteKind>;
   popup: Popup | null;
   probe: LatLon | null;
@@ -36,6 +38,8 @@ export const useMapStore = create<MapStore>((set, get) => ({
   baseOpacity: 0.55,
   graticule: true,
   sites: true,
+  searchLayer: true,
+  skyLayer: true,
   kinds: new Set(KIND_ORDER),
   popup: null,
   probe: null,

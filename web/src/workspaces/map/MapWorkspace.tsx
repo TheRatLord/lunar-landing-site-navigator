@@ -1,24 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ellipseBody } from "../../api/ellipse";
+import { SITE_ENDPOINTS, type EvaluateResult } from "../../api/site";
 import { terrainApi } from "../../api/terrain";
 import type { SearchRow } from "../../api/search";
+import { useAnalysis } from "../../api/useAnalysis";
 import { useLoad } from "../../api/useLoad";
 import { ServiceNotice } from "../../components/ServiceNotice";
-import { IconButton } from "../../components/ui/Button";
-import { parseUtc } from "../../lib/time";
+import { siteLabel } from "../../lib/siteName";
+import { distance_m } from "../../lib/projection";
+import { parseUtc, toIsoUtc } from "../../lib/time";
 import { catalogApi, type SiteEntry } from "../../scenario/api";
 import { useAlternatives, useOverlays } from "../../scenario/alternatives";
-import { movePlanSite, useScenario } from "../../scenario/store";
+import { chooseSite } from "../../scenario/searchAnchor";
+import { addPlanEllipse, movePlanSite, useScenario } from "../../scenario/store";
 import { whenText } from "../../scenario/when";
-import { useFindPlan } from "../search/findSites";
-import { ResultsPanel } from "../search/ResultsPanel";
+import { useApp } from "../../state/store";
+import { ellipseParams, samePlan, useEllipseRun } from "../ellipse/store";
+import { stayBody, stayOf } from "../home/survey";
+import { useFindOutOfDate, useFindPlan } from "../search/findSites";
+import { adaptLattice, cellAt, cellWords } from "../search/lattice";
 import { useSearchResults } from "../search/results";
 import "../../styles/map.css";
 import { TILESET_OF_VIEW } from "./basis";
 import { CursorBus } from "./cursorBus";
-import { leftText } from "./eta";
 import type { ActiveLayer, MapEngine, MapOptions, ScenarioMark, SearchArea } from "./engine";
 import { KindGlyph } from "./KindGlyph";
+import { LandingPanel } from "./LandingPanel";
 import { LayersPanel } from "./LayersPanel";
 import { MapCanvas, type TileProblem } from "./MapCanvas";
 import { MapPopup, PlaceActions, SiteSources, SiteTitleIcon, siteFacts } from "./MapPopup";
@@ -28,6 +36,7 @@ import { Readout } from "./Readout";
 import { announceSiteMove, pointName, restoreSite, siteSnapshot } from "./siteMove";
 import { KIND_ORDER, KIND_STYLE } from "./sites";
 import { Toolbar } from "./Toolbar";
+import { adaptSky, bodiesAt, cellCounts, gridLayer, sampleDots, skyLayer } from "./spatial";
 import { pointFromUrl, viewKindFor, type ViewKind } from "./urlState";
 import type { MapView } from "./view";
 
@@ -79,6 +88,7 @@ export function MapWorkspace() {
 
   const plan = useFindPlan();
   const search = useSearchResults();
+  const searchStale = useFindOutOfDate(plan);
 
   const tilesetList = tilesets.state.status === "ready" ? tilesets.state.data.tilesets : null;
   const renderVersion = tilesets.state.status === "ready" ? tilesets.state.data.render_version : "";
@@ -90,23 +100,37 @@ export function MapWorkspace() {
   const scenario = useMemo<ScenarioMark | null>(() => (site ? { lat_deg: site.lat_deg, lon_deg: site.lon_deg, name: site.name ?? "", ellipse: ellipse ?? null } : null), [site, ellipse]);
   const layers = useMemo<ActiveLayer[]>(() => (s.base === "relief" ? [{ id: "relief", opacity: 1 }] : [{ id: "relief", opacity: 1 }, { id: s.base, opacity: s.baseOpacity }]), [s.base, s.baseOpacity]);
   const options = useMemo<MapOptions>(() => ({ graticule: s.graticule, sites: s.sites, compass: true }), [s.graticule, s.sites]);
-  const pins = useMemo(() => (search.shown ? pinMarks(search.candidates) : []), [search.shown, search.candidates]);
   const running = search.phase === "running";
-  const current = search.resultBody !== null && plan.body !== null && JSON.stringify(search.resultBody) === JSON.stringify(plan.body);
-  const stale = !running && search.result !== null && !current;
+  const showSearch = s.searchLayer && search.shown;
+  const lattice = useMemo(() => (search.result && search.resultBody ? adaptLattice(search.result, search.resultBody) : null), [search.result, search.resultBody]);
+  const grid = useMemo(() => (showSearch && lattice ? gridLayer(lattice, searchStale) : null), [showSearch, lattice, searchStale]);
+  const counts = useMemo(() => (lattice ? cellCounts(lattice) : null), [lattice]);
+  const pins = useMemo(() => (showSearch ? pinMarks(search.candidates) : []), [showSearch, search.candidates]);
   const areas = useMemo<SearchArea[]>(() => {
-    const out: SearchArea[] = [];
-    const circle = (body: typeof search.body, faded: boolean) => {
-      const r = body?.region;
-      if (r && typeof r.radius_m === "number") out.push({ lat_deg: r.lat_deg, lon_deg: r.lon_deg, radius_m: r.radius_m, faded });
-    };
-    if (running) circle(search.body, false);
-    else {
-      if (search.shown && search.result) circle(search.resultBody, stale);
-      if (!current) circle(plan.body, false);
-    }
-    return out;
-  }, [running, search.body, search.resultBody, search.result, search.shown, plan.body, stale, current]);
+    const r = (running ? search.body : search.resultBody)?.region;
+    return s.searchLayer && r && typeof r.radius_m === "number" ? [{ lat_deg: r.lat_deg, lon_deg: r.lon_deg, radius_m: r.radius_m, faded: !running && searchStale }] : [];
+  }, [running, search.body, search.resultBody, searchStale, s.searchLayer]);
+  const cellWord = useCallback(
+    (la: number, lo: number) => {
+      if (!showSearch || !lattice) return null;
+      const c = cellAt(lattice, la, lo);
+      return c ? cellWords(c).title : null;
+    },
+    [showSearch, lattice],
+  );
+
+  const stay = useMemo(() => (doc ? stayOf(doc) : null), [doc]);
+  const skyReq = useMemo(() => (doc ? stayBody(doc) : null), [doc]);
+  const skyRun = useAnalysis<EvaluateResult>(SITE_ENDPOINTS.evaluate, skyReq, { debounceMs: 250 });
+  const sky = useMemo(() => (skyRun.result && !skyRun.stale && stay ? adaptSky(skyRun.result, stay.start_ms, stay.end_ms) : null), [skyRun.result, skyRun.stale, stay]);
+  const timeMs = useApp((st) => st.timeMs);
+  const t = stay ? Math.min(stay.end_ms, Math.max(stay.start_ms, timeMs)) : timeMs;
+  const bodies = useMemo(() => (sky ? bodiesAt(sky, t) : null), [sky, t]);
+  const skyMarks = useMemo(() => (s.skyLayer && site && sky && bodies ? skyLayer(site.lat_deg, site.lon_deg, sky, bodies) : null), [s.skyLayer, site, sky, bodies]);
+
+  const ellRun = useEllipseRun();
+  const ellCurrent = ellRun.result !== null && samePlan(ellRun.resultBody?.scenario, doc);
+  const samples = useMemo(() => (ellCurrent && ellipse ? sampleDots(ellRun.result?.samples) : []), [ellCurrent, ellipse, ellRun.result]);
 
   const popup = s.popup;
   const popupSite = popup?.kind === "site" ? (allSites?.find((x) => x.id === popup.id) ?? null) : null;
@@ -133,7 +157,11 @@ export function MapWorkspace() {
 
   const fitSite = useCallback(() => {
     const sc = useScenario.getState().doc;
-    if (sc) goTo(sc.site.lat_deg, sc.site.lon_deg, SITE_RADIUS_M);
+    if (!sc) return;
+    const st = useSearchResults.getState();
+    const r = st.shown && st.result ? st.resultBody?.region : null;
+    const covers = r && typeof r.radius_m === "number" && distance_m(r.lat_deg, r.lon_deg, sc.site.lat_deg, sc.site.lon_deg) <= r.radius_m;
+    goTo(sc.site.lat_deg, sc.site.lon_deg, covers && r.radius_m ? Math.max(r.radius_m * 1.6, 3000) : SITE_RADIUS_M);
   }, [goTo]);
 
   const framed = useRef(false);
@@ -181,11 +209,12 @@ export function MapWorkspace() {
 
   const openSite = useCallback(() => navigate("/site"), [navigate]);
   const adoptSite = useCallback(
-    (next: { lat_deg: number; lon_deg: number; name: string; catalog_id: string | null }, landing_utc?: string) => {
+    (next: { lat_deg: number; lon_deg: number; name: string; catalog_id: string | null }, landing_utc?: string, choice = false) => {
       const prev = siteSnapshot();
       if (!prev) return;
       useMapStore.getState().pushUndo(prev);
-      movePlanSite(next);
+      if (choice) chooseSite(next);
+      else movePlanSite(next);
       if (landing_utc && landing_utc !== prev.landing_utc) useScenario.getState().edit(["landing_utc"], landing_utc);
       announceSiteMove(prev, openSite);
     },
@@ -197,9 +226,9 @@ export function MapWorkspace() {
   const onSetSite = useCallback(
     (la: number, lo: number) => {
       if (useMapStore.getState().popup) return closePopup();
-      adoptSite({ lat_deg: round5(la), lon_deg: round5(lo), name: pointName(la, lo), catalog_id: null });
+      useMapStore.getState().set({ probe: { lat_deg: la, lon_deg: lo }, popup: { kind: "probe" } });
     },
-    [closePopup, adoptSite],
+    [closePopup],
   );
 
   const pickSite = useCallback((id: string | null) => useMapStore.getState().set({ popup: id ? { kind: "site", id } : null, probe: null }), []);
@@ -220,25 +249,8 @@ export function MapWorkspace() {
     },
     [goTo],
   );
-  const focusPin = useCallback(
-    (r: SearchRow) => {
-      pickPin(r.rank);
-      const e = engineRef.current;
-      if (e && !e.screenOf(r.lat_deg, r.lon_deg)) goTo(r.lat_deg, r.lon_deg, 4000);
-    },
-    [goTo, pickPin],
-  );
 
-  const runFind = useCallback(() => {
-    const st = useSearchResults.getState();
-    useMapStore.getState().set({ dockOpen: true });
-    if (!plan.body || st.phase === "running") return;
-    if (st.resultBody && JSON.stringify(st.resultBody) === JSON.stringify(plan.body)) return;
-    if (useMapStore.getState().popup?.kind === "pin") useMapStore.getState().set({ popup: null });
-    st.run(plan.body, plan.guessS);
-    const r = plan.body.region;
-    if (typeof r.radius_m === "number") goTo(r.lat_deg, r.lon_deg, r.radius_m * 1.4);
-  }, [plan, goTo]);
+
 
   const undo = useCallback(() => {
     const snap = useMapStore.getState().popUndo();
@@ -284,23 +296,16 @@ export function MapWorkspace() {
   const tsError = tilesets.state.status === "error" ? tilesets.state.error : null;
   const inCompare = (id: string) => alternatives.some((a) => a.id === id);
   const isPlanAt = (la: number, lo: number) => site !== undefined && Math.abs(site.lat_deg - la) < 1e-6 && Math.abs(site.lon_deg - lo) < 1e-6;
-  const startedMs = search.startedMs;
-  const findLabel =
-    running && startedMs !== null
-      ? { label: "Searching", note: () => leftText(startedMs, useSearchResults.getState().progress, search.guessS), busy: true, stale: false }
-      : {
-          label: "Find sites",
-          note: () => (current ? `${search.candidates.length} found` : stale ? "out of date" : plan.body ? `${plan.radiusKm} km` : null),
-          hint: plan.body && !current ? `Search within ${plan.radiusKm} km of the plan site, about ${plan.about}` : undefined,
-          busy: false,
-          stale,
-        };
   const pinName = (r: SearchRow) => pointName(r.lat_deg, r.lon_deg);
-  const hasSearch = running || search.phase === "error" || search.result !== null;
-  const dockShown = s.dockOpen && hasSearch;
+  const dockShown = s.dockOpen && doc !== null;
   const pinId = (r: SearchRow) => `search-${r.lat_deg.toFixed(5)}_${r.lon_deg.toFixed(5)}`;
   const probe = s.probe;
   const probeIsBlocker = !!(start.blocker && probe && start.point && probe.lat_deg === start.point.lat_deg && probe.lon_deg === start.point.lon_deg);
+  const probeCell = probe && showSearch && lattice ? cellAt(lattice, probe.lat_deg, probe.lon_deg) : null;
+  const probeWords = probeCell ? cellWords(probeCell) : null;
+  const probeLanding = probeCell?.status === "full" && probeCell.state !== "fail" ? probeCell.best_ms : null;
+  const planLanding = parseUtc(doc?.landing_utc ?? "");
+  const probePlace = probe ? { lat_deg: round5(probe.lat_deg), lon_deg: round5(probe.lon_deg), name: pointName(probe.lat_deg, probe.lon_deg), catalog_id: null } : null;
 
   return (
     <div className="map-ws" data-dock={dockShown ? "open" : "closed"}>
@@ -323,7 +328,7 @@ export function MapWorkspace() {
               pins={pins}
               selectedPin={popupPin?.rank ?? null}
               area={areas}
-              pinsFaded={stale}
+              pinsFaded={searchStale}
               probe={probe}
               measure={s.measure}
               mode={s.mode}
@@ -338,6 +343,10 @@ export function MapWorkspace() {
                 viewRef.current = { cx: v.cx, cy: v.cy, zoom: v.zoom };
               }}
               onTileProblem={setTileProblem}
+              grid={grid}
+              sky={skyMarks}
+              samples={samples}
+              label="Lunar map of the selected landing. Click a point to inspect it, drag to pan, scroll to zoom."
             />
             <Toolbar
               kind={kind}
@@ -346,7 +355,6 @@ export function MapWorkspace() {
               canFitSite={scenario !== null}
               sites={allSites ?? []}
               searchRef={searchRef}
-              find={findLabel}
               onKind={(k) => {
                 showKind(k);
                 if (k === "global") engine?.fitRegion();
@@ -356,10 +364,9 @@ export function MapWorkspace() {
               onMeasure={() => s.set({ mode: s.mode === "measure" ? "choose" : "measure", measure: [] })}
               onSite={focusSite}
               onPoint={focusPoint}
-              onFind={runFind}
               layers={<LayersPanel tileset={tileset} />}
               dockOpen={dockShown}
-              canDock={hasSearch}
+              canDock={doc !== null}
               onDock={() => s.set({ dockOpen: true })}
             />
             {tsError && (
@@ -372,7 +379,7 @@ export function MapWorkspace() {
                 <p className="map-warn">Some map tiles failed to load</p>
               </div>
             )}
-            <Readout bus={bus} />
+            <Readout bus={bus} at={cellWord} />
             {s.sites && (
               <div className="map-float map-float-br map-key" role="group" aria-label="Site kinds">
                 {KIND_ORDER.filter((k) => (kindCounts.get(k) ?? 0) > 0).map((k) => (
@@ -417,28 +424,60 @@ export function MapWorkspace() {
                 <p className="map-popup-facts">{pointName(probe.lat_deg, probe.lon_deg)}</p>
               </MapPopup>
             )}
-            {popup?.kind === "probe" && probe && !probeIsBlocker && (
-              <MapPopup engine={engine} lat={probe.lat_deg} lon={probe.lon_deg} title={pointName(probe.lat_deg, probe.lon_deg)} onClose={closePopup}>
+            {popup?.kind === "probe" && probe && probePlace && !probeIsBlocker && (
+              <MapPopup engine={engine} lat={probe.lat_deg} lon={probe.lon_deg} title={probeWords?.title ?? probePlace.name} onClose={closePopup}>
+                {probeWords && <p className="map-popup-facts">{probePlace.name}</p>}
+                {probeWords?.lines.map((l) => (
+                  <p key={l} className="map-popup-facts">
+                    {l}
+                  </p>
+                ))}
                 <PlaceActions
-                  isPlan={isPlanAt(round5(probe.lat_deg), round5(probe.lon_deg))}
+                  isPlan={isPlanAt(probePlace.lat_deg, probePlace.lon_deg) && (probeLanding === null || probeLanding === planLanding)}
                   inCompare={inCompare(`point-${probe.lat_deg.toFixed(5)}_${probe.lon_deg.toFixed(5)}`)}
-                  onUse={() => adoptSite({ lat_deg: round5(probe.lat_deg), lon_deg: round5(probe.lon_deg), name: pointName(probe.lat_deg, probe.lon_deg), catalog_id: null })}
-                  onCompare={() => addAlternative({ id: `point-${probe.lat_deg.toFixed(5)}_${probe.lon_deg.toFixed(5)}`, name: pointName(probe.lat_deg, probe.lon_deg), lat_deg: probe.lat_deg, lon_deg: probe.lon_deg, catalog_id: null })}
+                  onUseWithLanding={probeLanding !== null && probeLanding !== planLanding ? () => adoptSite(probePlace, toIsoUtc(probeLanding), true) : undefined}
+                  onUse={() => adoptSite(probePlace, undefined, true)}
+                  onCompare={() => addAlternative({ id: `point-${probe.lat_deg.toFixed(5)}_${probe.lon_deg.toFixed(5)}`, name: probePlace.name, lat_deg: probe.lat_deg, lon_deg: probe.lon_deg, catalog_id: null })}
                 />
               </MapPopup>
             )}
           </div>
         </div>
-        {dockShown && (
-          <aside className="map-dock" aria-label="Results">
-            <div className="map-dock-head">
-              <h2 className="map-dock-title">Results</h2>
-              <IconButton icon="panelRight" label="Hide panel" shortcut="L" size="sm" onClick={() => s.set({ dockOpen: false })} />
-            </div>
-            <div className="map-tabpanel">
-              <ResultsPanel plan={plan} selected={popupPin?.rank ?? null} onRun={runFind} onPick={focusPin} />
-            </div>
-          </aside>
+        {dockShown && doc && stay && (
+          <LandingPanel
+            name={siteLabel(doc.site.name ?? "") || pointName(doc.site.lat_deg, doc.site.lon_deg)}
+            start_ms={stay.start_ms}
+            t_ms={t}
+            bodies={bodies}
+            smooth={sky?.smooth ?? false}
+            skyError={skyRun.phase === "error"}
+            search={
+              lattice && counts && search.resultBody
+                ? {
+                    counts,
+                    radius_m: search.resultBody.region.radius_m ?? null,
+                    spacing_m: lattice.spacing_m,
+                    centre: siteLabel(search.resultBody.scenario?.site?.name ?? "") || pointName(search.resultBody.region.lat_deg, search.resultBody.region.lon_deg),
+                    stale: searchStale,
+                  }
+                : null
+            }
+            searching={running}
+            ellipse={{
+              set: !!ellipse,
+              phase: ellRun.phase,
+              progress: ellRun.progress,
+              result: ellCurrent ? ellRun.result : null,
+              points: ellRun.points,
+              error: ellRun.phase === "error" ? (ellRun.error?.message ?? "The ellipse check failed.") : null,
+            }}
+            onHide={() => s.set({ dockOpen: false })}
+            onOverview={() => navigate("/overview")}
+            onSite={openSite}
+            onAddEllipse={addPlanEllipse}
+            onCheckEllipse={() => ellRun.run(ellipseBody(doc, ellipseParams(ellRun.points), "auto"))}
+            onEllipseDetails={() => navigate("/site/ellipse")}
+          />
         )}
       </div>
     </div>

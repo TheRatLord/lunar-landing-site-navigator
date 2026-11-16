@@ -28,6 +28,8 @@ export function LayersPanel({ tileset }: { tileset: TilesetDef | null }) {
       </section>
       <section className="map-group" aria-label="Overlays">
         <ul className="map-rows">
+          <LayerRow on={s.searchLayer} label="Search result" onChange={(searchLayer) => s.set({ searchLayer })} />
+          <LayerRow on={s.skyLayer} label="Horizon, Sun and Earth" onChange={(skyLayer) => s.set({ skyLayer })} />
           <LayerRow on={s.graticule} label="Graticule" onChange={(graticule) => s.set({ graticule })} />
           <LayerRow on={s.sites} label="Catalogue sites" onChange={(sites) => s.set({ sites })} />
         </ul>

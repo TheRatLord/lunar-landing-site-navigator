@@ -21,6 +21,8 @@ export const PALETTE_TOKENS = {
   fail: "c-fail",
   marginal: "c-marginal",
   network: "c-network",
+  sun: "c-sun",
+  earth: "c-earth",
   dim: "map-dim",
   vignette: "map-vignette",
 };

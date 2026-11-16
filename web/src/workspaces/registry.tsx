@@ -59,6 +59,7 @@ const MAP = workspace({
   label: "Map",
   icon: "map",
   hotkey: "3",
+  time: true,
   load: () => import("./map/MapWorkspace").then((m) => m.MapWorkspace),
 });
 const COMPARE = workspace({

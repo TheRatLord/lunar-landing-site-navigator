@@ -6,12 +6,14 @@ import type { SiteEntry } from "../../scenario/api";
 import type { BlockerMark } from "../../scenario/alternatives";
 import type { CursorBus } from "./cursorBus";
 import type { PinMark } from "./overlays";
-import { MapEngine, type ActiveLayer, type AltMark, type HoverTarget, type MapMode, type MapOptions, type ScenarioMark, type SearchArea } from "./engine";
+import { MapEngine, type ActiveLayer, type AltMark, type GridLayer, type HoverTarget, type MapMode, type MapOptions, type SampleDot, type ScenarioMark, type SearchArea, type SkyLayer } from "./engine";
 import type { LatLon } from "./measure";
 import { clipName } from "./paint";
 import { KIND_STYLE } from "./sites";
 import type { ViewKind } from "./urlState";
 import type { MapView } from "./view";
+
+const NO_SAMPLES: readonly SampleDot[] = [];
 
 export interface TileProblem {
   count: number;
@@ -38,6 +40,10 @@ export interface MapCanvasProps {
   measure: LatLon[];
   mode: MapMode;
   bus: CursorBus;
+  grid?: GridLayer | null;
+  sky?: SkyLayer | null;
+  samples?: readonly SampleDot[];
+  label?: string;
   onEngine(e: MapEngine | null): void;
   onPickSite(id: string | null): void;
   onPickPin(rank: number): void;
@@ -134,6 +140,9 @@ export function MapCanvas(props: MapCanvasProps) {
   useEffect(() => engineRef.current?.setPins(props.pins, props.selectedPin, props.pinsFaded), [props.pins, props.selectedPin, props.pinsFaded]);
   useEffect(() => engineRef.current?.setMeasure(props.measure), [props.measure]);
   useEffect(() => engineRef.current?.setMode(props.mode), [props.mode]);
+  useEffect(() => engineRef.current?.setGrid(props.grid ?? null), [props.grid]);
+  useEffect(() => engineRef.current?.setSky(props.sky ?? null), [props.sky]);
+  useEffect(() => engineRef.current?.setSamples(props.samples ?? NO_SAMPLES), [props.samples]);
 
   const tip = useMemo(() => {
     if (!hover) return null;
@@ -166,7 +175,7 @@ export function MapCanvas(props: MapCanvasProps) {
         className="map-canvas"
         tabIndex={0}
         role="application"
-        aria-label="Lunar map. Click to move the plan site, drag to pan, scroll to zoom."
+        aria-label={props.label ?? "Lunar map. Click to move the plan site, drag to pan, scroll to zoom."}
         onKeyDown={(e) => {
           if (engineRef.current?.handleKey(e.nativeEvent)) e.preventDefault();
         }}
