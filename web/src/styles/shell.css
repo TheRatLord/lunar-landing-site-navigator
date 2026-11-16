@@ -410,7 +410,7 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .shell[data-plan="open"] .mode-switch-for {
+  .shell .mode-switch-for {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -418,7 +418,7 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .shell[data-plan="open"] > .topbar {
+  .shell > .topbar {
     grid-template-columns: auto auto minmax(0, 1fr);
   }
 }
@@ -859,7 +859,10 @@
 .mode-switch-opt[data-mode="explorer"] > svg {
   color: var(--c-sun);
 }
-.mode-switch-opt:not([aria-current="page"]):hover { background: var(--fill); }
+.mode-switch-opt:not([aria-current="page"]) { background: var(--fill); }
+.mode-switch-opt[data-mode="explorer"]:not([aria-current="page"]) { background: color-mix(in srgb, var(--c-sun) 18%, transparent); }
+.mode-switch-opt:not([aria-current="page"]):hover { background: var(--fill-strong); }
+.mode-switch-opt[data-mode="explorer"]:not([aria-current="page"]):hover { background: color-mix(in srgb, var(--c-sun) 30%, transparent); }
 .mode-switch-opt[data-mode="planner"][aria-current="page"] { color: var(--on-accent); }
 .mode-switch-opt[data-mode="explorer"][aria-current="page"],
 .mode-switch-opt[data-mode="explorer"][aria-current="page"] > svg {
@@ -881,16 +884,6 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-@media (max-width: 1023.98px) {
-  .shell .mode-switch-for {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
 }
 @media (max-width: 1099.98px) {
   .learn .mode-switch-for {
@@ -964,17 +957,19 @@
   .shell[data-plan="none"] .brand-text {
     display: none;
   }
-  .shell[data-plan="none"] > .topbar {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
 }
 @media (max-width: 479.98px) {
+  .shell .brand,
   .shell .mode-switch-opt > svg,
+  .shell .tb-ask > svg,
   .shell .tb-palette {
     display: none;
   }
   .shell .mode-switch-opt {
     padding: 0 var(--sp-2);
+  }
+  .shell .tb-ask {
+    padding: 0 var(--sp-3);
   }
 }
 .tb-tab.active { color: var(--on-accent); }
