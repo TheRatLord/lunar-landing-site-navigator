@@ -46,9 +46,10 @@ export interface TabsProps {
   onChange: (id: string) => void;
   label: string;
   panels?: boolean;
+  variant?: "pill" | "line";
 }
 
-export function Tabs({ tabs, value, onChange, label, panels }: TabsProps) {
+export function Tabs({ tabs, value, onChange, label, panels, variant = "pill" }: TabsProps) {
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
   const track = useThumb<HTMLDivElement>('[aria-selected="true"]', `${value}:${tabs.length}`);
   const onKey = (e: KeyboardEvent) => {
@@ -66,7 +67,7 @@ export function Tabs({ tabs, value, onChange, label, panels }: TabsProps) {
     refs.current[t.id]?.focus();
   };
   return (
-    <div ref={track} role="tablist" aria-label={label} className="tabs has-thumb" onKeyDown={onKey}>
+    <div ref={track} role="tablist" aria-label={label} className={`tabs${variant === "line" ? " tabs-line" : ""} has-thumb`} onKeyDown={onKey}>
       {tabs.map((t) => (
         <button
           key={t.id}

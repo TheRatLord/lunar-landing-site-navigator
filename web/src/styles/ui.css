@@ -279,6 +279,32 @@
   cursor: not-allowed;
 }
 
+.tabs.tabs-line {
+  height: calc(var(--control-h) + var(--sp-1));
+  gap: var(--sp-5);
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+.tabs-line .tab {
+  padding: 0;
+  border-radius: 0;
+  font-size: var(--fs-md);
+}
+.tabs-line.has-thumb::before {
+  top: auto;
+  bottom: -0.5px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--text);
+  box-shadow: none;
+}
+.tab-note {
+  margin-left: var(--sp-1);
+  font-weight: var(--fw-regular);
+  color: var(--text-3);
+}
+
 /* ---------- segmented ---------- */
 .segmented {
   display: inline-flex;

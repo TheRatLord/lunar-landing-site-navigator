@@ -13,7 +13,7 @@ import { HorizonPanorama } from "../../components/viz/HorizonPanorama";
 import { Timeline } from "../../components/viz/Timeline";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Tabs, type TabItem } from "../../components/ui/Panel";
-import { Segmented } from "../../components/ui/Segmented";
+import { Select } from "../../components/ui/Fields";
 import { Spinner } from "../../components/ui/Progress";
 import { useScenario } from "../../scenario/store";
 import { useOverlays } from "../../scenario/alternatives";
@@ -140,54 +140,58 @@ export function SiteTarget() {
         <div className={`site-body ${stale ? "is-stale" : ""}`}>
           <div className="site-grid">
             <div className="site-main">
-              <div className="site-toolbar">
-                <Tabs tabs={VIEW_TABS} value={view} onChange={(v) => setView(v as View)} label="Site view" />
-                {view === "panorama" && (
-                  <Segmented
-                    label="Observer height"
-                    size="sm"
-                    value={observer}
-                    onChange={(v) => setObserver(v as Observer)}
-                    options={[
-                      { value: "array", label: heightLabel("array") },
-                      { value: "antenna", label: heightLabel("antenna") },
-                    ]}
-                  />
-                )}
-                <span className="grow" />
-              </div>
+              <section className="site-card" aria-label={VIEW_NAME[view]}>
+                <header className="site-card-head">
+                  <Tabs tabs={VIEW_TABS} value={view} onChange={(v) => setView(v as View)} label="Site view" />
+                  <span className="grow" />
+                  {view === "panorama" && (
+                    <label className="site-seen">
+                      <span>Seen from</span>
+                      <Select
+                        aria-label="Horizon seen from"
+                        value={observer}
+                        onChange={(v) => setObserver(v as Observer)}
+                        options={[
+                          { value: "array", label: heightLabel("array") },
+                          { value: "antenna", label: heightLabel("antenna") },
+                        ]}
+                      />
+                    </label>
+                  )}
+                </header>
 
-              <AttributionBar state={attr.state} scenario={evaluated} onClear={attr.clear} onShow3D={view === "terrain" ? null : () => setView("terrain")} />
+                <AttributionBar state={attr.state} scenario={evaluated} onClear={attr.clear} onShow3D={view === "terrain" ? null : () => setView("terrain")} />
 
-              <div className="site-visual">
-                {view === "panorama" &&
-                  (horizon ? (
-                    <HorizonPanorama
-                      horizon={horizon}
-                      sun={sunTrack ?? undefined}
-                      earth={earthTrack ?? undefined}
-                      sunlight={sunlight ?? undefined}
-                      stations={stations}
-                      timeMs={timeMs}
-                      markedAz_deg={markedAz}
-                      title="Horizon"
-                      onBlockerRequest={(r) => attr.request({ az_deg: r.az_deg, observer }, "Horizon", r.az_deg)}
-                    />
-                  ) : (
-                    <EmptyState icon="eyeOff" title="No horizon for this height" />
-                  ))}
-                {view === "terrain" && (
-                  <Suspense
-                    fallback={
-                      <div className="site-loading" role="status">
-                        <Spinner size={14} />
-                      </div>
-                    }
-                  >
-                    <Terrain3D scenario={stale && evaluated ? evaluated : doc} sun={dirs.sun} earth={dirs.earth} blocker={blocker} />
-                  </Suspense>
-                )}
-              </div>
+                <div className="site-visual">
+                  {view === "panorama" &&
+                    (horizon ? (
+                      <HorizonPanorama
+                        horizon={horizon}
+                        sun={sunTrack ?? undefined}
+                        earth={earthTrack ?? undefined}
+                        sunlight={sunlight ?? undefined}
+                        stations={stations}
+                        timeMs={timeMs}
+                        markedAz_deg={markedAz}
+                        title="Horizon"
+                        onBlockerRequest={(r) => attr.request({ az_deg: r.az_deg, observer }, "Horizon", r.az_deg)}
+                      />
+                    ) : (
+                      <EmptyState icon="eyeOff" title="No horizon for this height" />
+                    ))}
+                  {view === "terrain" && (
+                    <Suspense
+                      fallback={
+                        <div className="site-loading" role="status">
+                          <Spinner size={14} />
+                        </div>
+                      }
+                    >
+                      <Terrain3D scenario={stale && evaluated ? evaluated : doc} sun={dirs.sun} earth={dirs.earth} blocker={blocker} />
+                    </Suspense>
+                  )}
+                </div>
+              </section>
 
               <Timeline rows={rows} extent={extent} timeMs={timeMs} onTimeChange={setTime} title="Mission timeline" extra={!stale && <BatteryWarning doc={doc} evaluated={evaluated} result={result} />} />
             </div>

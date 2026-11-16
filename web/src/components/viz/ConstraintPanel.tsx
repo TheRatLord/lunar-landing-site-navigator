@@ -96,6 +96,7 @@ export function ConstraintPanel({ constraints, limitingId, title = "Requirements
               return (
                 <Fragment key={c.id}>
                   <tr
+                    id={`req-${c.id}`}
                     className={`cp-row ${clickable ? "cp-click" : ""} ${isOpen ? "is-open" : ""}`}
                     onClick={clickable ? act : undefined}
                     onKeyDown={(e) => {
@@ -104,7 +105,7 @@ export function ConstraintPanel({ constraints, limitingId, title = "Requirements
                         act();
                       }
                     }}
-                    tabIndex={clickable ? 0 : undefined}
+                    tabIndex={clickable ? 0 : -1}
                     aria-expanded={pairs.length > 0 ? isOpen : undefined}
                   >
                     <th scope="row">

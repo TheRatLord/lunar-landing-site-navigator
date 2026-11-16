@@ -161,11 +161,18 @@ function overLimit(o: RequirementOutcome): string {
   return `${name}${value}`;
 }
 
-export function verdictHeadline(overall: string, outcomes: readonly RequirementOutcome[]): VerdictHeadline | null {
+export function outcomeMargin(o: RequirementOutcome): number | null {
+  return o.headingDependent ? (o.marginWorst ?? o.margin) : (o.margin ?? o.marginWorst);
+}
+
+export function verdictHeadline(overall: string, outcomes: readonly RequirementOutcome[], unevaluated = 0): VerdictHeadline | null {
   const s = verdictSentence(overall, outcomes);
   if (!s) return null;
   const n = outcomes.length;
-  if (overall === "pass") return { word: "Passes", reason: n === 1 ? "Meets the requirement" : n === 2 ? "Meets both requirements" : `Meets all ${n} requirements` };
+  if (overall === "pass") {
+    if (unevaluated > 0) return { word: "Passes", reason: `Meets ${n === 1 ? "the 1 evaluated requirement" : `all ${n} evaluated requirements`}; ${unevaluated} more ${unevaluated === 1 ? "was" : "were"} not evaluated` };
+    return { word: "Passes", reason: n === 1 ? "Meets the requirement" : n === 2 ? "Meets both requirements" : `Meets all ${n} requirements` };
+  }
   if (overall === "fail") {
     const failing = outcomes.filter((o) => o.state === "fail").sort(byShare);
     const first = failing[0];
