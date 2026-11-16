@@ -419,7 +419,7 @@ def render_html(
         f'<span>Generated <span class="rg">{esc(when_utc(generated))}</span></span></div></header>'
         + section_answer(evaluation, scan, slip) + section_plan(evaluation) + section_figures(evaluation, scan, comparison)
         + section_events(evaluation) + survey_html + section_limits(evaluation, number, base_notes)
-        + f'<footer class="small">Lunar Landing Site Navigator {esc(code["package_version"])}'
+        + f'<footer class="small">Crater {esc(code["package_version"])}'
         f'<span hidden data-key="prov:source_sha256" data-raw="{esc(code["source_sha256"])}"></span></footer>')
     body = re.sub(r"(\d) \u00b0", "\\1\u00b0", body)
     return (

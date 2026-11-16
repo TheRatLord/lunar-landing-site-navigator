@@ -1,6 +1,6 @@
-# Lunar Landing Site Navigator
+# Crater
 
-A planning tool for lunar landing sites and dates, built for the NASA Space Apps Challenge 2026
+Crater is a planning tool for lunar landing sites and dates, built for the NASA Space Apps Challenge 2026
 [Lunar Landing Site Navigator](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/)
 challenge ([problem statement](problem-statement.md)).
 

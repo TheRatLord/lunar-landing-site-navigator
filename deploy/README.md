@@ -1,6 +1,6 @@
 # Deployment
 
-The app is live at https://lunar.cinne.dev and runs on Google Cloud (project `lunarnav-1114-19887`, VM `lunarnav` in `us-central1-a`).
+Crater is live at https://lunar.cinne.dev and runs on Google Cloud (project `lunarnav-1114-19887`, VM `lunarnav` in `us-central1-a`).
 
 - **Every push to `main` deploys automatically**, usually within about 10 minutes:
   1. The `images` workflow builds the Docker image (the API plus the built UI) and pushes it to Artifact Registry as `:latest` and `:main-<sha7>-<commit time>`. GitHub signs in to Google Cloud with Workload Identity Federation, which accepts only `main` of this repository, so no keys are stored in GitHub.

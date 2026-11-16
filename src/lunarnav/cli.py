@@ -11,7 +11,7 @@ from typing import Annotated
 
 import typer
 
-app = typer.Typer(add_completion=False, no_args_is_help=True, help="Lunar Landing Site Navigator.")
+app = typer.Typer(add_completion=False, no_args_is_help=True, help="Crater: lunar landing site and date planning.")
 
 
 @app.command(

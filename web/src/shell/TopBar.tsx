@@ -65,12 +65,12 @@ export function TopBar({ nav, tools, modes = true }: { nav?: ReactNode; tools?: 
   return (
     <header className="topbar">
       <div className="tb-side">
-        <Link to="/" state={{ front: true }} className="brand" aria-label="Lunar Landing Site Navigator, home">
+        <Link to="/" state={{ front: true }} className="brand" aria-label="Crater, home">
           <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
-            <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2" />
-            <path d="M3.5 19Q9 14 14 18T28.5 16" fill="none" stroke="var(--c-sun)" strokeWidth="2.6" />
+            <circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" strokeWidth="3" />
+            <path d="M22.55 11.41A8 8 0 0 1 11.41 22.55A16 16 0 0 0 22.55 11.41Z" fill="var(--c-sun)" />
           </svg>
-          <span className="brand-text">Lunar Navigator</span>
+          <span className="brand-text">Crater</span>
         </Link>
         {modes && <ModeSwitch />}
       </div>
