@@ -1691,8 +1691,8 @@ export class MapEngine {
   private northDirection(f: Frame, lat: number, lon: number): [number, number] {
     const hem = this.basis.proj.hemisphere!;
     const a = polarForward(hem, lat, lon);
-    const nlat = lat - 0.01;
-    const b = polarForward(hem, Math.abs(nlat) > 89.9999 ? lat : nlat, lon);
+    const nlat = Math.min(90, lat + 0.01);
+    const b = polarForward(hem, nlat, lon);
     const dx = (b.x_m - a.x_m) / f.upp;
     const dy = -(b.y_m - a.y_m) / f.upp;
     const n = Math.hypot(dx, dy);
