@@ -30,8 +30,8 @@ function Group({ title, note, children }: { title: string; note?: ReactNode; chi
   );
 }
 
-function Swatch({ color, ring }: { color: string; ring?: boolean }) {
-  return <i className="mp-swatch" data-ring={ring || undefined} style={{ ["--sw" as string]: color }} aria-hidden="true" />;
+function Swatch({ color, ring, round }: { color: string; ring?: boolean; round?: boolean }) {
+  return <i className="mp-swatch" data-ring={ring || undefined} data-round={round || undefined} style={{ ["--sw" as string]: color }} aria-hidden="true" />;
 }
 
 export interface SearchSummary {
@@ -77,8 +77,8 @@ export function LandingPanel(p: LandingPanelProps) {
         { key: "pass", label: "Passes", color: CELL_COLOR.pass, n: c.pass },
         { key: "marginal", label: "Marginal", color: CELL_COLOR.marginal, n: c.marginal },
         { key: "fail", label: "Fails", color: CELL_COLOR.fail, n: c.fail },
-        { key: "steep", label: "Too steep or rough", color: CELL_COLOR.steep, n: c.steep },
-        { key: "screened", label: "Not checked in full", color: CELL_COLOR.screened, n: c.screened + c.unknown },
+        { key: "steep", label: "Too steep", color: CELL_COLOR.steep, n: c.steep },
+        { key: "screened", label: "Unchecked", color: CELL_COLOR.screened, n: c.screened + c.unknown },
       ]
     : [];
   const e = p.ellipse;
@@ -108,35 +108,30 @@ export function LandingPanel(p: LandingPanelProps) {
 
         <Group title="Sky" note={<span className="num">{since(p.t_ms, p.start_ms)}</span>}>
           {p.skyError ? (
-            <p className="mp-note">Couldn't trace the Sun and Earth.</p>
+            <p className="mp-note">Couldn't load the sky.</p>
           ) : !p.bodies ? (
             <p className="mp-note">
-              <Spinner size={12} /> Tracing the Sun and Earth
+              <Spinner size={12} /> Loading
             </p>
           ) : (
             <ul className="mp-rows">
               {p.bodies.map((b) => {
                 const w = bodyWords(b);
                 return (
-                  <li key={b.body} className="mp-body" data-open={b.open || undefined}>
-                    <Swatch color={b.body === "sun" ? "var(--c-sun)" : "var(--c-earth)"} ring={b.body === "earth"} />
-                    <span className="mp-body-text">
-                      <strong>{w.state}</strong>
-                      <span className="num">{w.detail}</span>
-                    </span>
+                  <li key={b.body} className="mp-row" data-open={b.open || undefined}>
+                    <Swatch color={b.body === "sun" ? "var(--c-sun)" : "var(--c-earth)"} ring={b.body === "earth"} round />
+                    <span className="mp-row-label">{w.name}</span>
+                    <span className="mp-row-sub num">{w.detail}</span>
+                    <strong className="mp-row-value">{w.state}</strong>
                   </li>
                 );
               })}
             </ul>
           )}
-          <p className="mp-hint">
-            {p.smooth
-              ? "No terrain data here: the horizon is a smooth sphere, so no ridge line is drawn."
-              : "White lines trace the ridges that form the horizon. Each ray points at the Sun or Earth; a cross marks the ridge where it sits above the body."}
-          </p>
+          {p.smooth && <p className="mp-hint">No terrain here: smooth-sphere horizon.</p>}
         </Group>
 
-        <Group title="Search area" note={p.search ? (p.search.radius_m !== null ? `${kmText(p.search.radius_m)} around ${p.search.centre}` : p.search.centre) : undefined}>
+        <Group title="Search" note={p.search ? `${p.search.radius_m !== null ? `${kmText(p.search.radius_m)} · ` : ""}${kmText(p.search.spacing_m)} cells` : undefined}>
           {p.searching ? (
             <p className="mp-note">
               <Spinner size={12} /> Searching
@@ -147,75 +142,65 @@ export function LandingPanel(p: LandingPanelProps) {
                 {rows
                   .filter((row) => row.n > 0 || row.key === "pass")
                   .map((row) => (
-                    <li key={row.key} className="mp-count">
+                    <li key={row.key} className="mp-row">
                       <Swatch color={row.color} />
-                      <span>{row.label}</span>
-                      <span className="num mp-count-n">{total > 0 ? pct(row.n / total) : "–"}</span>
+                      <span className="mp-row-label">{row.label}</span>
+                      <span className="num mp-row-value">{total > 0 ? pct(row.n / total) : "–"}</span>
                     </li>
                   ))}
               </ul>
-              <p className="mp-hint">
-                {p.search.spacing_m >= 1000 ? `${(p.search.spacing_m / 1000).toFixed(1)} km` : `${Math.round(p.search.spacing_m)} m`} grid. Brighter green passes at more of the landing times searched. Hover the map to read a cell.
-              </p>
               {p.search.stale && (
                 <p className="mp-note mp-stale">
-                  The plan changed since this search.{" "}
+                  Out of date ·{" "}
                   <button type="button" className="mp-link" onClick={p.onOverview}>
-                    Search again in the Overview
+                    Search again
                   </button>
                 </p>
               )}
             </>
           ) : (
-            <>
-              <p className="mp-note">No search yet. The Overview searches around the site and the result shows here.</p>
-              <Button size="sm" icon="search" onClick={p.onOverview}>
-                Search in the Overview
+            <div className="mp-line">
+              <span className="mp-note">None yet</span>
+              <Button size="sm" variant="ghost" icon="search" onClick={p.onOverview}>
+                Search in Overview
               </Button>
-            </>
+            </div>
           )}
         </Group>
 
-        <Group title="Landing ellipse">
+        <Group title="Landing ellipse" note={r ? `${r.n_samples} touchdowns` : undefined}>
           {!e.set ? (
-            <>
-              <p className="mp-note">The lander can touch down anywhere in its ellipse. Add one to check how much of it is safe.</p>
-              <Button size="sm" icon="plus" onClick={p.onAddEllipse}>
-                Add ellipse
+            <div className="mp-line">
+              <span className="mp-note">None set</span>
+              <Button size="sm" variant="ghost" icon="plus" onClick={p.onAddEllipse}>
+                Add
               </Button>
-            </>
-          ) : e.phase === "running" ? (
-            <div className="mp-note">
-              <span>
-                <Spinner size={12} /> Sampling {e.points} touchdown points
-              </span>
-              <ProgressBar value={e.progress ?? 0} label="Ellipse progress" />
             </div>
+          ) : e.phase === "running" ? (
+            <ProgressBar value={e.progress ?? 0} label="Checking the ellipse" />
           ) : r ? (
             <>
               <ul className="mp-rows">
-                <li className="mp-count">
+                <li className="mp-row">
                   <Swatch color="var(--c-pass)" />
-                  <span>Touchdowns that pass</span>
-                  <span className="num mp-count-n">{typeof passShare === "number" ? pct(passShare) : "–"}</span>
+                  <span className="mp-row-label">Passes</span>
+                  <span className="num mp-row-value">{typeof passShare === "number" ? pct(passShare) : "–"}</span>
                 </li>
-                <li className="mp-count">
+                <li className="mp-row">
                   <Swatch color={CELL_COLOR.steep} />
-                  <span>{slopeLimit !== null ? `Steeper than ${slopeLimit}°` : "Hazardous ground"}</span>
-                  <span className="num mp-count-n">{typeof r.hazard_fraction === "number" ? pct(r.hazard_fraction) : "no limit"}</span>
+                  <span className="mp-row-label">{slopeLimit !== null ? `Steeper than ${slopeLimit}°` : "Too steep"}</span>
+                  <span className="num mp-row-value">{typeof r.hazard_fraction === "number" ? pct(r.hazard_fraction) : "–"}</span>
                 </li>
               </ul>
-              <p className="mp-hint">Each dot is one sampled touchdown point, coloured by its verdict.</p>
               <Button size="sm" variant="ghost" onClick={p.onEllipseDetails}>
-                Ellipse details
+                Details
               </Button>
             </>
           ) : (
             <>
               {e.error && <p className="mp-note mp-stale">{e.error}</p>}
-              <p className="mp-note">Sample touchdown points across the ellipse to see how much of it passes and how much is too steep.</p>
               <Button size="sm" icon="ellipse" onClick={p.onCheckEllipse}>
-                Check {e.points} touchdown points
+                Check ellipse
               </Button>
             </>
           )}

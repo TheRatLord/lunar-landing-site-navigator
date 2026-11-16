@@ -146,12 +146,12 @@ export function bodiesAt(sky: Sky, t: number): BodyNow[] {
   return out;
 }
 
-export function bodyWords(b: BodyNow): { state: string; detail: string } {
-  const state = b.body === "sun" ? (b.open ? "Sunlit" : "In shadow") : b.open ? "Earth link" : "No Earth link";
-  const up = `${b.el_deg.toFixed(1)}° up ${compassWord(b.az_deg)}`;
-  if (b.ridge_el_deg === null) return { state, detail: up };
-  const ridge = `ridge ${b.ridge_el_deg.toFixed(1)}°${b.ridge_m !== null ? ` at ${kmText(b.ridge_m)}` : ""}`;
-  return { state, detail: `${up}, ${ridge}` };
+export function bodyWords(b: BodyNow): { name: string; state: string; detail: string } {
+  const name = b.body === "sun" ? "Sun" : "Earth";
+  const state = b.body === "sun" ? (b.open ? "Lit" : "Dark") : b.open ? "Link" : "No link";
+  if (b.ridge_el_deg === null) return { name, state, detail: `${b.el_deg.toFixed(1)}° up` };
+  const gap = b.el_deg - b.ridge_el_deg;
+  return { name, state, detail: `${Math.abs(gap).toFixed(1)}° ${gap >= 0 ? "above" : "below"} the ridge` };
 }
 
 export function skyLayer(lat_deg: number, lon_deg: number, sky: Sky, bodies: readonly BodyNow[]): SkyLayer {
@@ -177,7 +177,7 @@ export function skyLayer(lat_deg: number, lon_deg: number, sky: Sky, bodies: rea
   }
   const rays: SkyRay[] = bodies.map((b) => {
     const w = bodyWords(b);
-    return { body: b.body, az_deg: b.az_deg, ridge_m: b.ridge_m, open: b.open, behind: b.behind, label: [w.state, w.detail] };
+    return { body: b.body, az_deg: b.az_deg, ridge_m: b.ridge_m, open: b.open, behind: b.behind, label: [`${w.name} · ${w.state}`, w.detail] };
   });
   return { lat_deg, lon_deg, outline, rays };
 }
