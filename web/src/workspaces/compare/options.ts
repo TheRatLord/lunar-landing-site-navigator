@@ -16,6 +16,8 @@ export function normalizeSlips(hours: readonly number[]): number[] {
 
 const DEFAULT_SLIPS_H = normalizeSlips([0, 24, 72, 168, 336, Math.round((MS_LUNATION / MS_HOUR) * 10) / 10]);
 
+export const DEMO_SLIPS_H = normalizeSlips([0, 72, 168, 336, 599, Math.round((MS_LUNATION / MS_HOUR) * 10) / 10]);
+
 interface CompareOptions {
   slips_h: number[];
   setSlips(hours: readonly number[]): void;

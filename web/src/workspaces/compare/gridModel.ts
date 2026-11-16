@@ -111,8 +111,8 @@ export function dateText(ms: number): string {
 
 export function nextText(row: SlipRow, landingMs: number): string {
   const next = parseUtc(row.next_open_utc ?? null);
-  if (next === null) return "none within a year";
+  if (next === null) return "No date within a year";
   const sameDay = Math.floor(next / (24 * MS_HOUR)) === Math.floor(landingMs / (24 * MS_HOUR));
   const d = new Date(next);
-  return `${row.next_open_state === "marginal" ? "marginal" : "next"} ${dayText(next, new Date(landingMs).getUTCFullYear() !== d.getUTCFullYear())}${sameDay ? ` ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` : ""}`;
+  return `${dayText(next, new Date(landingMs).getUTCFullYear() !== d.getUTCFullYear())}${sameDay ? ` ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` : ""} ${row.next_open_state === "marginal" ? "is marginal" : "passes"}`;
 }

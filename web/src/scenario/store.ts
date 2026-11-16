@@ -10,6 +10,7 @@ import { scenarioApi } from "./api";
 import { fieldErrorCount, useFieldErrors } from "./fieldErrors";
 import { createdHere, forgetPlan, markCreated, rememberPlan } from "./myPlans";
 import { DEMO_NAME, blankScenario, starterAlternatives, starterScenario } from "./starter";
+import { DEMO_SLIPS_H, useCompareOptions } from "../workspaces/compare/options";
 import { readDraftText, type Draft, type DraftProblem, type DraftRead, type SavedRef } from "./draft";
 import { CONSTRAINT_META } from "./editor/fieldSpecs";
 import { formatProblems, normalizeScenario, schemaDefaults } from "./normalize";
@@ -268,6 +269,7 @@ async function openBuilt(ready: Scenario | null, build: () => Promise<Scenario>,
     if (demo) writeDemo(doc);
     show(doc);
     if (demo) {
+      useCompareOptions.getState().setSlips(DEMO_SLIPS_H);
       starterAlternatives().then((items) => (fresh ? useAlternatives.setState({ items }) : seedAlternatives(items)), () => undefined);
     }
     return true;

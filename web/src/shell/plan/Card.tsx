@@ -41,7 +41,10 @@ export function Card({ field, icon, label, rows, width, children }: CardProps) {
         <span className="plan-card-head">
           <Icon name={icon} size={14} className="plan-card-icon" />
           <span className="plan-card-label">{label}</span>
-          <Icon name="chevronRight" size={12} className="plan-card-chevron" />
+          <span className="plan-card-edit" aria-hidden="true">
+            Edit
+            <Icon name="chevronRight" size={12} />
+          </span>
         </span>
         <span className="plan-card-rows">
           {rows.map((r, i) =>

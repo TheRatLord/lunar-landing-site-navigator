@@ -133,6 +133,7 @@ export function Grid({
                         className={`cmp-btn cmp-s-${row.state}`}
                         aria-pressed={on}
                         aria-label={cellLabel(site.name, row, ms)}
+                        title={cellLabel(site.name, row, ms)}
                         tabIndex={active.r === r && active.c === c ? 0 : -1}
                         data-r={r}
                         data-c={c}
@@ -163,15 +164,21 @@ function cellLabel(name: string, row: SlipRow, ms: number): string {
 }
 
 function CellBody({ row, landingMs }: { row: SlipRow; landingMs: number }) {
-  const sub = row.state === "pass" || row.state === "unknown" ? null : row.state === "marginal" ? limitingShort(row) : nextText(row, landingMs);
+  const off = row.state === "fail" || row.state === "no_opportunity";
+  const why = row.state === "marginal" || off ? limitingShort(row) : null;
   return (
     <>
       <span className="cmp-cell-word" aria-hidden="true">
         {STATE_WORD[row.state]}
       </span>
-      {sub && (
-        <span className="cmp-cell-sub num" aria-hidden="true">
-          {sub}
+      {why && (
+        <span className="cmp-cell-sub" aria-hidden="true">
+          {why}
+        </span>
+      )}
+      {off && (
+        <span className="cmp-cell-sub cmp-cell-next num" aria-hidden="true">
+          {nextText(row, landingMs)}
         </span>
       )}
     </>

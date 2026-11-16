@@ -11,7 +11,7 @@ import { effectiveWindow, isYear, usePlanSearch, yearText } from "../scenario/pl
 import { useSearchSite } from "../scenario/searchAnchor";
 import { useScenario } from "../scenario/store";
 import type { Limit } from "../scenario/types";
-import { hoursOrDays, spanText } from "../scenario/when";
+import { hoursOrDays, spanText, whenText } from "../scenario/when";
 import { SETUP_WORKSPACE } from "../workspaces/registry";
 import { Card, type CardRow } from "./plan/Card";
 import { landerName, sameProfile } from "./plan/landerFacts";
@@ -20,6 +20,7 @@ import { LanderPicker } from "./plan/LanderPicker";
 import { RequirementsPicker } from "./plan/RequirementsPicker";
 import { WindowControl } from "./plan/Widen";
 import { formatLimit } from "../lib/requirements";
+import { parseUtc } from "../lib/time";
 
 const SitePicker = lazy(() => import("./plan/SitePicker").then((m) => ({ default: m.SitePicker })));
 
@@ -87,14 +88,15 @@ export function PlanPanel() {
           label="When"
           width={420}
           rows={[
+            { k: "Landing", v: whenText(parseUtc(doc.landing_utc) ?? NaN) },
             { k: "Window", v: isYear(window) ? yearText(window) : spanText(window.first_ms, window.last_ms) },
             { k: "Stay", v: hoursOrDays(doc.mission_duration_h) },
           ]}
         >
           <div className="plan-pick">
             <div className="plan-pick-scroll plan-pick-form">
-              <WindowControl />
               <TimeSection />
+              <WindowControl />
             </div>
           </div>
         </Card>

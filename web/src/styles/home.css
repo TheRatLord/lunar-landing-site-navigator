@@ -154,6 +154,7 @@
 .ol .ol-val { width: 1%; min-width: 4.5em; text-align: right; font-weight: var(--fw-semibold); color: var(--text); }
 .ol-side { min-width: 12em; font-size: var(--fs-xs); }
 .ol-side span { font-weight: var(--fw-semibold); }
+.ol-side span[data-tone="pass"] { color: var(--c-pass); }
 .ol-side span[data-tone="marginal"] { color: var(--c-marginal); }
 .ol-side span[data-tone="fail"] { color: var(--c-fail); }
 .ol-tools { width: 1%; cursor: default; }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Segmented } from "../../components/ui/Segmented";
 import { MS_LUNATION } from "../../lib/time";
 import { useScenario } from "../store";
-import { NumberField } from "./controls";
+import { NumberField, UtcField } from "./controls";
 
 const DURATION_PRESETS: Array<{ label: string; hours: number }> = [
   { label: "2 d", hours: 48 },
@@ -23,6 +23,7 @@ export function TimeSection() {
   return (
     <div className="sc-section">
       <div className="sc-group">
+        <UtcField path={["landing_utc"]} label="Landing" />
         <div className="sc-row">
           <span className="sc-label">Stay</span>
           <div className="sc-control">

@@ -465,13 +465,14 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--sp-2) var(--sp-2) 0;
-  gap: 2px;
+  gap: var(--sp-1-5);
 }
 .plan-card {
   display: flex;
   flex-direction: column;
   flex: none;
   border-radius: var(--r-lg);
+  box-shadow: inset 0 0 0 1px var(--border);
   transition: background var(--dur-fast) var(--ease);
 }
 
@@ -516,9 +517,18 @@
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-tight);
 }
-.plan-card-chevron {
+.plan-card-edit {
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  color: var(--text-3);
+  gap: 2px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--text-2);
+}
+.plan-card:hover .plan-card-edit,
+.plan-card[data-open="true"] .plan-card-edit {
+  color: var(--text);
 }
 .plan-card-rows {
   display: grid;
@@ -980,7 +990,7 @@
 .shell[data-plan="none"] .plan-side {
   margin-right: 0;
 }
-.plan-card:hover, .plan-card[data-open="true"] { background: var(--fill); }
+.plan-card:hover, .plan-card[data-open="true"] { background: var(--fill); box-shadow: inset 0 0 0 1px var(--border-strong); }
 
 .tb-side {
   display: flex;

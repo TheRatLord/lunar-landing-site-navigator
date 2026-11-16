@@ -62,7 +62,7 @@ function Row({ o, n, rank, top, values, requirements, withSite, selected, previe
   const rest = pin ? (state ?? `${dayText(o.t_ms!)} ${time}`) : state ? (withSite ? o.label : null) : withSite ? `${time} ${o.label}` : time;
   const got = blank ? null : amount(o, rank);
   const share = got === null || top <= 0 ? 0 : Math.max(0, Math.min(1, got / top));
-  const flagged = !blank && requirements > 0 && o.verdict !== null && o.verdict !== "pass";
+  const judged = !blank && requirements > 0 && o.verdict !== null;
   const all = values.map((v) => `${v.label} ${value(o, v.key)}`).join(", ");
   return (
     <tr className="ol-row" data-kind={pin ? "pin" : "rank"} data-blank={blank || o.t_ms === null || undefined} aria-current={selected || undefined} data-preview={previewing || undefined} onClick={onSelect} onMouseEnter={() => onPreview(true)} onMouseLeave={() => onPreview(false)} title={o.note ?? undefined}>
@@ -79,10 +79,10 @@ function Row({ o, n, rank, top, values, requirements, withSite, selected, previe
       <td className="ol-side num" title={blank ? undefined : all}>
         {blank ? (
           ""
-        ) : flagged ? (
+        ) : judged ? (
           <>
             <span data-tone={o.verdict!}>{VERDICT_LABEL[o.verdict!]}</span>
-            {o.limiting ? ` ${o.limiting}` : ""}
+            {o.verdict === "pass" ? ` · ${labelOf(BESIDE[rank])} ${value(o, BESIDE[rank])}` : o.limiting ? ` · ${o.limiting}` : ""}
           </>
         ) : (
           `${labelOf(BESIDE[rank])} ${value(o, BESIDE[rank])}`
