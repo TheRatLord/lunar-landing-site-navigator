@@ -10,8 +10,9 @@ import { WALK_RADIUS_M } from "./astronaut";
 import type { Drive } from "./walkInput";
 import type { WalkTerrain } from "./walkTerrain";
 
-const TOP_SPEED = 4;
-const ACCEL = 1.6;
+const ROVER_SPEED_MULTIPLIER = 2.0; // Original top speed: 4 m/s; acceleration: 1.6 m/s².
+const TOP_SPEED = 4 * ROVER_SPEED_MULTIPLIER;
+const ACCEL = 1.6 * ROVER_SPEED_MULTIPLIER;
 const TURN = 40;
 const HALF_TRACK = 0.95;
 const HALF_BASE = 1.25;
