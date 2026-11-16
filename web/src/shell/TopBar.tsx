@@ -58,7 +58,7 @@ export function PlannerNav() {
   );
 }
 
-export function TopBar({ nav, tools, plan, modes = true }: { nav?: ReactNode; tools?: ReactNode; plan?: ReactNode; modes?: boolean }) {
+export function TopBar({ nav, tools, modes = true }: { nav?: ReactNode; tools?: ReactNode; modes?: boolean }) {
   const theme = useApp((s) => s.theme);
   const setTheme = useApp((s) => s.setTheme);
 
@@ -78,7 +78,6 @@ export function TopBar({ nav, tools, plan, modes = true }: { nav?: ReactNode; to
       {nav ?? <span />}
 
       <div className="tb-side tb-side-end">
-        {plan}
         {tools}
         <button
           type="button"

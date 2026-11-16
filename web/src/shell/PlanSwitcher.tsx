@@ -107,7 +107,7 @@ export function PlanSwitcher() {
 
   if (!doc) {
     return phase === "loading" ? (
-      <span className="tb-plan pf-state" role="status">
+      <span className="plan-switch pf-state" role="status">
         <Spinner size={12} /> Opening
       </span>
     ) : null;
@@ -168,27 +168,25 @@ export function PlanSwitcher() {
   const busy = phase === "saving" || phase === "loading";
 
   const rename = (
-    <div className="tb-plan-rename">
+    <div className="plan-switch-rename">
       <label htmlFor="plan-name">Name</label>
       <PlanName />
     </div>
   );
 
   return (
-    <div className="tb-plan" role="group" aria-label="Plan">
+    <div className="plan-switch" role="group" aria-label="Plan">
       <Menu
         text={
           <>
-            {demo && (
-              <span className="chip tb-plan-demo" title="Your own copy of the demo, kept in this browser. Edits are kept as you go.">
-                Demo
-              </span>
-            )}
-            <span className="tb-plan-name">{doc.name.trim() || "Untitled plan"}</span>
+            <span className="plan-switch-name" title={demo ? "Your own copy of the demo, kept in this browser. Edits are kept as you go." : undefined}>
+              {doc.name.trim() || "Untitled plan"}
+            </span>
+            {demo && !/demo/i.test(doc.name) && <span className="chip plan-switch-demo">Demo</span>}
           </>
         }
         label="Plan"
-        align="end"
+        align="start"
         width={300}
         items={items}
         footer={rename}

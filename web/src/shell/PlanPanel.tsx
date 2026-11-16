@@ -1,3 +1,4 @@
+import { PlanSwitcher } from "./PlanSwitcher";
 import { siteLabel } from "../lib/siteName";
 import { lazy, Suspense } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -56,6 +57,7 @@ export function PlanPanel() {
     <aside className="plan-side" aria-label="Requirements">
       <div className="plan-cards">
         <div className="plan-head">
+          <PlanSwitcher />
           <h2>Requirements</h2>
         </div>
         <Card

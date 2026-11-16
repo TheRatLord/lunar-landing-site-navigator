@@ -14,7 +14,6 @@ import { ScenarioDialogs } from "../scenario/editor/ScenarioDialogs";
 import { useEditorUi } from "../scenario/editor/editorUi";
 import { PlanPanel } from "./PlanPanel";
 import { PlannerNav, PlannerTools, TopBar } from "./TopBar";
-import { PlanSwitcher } from "./PlanSwitcher";
 import { useArrivingSite } from "../scenario/arrivingSite";
 import { useScenarioUrl } from "../scenario/scenarioUrl";
 import { useCommands } from "./useCommands";
@@ -114,7 +113,7 @@ function Planner() {
       <a className="skip-link" href={ask === "full" ? "#ask-dock" : "#main"}>
         Skip to page
       </a>
-      <TopBar nav={<PlannerNav />} tools={<PlannerTools />} plan={<PlanSwitcher />} />
+      <TopBar nav={<PlannerNav />} tools={<PlannerTools />} />
       {plan && <PlanPanel />}
       <main id="main" className="main" tabIndex={-1} inert={ask === "full"}>
         {plan && <DraftNotice />}

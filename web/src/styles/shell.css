@@ -347,7 +347,7 @@
   overflow: hidden;
   box-shadow: var(--shadow-card);
 }
-.tb-plan {
+.plan-switch {
   display: flex;
   align-items: center;
   flex: 0 1 auto;
@@ -355,30 +355,25 @@
   min-width: 0;
   font-size: var(--fs-sm);
 }
-.tb-side-end > .tb-plan {
-  margin-right: var(--sp-1);
-  padding-right: var(--sp-2);
-  border-right: 1px solid var(--border);
-}
-.tb-plan > .btn {
+.plan-switch > .btn {
   min-width: 0;
-  max-width: 260px;
+  max-width: 100%;
   gap: var(--sp-1-5);
 }
-.tb-plan-demo {
+.plan-switch-demo {
   flex: none;
 }
-.tb-plan-name {
+.plan-switch-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: var(--fw-semibold);
 }
-.tb-plan > .tb-dot {
+.plan-switch > .tb-dot {
   flex: none;
 }
-.tb-plan-rename {
+.plan-switch-rename {
   display: flex;
   flex-direction: column;
   gap: var(--sp-1);
@@ -395,9 +390,6 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
-  .tb-plan > .btn {
-    max-width: 200px;
   }
   .shell[data-plan="open"] .mode-switch-for {
     position: absolute;
@@ -531,13 +523,26 @@
   grid-column: 1 / -1;
 }
 .plan-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
   padding: var(--sp-2) var(--sp-3) var(--sp-1);
+}
+.plan-head .plan-switch {
+  margin-left: calc(-1 * var(--sp-2));
+}
+.plan-head .plan-switch > .btn {
+  font-size: var(--fs-md);
 }
 .plan-head h2 {
   margin: 0;
-  font-size: var(--fs-md);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-tight);
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .plan-widen-year {
   flex: 1 1 auto;
@@ -915,7 +920,6 @@
 }
 
 @media (max-width: 1023.98px) {
-  .shell .tb-plan,
   .shell[data-plan="none"] .tb-nav,
   .shell[data-plan="none"] .brand-text {
     display: none;
@@ -963,7 +967,7 @@
   box-shadow: none;
 }
 .tb-tab:hover:not(.active) { color: var(--text); }
-.tb-plan-rename .pf-name {
+.plan-switch-rename .pf-name {
   background: var(--input-bg);
   border-color: var(--border);
 }
