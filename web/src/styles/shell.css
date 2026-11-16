@@ -529,10 +529,25 @@
   padding: var(--sp-2) var(--sp-3) var(--sp-1);
 }
 .plan-head .plan-switch {
-  margin-left: calc(-1 * var(--sp-2));
+  margin: 0 calc(-1 * var(--sp-1));
+  width: calc(100% + 2 * var(--sp-1));
 }
 .plan-head .plan-switch > .btn {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  height: auto;
+  min-height: var(--control-h);
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-2);
+  border-radius: var(--r-lg);
   font-size: var(--fs-md);
+  color: var(--text);
+}
+.plan-head .plan-switch > .btn[aria-expanded="true"] {
+  background: var(--fill);
+}
+.plan-head .plan-switch > .btn .pop-chevron {
+  margin-left: auto;
+  color: var(--text-3);
 }
 .plan-head h2 {
   margin: 0;
