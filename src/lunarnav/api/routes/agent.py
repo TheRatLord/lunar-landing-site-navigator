@@ -144,6 +144,7 @@ async def close_run(run_id: str, ctx: Ctx) -> RunMeta:
 async def events(
     run_id: str,
     ctx: Ctx,
+    owner: Owner,
     last_event_id_header: Annotated[str | None, Header(alias="Last-Event-ID")] = None,
     after_seq: Annotated[int | None, Query(ge=-1, description="Replay only events with a larger seq.")] = None,
     follow: Annotated[bool, Query(description="Keep the stream open for later events (default). False: replay and end.")] = True,
@@ -151,9 +152,12 @@ async def events(
 ) -> EventSourceResponse:
     """Replays the persisted transcript (`seq > Last-Event-ID` or `after_seq`) and then joins the live stream,
     which also carries `text_delta` / `reasoning_delta` (live only, never replayed). The stream stays open across
-    turns; keep-alive comments are sent periodically."""
+    turns; keep-alive comments are sent periodically. A visitor reading the shared example gets the replay only."""
     ctx.agents.paths(run_id)
-    ctx.agents.check_stream_capacity(run_id)
+    if ctx.agents.owns(run_id, owner):
+        ctx.agents.check_stream_capacity(run_id)
+    else:
+        follow = False
     cursor = last_event_id(last_event_id_header, after_seq)
 
     async def frames():

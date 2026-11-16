@@ -42,7 +42,7 @@ Anyone who opens the site can use it; there is no code or login. The first reque
 
 The service stops starting or continuing threads once all threads together have cost 60 USD (instance metadata `lunarnav-agent-budget` changes the amount). Each new thread's cap is cut to what is left, so the total can overshoot only by what threads already running spend in their current turn. From then on the Ask panel says that the assistant's credit is used up; raise the metadata value and restart the container to reopen it. The same message appears on a thread whose turn fails because the API key itself has no credit left.
 
-Every visitor also sees one example thread, read-only. It is a thread started with the showcase token, whose SHA-256 is `SHOWCASE_OWNER_SHA256` in `src/lunarnav/api/settings.py`. To add or replace the example, send the token as the `lunarnav_agent_code` cookie and start a thread:
+Every visitor also sees one example thread, read-only. It is the newest thread started with the showcase token, whose SHA-256 is `SHOWCASE_OWNER_SHA256` in `src/lunarnav/api/settings.py`. To replace the example, send the token as the `lunarnav_agent_code` cookie and start a thread:
 
 ```sh
 curl -X POST https://moonwalker.cinne.dev/api/v1/agent/runs -H 'Origin: https://moonwalker.cinne.dev' -H 'Content-Type: application/json' \

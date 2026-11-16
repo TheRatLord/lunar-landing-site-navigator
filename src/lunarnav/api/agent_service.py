@@ -58,6 +58,7 @@ RESULT_LIMIT_BYTES = 262_144
 HUB_QUEUE_MAX = 10_000
 MAX_STREAMS_PER_RUN = 8
 MIN_BUDGET_ROOM_USD = 0.05
+_UNSET: Any = object()
 """Concurrent event-stream connections one run accepts (the next is `429`); each holds a queue of up to HUB_QUEUE_MAX events."""
 INLINE_TYPES = frozenset(
     {"image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf", "application/json", "text/plain", "text/csv"}
@@ -224,13 +225,13 @@ class AgentService:
         paths = self.paths(run_id)
         return self._decorate(read_run_meta(paths), paths if with_sandbox else None)
 
-    def _decorate(self, meta: dict[str, Any], paths: RunPaths | None = None) -> dict[str, Any]:
+    def _decorate(self, meta: dict[str, Any], paths: RunPaths | None = None, showcase: Any = _UNSET) -> dict[str, Any]:
         live = self._live.get(meta["run_id"])
         out = dict(meta)
         out["live"] = live is not None
         out["budget_usd"] = meta.get("max_budget_usd")
         out["busy"] = bool(live and live.busy)
-        out["shared"] = self._shared(meta["run_id"])
+        out["shared"] = meta["run_id"] == (self._showcase() if showcase is _UNSET else showcase)
         if out["busy"]:
             out["state"] = "running"
         if paths is not None:
@@ -238,9 +239,10 @@ class AgentService:
         return out
 
     def list_runs(self, owner: str | None = None) -> list[dict[str, Any]]:
-        """Metadata of every run on disk, newest first; with `owner`, only the runs that visitor started and the shared ones."""
-        return [self._decorate(m) for m in list_runs(self.runs_dir)
-                if "run_id" in m and (owner is None or self._owner_of(m["run_id"]) == owner or self._shared(m["run_id"]))]
+        """Metadata of every run on disk, newest first; with `owner`, only the runs that visitor started and the shared example."""
+        showcase = self._showcase()
+        return [self._decorate(m, showcase=showcase) for m in list_runs(self.runs_dir)
+                if "run_id" in m and (owner is None or self._owner_of(m["run_id"]) == owner or m["run_id"] == showcase)]
 
     def _owner_file(self, run_id: str) -> Path:
         return self.settings.service_dir / "agent-owners" / run_id
@@ -268,14 +270,20 @@ class AgentService:
                              kind="total-budget-spent", budget_usd=cap)
         return left
 
-    def _shared(self, run_id: str) -> bool:
-        showcase = self.settings.agent_showcase_owner
-        return showcase is not None and self._owner_of(run_id) == showcase
+    def _showcase(self) -> str | None:
+        owner = self.settings.agent_showcase_owner
+        if owner is None:
+            return None
+        mine = [m for m in list_runs(self.runs_dir) if "run_id" in m and self._owner_of(m["run_id"]) == owner]
+        return max(mine, key=lambda m: str(m.get("created_at") or ""))["run_id"] if mine else None
+
+    def owns(self, run_id: str, owner: str) -> bool:
+        return self._owner_of(run_id) == owner
 
     def check_owner(self, run_id: str, owner: str, write: bool) -> None:
-        if self._owner_of(run_id) == owner:
+        if self.owns(run_id, owner):
             return
-        if not self._shared(run_id):
+        if run_id != self._showcase():
             raise ApiProblem(404, "Run not found", f"No run {run_id!r}.")
         if write:
             raise ApiProblem(403, "Shared example", "This thread is a shared example and can only be read. Start a new thread to ask your own question.",

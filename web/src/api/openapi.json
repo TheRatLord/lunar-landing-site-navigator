@@ -3212,7 +3212,7 @@
           "agent"
         ],
         "summary": "Typed event stream (server-sent events)",
-        "description": "Replays the persisted transcript (`seq > Last-Event-ID` or `after_seq`) and then joins the live stream,\nwhich also carries `text_delta` / `reasoning_delta` (live only, never replayed). The stream stays open across\nturns; keep-alive comments are sent periodically.",
+        "description": "Replays the persisted transcript (`seq > Last-Event-ID` or `after_seq`) and then joins the live stream,\nwhich also carries `text_delta` / `reasoning_delta` (live only, never replayed). The stream stays open across\nturns; keep-alive comments are sent periodically. A visitor reading the shared example gets the replay only.",
         "operationId": "events_api_v1_agent_runs__run_id__events_get",
         "parameters": [
           {
